@@ -11,11 +11,22 @@
 复制 `shisp_2401a0_v21.bin` 到 `/lib/firmware/` 文件夹下。
 
 ## 摄像头
-OV5693 主线驱动，效果一般。  
-T4KA3 社区驱动，目前无法使用。  
-体验驱动请将当前目录下 `latte-camera-t4ka3.patch` 应用到内核源码中，重新编译内核。  
-这个驱动是根据 [[PATCH v7] media: Add t4ka3 camera sensor driver](https://lore.kernel.org/all/20241108091844.151033-1-hpa@redhat.com/) 修改的，感谢 `Kate Hsuan <hpa@redhat.com>` 的贡献。  
-u由于没有找到对应修改后的仓库，我根据他们的谈话手动修改了驱动，如果后续有更新，请自行更新。
+OV5693 前置摄像头使用主线驱动。  
+T4KA3 后置摄像头驱动已经直接集成到内核树，并在 `xiaomipad2_defconfig` 中作为模块启用。  
+后摄的 DW9761 VCM 由 `dw9719` 驱动兼容支持，同样在默认配置中启用。  
+`fix_file/latte-camera-t4ka3.patch` 保留为上游/回移参考，不再需要手工应用。
+
+测试时先确认模块和媒体拓扑：
+
+```bash
+sudo modprobe atomisp
+sudo modprobe ov5693
+sudo modprobe t4ka3
+sudo modprobe dw9719
+dmesg | grep -Ei 'atomisp|ov5693|t4ka3|dw97'
+media-ctl -p
+v4l2-ctl --list-devices
+```
 
 # 触摸屏底部按键
 内容来自 [systemd/systemd-stable](https://github.com/systemd/systemd-stable/blob/v255-stable/hwdb.d/60-keyboard.hwdb)
