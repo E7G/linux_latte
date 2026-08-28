@@ -1,0 +1,32 @@
+name: Mi Pad 2 camera compile check
+
+on:
+  push:
+    branches:
+      - test/mipad2-camera-20260829
+  workflow_dispatch:
+
+jobs:
+  camera-drivers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves
+
+      - name: Configure Mi Pad 2 kernel
+        run: make xiaomipad2_defconfig
+
+      - name: Verify camera configuration
+        run: |
+          grep -E 'CONFIG_VIDEO_(OV5693|T4KA3|DW9719)=' .config
+          grep -E 'CONFIG_VIDEO_ATOMISP=' .config
+
+      - name: Compile camera sensor and VCM drivers
+        run: |
+          make -j"$(nproc)" W=1 drivers/media/i2c/t4ka3.o drivers/media/i2c/dw9719.o
