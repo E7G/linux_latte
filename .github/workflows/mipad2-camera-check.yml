@@ -28,7 +28,7 @@ jobs:
           grep -E 'CONFIG_VIDEO_(OV5693|T4KA3|DW9719)=' .config
           grep -E 'CONFIG_VIDEO_ATOMISP=' .config
           test -s drivers/media/i2c/t4ka3.c
-          grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Kconfig
+          grep -q 'config VIDEO_T4KA3' drivers/media/i2c/Kconfig
           grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Makefile
 
       - name: Compile camera sensor and VCM drivers
