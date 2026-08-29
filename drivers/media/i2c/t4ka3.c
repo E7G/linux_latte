@@ -879,7 +879,16 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 	if (ret)
 		return ret;
 
-	v4l2_ctrl_new_fwnode_properties(hdl, ops, &props);
+	/* Mi Pad 2 mounts the rear T4KA3 in portrait-relative landscape. */
+	if (props.orientation == V4L2_FWNODE_PROPERTY_UNSET)
+		props.orientation = V4L2_FWNODE_ORIENTATION_BACK;
+	if (props.rotation == V4L2_FWNODE_PROPERTY_UNSET &&
+	    ACPI_COMPANION(sensor->dev))
+		props.rotation = 90;
+
+	ret = v4l2_ctrl_new_fwnode_properties(hdl, ops, &props);
+	if (ret)
+		return ret;
 
 	if (hdl->error)
 		return hdl->error;
@@ -932,6 +941,34 @@ static int t4ka3_pm_resume(struct device *dev)
 
 static DEFINE_RUNTIME_DEV_PM_OPS(t4ka3_pm_ops, t4ka3_pm_suspend,
 				 t4ka3_pm_resume, NULL);
+
+static void t4ka3_unregister_vcm(void *data)
+{
+	i2c_unregister_device(data);
+}
+
+static int t4ka3_register_vcm(struct t4ka3_data *sensor)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&sensor->sd);
+	struct i2c_board_info board_info = {
+		I2C_BOARD_INFO("dw9761", 0x0c),
+	};
+	struct i2c_client *vcm;
+
+	/* The ACPI table has no child fwnode for the lens on Mi Pad 2. */
+	if (!ACPI_COMPANION(sensor->dev))
+		return 0;
+
+	vcm = i2c_new_client_device(client->adapter, &board_info);
+	if (IS_ERR(vcm)) {
+		if (PTR_ERR(vcm) == -EBUSY)
+			return 0;
+		return dev_err_probe(sensor->dev, PTR_ERR(vcm),
+				     "creating DW9761 VCM client\n");
+	}
+
+	return devm_add_action_or_reset(sensor->dev, t4ka3_unregister_vcm, vcm);
+}
 
 static void t4ka3_remove(struct i2c_client *client)
 {
@@ -1014,6 +1051,10 @@ static int t4ka3_probe(struct i2c_client *client)
 	}
 
 	ret = t4ka3_init_controls(sensor);
+	if (ret)
+		goto err_controls;
+
+	ret = t4ka3_register_vcm(sensor);
 	if (ret)
 		goto err_controls;
 
