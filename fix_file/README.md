@@ -50,7 +50,11 @@ evdev:name:FTSC1000:00 2808:509C Keyboard:dmi:*:svnXiaomiInc:pnMipad2:*
 ```
 
 # 视频解码加速
-arch上libva版本比较新降级即可，2.21.0-1版本可用。  
-arch使用i965驱动解码单元，包名：libva-intel-driver  
-https://github.com/intel/libva/issues/830
+当前 Mi Pad 2 实机已验证 `libva 2.24.0` + `Intel i965 driver 2.4.5` 可用，确认不需要强制降级到 `libva 2.21.0-1`。
+
+```bash
+vainfo
+```
+
+应看到 `Intel i965 driver for Intel(R) CherryView` 以及 MPEG2/H.264/VC1 等硬件解码入口。若发行版后续默认切换到不兼容的驱动，优先选择 `libva-intel-driver`/`i965`，不要修改内核。
 
