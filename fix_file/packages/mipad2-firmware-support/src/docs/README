@@ -1,0 +1,3 @@
+Mi Pad 2 firmware support
+Broadcom BCM4356 PCIe Wi-Fi and BCM4356A2 Bluetooth firmware.
+The txcap_blob is intentionally not included because no device-specific blob is present.

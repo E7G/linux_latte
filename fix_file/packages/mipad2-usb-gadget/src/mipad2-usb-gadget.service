@@ -1,0 +1,15 @@
+[Unit]
+Description=Mi Pad 2 USB Ethernet gadget
+Documentation=https://docs.kernel.org/usb/gadget_configfs.html
+After=systemd-modules-load.service sys-kernel-config.mount
+Wants=sys-kernel-config.mount
+ConditionPathExists=/sys/class/udc
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/mipad2-usb-gadget
+ExecStop=/usr/local/libexec/mipad2-usb-gadget stop
+
+[Install]
+WantedBy=multi-user.target

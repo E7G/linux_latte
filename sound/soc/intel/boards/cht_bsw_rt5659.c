@@ -314,6 +314,23 @@ static int cht_audio_init(struct snd_soc_pcm_runtime *runtime)
 		pr_debug("%s add cht_audio_ssp2_map got ret %d \n", __func__,ret);
 	}
 
+	if (ret)
+		return ret;
+
+	/* Use the RT5659's normal JD3 worker for plug/unplug and buttons. */
+	ret = snd_soc_card_jack_new_pins(runtime->card, "Headset",
+					 SND_JACK_HEADSET | SND_JACK_BTN_0 |
+					 SND_JACK_BTN_1 | SND_JACK_BTN_2,
+					 &ctx->headset,
+					 cht_bsw_headset_pins,
+					 ARRAY_SIZE(cht_bsw_headset_pins));
+	if (ret)
+		return ret;
+
+	ret = rt5659_set_jack_detect(component, &ctx->headset);
+	if (ret)
+		return ret;
+
 	int codec_gpio;
 	int pol = 0, val = 0;
 	struct gpio_desc *desc;
