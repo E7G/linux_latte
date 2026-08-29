@@ -1,0 +1,54 @@
+#!/bin/sh
+set -u
+
+BUS=/sys/bus/i2c/devices/i2c-6
+CLIENT=/sys/bus/i2c/devices/6-000c
+NEW="$BUS/new_device"
+DELETE="$BUS/delete_device"
+
+modprobe dw9719 2>/dev/null || true
+
+# The DW9761 is powered together with the T4KA3 sensor on Mi Pad 2.
+# Keep a short sensor stream alive while creating the secondary I2C client.
+if [ -L "$CLIENT/driver" ]; then
+    exit 0
+fi
+
+# Wait for AtomISP to publish the capture node during early boot.
+tries=0
+while [ ! -e /dev/video0 ] && [ "$tries" -lt 60 ]; do
+    sleep 1
+    tries=$((tries + 1))
+done
+[ -e /dev/video0 ] || exit 1
+
+mkdir -p /run/mipad2
+v4l2-ctl -d /dev/video0 \
+    --set-input=1 \
+    --set-fmt-video=width=1280,height=960,pixelformat=NV12 \
+    --stream-mmap=3 --stream-count=180 \
+    >/run/mipad2/dw9761-camera-stream.log 2>&1 &
+stream_pid=$!
+cleanup() {
+    kill "$stream_pid" 2>/dev/null || true
+    wait "$stream_pid" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+n=0
+while [ "$n" -lt 30 ]; do
+    if [ -L "$CLIENT/driver" ]; then
+        exit 0
+    fi
+    if [ -e "$CLIENT" ]; then
+        printf '0x0c\n' > "$DELETE" 2>/dev/null || true
+    fi
+    printf 'dw9761 0x0c\n' > "$NEW" 2>/dev/null || true
+    if [ -L "$CLIENT/driver" ]; then
+        exit 0
+    fi
+    n=$((n + 1))
+    sleep 0.2
+done
+printf '%s\n' 'DW9761 did not bind; leaving hardware untouched' >&2
+exit 1

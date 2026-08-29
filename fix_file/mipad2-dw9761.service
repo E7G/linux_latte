@@ -1,0 +1,12 @@
+[Unit]
+Description=Initialize Mi Pad 2 DW9761 autofocus actuator
+After=systemd-udev-settle.service mipad2-usb-gadget.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mipad2-dw9761-init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
