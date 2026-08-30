@@ -585,6 +585,9 @@ static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 	}
 
 	sensor->lanes = gmin_cfg_get_int(adev, "CsiLanes", lanes);
+	/* The Mi Pad 2 _DSM reports zero for the rear sensor. */
+	if (!strcmp(acpi_device_hid(adev), "XMCC0003"))
+		sensor->lanes = 4;
 	if (sensor->lanes > IPU_MAX_LANES) {
 		acpi_handle_err(adev->handle, "%s: Invalid lane-count: %d\n",
 				dev_name(&adev->dev), sensor->lanes);
@@ -721,6 +724,12 @@ int atomisp_csi2_bridge_parse_firmware(struct atomisp_device *isp)
 		}
 
 		mipi_port = atomisp_port_to_mipi_port(isp, vep.base.port);
+		/* Mi Pad 2 rear XMCC0003 endpoint has no lane property in ACPI. */
+		if (!vep.bus.mipi_csi2.num_data_lanes &&
+		    vep.base.port == 1 &&
+		    dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+		    dmi_match(DMI_PRODUCT_NAME, "Mipad2"))
+			vep.bus.mipi_csi2.num_data_lanes = 4;
 		isp->sensor_lanes[mipi_port] = vep.bus.mipi_csi2.num_data_lanes;
 
 		s_asd = v4l2_async_nf_add_fwnode_remote(&isp->notifier, ep,

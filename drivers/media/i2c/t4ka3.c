@@ -770,7 +770,10 @@ static int t4ka3_check_hwcfg(struct t4ka3_data *sensor)
 		sensor->link_freq_index = ffs(link_freq_bitmap) - 1;
 	}
 
-	/* 4 MIPI lanes */
+	/* 4 MIPI lanes; the Mi Pad 2 ACPI endpoint reports zero. */
+	if (!bus_cfg.bus.mipi_csi2.num_data_lanes)
+		bus_cfg.bus.mipi_csi2.num_data_lanes = 4;
+
 	if (bus_cfg.bus.mipi_csi2.num_data_lanes != 4) {
 		ret = dev_err_probe(sensor->dev, -EINVAL,
 				    "number of CSI2 data lanes %u is not supported\n",
