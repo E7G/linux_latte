@@ -347,7 +347,6 @@ static int dw9719_probe(struct i2c_client *client)
 err_pm_runtime:
 	pm_runtime_disable(&client->dev);
 	pm_runtime_put_noidle(&client->dev);
-err_powerdown:
 	dw9719_power_down(dw9719);
 err_cleanup_media:
 	media_entity_cleanup(&dw9719->sd.entity);
