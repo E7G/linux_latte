@@ -924,8 +924,10 @@ static int t4ka3_pm_suspend(struct device *dev)
 {
 	struct t4ka3_data *sensor = dev_get_drvdata(dev);
 
-	gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
-	gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+	if (sensor->powerdown_gpio)
+		gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
+	if (sensor->reset_gpio)
+		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
 
 	return 0;
 }
@@ -938,8 +940,10 @@ static int t4ka3_pm_resume(struct device *dev)
 
 	usleep_range(5000, 6000);
 
-	gpiod_set_value_cansleep(sensor->powerdown_gpio, 0);
-	gpiod_set_value_cansleep(sensor->reset_gpio, 0);
+	if (sensor->powerdown_gpio)
+		gpiod_set_value_cansleep(sensor->powerdown_gpio, 0);
+	if (sensor->reset_gpio)
+		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
 
 	/* waiting for the sensor after powering up */
 	fsleep(20000);
@@ -947,8 +951,10 @@ static int t4ka3_pm_resume(struct device *dev)
 	ret = t4ka3_detect(sensor, &sensor_id);
 	if (ret) {
 		dev_err(sensor->dev, "sensor detect failed\n");
-		gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
-		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+		if (sensor->powerdown_gpio)
+			gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
+		if (sensor->reset_gpio)
+			gpiod_set_value_cansleep(sensor->reset_gpio, 1);
 
 		return ret;
 	}
@@ -1000,8 +1006,8 @@ static int t4ka3_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(&sensor->sd, client, &t4ka3_ops);
 	sensor->sd.internal_ops = &t4ka3_internal_ops;
 
-	sensor->powerdown_gpio = devm_gpiod_get(&client->dev, "powerdown",
-						GPIOD_OUT_HIGH);
+	sensor->powerdown_gpio = devm_gpiod_get_optional(&client->dev,
+							"powerdown", GPIOD_OUT_HIGH);
 	if (IS_ERR(sensor->powerdown_gpio))
 		return dev_err_probe(&client->dev,
 				     PTR_ERR(sensor->powerdown_gpio),
