@@ -745,16 +745,30 @@ static int t4ka3_check_hwcfg(struct t4ka3_data *sensor)
 	if (ret)
 		return ret;
 
-	ret = v4l2_link_freq_to_bitmap(sensor->dev, bus_cfg.link_frequencies,
-				       bus_cfg.nr_of_link_frequencies,
-				       link_freq_menu_items,
-				       ARRAY_SIZE(link_freq_menu_items),
-				       &link_freq_bitmap);
+	/*
+	 * Mi Pad 2 firmware does not expose link-frequencies for XMCC0003.
+	 * The sensor timing is fixed, so use the driver's known value when
+	 * the IPU software-node property is absent.  Newer firmware may
+	 * provide the property, in which case validate it as usual.
+	 */
+	if (!bus_cfg.nr_of_link_frequencies) {
+		dev_warn(sensor->dev,
+			 "no link frequencies in firmware, using %llu Hz\n",
+			 T4KA3_LINK_FREQ);
+		sensor->link_freq_index = 0;
+	} else {
+		ret = v4l2_link_freq_to_bitmap(sensor->dev,
+					       bus_cfg.link_frequencies,
+					       bus_cfg.nr_of_link_frequencies,
+					       link_freq_menu_items,
+					       ARRAY_SIZE(link_freq_menu_items),
+					       &link_freq_bitmap);
 
-	if (ret < 0)
-		goto out_free_bus_cfg;
+		if (ret < 0)
+			goto out_free_bus_cfg;
 
-	sensor->link_freq_index = ffs(link_freq_bitmap) - 1;
+		sensor->link_freq_index = ffs(link_freq_bitmap) - 1;
+	}
 
 	/* 4 MIPI lanes */
 	if (bus_cfg.bus.mipi_csi2.num_data_lanes != 4) {
