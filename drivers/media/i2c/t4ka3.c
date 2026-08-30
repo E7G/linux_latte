@@ -1006,12 +1006,16 @@ static int t4ka3_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(&sensor->sd, client, &t4ka3_ops);
 	sensor->sd.internal_ops = &t4ka3_internal_ops;
 
-	sensor->powerdown_gpio = devm_gpiod_get_optional(&client->dev,
-							"powerdown", GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->powerdown_gpio))
+	sensor->powerdown_gpio = devm_gpiod_get(&client->dev, "powerdown",
+						GPIOD_OUT_HIGH);
+	if (IS_ERR(sensor->powerdown_gpio)) {
+		/* GPIO lookup tables are installed by the AtomISP bridge. */
+		if (PTR_ERR(sensor->powerdown_gpio) == -ENOENT)
+			return -EPROBE_DEFER;
 		return dev_err_probe(&client->dev,
 				     PTR_ERR(sensor->powerdown_gpio),
 				     "getting powerdown GPIO\n");
+	}
 
 	sensor->reset_gpio = devm_gpiod_get_optional(&client->dev, "reset",
 						     GPIOD_OUT_HIGH);
