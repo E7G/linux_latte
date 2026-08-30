@@ -84,6 +84,8 @@ static const struct ipu_sensor_config ipu_supported_sensors[] = {
 	IPU_SENSOR_CONFIG("OVTI2680", 1, 331200000),
 	/* Omnivision OV8856 */
 	IPU_SENSOR_CONFIG("OVTI8856", 3, 180000000, 360000000, 720000000),
+	/* Toshiba T4KA3 (Mi Pad 2 rear camera) */
+	IPU_SENSOR_CONFIG("XMCC0003", 1, 321468000),
 };
 
 static const struct ipu_property_names prop_names = {
@@ -101,6 +103,7 @@ static const char * const ipu_vcm_types[] = {
 	"dw9714",
 	"ad5816",
 	"dw9719",
+	"dw9761",
 	"dw9718",
 	"dw9806b",
 	"wv517s",

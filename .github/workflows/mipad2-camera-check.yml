@@ -28,9 +28,19 @@ jobs:
           grep -E 'CONFIG_VIDEO_(OV5693|T4KA3|DW9719)=' .config
           grep -E 'CONFIG_VIDEO_ATOMISP=' .config
           test -s drivers/media/i2c/t4ka3.c
+          test -s drivers/media/pci/intel/ipu-bridge.c
+          test -s drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
           grep -q 'config VIDEO_T4KA3' drivers/media/i2c/Kconfig
           grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Makefile
+          grep -q 'IPU_SENSOR_CONFIG("XMCC0003"' drivers/media/pci/intel/ipu-bridge.c
+          grep -q '321468000' drivers/media/pci/intel/ipu-bridge.c
+          grep -q 'ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true)' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
 
       - name: Compile camera sensor and VCM drivers
         run: |
-          make -j"$(nproc)" W=1 drivers/media/i2c/t4ka3.o drivers/media/i2c/dw9719.o
+          make -j"$(nproc)" W=1 \
+            drivers/media/pci/intel/ipu-bridge.o \
+            drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
+            drivers/media/i2c/t4ka3.o \
+            drivers/media/i2c/dw9719.o

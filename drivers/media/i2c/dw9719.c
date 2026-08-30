@@ -102,16 +102,21 @@ static int dw9719_detect(struct dw9719_device *dw9719)
 static int dw9719_power_down(struct dw9719_device *dw9719)
 {
 	cci_write(dw9719->regmap, DW9719_CONTROL, DW9719_SHUTDOWN, NULL);
-	return regulator_disable(dw9719->regulator);
+	if (dw9719->regulator)
+		return regulator_disable(dw9719->regulator);
+
+	return 0;
 }
 
 static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 {
 	int ret;
 
-	ret = regulator_enable(dw9719->regulator);
-	if (ret)
-		return ret;
+	if (dw9719->regulator) {
+		ret = regulator_enable(dw9719->regulator);
+		if (ret)
+			return ret;
+	}
 
 	/*
 	 * Wake the VCM and move it into standby before reading INFO.
@@ -288,10 +293,17 @@ static int dw9719_probe(struct i2c_client *client)
 
 	dw9719->dev = &client->dev;
 
-	dw9719->regulator = devm_regulator_get(&client->dev, "vdd");
-	if (IS_ERR(dw9719->regulator))
-		return dev_err_probe(&client->dev, PTR_ERR(dw9719->regulator),
-				     "getting regulator\n");
+	dw9719->regulator = devm_regulator_get_optional(&client->dev, "vdd");
+	if (IS_ERR(dw9719->regulator)) {
+		ret = PTR_ERR(dw9719->regulator);
+		if (ret == -ENODEV || ret == -ENOSYS) {
+			/* ACPI firmware for Mi Pad 2 powers the VCM with the sensor. */
+			dw9719->regulator = NULL;
+			dev_dbg(&client->dev, "no vdd regulator; using sensor power domain\n");
+		} else {
+			return dev_err_probe(&client->dev, ret, "getting regulator\n");
+		}
+	}
 
 	v4l2_i2c_subdev_init(&dw9719->sd, client, &dw9719_ops);
 	dw9719->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;

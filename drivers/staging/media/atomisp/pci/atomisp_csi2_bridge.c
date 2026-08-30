@@ -537,6 +537,8 @@ static char *atomisp_csi2_get_vcm_type(struct acpi_device *adev)
 }
 
 static const struct acpi_device_id atomisp_sensor_configs[] = {
+	/* Mi Pad 2 rear T4KA3: four CSI-2 lanes and an on-module DW9761 VCM. */
+	ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true),
 	/*
 	 * FIXME ov5693 modules have a VCM, but for unknown reasons
 	 * the sensor fails to start streaming when instantiating
@@ -598,8 +600,13 @@ static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 	sensor->orientation = (sensor->link == 1) ?
 		V4L2_FWNODE_ORIENTATION_BACK : V4L2_FWNODE_ORIENTATION_FRONT;
 
-	if (vcm)
-		sensor->vcm_type = atomisp_csi2_get_vcm_type(adev);
+	if (vcm) {
+		/* Mi Pad 2 firmware has no usable VCM DSM; use the known part. */
+		if (!strcmp(acpi_device_hid(adev), "XMCC0003"))
+			sensor->vcm_type = "dw9761";
+		else
+			sensor->vcm_type = atomisp_csi2_get_vcm_type(adev);
+	}
 
 	return 0;
 }
