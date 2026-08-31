@@ -33,6 +33,7 @@
 
 #include <linux/bits.h>
 #include <linux/device.h>
+#include <linux/dmi.h>
 #include <linux/hid.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -1352,6 +1353,49 @@ static int mt_touch_input_configured(struct hid_device *hdev,
 
 #define mt_map_key_clear(c)	hid_map_usage_clear(hi, usage, bit, \
 						    max, EV_KEY, (c))
+
+/* Mi Pad 2 FTSC1000 capacitive navigation-button keyboard chords. */
+static bool mt_is_mipad2_button_keyboard(struct hid_device *hdev,
+					 struct hid_field *field)
+{
+	return hdev->vendor == 0x2808 && hdev->product == 0x509c &&
+		field->application == HID_GD_KEYBOARD &&
+		dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+		dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+}
+
+static int mt_mipad2_button_mapping(struct hid_device *hdev,
+				    struct hid_input *hi,
+				    struct hid_field *field,
+				    struct hid_usage *usage,
+				    unsigned long **bit, int *max)
+{
+	if (!mt_is_mipad2_button_keyboard(hdev, field))
+		return 0;
+
+	set_bit(EV_REP, hi->input->evbit);
+
+	switch (usage->hid & HID_USAGE) {
+	case 0xe0: /* LeftCtrl: modifier used by Home */
+		mt_map_key_clear(KEY_RESERVED);
+		return 1;
+	case 0xe3: /* LeftMeta: modifier used by Menu */
+		mt_map_key_clear(KEY_RESERVED);
+		return 1;
+	case 0x16: /* S: Menu */
+		mt_map_key_clear(KEY_MENU);
+		return 1;
+	case 0x29: /* Escape: Home */
+		mt_map_key_clear(KEY_LEFTMETA);
+		return 1;
+	case 0x2a: /* Backspace/Delete: Back */
+		mt_map_key_clear(KEY_BACK);
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 		struct hid_field *field, struct hid_usage *usage,
 		unsigned long **bit, int *max)
@@ -1359,6 +1403,9 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 	struct mt_device *td = hid_get_drvdata(hdev);
 	struct mt_application *application;
 	struct mt_report_data *rdata;
+
+	if (mt_mipad2_button_mapping(hdev, hi, field, usage, bit, max) > 0)
+		return 1;
 
 	rdata = mt_find_report_data(td, field->report);
 	if (!rdata) {
