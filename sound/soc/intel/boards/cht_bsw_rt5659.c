@@ -477,13 +477,14 @@ static int cht_aif1_startup(struct snd_pcm_substream *substream)
 	int stream = 0;
 	int paths, i;
 
-	pr_info("%s runtime=%p\n", __func__, substream->runtime);
+	dev_dbg(rtd->dev, "%s runtime=%p\n", __func__, substream->runtime);
 
 	paths = snd_soc_dapm_dai_get_connected_widgets(cpu_dai, stream, &list_1, NULL);
-	pr_info("%d paths got\n", paths);
+	dev_dbg(rtd->dev, "%d paths got\n", paths);
 
 	for_each_dapm_widgets(list_1, i, widget) {
-		pr_info("rt5659 path widget: name=%s, sname=%s\n", widget->name,widget->sname);
+		dev_dbg(rtd->dev, "rt5659 path widget: name=%s, sname=%s\n",
+			widget->name, widget->sname);
 	}
 
 	return snd_pcm_hw_constraint_single(substream->runtime,
