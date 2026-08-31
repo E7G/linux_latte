@@ -599,7 +599,9 @@ static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 		return ret;
 
 	sensor->mclkspeed = PMC_CLK_RATE_19_2MHZ;
-	sensor->rotation = 0;
+	/* The rear module is mounted clockwise relative to the display. */
+	sensor->rotation = !strcmp(acpi_device_hid(adev), "XMCC0003") ?
+		270 : 0;
 	sensor->orientation = (sensor->link == 1) ?
 		V4L2_FWNODE_ORIENTATION_BACK : V4L2_FWNODE_ORIENTATION_FRONT;
 
