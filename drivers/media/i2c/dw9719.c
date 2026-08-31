@@ -122,6 +122,8 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 	 * Wake the VCM and move it into standby before reading INFO.
 	 * The DW9761 used by the Mi Pad 2 identifies as 0xF4.
 	 */
+	/* The second write reports errors through @ret; initialize it first. */
+	ret = 0;
 	cci_write(dw9719->regmap, DW9719_CONTROL, DW9719_STANDBY, NULL);
 	fsleep(200);
 	cci_write(dw9719->regmap, DW9719_CONTROL, DW9719_STANDBY, &ret);

@@ -1,0 +1,12 @@
+pkgname=mipad2-camera-support
+pkgver=20260901
+pkgrel=1
+pkgdesc="Mi Pad 2 AtomISP camera module autoload configuration"
+arch=(x86_64)
+license=(GPL2)
+package() {
+  install -Dm644 "$srcdir/mipad2-camera.conf" \
+    "$pkgdir/etc/modules-load.d/mipad2-camera.conf"
+  install -Dm644 "$srcdir/README" \
+    "$pkgdir/usr/share/doc/mipad2-camera-support/README"
+}

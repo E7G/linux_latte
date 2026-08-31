@@ -1,0 +1,7 @@
+Mi Pad 2 camera support
+
+This package only installs the module-load list. It expects the custom
+mipad2 kernel modules to be installed under /usr/lib/modules.
+
+The AtomISP graph exposes both OV5693 (front) and T4KA3 (rear). The rear
+T4KA3 automatically instantiates its DW9761 VCM at address 0x0c.

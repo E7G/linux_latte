@@ -756,6 +756,7 @@ static int t4ka3_check_hwcfg(struct t4ka3_data *sensor)
 			 "no link frequencies in firmware, using %llu Hz\n",
 			 T4KA3_LINK_FREQ);
 		sensor->link_freq_index = 0;
+		ret = 0;
 	} else {
 		ret = v4l2_link_freq_to_bitmap(sensor->dev,
 					       bus_cfg.link_frequencies,
