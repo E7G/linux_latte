@@ -28,8 +28,8 @@ done
 if [ -n "$video_node" ]; then printf 'OK   %s\n' "$video_node"; else miss '/dev/video*'; fi
 
 battery_path=
-for path in /sys/class/power_supply/BAT*; do
-    if [ -d "$path" ]; then
+for path in /sys/class/power_supply/*; do
+    if [ -f "$path/type" ] && [ "$(cat "$path/type" 2>/dev/null)" = Battery ]; then
         battery_path=$path
         break
     fi
@@ -57,7 +57,7 @@ else
 fi
 
 vcm_path=
-for path in /sys/bus/i2c/devices/*-000c; do
+for path in /sys/bus/i2c/devices/*; do
     [ -e "$path" ] || continue
     name=$(cat "$path/name" 2>/dev/null || true)
     modalias=$(cat "$path/modalias" 2>/dev/null || true)
