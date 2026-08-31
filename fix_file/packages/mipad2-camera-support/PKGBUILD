@@ -1,6 +1,6 @@
 pkgname=mipad2-camera-support
 pkgver=20260901
-pkgrel=1
+pkgrel=2
 pkgdesc="Mi Pad 2 AtomISP camera module autoload configuration"
 arch=(x86_64)
 license=(GPL2)
