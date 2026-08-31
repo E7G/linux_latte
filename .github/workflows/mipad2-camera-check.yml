@@ -36,6 +36,8 @@ jobs:
           grep -q '321468000' drivers/media/pci/intel/ipu-bridge.c
           grep -q 'ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true)' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
+          grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
+          grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
 
       - name: Compile camera sensor and VCM drivers
         run: |
@@ -43,4 +45,5 @@ jobs:
             drivers/media/pci/intel/ipu-bridge.o \
             drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
             drivers/media/i2c/t4ka3.o \
-            drivers/media/i2c/dw9719.o
+            drivers/media/i2c/dw9719.o \
+            drivers/hid/hid-multitouch.o
