@@ -567,6 +567,8 @@ static int t4ka3_enable_stream(struct v4l2_subdev *sd,
 		dev_err(sensor->dev, "power-up err.\n");
 		goto error_powerdown;
 	}
+	/* pm_runtime_get_sync() may return a positive usage count. */
+	ret = 0;
 
 	cci_multi_reg_write(sensor->regmap, t4ka3_init_config,
 			    ARRAY_SIZE(t4ka3_init_config), &ret);
