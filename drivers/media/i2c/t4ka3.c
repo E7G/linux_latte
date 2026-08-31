@@ -896,12 +896,12 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 	if (ret)
 		return ret;
 
-	/* Mi Pad 2 mounts the rear T4KA3 in portrait-relative landscape. */
+	/* The sensor is physically clockwise from the Linux display orientation. */
 	if (props.orientation == V4L2_FWNODE_PROPERTY_UNSET)
 		props.orientation = V4L2_FWNODE_ORIENTATION_BACK;
 	if (props.rotation == V4L2_FWNODE_PROPERTY_UNSET &&
 	    ACPI_COMPANION(sensor->dev))
-		props.rotation = 90;
+		props.rotation = 270;
 
 	ret = v4l2_ctrl_new_fwnode_properties(hdl, ops, &props);
 	if (ret)

@@ -1357,9 +1357,8 @@ static int mt_touch_input_configured(struct hid_device *hdev,
 /* Mi Pad 2 FTSC1000 capacitive navigation-button keyboard chords. */
 static bool mt_is_mipad2_button_keyboard(struct hid_device *hdev)
 {
-	return hdev->vendor == 0x2808 && hdev->product == 0x509c &&
-		dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
-		dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+	/* This VID:PID is specific to the Mi Pad 2 FTSC1000 controller. */
+	return hdev->vendor == 0x2808 && hdev->product == 0x509c;
 }
 
 static int mt_mipad2_button_mapping(struct hid_device *hdev,
