@@ -1,7 +1,20 @@
 #!/bin/sh
-# Capture one frame from both Mi Pad 2 cameras through the legacy AtomISP node.
+# Capture one frame from a Mi Pad 2 camera through the legacy AtomISP node.
 # Keep format setup and streaming in the same v4l2-ctl invocation.
 set -u
+
+target=${1:-both}
+case "$target" in
+	front|rear|both) ;;
+	-h|--help)
+		printf 'Usage: %s [front|rear|both]\n' "$0"
+		exit 0
+		;;
+	*)
+		printf 'Usage: %s [front|rear|both]\n' "$0" >&2
+		exit 2
+		;;
+esac
 
 fail=0
 video_node=
@@ -29,7 +42,11 @@ capture_one()
 	input=$2
 	out=$(mktemp)
 	log=$(mktemp)
-	if v4l2-ctl -d "$video_node" --set-input="$input" --set-fmt-video=width=1280,height=720,pixelformat=YU12 --stream-mmap --stream-count=1 --stream-to="$out" >"$log" 2>&1 && size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
+	if timeout --signal=TERM --kill-after=2s 15s \
+		v4l2-ctl -d "$video_node" --set-input="$input" \
+		--set-fmt-video=width=1280,height=720,pixelformat=YU12 \
+		--stream-mmap --stream-count=1 --stream-to="$out" >"$log" 2>&1 \
+		&& size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
 		printf 'OK   %s capture (%s bytes)\n' "$label" "$size"
 	else
 		printf 'MISS %s capture\n' "$label"
@@ -39,8 +56,27 @@ capture_one()
 	rm -f "$out" "$log"
 }
 
-# Exercise the rear sensor first; on this platform the AtomISP power/CSI
-# transition is reliable in this order after a cold boot.
-if [ -n "$rear_input" ]; then capture_one rear "$rear_input"; else printf 'MISS T4KA3 input\n'; fail=1; fi
-if [ -n "$front_input" ]; then capture_one front "$front_input"; else printf 'MISS OV5693 input\n'; fail=1; fi
+capture_target()
+{
+	label=$1
+	input=$2
+	if [ -n "$input" ]; then
+		capture_one "$label" "$input"
+	else
+		printf 'MISS %s input\n' "$label"
+		fail=1
+	fi
+}
+
+# The AtomISP transition can wedge on some firmware revisions.  Allow a
+# single-camera run for recovery/debugging, and do not switch to the second
+# sensor after a failed capture.
+case "$target" in
+	rear) capture_target rear "$rear_input" ;;
+	front) capture_target front "$front_input" ;;
+	both)
+		capture_target rear "$rear_input"
+	[ "$fail" -eq 0 ] && capture_target front "$front_input"
+		;;
+esac
 exit "$fail"
