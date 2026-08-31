@@ -1355,11 +1355,9 @@ static int mt_touch_input_configured(struct hid_device *hdev,
 						    max, EV_KEY, (c))
 
 /* Mi Pad 2 FTSC1000 capacitive navigation-button keyboard chords. */
-static bool mt_is_mipad2_button_keyboard(struct hid_device *hdev,
-					 struct hid_field *field)
+static bool mt_is_mipad2_button_keyboard(struct hid_device *hdev)
 {
 	return hdev->vendor == 0x2808 && hdev->product == 0x509c &&
-		field->application == HID_GD_KEYBOARD &&
 		dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
 		dmi_match(DMI_PRODUCT_NAME, "Mipad2");
 }
@@ -1370,7 +1368,7 @@ static int mt_mipad2_button_mapping(struct hid_device *hdev,
 				    struct hid_usage *usage,
 				    unsigned long **bit, int *max)
 {
-	if (!mt_is_mipad2_button_keyboard(hdev, field))
+	if (!mt_is_mipad2_button_keyboard(hdev))
 		return 0;
 
 	set_bit(EV_REP, hi->input->evbit);
@@ -1494,6 +1492,12 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
 {
 	struct mt_device *td = hid_get_drvdata(hid);
 	struct mt_report_data *rdata;
+
+	if (mt_is_mipad2_button_keyboard(hid) && field->hidinput &&
+	    usage->hid == 0x70029) {
+		input_event(field->hidinput->input, EV_KEY, KEY_HOME, value);
+		return 1;
+	}
 
 	rdata = mt_find_report_data(td, field->report);
 	if (rdata && rdata->is_mt_collection)
@@ -1681,6 +1685,13 @@ static int mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
 	struct mt_application *mt_application = NULL;
 	struct hid_report *report;
 	int ret;
+
+	/* The firmware exposes Escape (0x29) as the center Home button. */
+	if (mt_is_mipad2_button_keyboard(hdev) &&
+	    hi->application == HID_GD_KEYBOARD) {
+		set_bit(KEY_HOME, hi->input->keybit);
+		clear_bit(KEY_LEFTMETA, hi->input->keybit);
+	}
 
 	list_for_each_entry(report, &hi->reports, hidinput_list) {
 		rdata = mt_find_report_data(td, report);
