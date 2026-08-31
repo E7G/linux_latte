@@ -1386,7 +1386,7 @@ static int mt_mipad2_button_mapping(struct hid_device *hdev,
 		mt_map_key_clear(KEY_MENU);
 		return 1;
 	case 0x29: /* Escape: Home */
-		mt_map_key_clear(KEY_LEFTMETA);
+		mt_map_key_clear(KEY_HOME);
 		return 1;
 	case 0x2a: /* Backspace/Delete: Back */
 		mt_map_key_clear(KEY_BACK);
