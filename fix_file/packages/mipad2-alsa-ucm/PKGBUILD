@@ -1,6 +1,6 @@
 pkgname=mipad2-alsa-ucm
 pkgver=20260830
-pkgrel=3
+pkgrel=4
 pkgdesc="ALSA UCM profile for Xiaomi Mi Pad 2 RT5659 and dual TFA9890"
 arch=(x86_64)
 license=(GPL2)
