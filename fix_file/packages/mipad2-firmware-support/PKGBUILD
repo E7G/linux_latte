@@ -1,6 +1,6 @@
 pkgname=mipad2-firmware-support
 pkgver=20260830
-pkgrel=4
+pkgrel=5
 pkgdesc="Mi Pad 2 BCM4356 Wi-Fi/BT firmware support"
 arch=(x86_64)
 license=(custom)
@@ -8,6 +8,9 @@ package() {
   install -Dm644 "$srcdir/mipad2-wireless.conf" "$pkgdir/etc/modules-load.d/mipad2-wireless.conf"
   install -Dm644 "$srcdir/brcm/brcmfmac4356-pcie.bin" "$pkgdir/usr/lib/firmware/brcm/brcmfmac4356-pcie.bin"
   install -Dm644 "$srcdir/brcm/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.bin" "$pkgdir/usr/lib/firmware/brcm/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.bin"
+  # Some brcmfmac versions fall back to the generic NVRAM name on Cherryview.
+  # Keep the Mi Pad 2 board data available under both names.
+  install -Dm644 "$srcdir/brcm/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt" "$pkgdir/usr/lib/firmware/brcm/brcmfmac4356-pcie.txt"
   install -Dm644 "$srcdir/brcm/brcmfmac4356-pcie.clm_blob" "$pkgdir/usr/lib/firmware/brcm/brcmfmac4356-pcie.clm_blob"
   install -Dm644 "$srcdir/brcm/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt" "$pkgdir/usr/lib/firmware/brcm/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt"
   install -Dm644 "$srcdir/brcm/BCM4356A2.hcd" "$pkgdir/usr/lib/firmware/brcm/BCM4356A2.hcd"
