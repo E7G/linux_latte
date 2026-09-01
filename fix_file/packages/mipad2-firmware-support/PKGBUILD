@@ -1,6 +1,6 @@
 pkgname=mipad2-firmware-support
 pkgver=20260830
-pkgrel=3
+pkgrel=4
 pkgdesc="Mi Pad 2 BCM4356 Wi-Fi/BT firmware support"
 arch=(x86_64)
 license=(custom)
