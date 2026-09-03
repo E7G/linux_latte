@@ -1,0 +1,53 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || {
+    echo "must run as root" >&2
+    exit 1
+}
+
+G=/sys/kernel/config/usb_gadget/mipad2
+
+if [ "${1:-}" = stop ]; then
+    if [ -f "$G/UDC" ]; then
+        printf '' > "$G/UDC" 2>/dev/null || true
+    fi
+    exit 0
+fi
+
+if [ -f "$G/UDC" ] && [ -n "$(cat "$G/UDC" 2>/dev/null || true)" ]; then
+    exit 0
+fi
+
+# The old kernel may autostart the built-in legacy g_ether gadget. It must be
+# detached before the configfs ACM function can claim the single UDC.
+if [ -e /sys/bus/gadget/drivers/g_ether/gadget.0 ]; then
+    echo gadget.0 > /sys/bus/gadget/drivers/g_ether/unbind
+fi
+
+UDC=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n1)
+[ -n "$UDC" ] || {
+    echo "no USB device controller found" >&2
+    exit 1
+}
+
+mkdir -p /sys/kernel/config/usb_gadget
+if [ -d "$G" ]; then
+    [ -f "$G/UDC" ] && printf '' > "$G/UDC" 2>/dev/null || true
+    rm -rf "$G"
+fi
+
+mkdir -p "$G/strings/0x409" \
+    "$G/configs/c.1/strings/0x409" \
+    "$G/functions/acm.usb0"
+printf '0x1d6b' > "$G/idVendor"
+printf '0x0104' > "$G/idProduct"
+printf '0x0100' > "$G/bcdDevice"
+printf '0x0200' > "$G/bcdUSB"
+printf 'Linux' > "$G/strings/0x409/manufacturer"
+printf 'Mi Pad 2 USB Serial' > "$G/strings/0x409/product"
+printf 'mipad2' > "$G/strings/0x409/serialnumber"
+printf 'Serial console' > "$G/configs/c.1/strings/0x409/configuration"
+printf '250' > "$G/configs/c.1/MaxPower"
+ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
+printf '%s' "$UDC" > "$G/UDC"

@@ -49,3 +49,14 @@ jobs:
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
+
+      - name: Validate local recovery and USB debug packages
+        run: |
+          sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
+          sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
+          sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
+          grep -q 'serial-getty@ttyGS0.service' \
+            fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial.service
+          ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \
+            fix_file/packages/mipad2-usb-serial \
+            fix_file/packages/mipad2-recovery

@@ -1,0 +1,16 @@
+[Unit]
+Description=Mi Pad 2 USB ACM serial console
+Documentation=https://docs.kernel.org/usb/gadget_configfs.html
+After=systemd-modules-load.service sys-kernel-config.mount
+Before=serial-getty@ttyGS0.service
+Wants=sys-kernel-config.mount serial-getty@ttyGS0.service
+ConditionPathExists=/sys/class/udc
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/mipad2-usb-serial
+ExecStop=/usr/local/libexec/mipad2-usb-serial stop
+
+[Install]
+WantedBy=multi-user.target

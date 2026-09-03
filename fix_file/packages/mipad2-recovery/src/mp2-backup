@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
+
+dir=/var/lib/mipad2-recovery
+mkdir -p "$dir"
+tar --zstd -cpf "$dir/boot-known-good.tar.zst" -C /boot .
+sha256sum "$dir/boot-known-good.tar.zst" > \
+    "$dir/boot-known-good.tar.zst.sha256"
+timeshift --create --comments "mipad2-manual-backup" --tags D --scripted
+echo "Backup complete. Restore with: sudo mp2-recover"

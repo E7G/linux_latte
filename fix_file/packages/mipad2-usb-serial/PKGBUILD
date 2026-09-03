@@ -1,0 +1,18 @@
+pkgname=mipad2-usb-serial
+pkgver=20260904
+pkgrel=1
+pkgdesc="Persistent Mi Pad 2 USB ACM serial console"
+arch=(x86_64)
+license=(GPL2)
+depends=(systemd util-linux)
+conflicts=(mipad2-usb-gadget)
+replaces=(mipad2-usb-gadget)
+
+package() {
+  install -Dm755 "$srcdir/mipad2-usb-serial" \
+    "$pkgdir/usr/local/libexec/mipad2-usb-serial"
+  install -Dm644 "$srcdir/mipad2-usb-serial.service" \
+    "$pkgdir/etc/systemd/system/mipad2-usb-serial.service"
+  install -Dm644 "$srcdir/README" \
+    "$pkgdir/usr/share/doc/mipad2-usb-serial/README"
+}

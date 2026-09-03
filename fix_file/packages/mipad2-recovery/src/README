@@ -1,0 +1,11 @@
+# Mi Pad 2 recovery tools
+
+`sudo mp2-backup` saves the separate `/boot` FAT filesystem and creates a
+BTRFS Timeshift snapshot of the root filesystem.
+
+`sudo mp2-recover --status` lists snapshots. `sudo mp2-recover` selects the
+newest snapshot and requires typing `RECOVER` before restoring it. The
+non-interactive form is `sudo mp2-recover --yes`.
+
+The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or
+SSH. They are suitable for use from the USB ACM serial console.
