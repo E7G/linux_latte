@@ -3,6 +3,15 @@ set -eu
 
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 
+mountpoint -q /boot || {
+  echo "/boot is not mounted; refusing an incomplete backup" >&2
+  exit 1
+}
+findmnt -n -o FSTYPE /boot | grep -qx vfat || {
+  echo "/boot is not a vfat filesystem; refusing an incomplete backup" >&2
+  exit 1
+}
+
 dir=/var/lib/mipad2-recovery
 mkdir -p "$dir"
 tar --zstd -cpf "$dir/boot-known-good.tar.zst" -C /boot .
