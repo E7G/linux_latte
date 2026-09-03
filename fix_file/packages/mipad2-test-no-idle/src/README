@@ -1,0 +1,18 @@
+# Mi Pad 2 test no-idle mode
+
+This is deliberately opt-in. Enable it for kernel/camera/suspend testing:
+
+```sh
+sudo mp2-test-no-idle enable
+```
+
+It inhibits idle blanking, suspend, and lid-triggered sleep, and changes only
+the GNOME power settings needed for the test. Previous GNOME values are saved
+and restored by:
+
+```sh
+sudo mp2-test-no-idle disable
+```
+
+It does not modify Wi-Fi, Bluetooth, display scaling, kernel selection, or
+Secure Boot settings.

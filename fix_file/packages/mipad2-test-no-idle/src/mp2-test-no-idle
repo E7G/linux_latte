@@ -1,0 +1,60 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
+state=/var/lib/mipad2-test-no-idle
+mkdir -p "$state"
+user_name=user
+uid=$(id -u "$user_name")
+runtime=/run/user/$uid
+bus=unix:path=$runtime/bus
+
+gset() {
+  runuser -u "$user_name" -- env XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="$bus" gsettings "$@"
+}
+
+save_once() {
+  [ -f "$state/settings.saved" ] && return
+  {
+    printf 'org.gnome.desktop.session|idle-delay|%s\n' \
+      "$(gset get org.gnome.desktop.session idle-delay)"
+    printf 'org.gnome.settings-daemon.plugins.power|idle-dim|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power idle-dim)"
+    printf 'org.gnome.settings-daemon.plugins.power|sleep-inactive-ac-type|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type)"
+    printf 'org.gnome.settings-daemon.plugins.power|sleep-inactive-battery-type|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type)"
+  } > "$state/settings.saved"
+}
+
+case "${1:-status}" in
+  enable)
+    save_once
+    gset set org.gnome.desktop.session idle-delay "uint32 0"
+    gset set org.gnome.settings-daemon.plugins.power idle-dim false
+    gset set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type "'nothing'"
+    gset set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type "'nothing'"
+    systemctl enable --now mipad2-test-no-idle.service
+    echo "test no-idle enabled"
+    ;;
+  disable)
+    systemctl disable --now mipad2-test-no-idle.service || true
+    if [ -f "$state/settings.saved" ]; then
+      while IFS='|' read -r schema key value; do
+        [ -n "$schema" ] || continue
+        gset set "$schema" "$key" "$value"
+      done < "$state/settings.saved"
+      rm -f "$state/settings.saved"
+    fi
+    echo "test no-idle disabled and previous GNOME power settings restored"
+    ;;
+  status)
+    systemctl is-active mipad2-test-no-idle.service 2>/dev/null || true
+    gset get org.gnome.desktop.session idle-delay 2>/dev/null || true
+    gset get org.gnome.settings-daemon.plugins.power idle-dim 2>/dev/null || true
+    gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 2>/dev/null || true
+    gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 2>/dev/null || true
+    ;;
+  *) echo "Usage: sudo mp2-test-no-idle {enable|disable|status}" >&2; exit 2 ;;
+esac

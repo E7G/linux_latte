@@ -1,0 +1,16 @@
+pkgname=mipad2-test-no-idle
+pkgver=20260904
+pkgrel=1
+pkgdesc="Opt-in Mi Pad 2 test mode to inhibit GNOME idle blanking and suspend"
+arch=(x86_64)
+license=(GPL2)
+depends=(glib2 systemd)
+
+package() {
+  install -Dm755 "$srcdir/mp2-test-no-idle" \
+    "$pkgdir/usr/local/sbin/mp2-test-no-idle"
+  install -Dm644 "$srcdir/mipad2-test-no-idle.service" \
+    "$pkgdir/etc/systemd/system/mipad2-test-no-idle.service"
+  install -Dm644 "$srcdir/README" \
+    "$pkgdir/usr/share/doc/mipad2-test-no-idle/README"
+}

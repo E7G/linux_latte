@@ -1,0 +1,13 @@
+[Unit]
+Description=Mi Pad 2 test mode: inhibit idle blanking and suspend
+After=graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/systemd-inhibit --what=idle:sleep:handle-lid-switch --mode=block --why=MiPad2-test-no-idle /usr/bin/sleep infinity
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
