@@ -1,7 +1,11 @@
 Mi Pad 2 camera support
 
-This package only installs the module-load list. It expects the custom
+This package installs the module-load list and the Intel IPU/AtomISP 2401
+firmware required by the Mi Pad 2 camera controller. It expects the custom
 mipad2 kernel modules to be installed under /usr/lib/modules.
 
 The AtomISP graph exposes both OV5693 (front) and T4KA3 (rear). The rear
 T4KA3 automatically instantiates its DW9761 VCM at address 0x0c.
+
+The firmware is installed at /usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin.
+No Wi-Fi or Bluetooth firmware is included or changed by this package.

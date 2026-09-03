@@ -30,6 +30,8 @@ jobs:
           test -s drivers/media/i2c/t4ka3.c
           test -s drivers/media/pci/intel/ipu-bridge.c
           test -s drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          test -s fix_file/packages/mipad2-camera-support/src/intel/ipu/shisp_2401a0_v21.bin
+          grep -q 'shisp_2401a0_v21.bin' fix_file/packages/mipad2-camera-support/PKGBUILD
           grep -q 'config VIDEO_T4KA3' drivers/media/i2c/Kconfig
           grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Makefile
           grep -q 'IPU_SENSOR_CONFIG("XMCC0003"' drivers/media/pci/intel/ipu-bridge.c
