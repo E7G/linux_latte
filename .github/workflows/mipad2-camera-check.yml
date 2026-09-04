@@ -45,6 +45,8 @@ jobs:
           grep -q '^CONFIG_BT_HCIUART=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_BT_BCM=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_BRCMFMAC=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_SERIAL_CONSOLE=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_CONFIGFS_SERIAL=y' arch/x86/configs/xiaomipad2_defconfig
           ! grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
           ! grep -q '^CONFIG_BRCMFMAC=m' arch/x86/configs/xiaomipad2_defconfig
 
