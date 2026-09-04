@@ -9,6 +9,84 @@ miss() {
     fail=1
 }
 
+optional() {
+    printf 'INFO %s\n' "$1"
+}
+
+printf 'Mi Pad 2 kernel health (%s)\n' "$(uname -r 2>/dev/null || echo unknown)"
+
+if mountpoint -q /boot 2>/dev/null; then
+    printf 'OK   /boot mounted\n'
+else
+    miss '/boot mounted'
+fi
+
+wifi_node=
+for path in /sys/class/net/*/wireless; do
+    [ -d "$path" ] || continue
+    wifi_node=${path%/wireless}
+    break
+done
+if [ -n "$wifi_node" ]; then
+    printf 'OK   Wi-Fi %s (%s)\n' "${wifi_node##*/}" \
+        "$(cat "$wifi_node/operstate" 2>/dev/null || echo unknown)"
+else
+    miss 'Wi-Fi interface'
+fi
+
+bt_node=
+for path in /sys/class/bluetooth/hci*; do
+    [ -d "$path" ] || continue
+    bt_node=$path
+    break
+done
+if [ -n "$bt_node" ]; then
+    printf 'OK   Bluetooth %s\n' "${bt_node##*/}"
+else
+    miss 'Bluetooth HCI device'
+fi
+
+if [ -r /proc/asound/cards ] && grep -q '^[[:space:]]*[0-9]' /proc/asound/cards; then
+    printf 'OK   ALSA sound card\n'
+else
+    miss 'ALSA sound card'
+fi
+
+backlight_path=
+for path in /sys/class/backlight/*; do
+    [ -f "$path/max_brightness" ] || continue
+    backlight_path=$path
+    break
+done
+if [ -n "$backlight_path" ]; then
+    printf 'OK   backlight %s\n' "${backlight_path##*/}"
+else
+    miss 'LCD backlight'
+fi
+
+touch_name=
+for path in /sys/class/input/event*/device/name; do
+    [ -r "$path" ] || continue
+    name=$(cat "$path" 2>/dev/null || true)
+    case "$name" in
+        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*)
+            touch_name=$name
+            break
+            ;;
+    esac
+done
+if [ -n "$touch_name" ]; then
+    printf 'OK   touchscreen %s\n' "$touch_name"
+else
+    optional 'touchscreen name not recognized (check manually)'
+fi
+
+if [ -e /dev/ttyGS0 ]; then
+    printf 'OK   USB serial /dev/ttyGS0\n'
+else
+    optional 'USB serial gadget is not currently attached'
+fi
+
 media_node=
 for node in /dev/media*; do
     if [ -c "$node" ]; then
