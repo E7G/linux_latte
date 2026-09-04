@@ -42,6 +42,11 @@ jobs:
           grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
           grep -q '^CONFIG_USB_DWC3_DUAL_ROLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_DWC3_PCI=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_HCIUART=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_BCM=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BRCMFMAC=y' arch/x86/configs/xiaomipad2_defconfig
+          ! grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
+          ! grep -q '^CONFIG_BRCMFMAC=m' arch/x86/configs/xiaomipad2_defconfig
 
       - name: Compile camera sensor and VCM drivers
         run: |
