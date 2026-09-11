@@ -10,12 +10,11 @@ G=/sys/kernel/config/usb_gadget/mipad2
 
 if [ "${1:-}" = stop ]; then
     if [ -f "$G/UDC" ]; then
-        printf '' > "$G/UDC" 2>/dev/null || true
+        printf '\n' > "$G/UDC" 2>/dev/null || true
     fi
-    exit 0
-fi
-
-if [ -f "$G/UDC" ] && [ -n "$(cat "$G/UDC" 2>/dev/null || true)" ]; then
+    if [ -f "$G/functions/acm.usb0/console" ]; then
+        printf '0' > "$G/functions/acm.usb0/console" 2>/dev/null || true
+    fi
     exit 0
 fi
 
@@ -31,11 +30,8 @@ UDC=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n1)
     exit 1
 }
 
-mkdir -p /sys/kernel/config/usb_gadget
-if [ -d "$G" ]; then
-    [ -f "$G/UDC" ] && printf '' > "$G/UDC" 2>/dev/null || true
-    rm -rf "$G"
-fi
+mkdir -p /sys/kernel/config/usb_gadget "$G"
+[ -f "$G/UDC" ] && printf '\n' > "$G/UDC" 2>/dev/null || true
 
 mkdir -p "$G/strings/0x409" \
     "$G/configs/c.1/strings/0x409" \
@@ -49,5 +45,13 @@ printf 'Mi Pad 2 USB Serial' > "$G/strings/0x409/product"
 printf 'mipad2' > "$G/strings/0x409/serialnumber"
 printf 'Serial console' > "$G/configs/c.1/strings/0x409/configuration"
 printf '250' > "$G/configs/c.1/MaxPower"
-ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
+[ -L "$G/configs/c.1/acm.usb0" ] || \
+    ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
+
+# CONFIG_U_SERIAL_CONSOLE makes this a real kernel console and replays the
+# printk ring buffer when the function is enabled. This captures early boot
+# failures which happened before USB enumeration.
+if [ -f "$G/functions/acm.usb0/console" ]; then
+    printf '1' > "$G/functions/acm.usb0/console"
+fi
 printf '%s' "$UDC" > "$G/UDC"

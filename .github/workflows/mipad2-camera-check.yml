@@ -41,26 +41,35 @@ jobs:
           grep -q 'IPU_SENSOR_CONFIG("XMCC0003"' drivers/media/pci/intel/ipu-bridge.c
           grep -q '321468000' drivers/media/pci/intel/ipu-bridge.c
           grep -q 'ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true)' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          grep -q 'ATOMISP_DEFAULT_WIDTH.*1280' drivers/staging/media/atomisp/pci/atomisp_common.h
+          grep -q 'ATOMISP_DEFAULT_HEIGHT.*720' drivers/staging/media/atomisp/pci/atomisp_common.h
+          grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_fops.c
+          grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_ioctl.c
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
           grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
           grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
           grep -q '^CONFIG_USB_DWC3_DUAL_ROLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_DWC3_PCI=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_BT_HCIUART=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_BT_BCM=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_BRCMFMAC=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_BCM=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_CFG80211=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BRCMFMAC=m' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_SERIAL_CONSOLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_CONFIGFS_SERIAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_CONFIGFS_ACM=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_U_SERIAL_CONSOLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_NLS_CODEPAGE_437=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_NLS_ASCII=y' arch/x86/configs/xiaomipad2_defconfig
-          ! grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
-          ! grep -q '^CONFIG_BRCMFMAC=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_CRYPTO_USER=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_LOCALVERSION="-mipad2-complete"' arch/x86/configs/xiaomipad2_defconfig
 
       - name: Compile camera sensor and VCM drivers
         run: |
           make -j"$(nproc)" W=1 \
             drivers/media/pci/intel/ipu-bridge.o \
             drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
+            drivers/staging/media/atomisp/pci/atomisp_fops.o \
+            drivers/staging/media/atomisp/pci/atomisp_ioctl.o \
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o

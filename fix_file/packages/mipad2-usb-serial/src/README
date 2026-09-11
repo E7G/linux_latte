@@ -2,6 +2,9 @@
 
 This package exposes the tablet's USB device controller as one CDC ACM serial
 console (`/dev/ttyGS0`). The service enables `serial-getty@ttyGS0.service`.
+With `CONFIG_U_SERIAL_CONSOLE=y`, it also registers `ttyGS0` as a kernel
+console and replays the printk ring buffer after USB enumeration. The service
+runs from `sysinit.target`, before local filesystems are mounted.
 
 On Windows it appears as **Mi Pad 2 USB Serial**, normally a `COM` port. Use
 115200 8N1. This is a fallback debug path when Wi-Fi is unavailable.

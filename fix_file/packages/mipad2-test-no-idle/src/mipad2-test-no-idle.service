@@ -1,7 +1,7 @@
 [Unit]
 Description=Mi Pad 2 test mode: inhibit idle blanking and suspend
-After=graphical.target
-Wants=graphical.target
+After=systemd-logind.service
+Wants=systemd-logind.service
 
 [Service]
 Type=simple

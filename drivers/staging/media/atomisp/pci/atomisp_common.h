@@ -33,6 +33,14 @@ extern int pad_h;
 #define CSS_DTRACE_VERBOSITY_TIMEOUT	9	/* Verbosity on ISP timeout */
 #define MRFLD_MAX_ZOOM_FACTOR	1024
 
+/*
+ * A conservative format supported by both Mi Pad 2 sensors.  Some V4L2
+ * clients request buffers before setting a format; using the old 10000 x
+ * 10000 sentinel made AtomISP select an invalid 1920 x 1944 pipeline.
+ */
+#define ATOMISP_DEFAULT_WIDTH		1280
+#define ATOMISP_DEFAULT_HEIGHT		720
+
 /* ISP2401 */
 #define ATOMISP_CSS_ISP_PIPE_VERSION_2_7    1
 

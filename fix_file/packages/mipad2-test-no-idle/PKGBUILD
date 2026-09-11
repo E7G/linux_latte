@@ -1,6 +1,6 @@
 pkgname=mipad2-test-no-idle
 pkgver=20260904
-pkgrel=1
+pkgrel=2
 pkgdesc="Opt-in Mi Pad 2 test mode to inhibit GNOME idle blanking and suspend"
 arch=(x86_64)
 license=(GPL2)

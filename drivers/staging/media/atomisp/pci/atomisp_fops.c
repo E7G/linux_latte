@@ -48,8 +48,8 @@ static int atomisp_queue_setup(struct vb2_queue *vq,
 	if (ret) {
 		struct v4l2_format f = {
 			.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420,
-			.fmt.pix.width = 10000,
-			.fmt.pix.height = 10000,
+			.fmt.pix.width = ATOMISP_DEFAULT_WIDTH,
+			.fmt.pix.height = ATOMISP_DEFAULT_HEIGHT,
 		};
 
 		ret = atomisp_set_fmt(&pipe->vdev, &f);

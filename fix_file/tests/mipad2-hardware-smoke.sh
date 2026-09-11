@@ -69,7 +69,7 @@ for path in /sys/class/input/event*/device/name; do
     [ -r "$path" ] || continue
     name=$(cat "$path" 2>/dev/null || true)
     case "$name" in
-        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*)
+        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|FTSC1000:00*)
             touch_name=$name
             break
             ;;
@@ -80,6 +80,20 @@ if [ -n "$touch_name" ]; then
 else
     optional 'touchscreen name not recognized (check manually)'
 fi
+
+if [ -e /sys/class/drm/card0 ] && [ -e /sys/class/drm/renderD128 ]; then
+    printf 'OK   i915 DRM card and render node\n'
+else
+    miss 'i915 DRM card/render node'
+fi
+
+for led in mipad2:rgb:indicator mipad2:white:touch-buttons-backlight; do
+    if [ -e "/sys/class/leds/$led" ]; then
+        printf 'OK   LED %s\n' "$led"
+    else
+        miss "LED $led"
+    fi
+done
 
 if [ -e /dev/ttyGS0 ]; then
     printf 'OK   USB serial /dev/ttyGS0\n'
@@ -113,6 +127,31 @@ for path in /sys/class/power_supply/*; do
     fi
 done
 if [ -n "$battery_path" ]; then printf 'OK   %s\n' "$battery_path"; else miss '/sys/class/power_supply/BAT*'; fi
+
+charger_path=
+for path in /sys/class/power_supply/*; do
+    [ -f "$path/type" ] || continue
+    case "$(cat "$path/type" 2>/dev/null)" in
+        USB|Mains)
+            charger_path=$path
+            break
+            ;;
+    esac
+done
+if [ -n "$charger_path" ]; then printf 'OK   charger %s\n' "$charger_path"; else miss 'BQ25890 charger'; fi
+
+for sensor in als accel_3d gyro_3d magn_3d incli_3d dev_rotation; do
+    found=
+    for name_file in /sys/bus/iio/devices/iio:device*/name; do
+        [ -r "$name_file" ] || continue
+        [ "$(cat "$name_file" 2>/dev/null)" = "$sensor" ] && found=$name_file && break
+    done
+    if [ -n "$found" ]; then
+        printf 'OK   IIO %s\n' "$sensor"
+    else
+        miss "IIO $sensor"
+    fi
+done
 
 udc_path=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null || true)
 if [ -n "$udc_path" ]; then printf 'OK   %s\n' "$udc_path"; else miss 'an actual UDC under /sys/class/udc'; fi

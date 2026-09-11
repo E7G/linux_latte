@@ -1,5 +1,5 @@
 pkgname=mipad2-usb-serial
-pkgver=20260904
+pkgver=20260910
 pkgrel=1
 pkgdesc="Persistent Mi Pad 2 USB ACM serial console"
 arch=(x86_64)
