@@ -46,6 +46,8 @@ jobs:
           grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_fops.c
           grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_ioctl.c
           grep -q 'ret > old_ret' drivers/staging/media/atomisp/pci/hmm/hmm_bo.c
+          grep -A4 'atomisp_get_sensor_fps' drivers/staging/media/atomisp/pci/atomisp_cmd.c | \
+            grep -q 'V4L2_SUBDEV_FORMAT_ACTIVE'
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
           grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
           grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
@@ -69,6 +71,7 @@ jobs:
           make -j"$(nproc)" W=1 \
             drivers/media/pci/intel/ipu-bridge.o \
             drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
+            drivers/staging/media/atomisp/pci/atomisp_cmd.o \
             drivers/staging/media/atomisp/pci/atomisp_fops.o \
             drivers/staging/media/atomisp/pci/atomisp_ioctl.o \
             drivers/staging/media/atomisp/pci/hmm/hmm_bo.o \
