@@ -804,6 +804,29 @@ static int t4ka3_init_state(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int t4ka3_get_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
+	struct v4l2_mbus_framefmt *fmt;
+	unsigned int frame_size;
+	unsigned int fps;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE)
+		return -EINVAL;
+
+	fmt = v4l2_subdev_state_get_format(sd_state, interval->pad);
+	frame_size = T4KA3_PIXELS_PER_LINE *
+		(fmt->height + sensor->ctrls.vblank->val);
+	fps = DIV_ROUND_CLOSEST(T4KA3_PIXEL_RATE, frame_size);
+
+	interval->interval.numerator = 1;
+	interval->interval.denominator = fps;
+
+	return 0;
+}
+
 static const struct v4l2_ctrl_ops t4ka3_ctrl_ops = {
 	.s_ctrl = t4ka3_s_ctrl,
 };
@@ -819,6 +842,7 @@ static const struct v4l2_subdev_pad_ops t4ka3_pad_ops = {
 	.set_fmt = t4ka3_set_pad_format,
 	.get_selection = t4ka3_get_selection,
 	.set_selection = t4ka3_set_selection,
+	.get_frame_interval = t4ka3_get_frame_interval,
 	.enable_streams = t4ka3_enable_stream,
 	.disable_streams = t4ka3_disable_stream,
 };
