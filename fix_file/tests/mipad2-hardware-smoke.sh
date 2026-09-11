@@ -1,5 +1,6 @@
 #!/bin/sh
-# Read-only Mi Pad 2 hardware smoke checks; safe to run after boot or resume.
+# Mi Pad 2 hardware smoke checks; read-only unless
+# MIPAD2_ACTIVE_CAMERA_TEST=1 is explicitly set.
 # Device numbers and I2C bus numbers are intentionally discovered at runtime.
 set -u
 
@@ -188,6 +189,24 @@ for path in /sys/bus/i2c/devices/*; do
 done
 if [ -n "$vcm_path" ]; then printf 'OK   VCM %s\n' "$vcm_path"; else miss 'DW9761/DW9719 at any I2C bus/0x0c'; fi
 
+vcm_node=
+for link in /sys/class/video4linux/v4l-subdev*; do
+    [ -e "$link" ] || continue
+    name=$(cat "$link/name" 2>/dev/null || true)
+    case "$name" in
+        *dw9761*|*dw9719*)
+            vcm_node=/dev/${link##*/}
+            break
+            ;;
+    esac
+done
+if [ -n "$vcm_node" ] && command -v v4l2-ctl >/dev/null 2>&1 &&
+   v4l2-ctl -d "$vcm_node" --list-ctrls 2>/dev/null | grep -q focus_absolute; then
+    printf 'OK   DW9761 focus control %s\n' "$vcm_node"
+else
+    miss 'DW9761 V4L2_CID_FOCUS_ABSOLUTE'
+fi
+
 if [ -n "$media_node" ] && command -v media-ctl >/dev/null 2>&1; then
     graph=$(media-ctl -d "$media_node" -p 2>/dev/null || true)
     if printf '%s\n' "$graph" | grep -qi 't4ka3'; then
@@ -198,11 +217,34 @@ if [ -n "$media_node" ] && command -v media-ctl >/dev/null 2>&1; then
 fi
 
 if [ -n "$t4ka3_node" ] && command -v v4l2-ctl >/dev/null 2>&1; then
-    if v4l2-ctl -d "$t4ka3_node" --list-ctrls >/dev/null 2>&1; then
+    controls=$(v4l2-ctl -d "$t4ka3_node" --list-ctrls 2>/dev/null || true)
+    if [ -n "$controls" ]; then
         printf 'OK   T4KA3 controls\n'
     else
         miss "T4KA3 controls on $t4ka3_node"
     fi
+    if printf '%s\n' "$controls" | grep -q 'camera_sensor_rotation.*value=270'; then
+        printf 'OK   T4KA3 rotation metadata 270 degrees\n'
+    else
+        miss 'T4KA3 rotation metadata'
+    fi
+fi
+
+if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ] && [ -n "$video_node" ] &&
+   command -v v4l2-ctl >/dev/null 2>&1; then
+    for input in 0 1; do
+        output="/tmp/mipad2-camera-input-$input.raw"
+        rm -f "$output"
+        if v4l2-ctl -d "$video_node" --set-input="$input" >/dev/null 2>&1 &&
+           timeout 20 v4l2-ctl -d "$video_node" --stream-mmap=4 \
+               --stream-count=3 --stream-to="$output" >/dev/null 2>&1 &&
+           [ -s "$output" ]; then
+            printf 'OK   camera input %s streams without prior S_FMT\n' "$input"
+        else
+            miss "camera input $input stream"
+        fi
+        rm -f "$output"
+    done
 fi
 
 exit "$fail"

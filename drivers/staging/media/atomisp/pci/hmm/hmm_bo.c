@@ -622,9 +622,21 @@ static void free_private_bo_pages(struct hmm_buffer_object *bo)
 static int alloc_private_pages(struct hmm_buffer_object *bo)
 {
 	const gfp_t gfp = __GFP_NOWARN | __GFP_RECLAIM | __GFP_FS;
-	int ret;
+	int old_ret;
+	int ret = 0;
 
-	ret = alloc_pages_bulk(gfp, bo->pgnr, bo->pages);
+	/*
+	 * alloc_pages_bulk() is allowed to return a partially populated array,
+	 * for example when its per-CPU lock is temporarily contended.  Keep the
+	 * pages already obtained and ask it to fill the remaining NULL entries.
+	 */
+	do {
+		old_ret = ret;
+		ret = alloc_pages_bulk(gfp, bo->pgnr, bo->pages);
+		if (ret != bo->pgnr)
+			cond_resched();
+	} while (ret != bo->pgnr && ret > old_ret);
+
 	if (ret != bo->pgnr) {
 		free_pages_bulk_array(ret, bo->pages);
 		dev_err(atomisp_dev, "alloc_pages_bulk() failed\n");

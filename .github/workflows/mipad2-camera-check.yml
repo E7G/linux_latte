@@ -45,6 +45,7 @@ jobs:
           grep -q 'ATOMISP_DEFAULT_HEIGHT.*720' drivers/staging/media/atomisp/pci/atomisp_common.h
           grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_fops.c
           grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_ioctl.c
+          grep -q 'ret > old_ret' drivers/staging/media/atomisp/pci/hmm/hmm_bo.c
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
           grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
           grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
@@ -70,6 +71,7 @@ jobs:
             drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
             drivers/staging/media/atomisp/pci/atomisp_fops.o \
             drivers/staging/media/atomisp/pci/atomisp_ioctl.o \
+            drivers/staging/media/atomisp/pci/hmm/hmm_bo.o \
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
