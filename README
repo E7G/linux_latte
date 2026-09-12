@@ -4,7 +4,7 @@ This repository contains a Linux 6.14 based kernel tree for the x86_64 Xiaomi Mi
 
 The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. Current builds use the local version suffix `-mipad2-complete`.
 
-> This is a device enablement/development kernel, not a generic distribution or hardened kernel. The current defconfig intentionally contains development-oriented options and currently has CPU mitigations disabled. Review the configuration before using it for security-sensitive workloads.
+> This is a device enablement/development kernel, not a generic distribution or hardened kernel. The current defconfig intentionally contains development-oriented options and currently has CPU mitigations disabled. Review the configuration before using it for security-sensitive workloads. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the current limitations.
 
 ## Current status
 
@@ -45,21 +45,21 @@ Camera support should therefore be treated as **testable but still under active 
 
 ## Build
 
-A normal in-tree build starts with the Mi Pad 2 defconfig:
+The current Mi Pad 2 defconfig requests Clang ThinLTO (`CONFIG_LTO_CLANG_THIN=y`). For a reproducible build that preserves the intended configuration, LLVM/Clang is therefore the recommended toolchain and `LLVM=1` should be passed consistently:
 
 ```bash
-make xiaomipad2_defconfig
-make -j"$(nproc)"
+make LLVM=1 xiaomipad2_defconfig
+make -j"$(nproc)" LLVM=1
 ```
 
 To build Debian binary packages:
 
 ```bash
-make xiaomipad2_defconfig
-make -j"$(nproc)" bindeb-pkg
+make LLVM=1 xiaomipad2_defconfig
+make -j"$(nproc)" LLVM=1 bindeb-pkg
 ```
 
-`deb-pkg` can also be used when source-package output is wanted. If you build with LLVM, pass the normal kernel `LLVM=1` option consistently to the configuration and build commands.
+`deb-pkg` can also be used when source-package output is wanted. If you intentionally build with a different toolchain, inspect the resulting `.config` because toolchain-dependent Kconfig options may be adjusted; do not assume the final configuration is identical to the checked-in defconfig.
 
 ## Runtime files and helper packages
 
@@ -68,8 +68,8 @@ Device-specific runtime material is under `fix_file/`:
 - `fix_file/README.md` — firmware and userspace integration overview;
 - `fix_file/audio.md` — RT5659/TFA9890 UCM setup;
 - `fix_file/USB_OTG_Gadget.md` — USB device-mode requirements and serial-debug setup;
-- `fix_file/packages/` — Arch-style helper packages for camera, audio, recovery/test mode and USB serial integration;
-- `fix_file/tests/` — hardware smoke tests and AtomISP camera tests.
+- [`fix_file/packages/README.md`](fix_file/packages/README.md) — which helper packages are current, optional or legacy;
+- `fix_file/tests/README.md` — hardware smoke tests and AtomISP camera tests.
 
 The old `fix_file/latte-camera-t4ka3.patch` is kept only as a reference/backport artifact. The T4KA3 implementation is already integrated into the current kernel tree and must not be applied again.
 
@@ -96,11 +96,24 @@ See `fix_file/tests/README.md` before running repeated camera tests.
 
 Some hardware still needs device-specific firmware/userspace files in addition to the kernel:
 
-- Wi-Fi: `fix_file/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt` → `/lib/firmware/brcm/`;
-- Bluetooth: `fix_file/BCM4356A2.hcd` → `/lib/firmware/brcm/`;
-- AtomISP: `fix_file/shisp_2401a0_v21.bin` → `/lib/firmware/`, or install the `mipad2-camera-support` package which installs the firmware and camera module/service integration.
+- Wi-Fi: `fix_file/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt` → the distribution's Broadcom firmware directory, normally `/usr/lib/firmware/brcm/` or `/lib/firmware/brcm/`;
+- Bluetooth: `fix_file/BCM4356A2.hcd` → the same Broadcom firmware directory;
+- AtomISP: the current driver first requests `intel/ipu/shisp_2401a0_v21.bin`. The recommended `mipad2-camera-support` package installs it as `/usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin`.
 
-Exact firmware naming can vary with the distribution/driver request string. Check `dmesg` for the filename requested by the kernel before renaming files blindly.
+For compatibility, the AtomISP driver falls back to the old top-level filename `shisp_2401a0_v21.bin` if the preferred `intel/ipu/` request fails. New installations should use the `intel/ipu/` layout rather than relying on that fallback.
+
+`/usr/lib/firmware` and `/lib/firmware` may refer to the same location on merged-/usr distributions, but that is a userspace/distribution detail. Check `dmesg` for the exact filename requested by the kernel before renaming files blindly.
+
+## Known limitations
+
+The most important current limitations are tracked in [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md), including:
+
+- experimental AtomISP behavior and possible camera hangs;
+- suspend/resume regression requirements;
+- UDC / firmware dependence for USB gadget mode;
+- the conflict between the current USB serial package and the old USB Ethernet gadget package;
+- firmware/NVRAM requirements for BCM4356;
+- development-oriented defconfig choices such as disabled CPU mitigations.
 
 ## Reporting problems
 
