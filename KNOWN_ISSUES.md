@@ -104,7 +104,26 @@ fix_file/BCM4356A2.hcd
 
 如果无线没有出现，应先检查 `dmesg` 中驱动实际请求的 firmware/NVRAM 文件名，而不是盲目重命名唯一副本。
 
-## 7. 当前 defconfig 不是 hardened / generic distro 配置
+## 7. Recovery 工具不是通用分区恢复器
+
+当前 `mipad2-recovery` 只适用于项目当前假定的安装布局。尤其是 `mp2-recover` 目前把 Timeshift snapshot/restore device **硬编码为**：
+
+```text
+/dev/mmcblk0p2
+```
+
+而 `/boot` archive 的恢复会直接执行到当前 `/boot` 路径，脚本不会替你发现或挂载 boot 分区。
+
+因此在恢复前必须确认：
+
+```bash
+findmnt /
+findmnt /boot
+```
+
+与脚本假设一致。`mp2-backup` 已经会拒绝未挂载或非 VFAT 的 `/boot`，但这不意味着 `mp2-recover` 能自动适配不同分区布局。改过分区、root 设备或 boot 布局的安装不能直接使用默认恢复命令。
+
+## 8. 当前 defconfig 不是 hardened / generic distro 配置
 
 `xiaomipad2_defconfig` 是面向设备可用性和开发测试的配置。目前包括：
 
