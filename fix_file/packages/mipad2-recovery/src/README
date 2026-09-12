@@ -1,11 +1,91 @@
 # Mi Pad 2 recovery tools
 
-`sudo mp2-backup` saves the separate `/boot` FAT filesystem and creates a
-BTRFS Timeshift snapshot of the root filesystem.
+These helpers are intentionally tied to the filesystem layout used by this Mi Pad 2 setup. **Read the assumptions below before using them on another installation.**
 
-`sudo mp2-recover --status` lists snapshots. `sudo mp2-recover` selects the
-newest snapshot and requires typing `RECOVER` before restoring it. The
-non-interactive form is `sudo mp2-recover --yes`.
+## Current layout assumptions
 
-The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or
-SSH. They are suitable for use from the USB ACM serial console.
+The current `mp2-recover` script uses the Timeshift snapshot device:
+
+```text
+/dev/mmcblk0p2
+```
+
+This value is currently hard-coded in the script. If your BTRFS root/snapshot device is different, do not run recovery unchanged; update/verify the script for your layout first.
+
+The tools also assume a separate `/boot` filesystem. `mp2-backup` refuses to create a backup unless:
+
+- `/boot` is mounted; and
+- the mounted `/boot` filesystem reports `vfat`.
+
+This prevents creating a misleading backup that contains only the root filesystem's empty `/boot` mount point.
+
+## Backup
+
+Run:
+
+```sh
+sudo mp2-backup
+```
+
+It:
+
+1. archives the currently mounted `/boot` as `/var/lib/mipad2-recovery/boot-known-good.tar.zst`;
+2. writes a SHA-256 checksum next to the archive;
+3. creates a Timeshift BTRFS snapshot tagged as a manual Mi Pad 2 backup.
+
+If `/boot` is not mounted as VFAT, the script exits instead of making an incomplete backup.
+
+## Inspect snapshots
+
+```sh
+sudo mp2-recover --status
+```
+
+or:
+
+```sh
+sudo mp2-recover --list
+```
+
+Both list snapshots using `/dev/mmcblk0p2` as the current snapshot device.
+
+## Restore
+
+Before restoring, make sure the expected `/boot` filesystem is actually mounted at `/boot`. The current recovery script restores the saved boot archive with `tar -C /boot`; it does not independently discover or mount the boot partition.
+
+Interactive restore:
+
+```sh
+sudo mp2-recover
+```
+
+The script selects the newest matching Timeshift snapshot and requires typing:
+
+```text
+RECOVER
+```
+
+before restoring. The non-interactive form is:
+
+```sh
+sudo mp2-recover --yes
+```
+
+Recovery restores the root snapshot with Timeshift using `--skip-grub`, then extracts the saved `/boot` archive when that archive exists.
+
+## Console use
+
+The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or SSH. They are suitable for use from the project's USB ACM serial console when normal networking or the graphical session is unavailable.
+
+## Before relying on recovery
+
+Verify at least once while the system is healthy:
+
+```sh
+findmnt /boot
+findmnt /
+sudo mp2-recover --status
+ls -lh /var/lib/mipad2-recovery/boot-known-good.tar.zst*
+```
+
+A recovery tool is only useful if its device/layout assumptions match the installation that will be restored.
