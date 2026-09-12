@@ -2,14 +2,15 @@
 
 `fix_file/` 现在主要保存 **固件、用户空间配置、辅助包、测试脚本和历史参考文件**。当前内核已经直接集成了不少过去需要额外打补丁的 Mi Pad 2 支持，因此不要把这里的所有文件都当成“必须手工应用的修复”。
 
-当前建议先使用仓库的 `xiaomipad2_defconfig` 编译/安装内核，再按实际缺少的固件或用户空间功能补充本目录内容。
+当前建议先使用仓库的 `xiaomipad2_defconfig` 编译/安装内核，再按实际缺少的固件或用户空间功能补充本目录内容。当前项目级已知限制另见 [`../KNOWN_ISSUES.md`](../KNOWN_ISSUES.md)。
 
 ## 目录概览
 
 - [`audio.md`](./audio.md)：RT5659 / TFA9890 音频与 ALSA UCM 使用说明；
 - [`USB_OTG_Gadget.md`](./USB_OTG_Gadget.md)：USB device mode、UDC 与 USB 串口调试；
+- [`packages/README.md`](./packages/README.md)：辅助包总览，以及“推荐 / 可选 / 旧方案”分类；
 - `packages/mipad2-alsa-ucm`：音频 UCM 配置；
-- `packages/mipad2-camera-support`：AtomISP 固件、模块加载顺序与 systemd 集成；
+- `packages/mipad2-camera-support`：AtomISP 固件与早期 platform helper 模块加载配置；
 - `packages/mipad2-usb-serial`：当前推荐的 CDC ACM USB 串口调试方案；
 - `packages/mipad2-recovery`：恢复辅助工具；
 - `packages/mipad2-test-no-idle`：真机测试时可选的防休眠模式；
@@ -26,7 +27,13 @@
 fix_file/brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt
 ```
 
-复制到：
+复制到发行版的 Broadcom firmware 目录，通常是：
+
+```text
+/usr/lib/firmware/brcm/
+```
+
+或：
 
 ```text
 /lib/firmware/brcm/
@@ -48,11 +55,7 @@ dmesg | grep -Ei 'brcmfmac|firmware'
 fix_file/BCM4356A2.hcd
 ```
 
-复制到：
-
-```text
-/lib/firmware/brcm/
-```
+复制到同一个 Broadcom firmware 目录。
 
 当前内核使用模块化的 Broadcom HCI UART 支持。验证时先看：
 
@@ -72,6 +75,22 @@ dmesg | grep -Ei 'Bluetooth|hci|bcm'
 - `latte-camera-t4ka3.patch` 只保留作参考，不应再次应用；
 - `shisp_2401a0_v21.bin` 仍是运行时需要的 AtomISP 固件。
 
+### 当前固件请求路径
+
+当前 AtomISP 代码对 ISP2401 **首先请求**：
+
+```text
+intel/ipu/shisp_2401a0_v21.bin
+```
+
+如果这个请求失败，驱动才兼容性回退到旧顶层文件名：
+
+```text
+shisp_2401a0_v21.bin
+```
+
+因此新安装应优先使用 `intel/ipu/` 布局，而不是把旧顶层路径当成首选方案。
+
 ### 推荐：使用 camera support 包
 
 在 Arch/使用 `makepkg` 的系统上：
@@ -81,20 +100,35 @@ cd fix_file/packages/mipad2-camera-support
 makepkg -si
 ```
 
-这个包负责安装 AtomISP 固件，并提供相机模块加载顺序和 systemd 集成。
+这个包实际会：
+
+- 安装 AtomISP 固件到 `/usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin`；
+- 安装 `/etc/modules-load.d/mipad2-camera.conf`；
+- 通过该配置优先加载 `atomisp_gmin_platform`，其余 AtomISP、sensor 与 VCM 再由 PCI/I2C modalias 触发加载。
+
+当前这个包**没有安装额外的 camera systemd service**，不要按旧说明期待相关 service unit。
 
 ### 手工固件方式
 
-如果不使用上述包，可至少复制：
+如果不使用上述包，推荐至少按当前首选路径复制：
 
 ```bash
 sudo install -Dm644 fix_file/shisp_2401a0_v21.bin \
-    /lib/firmware/shisp_2401a0_v21.bin
+    /usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin
 ```
+
+如果你的发行版实际 firmware root 是 `/lib/firmware`，则相应目标应为：
+
+```text
+/lib/firmware/intel/ipu/shisp_2401a0_v21.bin
+```
+
+`/usr/lib/firmware` 与 `/lib/firmware` 在 merged-/usr 发行版上可能实际指向同一位置，但应以本机布局为准。
 
 然后检查实际加载情况：
 
 ```bash
+sudo modprobe atomisp_gmin_platform
 sudo modprobe atomisp
 sudo modprobe ov5693
 sudo modprobe t4ka3
@@ -134,7 +168,7 @@ sudo systemctl enable --now mipad2-usb-serial.service
 
 Windows 主机一般会看到 **Mi Pad 2 USB Serial** 对应的 COM 口，可按 `115200 8N1` 使用。
 
-`mipad2-usb-serial` 会替代旧的 `mipad2-usb-gadget`，两者不能同时绑定同一个 UDC。旧的 USB Ethernet gadget 方案因此只作为兼容/历史方案保留。
+`mipad2-usb-serial` 的 PKGBUILD 已经明确声明 `conflicts=(mipad2-usb-gadget)` 与 `replaces=(mipad2-usb-gadget)`。两者不能同时绑定同一个 UDC；旧 USB Ethernet gadget 方案因此只作为兼容/历史方案保留。
 
 如果 `/sys/class/udc/` 下没有实际 UDC，请先阅读 [`USB_OTG_Gadget.md`](./USB_OTG_Gadget.md) 检查固件/BIOS 的 OTG 模式。
 
