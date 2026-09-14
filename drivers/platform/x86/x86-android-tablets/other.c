@@ -848,6 +848,21 @@ static const struct software_node *ktd2026_node_group[] = {
 
 static struct pwm_device *xiaomi_mipad2_led_pwm;
 
+/*
+ * The firmware exposes this controller as FTSC1000 / PNP0C50, but returns
+ * _STA == 0 when Xiaomi's Android EFI loader did not set TCPL to 3. Recreate
+ * the I2C-HID description from the DSDT resources in that case.
+ */
+static const struct property_entry xiaomi_mipad2_touchscreen_props[] = {
+	PROPERTY_ENTRY_U32("hid-descr-addr", 0x0000),
+	PROPERTY_ENTRY_U32("post-reset-deassert-delay-ms", 120),
+	{ }
+};
+
+static const struct software_node xiaomi_mipad2_touchscreen_node = {
+	.properties = xiaomi_mipad2_touchscreen_props,
+};
+
 static int xiaomi_mipad2_brightness_set(struct led_classdev *led_cdev,
 					enum led_brightness val)
 {
@@ -954,6 +969,23 @@ static void xiaomi_mipad2_exit(void)
  */
 static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst = {
 	{
+		/* FTSC1000 FocalTech I2C-HID touchscreen */
+		.board_info = {
+			.type = "hid-over-i2c",
+			.addr = 0x38,
+			.dev_name = "FTSC1000",
+			.swnode = &xiaomi_mipad2_touchscreen_node,
+		},
+		.adapter_path = "\\_SB_.PCI0.I2C4",
+		.irq_data = {
+			.type = X86_ACPI_IRQ_TYPE_GPIOINT,
+			.chip = "INT33FF:01",
+			.index = 26,
+			.trigger = ACPI_LEVEL_SENSITIVE,
+			.polarity = ACPI_ACTIVE_LOW,
+			.con_id = "FTSC1000_irq",
+		},
+	}, {
 		/* BQ27520 fuel-gauge */
 		.board_info = {
 			.type = "bq27520",
@@ -999,7 +1031,16 @@ static struct gpiod_lookup_table xiaomi_mipad2_codec_rt5659_gpios = {
 	},
 };
 
+static struct gpiod_lookup_table xiaomi_mipad2_touchscreen_gpios = {
+	.dev_id = "i2c-FTSC1000",
+	.table = {
+		GPIO_LOOKUP("INT33FF:00", 58, "reset", GPIO_ACTIVE_LOW),
+		{ }
+	},
+};
+
 static struct gpiod_lookup_table * const xiaomi_mipad2_gpios[] = {
+	&xiaomi_mipad2_touchscreen_gpios,
 	&xiaomi_mipad2_codec_rt5659_gpios,
 	NULL
 };
