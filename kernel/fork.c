@@ -106,11 +106,17 @@
 #include <linux/pidfs.h>
 #include <linux/tick.h>
 
+#ifdef CONFIG_USER_NS
+#include <linux/user_namespace.h>
+#endif
+
 #include <asm/pgalloc.h>
 #include <linux/uaccess.h>
 #include <asm/mmu_context.h>
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
+
+#include <linux/sched/bore.h>
 
 #include <trace/events/sched.h>
 
@@ -2167,6 +2173,10 @@ __latent_entropy struct task_struct *copy_process(
 	if ((clone_flags & (CLONE_NEWUSER|CLONE_FS)) == (CLONE_NEWUSER|CLONE_FS))
 		return ERR_PTR(-EINVAL);
 
+	if ((clone_flags & CLONE_NEWUSER) && !unprivileged_userns_clone)
+		if (!capable(CAP_SYS_ADMIN))
+			return ERR_PTR(-EPERM);
+
 	/*
 	 * Thread groups must share signals as well, and detached threads
 	 * can only be started up within the thread group.
@@ -2524,6 +2534,10 @@ __latent_entropy struct task_struct *copy_process(
 	p->start_time = ktime_get_ns();
 	p->start_boottime = ktime_get_boottime_ns();
 
+#ifdef CONFIG_SCHED_BORE
+	if (likely(p->pid))
+		sched_clone_bore(p, current, clone_flags, p->start_time);
+#endif // CONFIG_SCHED_BORE
 	/*
 	 * Make it visible to the rest of the system, but dont wake it up yet.
 	 * Need tasklist lock for parent etc handling!
@@ -3319,6 +3333,12 @@ int ksys_unshare(unsigned long unshare_flags)
 	 */
 	if (unshare_flags & CLONE_NEWNS)
 		unshare_flags |= CLONE_FS;
+
+	if ((unshare_flags & CLONE_NEWUSER) && !unprivileged_userns_clone) {
+		err = -EPERM;
+		if (!capable(CAP_SYS_ADMIN))
+			goto bad_unshare_out;
+	}
 
 	err = check_unshare_flags(unshare_flags);
 	if (err)
