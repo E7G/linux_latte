@@ -30,6 +30,15 @@ else
     miss 'running kernel config /proc/config.gz'
 fi
 
+cpu_online=$(cat /sys/devices/system/cpu/online 2>/dev/null || true)
+if [ -n "$cpu_online" ]; then printf 'OK   CPUs online %s\n' "$cpu_online"; else miss 'CPU online state'; fi
+if [ -d /sys/devices/system/cpu/cpu0/cpufreq ] ||
+   find /sys/devices/system/cpu/cpufreq -mindepth 1 -maxdepth 1 -type d -print -quit 2>/dev/null | grep -q .; then
+    printf 'OK   CPU frequency scaling\n'
+else
+    miss 'CPU frequency scaling'
+fi
+
 if mountpoint -q /boot 2>/dev/null; then
     printf 'OK   /boot mounted\n'
 else
@@ -140,6 +149,17 @@ if [ -e /sys/class/drm/card0 ] && [ -e /sys/class/drm/renderD128 ]; then
     printf 'OK   i915 DRM card and render node\n'
 else
     miss 'i915 DRM card/render node'
+fi
+
+display_connected=
+for status in /sys/class/drm/card*-*/status; do
+    [ -r "$status" ] || continue
+    [ "$(cat "$status" 2>/dev/null)" = connected ] && display_connected=$status && break
+done
+if [ -n "$display_connected" ]; then
+    printf 'OK   display connector %s\n' "${display_connected%/status}"
+else
+    miss 'connected DRM display connector'
 fi
 
 if [ -b /dev/mmcblk0 ]; then
