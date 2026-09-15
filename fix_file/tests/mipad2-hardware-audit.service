@@ -1,0 +1,11 @@
+[Unit]
+Description=Mi Pad 2 read-only hardware audit
+After=NetworkManager.service bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 15
+ExecStart=/bin/sh -c '/usr/local/libexec/mipad2-hardware-smoke > /var/log/mipad2-hardware-audit.log 2>&1 || true'
+
+[Install]
+WantedBy=multi-user.target

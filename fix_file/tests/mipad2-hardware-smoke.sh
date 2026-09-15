@@ -14,7 +14,21 @@ optional() {
     printf 'INFO %s\n' "$1"
 }
 
-printf 'Mi Pad 2 kernel health (%s)\n' "$(uname -r 2>/dev/null || echo unknown)"
+release=$(uname -r 2>/dev/null || echo unknown)
+printf 'Mi Pad 2 kernel health (%s)\n' "$release"
+
+if [ -d "/usr/lib/modules/$release" ] &&
+   [ -s "/usr/lib/modules/$release/modules.dep" ]; then
+    printf 'OK   matching module tree and modules.dep\n'
+else
+    miss "matching /usr/lib/modules/$release tree"
+fi
+
+if [ -r /proc/config.gz ]; then
+    printf 'OK   running kernel config /proc/config.gz\n'
+else
+    miss 'running kernel config /proc/config.gz'
+fi
 
 if mountpoint -q /boot 2>/dev/null; then
     printf 'OK   /boot mounted\n'
@@ -31,8 +45,18 @@ done
 if [ -n "$wifi_node" ]; then
     printf 'OK   Wi-Fi %s (%s)\n' "${wifi_node##*/}" \
         "$(cat "$wifi_node/operstate" 2>/dev/null || echo unknown)"
+    wifi_driver=$(basename "$(readlink "$wifi_node/device/driver" 2>/dev/null || true)")
+    [ "$wifi_driver" = brcmfmac ] && printf 'OK   Wi-Fi driver brcmfmac\n' || miss 'Wi-Fi bound to brcmfmac'
 else
     miss 'Wi-Fi interface'
+fi
+
+if find /usr/lib/firmware/brcm -maxdepth 1 \
+    \( -name 'brcmfmac4356-pcie.bin*' -o -name 'brcmfmac4356-pcie.Xiaomi*' \) \
+    -print -quit 2>/dev/null | grep -q .; then
+    printf 'OK   BCM4356 Wi-Fi firmware/NVRAM\n'
+else
+    miss 'BCM4356 Wi-Fi firmware/NVRAM'
 fi
 
 bt_node=
@@ -47,10 +71,23 @@ else
     miss 'Bluetooth HCI device'
 fi
 
-if [ -r /proc/asound/cards ] && grep -q '^[[:space:]]*[0-9]' /proc/asound/cards; then
-    printf 'OK   ALSA sound card\n'
+if find /usr/lib/firmware/brcm -maxdepth 1 -iname 'BCM4356A2.hcd*' \
+    -print -quit 2>/dev/null | grep -q .; then
+    printf 'OK   BCM4356A2 Bluetooth firmware\n'
 else
-    miss 'ALSA sound card'
+    miss 'BCM4356A2 Bluetooth firmware'
+fi
+
+if [ -r /proc/asound/cards ] && grep -Eqi 'rt5659|cht.*5659' /proc/asound/cards; then
+    printf 'OK   RT5659 ALSA sound card\n'
+else
+    miss 'RT5659 ALSA sound card'
+fi
+
+if [ -s /usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/HiFi.conf ]; then
+    printf 'OK   RT5659 ALSA UCM profile\n'
+else
+    miss 'RT5659 ALSA UCM profile'
 fi
 
 backlight_path=
@@ -79,13 +116,43 @@ done
 if [ -n "$touch_name" ]; then
     printf 'OK   touchscreen %s\n' "$touch_name"
 else
-    optional 'touchscreen name not recognized (check manually)'
+    miss 'FTSC1000 touchscreen input device'
+fi
+
+button_name=
+for path in /sys/class/input/event*/device/name; do
+    [ -r "$path" ] || continue
+    name=$(cat "$path" 2>/dev/null || true)
+    case "$name" in
+        *[Ss]oc*[Bb]utton*|*[Vv]irtual*[Bb]utton*|*gpio-keys*)
+            button_name=$name
+            break
+            ;;
+    esac
+done
+if [ -n "$button_name" ]; then
+    printf 'OK   power/volume buttons %s\n' "$button_name"
+else
+    miss 'power/volume button input device'
 fi
 
 if [ -e /sys/class/drm/card0 ] && [ -e /sys/class/drm/renderD128 ]; then
     printf 'OK   i915 DRM card and render node\n'
 else
     miss 'i915 DRM card/render node'
+fi
+
+if [ -b /dev/mmcblk0 ]; then
+    printf 'OK   eMMC /dev/mmcblk0\n'
+else
+    miss 'eMMC /dev/mmcblk0'
+fi
+
+if [ -e /sys/class/rtc/rtc0 ]; then printf 'OK   RTC rtc0\n'; else miss 'RTC rtc0'; fi
+if find /sys/class/thermal -maxdepth 1 -name 'thermal_zone*' -print -quit 2>/dev/null | grep -q .; then
+    printf 'OK   thermal zones\n'
+else
+    miss 'thermal zones'
 fi
 
 for led in mipad2:rgb:indicator mipad2:white:touch-buttons-backlight; do
@@ -119,6 +186,20 @@ for node in /dev/video*; do
     fi
 done
 if [ -n "$video_node" ]; then printf 'OK   %s\n' "$video_node"; else miss '/dev/video*'; fi
+
+ov5693_node=
+for link in /sys/class/video4linux/v4l-subdev*; do
+    [ -e "$link" ] || continue
+    name=$(cat "$link/name" 2>/dev/null || true)
+    case "$name" in
+        *OV5693*|*ov5693*) ov5693_node=/dev/${link##*/}; break ;;
+    esac
+done
+if [ -n "$ov5693_node" ]; then
+    printf 'OK   OV5693 subdev %s\n' "$ov5693_node"
+else
+    miss 'OV5693 V4L2 subdev'
+fi
 
 battery_path=
 for path in /sys/class/power_supply/*; do
@@ -156,6 +237,9 @@ done
 
 udc_path=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null || true)
 if [ -n "$udc_path" ]; then printf 'OK   %s\n' "$udc_path"; else miss 'an actual UDC under /sys/class/udc'; fi
+
+xhci_bound=$(find /sys/bus/pci/drivers/xhci_hcd -maxdepth 1 -type l -print -quit 2>/dev/null || true)
+if [ -n "$xhci_bound" ]; then printf 'OK   USB host xHCI\n'; else miss 'USB host xHCI binding'; fi
 
 t4ka3_node=
 for link in /sys/class/video4linux/v4l-subdev*; do
@@ -245,6 +329,20 @@ if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ] && [ -n "$video_node" ] &&
         fi
         rm -f "$output"
     done
+fi
+
+if dmesg >/dev/null 2>&1; then
+    bad_log=$(dmesg | grep -Ei \
+        'Unknown symbol|disagrees about version of symbol|brcmf_fw_crashed|Firmware has halted or crashed|GPU HANG|GPU.*wedged|i2c_hid.*probe.*failed|FTSC1000.*failed' \
+        | tail -n 20 || true)
+    if [ -n "$bad_log" ]; then
+        miss 'fatal driver errors in dmesg'
+        printf '%s\n' "$bad_log"
+    else
+        printf 'OK   no known fatal driver errors in dmesg\n'
+    fi
+else
+    optional 'dmesg unavailable (run this audit as root)'
 fi
 
 exit "$fail"

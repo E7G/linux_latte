@@ -22,7 +22,9 @@ jobs:
           sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves
 
       - name: Configure Mi Pad 2 kernel
-        run: make xiaomipad2_defconfig
+        run: |
+          make xiaomipad2_defconfig
+          sh fix_file/tests/mipad2-kernel-config-audit.sh .config
 
       - name: Verify camera configuration
         run: |
@@ -66,6 +68,8 @@ jobs:
           grep -q '^CONFIG_NLS_ASCII=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_CRYPTO_USER=m' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_I2C_HID_OF=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_IKCONFIG=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_IKCONFIG_PROC=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q 'FTSC1000 FocalTech I2C-HID touchscreen' \
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'adapter_path = "\\\\_SB_.PCI0.I2C4"' \
@@ -112,6 +116,9 @@ jobs:
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-kernel-config-audit.sh
+          grep -q '^ExecStart=.*mipad2-hardware-smoke' \
+            fix_file/tests/mipad2-hardware-audit.service
           grep -q 'serial-getty@ttyGS0.service' \
             fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial.service
           ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \

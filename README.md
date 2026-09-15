@@ -2,7 +2,7 @@
 
 This repository contains a Linux 6.14 based kernel tree for the x86_64 Xiaomi Mi Pad 2 (latte), together with device-specific fixes, firmware helpers, userspace integration packages and hardware regression scripts.
 
-The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. Current builds use the local version suffix `-mipad2-complete`.
+The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. The `cachyos-mipad2` branch uses the local version suffix `-mipad2-cachyos`.
 
 > This is a device enablement/development kernel, not a generic distribution or hardened kernel. The current defconfig intentionally contains development-oriented options and currently has CPU mitigations disabled. Review the configuration before using it for security-sensitive workloads. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the current limitations.
 
