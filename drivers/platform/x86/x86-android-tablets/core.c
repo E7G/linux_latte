@@ -15,6 +15,7 @@
 #include <linux/dmi.h>
 #include <linux/gpio/consumer.h>
 #include <linux/gpio/machine.h>
+#include <linux/i2c.h>
 #include <linux/irq.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -177,6 +178,20 @@ static __init int match_parent(struct device *dev, const void *data)
 	return dev->parent == data;
 }
 
+struct x86_i2c_addr_match {
+	struct i2c_adapter *adapter;
+	u16 addr;
+};
+
+static int match_i2c_client_addr(struct device *dev, const void *data)
+{
+	const struct x86_i2c_addr_match *match = data;
+	struct i2c_client *client = i2c_verify_client(dev);
+
+	return client && client->adapter == match->adapter &&
+	       client->addr == match->addr;
+}
+
 static __init struct i2c_adapter *
 get_i2c_adap_by_pci_parent(const struct x86_i2c_client_info *client_info)
 {
@@ -207,6 +222,9 @@ static __init int x86_instantiate_i2c_client(const struct x86_dev_info *dev_info
 	const struct x86_i2c_client_info *client_info = &dev_info->i2c_client_info[idx];
 	struct i2c_board_info board_info = client_info->board_info;
 	struct i2c_adapter *adap;
+	struct device *existing;
+	struct x86_i2c_addr_match match;
+	int ret;
 
 	board_info.irq = x86_acpi_irq_helper_get(&client_info->irq_data);
 	if (board_info.irq < 0)
@@ -222,11 +240,32 @@ static __init int x86_instantiate_i2c_client(const struct x86_dev_info *dev_info
 		return -ENODEV;
 	}
 
+	/*
+	 * Do not abort the entire tablet setup when ACPI already enumerated
+	 * one of the devices listed in this DMI fallback table.
+	 */
+	match.adapter = adap;
+	match.addr = board_info.addr;
+	existing = bus_find_device(&i2c_bus_type, NULL, &match,
+				   match_i2c_client_addr);
+	if (existing) {
+		dev_warn(&adap->dev,
+			 "I2C address 0x%02x already used by %s; skipping duplicate %s\n",
+			 board_info.addr, dev_name(existing), board_info.type);
+		put_device(existing);
+		put_device(&adap->dev);
+		return 0;
+	}
+
 	i2c_clients[idx] = i2c_new_client_device(adap, &board_info);
+	if (IS_ERR(i2c_clients[idx])) {
+		ret = dev_err_probe(&adap->dev, PTR_ERR(i2c_clients[idx]),
+				    "creating I2C-client %d\n", idx);
+		i2c_clients[idx] = NULL;
+		put_device(&adap->dev);
+		return ret;
+	}
 	put_device(&adap->dev);
-	if (IS_ERR(i2c_clients[idx]))
-		return dev_err_probe(&adap->dev, PTR_ERR(i2c_clients[idx]),
-				      "creating I2C-client %d\n", idx);
 
 	return 0;
 }
@@ -354,7 +393,8 @@ static void x86_android_tablet_remove(struct platform_device *pdev)
 	kfree(spi_devs);
 
 	for (i = i2c_client_count - 1; i >= 0; i--)
-		i2c_unregister_device(i2c_clients[i]);
+		if (i2c_clients[i])
+			i2c_unregister_device(i2c_clients[i]);
 
 	kfree(i2c_clients);
 

@@ -76,6 +76,8 @@ jobs:
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'GPIO_LOOKUP("INT33FF:00", 58, "reset"' \
             drivers/platform/x86/x86-android-tablets/other.c
+          grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
+          grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
           if [ "${GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
             grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
@@ -100,6 +102,7 @@ jobs:
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o \
             drivers/hid/i2c-hid/i2c-hid-of.o \
+            drivers/platform/x86/x86-android-tablets/core.o \
             drivers/platform/x86/x86-android-tablets/other.o
 
       - name: Compile CachyOS scheduler integration
