@@ -72,9 +72,9 @@ jobs:
           grep -q '^CONFIG_IKCONFIG_PROC=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q 'FTSC1000 FocalTech I2C-HID touchscreen' \
             drivers/platform/x86/x86-android-tablets/other.c
-          grep -q 'adapter_path = "\\\\_SB_.PCI0.I2C4"' \
+          grep -q 'adapter_path = "\\\\_SB_.PCI0.I2C6"' \
             drivers/platform/x86/x86-android-tablets/other.c
-          grep -q 'GPIO_LOOKUP("INT33FF:00", 58, "reset"' \
+          grep -q 'GPIO_LOOKUP("INT33FF:01", 20, "reset"' \
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
           grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
