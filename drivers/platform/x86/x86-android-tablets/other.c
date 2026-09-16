@@ -981,11 +981,11 @@ static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst 
 			.dev_name = "FTSC1000",
 			.swnode = &xiaomi_mipad2_touchscreen_node,
 		},
-		.adapter_path = "\\_SB_.PCI0.I2C4",
+		.adapter_path = "\\_SB_.PCI0.I2C6",
 		.irq_data = {
 			.type = X86_ACPI_IRQ_TYPE_GPIOINT,
-			.chip = "INT33FF:01",
-			.index = 26,
+			.chip = "INT33FF:03",
+			.index = 77,
 			.trigger = ACPI_LEVEL_SENSITIVE,
 			.polarity = ACPI_ACTIVE_LOW,
 			.con_id = "FTSC1000_irq",
@@ -1039,7 +1039,7 @@ static struct gpiod_lookup_table xiaomi_mipad2_codec_rt5659_gpios = {
 static struct gpiod_lookup_table xiaomi_mipad2_touchscreen_gpios = {
 	.dev_id = "i2c-FTSC1000",
 	.table = {
-		GPIO_LOOKUP("INT33FF:00", 58, "reset", GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP("INT33FF:01", 20, "reset", GPIO_ACTIVE_LOW),
 		{ }
 	},
 };
