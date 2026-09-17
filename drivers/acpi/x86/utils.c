@@ -82,6 +82,21 @@ static const struct override_status_id override_status_ids[] = {
 	      }),
 
 	/*
+	 * The Mi Pad 2 firmware hides the camera description used by the
+	 * AtomISP Linux drivers behind its OSID switch. CAM3 is the front
+	 * OV5693 and CA27 is the rear T4KA3 description with the complete
+	 * Intel camera _DSM data.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C4.CAM3", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C4.CA27", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
 	 * The INT0002 device is necessary to clear wakeup interrupt sources
 	 * on Cherry Trail devices, without it we get nobody cared IRQ msgs.
 	 */

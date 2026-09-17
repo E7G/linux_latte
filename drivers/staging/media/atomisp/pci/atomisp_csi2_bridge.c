@@ -111,6 +111,7 @@ static struct gmin_cfg_var xiaomi_mipad2_vars[] = {
 	{ "INT33BE:00", "CsiPort", "0" },
 	/* _DSM contains the wrong CsiLanes for the back facing T4KA3 sensor */
 	{ "XMCC0003:00", "CsiLanes", "4" },
+	{ "TOSB0001:01", "CsiLanes", "4" },
 	{}
 };
 
@@ -538,6 +539,7 @@ static char *atomisp_csi2_get_vcm_type(struct acpi_device *adev)
 
 static const struct acpi_device_id atomisp_sensor_configs[] = {
 	/* Mi Pad 2 rear T4KA3: four CSI-2 lanes and an on-module DW9761 VCM. */
+	ATOMISP_SENSOR_CONFIG("TOSB0001", 4, true),
 	ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true),
 	/*
 	 * FIXME ov5693 modules have a VCM, but for unknown reasons
@@ -547,6 +549,13 @@ static const struct acpi_device_id atomisp_sensor_configs[] = {
 	ATOMISP_SENSOR_CONFIG("INT33BE", 2, false),	/* OV5693 */
 	{}
 };
+
+static bool atomisp_csi2_is_mipad2_t4ka3(struct acpi_device *adev)
+{
+	const char *hid = acpi_device_hid(adev);
+
+	return !strcmp(hid, "XMCC0003") || !strcmp(hid, "TOSB0001");
+}
 
 static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 					    struct ipu_sensor *sensor)
@@ -586,7 +595,7 @@ static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 
 	sensor->lanes = gmin_cfg_get_int(adev, "CsiLanes", lanes);
 	/* The Mi Pad 2 _DSM reports zero for the rear sensor. */
-	if (!strcmp(acpi_device_hid(adev), "XMCC0003"))
+	if (atomisp_csi2_is_mipad2_t4ka3(adev))
 		sensor->lanes = 4;
 	if (sensor->lanes > IPU_MAX_LANES) {
 		acpi_handle_err(adev->handle, "%s: Invalid lane-count: %d\n",
@@ -600,14 +609,13 @@ static int atomisp_csi2_parse_sensor_fwnode(struct acpi_device *adev,
 
 	sensor->mclkspeed = PMC_CLK_RATE_19_2MHZ;
 	/* The rear module is mounted clockwise relative to the display. */
-	sensor->rotation = !strcmp(acpi_device_hid(adev), "XMCC0003") ?
-		270 : 0;
+	sensor->rotation = atomisp_csi2_is_mipad2_t4ka3(adev) ? 270 : 0;
 	sensor->orientation = (sensor->link == 1) ?
 		V4L2_FWNODE_ORIENTATION_BACK : V4L2_FWNODE_ORIENTATION_FRONT;
 
 	if (vcm) {
 		/* Mi Pad 2 firmware has no usable VCM DSM; use the known part. */
-		if (!strcmp(acpi_device_hid(adev), "XMCC0003"))
+		if (atomisp_csi2_is_mipad2_t4ka3(adev))
 			sensor->vcm_type = "dw9761";
 		else
 			sensor->vcm_type = atomisp_csi2_get_vcm_type(adev);

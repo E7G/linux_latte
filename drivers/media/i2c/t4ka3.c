@@ -1105,6 +1105,7 @@ err_pm_disable:
 }
 
 static const struct acpi_device_id t4ka3_acpi_match[] = {
+	{ "TOSB0001" },
 	{ "XMCC0003" },
 	{}
 };
