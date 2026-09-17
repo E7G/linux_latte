@@ -97,6 +97,21 @@ static const struct override_status_id override_status_ids[] = {
 	      }),
 
 	/*
+	 * The same firmware OSID switch also hides the complete RT5659 audio
+	 * codec description and the Broadcom UART Bluetooth child.  Keep the
+	 * firmware-provided resources and only override _STA so the normal ACPI
+	 * I2C / serdev enumeration paths can instantiate them.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C2.RTK3", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.URT1.BTH1", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
 	 * The INT0002 device is necessary to clear wakeup interrupt sources
 	 * on Cherry Trail devices, without it we get nobody cared IRQ msgs.
 	 */
