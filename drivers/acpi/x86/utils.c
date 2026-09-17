@@ -112,6 +112,15 @@ static const struct override_status_id override_status_ids[] = {
 	      }),
 
 	/*
+	 * The Mi Pad 2 firmware also hides the LP8556 LCD backlight behind
+	 * its OSID switch. DD02 brightness control targets I2C2.BL02.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C2.BL02", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
 	 * The INT0002 device is necessary to clear wakeup interrupt sources
 	 * on Cherry Trail devices, without it we get nobody cared IRQ msgs.
 	 */

@@ -50,6 +50,9 @@ jobs:
           grep -q '{ "TOSB0001" }' drivers/media/i2c/t4ka3.c
           grep -q 'I2C4.CAM3' drivers/acpi/x86/utils.c
           grep -q 'I2C4.CA27' drivers/acpi/x86/utils.c
+          grep -q 'I2C2.BL02' drivers/acpi/x86/utils.c
+          grep -q '{ "LP855600", LP8556 }' drivers/video/backlight/lp855x_bl.c
+          grep -q 'CONFIG_BACKLIGHT_LP855X=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q 'ATOMISP_DEFAULT_WIDTH.*1280' drivers/staging/media/atomisp/pci/atomisp_common.h
           grep -q 'ATOMISP_DEFAULT_HEIGHT.*720' drivers/staging/media/atomisp/pci/atomisp_common.h
           grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_fops.c

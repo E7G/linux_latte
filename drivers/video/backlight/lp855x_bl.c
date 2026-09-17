@@ -585,6 +585,7 @@ MODULE_DEVICE_TABLE(i2c, lp855x_ids);
 static const struct acpi_device_id lp855x_acpi_match[] = {
 	/* Xiaomi specific HID used for the LP8556 on the Mi Pad 2 */
 	{ "XMCC0001", LP8556 },
+	{ "LP855600", LP8556 },
 	{ }
 };
 MODULE_DEVICE_TABLE(acpi, lp855x_acpi_match);
