@@ -991,15 +991,6 @@ static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst 
 			.con_id = "FTSC1000_irq",
 		},
 	}, {
-		/* BQ27520 fuel-gauge */
-		.board_info = {
-			.type = "bq27520",
-			.addr = 0x55,
-			.dev_name = "bq27520",
-			.swnode = &fg_bq25890_supply_node,
-		},
-		.adapter_path = "\\_SB_.PCI0.I2C1",
-	}, {
 		/* TFA9890A audio amplifier */
 		.board_info = {
 			.type = "tfa9890",
