@@ -219,7 +219,6 @@ static const struct i2c_device_id bq27xxx_i2c_id_table[] = {
 	{ "bq27500", BQ2750X },
 	{ "bq27510", BQ2751X },
 	{ "bq27520", BQ2752X },
-	{ "TXN27520:00", BQ2752X }, /* Xiaomi Mi Pad 2 ACPI client name */
 	{ "bq27500-1", BQ27500 },
 	{ "bq27510g1", BQ27510G1 },
 	{ "bq27510g2", BQ27510G2 },
