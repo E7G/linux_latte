@@ -15,7 +15,8 @@
 #include <linux/leds.h>
 #include <linux/pci.h>
 #include <linux/platform_device.h>
-#include <linux/pwm.h>`r`n#include <linux/string.h>
+#include <linux/pwm.h>
+#include <linux/string.h>
 
 #include <dt-bindings/leds/common.h>
 
@@ -905,12 +906,12 @@ static int match_rt5659_client(struct device *dev, const void *data)
 	if (!client)
 		return 0;
 
-	/* 1. 检查设备名是否�?RT5659 */
+	/* 1. 检查设备名是否为 RT5659 */
 	if (!strstr(dev_name(dev), "10EC5659"))
 		return 0;
 
 	/* 2. 获取 ACPI parent device */
-	/* 直接假设 parent �?ACPI device（ACPI 创建�?I2C client 必然如此�?*/
+	/* 直接假设 parent 是 ACPI device（ACPI 创建的 I2C client 必然如此） */
 	adev = ACPI_COMPANION(dev);
 	if (!adev)
 		return 0;
@@ -954,12 +955,12 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 		return ret;
 
 	/*
-	 * Xiaomi's firmware exposes the BQ27520 as TXN27520:00.  The generic
-	 * bq27xxx driver quite reasonably does not know this board-specific
-	 * alias, while creating a second client at 0x55 would collide with the
-	 * ACPI-created one.  Reuse the existing client, fix its I2C type and add
-	 * the charger relationship before reprobe so the normal bq27520 driver
-	 * binds and keeps the expected bq27520-0 power-supply name.
+	 * Xiaomi's firmware exposes the BQ27520 as TXN27520:00. The generic
+	 * bq27xxx driver does not know this board-specific alias, while creating
+	 * a second client at 0x55 would collide with the ACPI-created one. Reuse
+	 * the existing client, fix its I2C type and add the charger relationship
+	 * before reprobe so the normal bq27520 driver binds and keeps the expected
+	 * bq27520-0 power-supply name.
 	 */
 	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL,
 				     match_mipad2_bq27520_client);
@@ -979,7 +980,7 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 		dev_warn(dev, "TXN27520 ACPI I2C client not found\n");
 	}
 
-	/* �?I2C bus 上查�?RT5659 client */
+	/* 在 I2C bus 上查找 RT5659 client */
 	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL, match_rt5659_client);
 	if (!client_dev) {
 		pr_err("RT5659 I2C client not found\n");
