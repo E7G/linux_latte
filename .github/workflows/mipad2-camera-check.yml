@@ -62,7 +62,9 @@ jobs:
             grep -q 'V4L2_SUBDEV_FORMAT_ACTIVE'
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
           grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
-          grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
+          grep -q 'Menu: Super+A' drivers/hid/hid-multitouch.c
+          grep -q 'Home: Super' drivers/hid/hid-multitouch.c
+          grep -q 'Back: Alt+Left' drivers/hid/hid-multitouch.c
           grep -q '^CONFIG_USB_DWC3_DUAL_ROLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_DWC3_PCI=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
