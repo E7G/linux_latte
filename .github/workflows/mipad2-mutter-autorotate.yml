@@ -1,0 +1,101 @@
+name: Build Mi Pad 2 Mutter auto-rotate fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cachyos-mipad2
+    paths:
+      - .github/workflows/mipad2-mutter-autorotate.yml
+      - .github/patches/mutter-4962.patch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+    timeout-minutes: 60
+
+    steps:
+      - name: Install runner tools
+        run: |
+          pacman -Syu --noconfirm --needed git github-cli python
+
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Fetch Arch Mutter packaging
+        run: |
+          git clone --depth 1 https://gitlab.archlinux.org/archlinux/packaging/packages/mutter.git /tmp/mutter-pkg
+          cp .github/patches/mutter-4962.patch /tmp/mutter-pkg/mutter-4962.patch
+
+      - name: Backport upstream auto-rotate fix
+        working-directory: /tmp/mutter-pkg
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("PKGBUILD")
+          s = p.read_text()
+          s = s.replace("pkgrel=1\n", "pkgrel=1.1\n", 1)
+          old = """prepare() {
+            cd mutter
+          }
+          """
+          new = """prepare() {
+            cd mutter
+            git apply --check "$startdir/mutter-4962.patch"
+            git apply "$startdir/mutter-4962.patch"
+          }
+          """
+          if old not in s:
+              raise SystemExit("prepare() block not found")
+          p.write_text(s.replace(old, new, 1))
+          PY
+          grep -nE '^(pkgver|pkgrel)=' PKGBUILD
+          sed -n '/^prepare()/,/^}/p' PKGBUILD
+
+      - name: Install build dependencies
+        working-directory: /tmp/mutter-pkg
+        shell: bash
+        run: |
+          source PKGBUILD
+          pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}"
+          useradd -m builder
+          chown -R builder:builder /tmp/mutter-pkg
+
+      - name: Build patched Mutter packages
+        working-directory: /tmp/mutter-pkg
+        shell: bash
+        run: |
+          su builder -s /bin/bash -c 'cd /tmp/mutter-pkg && makepkg --noconfirm --cleanbuild'
+          ls -lh *.pkg.tar.zst
+
+      - name: Verify package version and patch marker
+        working-directory: /tmp/mutter-pkg
+        shell: bash
+        run: |
+          pkg="$(find . -maxdepth 1 -type f -name 'mutter-50.5-1.1-x86_64.pkg.tar.zst' -print -quit)"
+          test -n "$pkg"
+          mkdir -p /tmp/mutter-check
+          bsdtar -xf "$pkg" -C /tmp/mutter-check
+          test -f /tmp/mutter-check/usr/lib/libmutter-18.so.0.0.0
+          printf '%s\n' "upstream-fix=25e48d8b3f0905fa38c07340e17b0f59938d44c2" > BUILDINFO-MIPAD2.txt
+
+      - name: Prepare artifact
+        working-directory: /tmp/mutter-pkg
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp mutter-50.5-1.1-x86_64.pkg.tar.zst dist/
+          cp BUILDINFO-MIPAD2.txt dist/
+          cp /github/workspace/.github/patches/mutter-4962.patch dist/
+          (cd dist && sha256sum * > SHA256SUMS)
+          cat dist/SHA256SUMS
+
+      - name: Upload patched Mutter
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutter-50.5-autorotate-fix
+          path: /tmp/mutter-pkg/dist/
+          if-no-files-found: error
+          retention-days: 14
