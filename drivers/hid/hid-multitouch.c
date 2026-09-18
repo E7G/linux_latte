@@ -1370,23 +1370,17 @@ static int mt_mipad2_button_mapping(struct hid_device *hdev,
 	if (!mt_is_mipad2_button_keyboard(hdev))
 		return 0;
 
-	set_bit(EV_REP, hi->input->evbit);
-
 	switch (usage->hid & HID_USAGE) {
-	case 0xe0: /* LeftCtrl: modifier used by Home */
-		mt_map_key_clear(KEY_RESERVED);
-		return 1;
-	case 0xe3: /* LeftMeta: modifier used by Menu */
-		mt_map_key_clear(KEY_RESERVED);
-		return 1;
+	case 0xe0: /* LeftCtrl modifier bundled with Home */
+	case 0xe3: /* LeftMeta modifier bundled with Menu */
 	case 0x16: /* S: Menu */
-		mt_map_key_clear(KEY_MENU);
-		return 1;
 	case 0x29: /* Escape: Home */
-		mt_map_key_clear(KEY_HOME);
-		return 1;
 	case 0x2a: /* Backspace/Delete: Back */
-		mt_map_key_clear(KEY_BACK);
+		/*
+		 * Consume the firmware keyboard chord completely. mt_event()
+		 * below emits GNOME-friendly navigation shortcuts instead.
+		 */
+		mt_map_key_clear(KEY_RESERVED);
 		return 1;
 	default:
 		return 0;
@@ -1492,10 +1486,37 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
 	struct mt_device *td = hid_get_drvdata(hid);
 	struct mt_report_data *rdata;
 
-	if (mt_is_mipad2_button_keyboard(hid) && field->hidinput &&
-	    usage->hid == 0x70029) {
-		input_event(field->hidinput->input, EV_KEY, KEY_HOME, value);
-		return 1;
+	if (mt_is_mipad2_button_keyboard(hid) && field->hidinput) {
+		struct input_dev *input = field->hidinput->input;
+
+		switch (usage->hid) {
+		case 0x70016: /* Menu: Super+A -> GNOME application view */
+			if (value) {
+				input_event(input, EV_KEY, KEY_LEFTMETA, 1);
+				input_event(input, EV_KEY, KEY_A, 1);
+			} else {
+				input_event(input, EV_KEY, KEY_A, 0);
+				input_event(input, EV_KEY, KEY_LEFTMETA, 0);
+			}
+			return 1;
+		case 0x70029: /* Home: Super -> GNOME overview */
+			input_event(input, EV_KEY, KEY_LEFTMETA, !!value);
+			return 1;
+		case 0x7002a: /* Back: Alt+Left */
+			if (value) {
+				input_event(input, EV_KEY, KEY_LEFTALT, 1);
+				input_event(input, EV_KEY, KEY_LEFT, 1);
+			} else {
+				input_event(input, EV_KEY, KEY_LEFT, 0);
+				input_event(input, EV_KEY, KEY_LEFTALT, 0);
+			}
+			return 1;
+		case 0x700e0: /* Firmware-only Home modifier */
+		case 0x700e3: /* Firmware-only Menu modifier */
+			return 1;
+		default:
+			break;
+		}
 	}
 
 	rdata = mt_find_report_data(td, field->report);
@@ -1685,11 +1706,17 @@ static int mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
 	struct hid_report *report;
 	int ret;
 
-	/* The firmware exposes Escape (0x29) as the center Home button. */
+	/*
+	 * Expose only the keys emitted by mt_event() for the Mi Pad 2
+	 * capacitive navigation buttons. The firmware's raw keyboard usages
+	 * are intentionally mapped to KEY_RESERVED above.
+	 */
 	if (mt_is_mipad2_button_keyboard(hdev) &&
 	    hi->application == HID_GD_KEYBOARD) {
-		set_bit(KEY_HOME, hi->input->keybit);
-		clear_bit(KEY_LEFTMETA, hi->input->keybit);
+		set_bit(KEY_LEFTMETA, hi->input->keybit);
+		set_bit(KEY_A, hi->input->keybit);
+		set_bit(KEY_LEFTALT, hi->input->keybit);
+		set_bit(KEY_LEFT, hi->input->keybit);
 	}
 
 	list_for_each_entry(report, &hi->reports, hidinput_list) {
