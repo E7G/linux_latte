@@ -26,27 +26,24 @@ jobs:
       - name: Configure Mi Pad 2 CachyOS kernel
         run: |
           make xiaomipad2_defconfig
-          release="$(make -s kernelrelease)"
+          release="$(make -s LOCALVERSION= kernelrelease)"
           echo "kernelrelease=$release"
           grep '^CONFIG_HID_MULTITOUCH=' .config
           grep '^CONFIG_LOCALVERSION=' .config
-          case "$release" in
-            6.14.0-mipad2-cachyos*) ;;
-            *) echo "Unexpected kernelrelease: $release" >&2; exit 1 ;;
-          esac
+          test "$release" = "6.14.0-mipad2-cachyos"
           grep -q '^CONFIG_HID_MULTITOUCH=y' .config
           grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' .config
 
       - name: Build bzImage
         run: |
-          make -j"$(nproc)" bzImage
+          make LOCALVERSION= -j"$(nproc)" bzImage
 
       - name: Prepare artifact
         run: |
           mkdir -p dist
           cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos
           cp .config dist/config-linux-latte-cachyos
-          make -s kernelrelease > dist/kernelrelease.txt
+          make -s LOCALVERSION= kernelrelease > dist/kernelrelease.txt
           git rev-parse HEAD > dist/commit.txt
           sha256sum dist/vmlinuz-linux-latte-cachyos > dist/vmlinuz-linux-latte-cachyos.sha256
           ls -lh dist
