@@ -1,4 +1,4 @@
-name: Build Mi Pad 2 CachyOS bzImage
+name: Build Mi Pad 2 CachyOS navkeys kernel bundle
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,39 +21,72 @@ jobs:
       - name: Install kernel build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             build-essential bc bison flex libssl-dev libelf-dev dwarves zstd
+          sudo apt-get install -y \
+            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod
 
-      - name: Configure Mi Pad 2 CachyOS kernel
+      - name: Configure Mi Pad 2 CachyOS navkeys kernel
         run: |
           make xiaomipad2_defconfig
-          release="$(make -s LOCALVERSION= kernelrelease)"
+          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
           echo "kernelrelease=$release"
           grep '^CONFIG_HID_MULTITOUCH=' .config
           grep '^CONFIG_LOCALVERSION=' .config
-          test "$release" = "6.14.0-mipad2-cachyos"
+          test "$release" = "6.14.0-mipad2-cachyos-navkeys"
           grep -q '^CONFIG_HID_MULTITOUCH=y' .config
           grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' .config
 
-      - name: Build bzImage
+      - name: Build bzImage and modules
         run: |
-          make LOCALVERSION= -j"$(nproc)" bzImage
+          make LOCALVERSION=-navkeys -j"$(nproc)" bzImage modules
 
-      - name: Prepare artifact
+      - name: Stage matching modules
         run: |
+          set -eux
+          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
+          rm -rf modules-root
+          mkdir -p modules-root
+          make LOCALVERSION=-navkeys INSTALL_MOD_PATH="$PWD/modules-root" modules_install
+          rm -f "modules-root/lib/modules/$release/build" "modules-root/lib/modules/$release/source"
+          depmod -b "$PWD/modules-root" "$release"
+
+          cfg80211="$(find "modules-root/lib/modules/$release" -type f -name 'cfg80211.ko*' | head -n1)"
+          brcmfmac="$(find "modules-root/lib/modules/$release" -type f -name 'brcmfmac.ko*' | head -n1)"
+          test -n "$cfg80211"
+          test -n "$brcmfmac"
+          test "$(modinfo -F vermagic "$cfg80211" | awk '{print $1}')" = "$release"
+          test "$(modinfo -F vermagic "$brcmfmac" | awk '{print $1}')" = "$release"
+
+          {
+            echo "cfg80211: $(modinfo -F vermagic "$cfg80211")"
+            echo "brcmfmac: $(modinfo -F vermagic "$brcmfmac")"
+          } | tee module-vermagic.txt
+
+      - name: Prepare kernel bundle
+        run: |
+          set -eux
+          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
           mkdir -p dist
-          cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos
-          cp .config dist/config-linux-latte-cachyos
-          make -s LOCALVERSION= kernelrelease > dist/kernelrelease.txt
+          cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos-navkeys
+          cp .config dist/config-linux-latte-cachyos-navkeys
+          printf '%s\n' "$release" > dist/kernelrelease.txt
           git rev-parse HEAD > dist/commit.txt
-          sha256sum dist/vmlinuz-linux-latte-cachyos > dist/vmlinuz-linux-latte-cachyos.sha256
+          cp module-vermagic.txt dist/module-vermagic.txt
+          tar --zstd -C modules-root/lib/modules -cf dist/modules-linux-latte-cachyos-navkeys.tar.zst "$release"
+          (
+            cd dist
+            sha256sum \
+              vmlinuz-linux-latte-cachyos-navkeys \
+              modules-linux-latte-cachyos-navkeys.tar.zst > SHA256SUMS
+          )
           ls -lh dist
           cat dist/kernelrelease.txt
-          cat dist/vmlinuz-linux-latte-cachyos.sha256
+          cat dist/module-vermagic.txt
+          cat dist/SHA256SUMS
 
-      - name: Upload bzImage
+      - name: Upload kernel bundle
         uses: actions/upload-artifact@v4
         with:
-          name: linux-latte-cachyos-bzimage
+          name: linux-latte-cachyos-navkeys-kernel-bundle
           path: dist/
           if-no-files-found: error
           retention-days: 14
