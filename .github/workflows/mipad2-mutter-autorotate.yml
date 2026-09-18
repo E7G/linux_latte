@@ -1,4 +1,4 @@
-name: Build Mi Pad 2 Mutter auto-rotate fix
+﻿name: Build Mi Pad 2 Mutter auto-rotate fix
 
 on:
   workflow_dispatch:
@@ -88,7 +88,7 @@ jobs:
           mkdir -p dist
           cp mutter-50.5-1.1-x86_64.pkg.tar.zst dist/
           cp BUILDINFO-MIPAD2.txt dist/
-          cp /github/workspace/.github/patches/mutter-4962.patch dist/
+          cp mutter-4962.patch dist/
           (cd dist && sha256sum * > SHA256SUMS)
           cat dist/SHA256SUMS
 
