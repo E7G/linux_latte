@@ -78,6 +78,10 @@
 #define T4KA3_REG_DIGGAIN_BLUE			CCI_REG16(0x0212)
 #define T4KA3_REG_DIGGAIN_GREEN_B		CCI_REG16(0x0214)
 #define T4KA3_REG_GLOBAL_GAIN			CCI_REG16(0x0234)
+#define T4KA3_DIGITAL_GAIN_UNITY		0x0100
+#define T4KA3_COLOR_BALANCE_MIN			256
+#define T4KA3_COLOR_BALANCE_MAX			4095
+#define T4KA3_COLOR_BALANCE_DEF			1024
 #define T4KA3_MIN_GLOBAL_GAIN_SUPPORTED		0x0080
 #define T4KA3_MAX_GLOBAL_GAIN_SUPPORTED		0x07ff
 #define T4KA3_REG_FRAME_LENGTH_LINES		CCI_REG16(0x0340) /* aka VTS */
@@ -124,6 +128,8 @@ struct t4ka3_ctrls {
 	struct v4l2_ctrl *hblank;
 	struct v4l2_ctrl *exposure;
 	struct v4l2_ctrl *gain;
+	struct v4l2_ctrl *red_balance;
+	struct v4l2_ctrl *blue_balance;
 	struct v4l2_ctrl *test_pattern;
 	struct v4l2_ctrl *link_freq;
 	struct v4l2_ctrl *pixel_rate;
@@ -465,6 +471,30 @@ static int t4ka3_detect(struct t4ka3_data *sensor, u16 *id)
 	return 0;
 }
 
+static int t4ka3_color_gain_configure(struct t4ka3_data *sensor)
+{
+	u32 red_gain;
+	u32 blue_gain;
+	int ret = 0;
+
+	/* RED/BLUE balance controls use a Q10 multiplier, 1024 == 1.0x. */
+	red_gain = DIV_ROUND_CLOSEST(T4KA3_DIGITAL_GAIN_UNITY *
+				     sensor->ctrls.red_balance->val,
+				     T4KA3_COLOR_BALANCE_DEF);
+	blue_gain = DIV_ROUND_CLOSEST(T4KA3_DIGITAL_GAIN_UNITY *
+				      sensor->ctrls.blue_balance->val,
+				      T4KA3_COLOR_BALANCE_DEF);
+
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_GREEN_R,
+		  T4KA3_DIGITAL_GAIN_UNITY, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_RED, red_gain, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_BLUE, blue_gain, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_GREEN_B,
+		  T4KA3_DIGITAL_GAIN_UNITY, &ret);
+
+	return ret;
+}
+
 static int t4ka3_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct t4ka3_data *sensor = ctrl_to_t4ka3(ctrl);
@@ -509,6 +539,10 @@ static int t4ka3_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ANALOGUE_GAIN:
 		ret = cci_write(sensor->regmap, T4KA3_REG_GLOBAL_GAIN,
 				ctrl->val, NULL);
+		break;
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+		ret = t4ka3_color_gain_configure(sensor);
 		break;
 	default:
 		ret = -EINVAL;
@@ -874,7 +908,7 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 		"Random Data",
 	};
 
-	v4l2_ctrl_handler_init(hdl, 11);
+	v4l2_ctrl_handler_init(hdl, 13);
 
 	hdl->lock = &sensor->lock;
 
@@ -918,6 +952,15 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 					T4KA3_MIN_GLOBAL_GAIN_SUPPORTED,
 					T4KA3_MAX_GLOBAL_GAIN_SUPPORTED,
 					1, T4KA3_MIN_GLOBAL_GAIN_SUPPORTED);
+
+	ctrls->red_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_RED_BALANCE,
+					      T4KA3_COLOR_BALANCE_MIN,
+					      T4KA3_COLOR_BALANCE_MAX, 1,
+					      T4KA3_COLOR_BALANCE_DEF);
+	ctrls->blue_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_BLUE_BALANCE,
+					       T4KA3_COLOR_BALANCE_MIN,
+					       T4KA3_COLOR_BALANCE_MAX, 1,
+					       T4KA3_COLOR_BALANCE_DEF);
 
 	ret = v4l2_fwnode_device_parse(sensor->dev, &props);
 	if (ret)
