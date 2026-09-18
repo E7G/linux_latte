@@ -1,0 +1,55 @@
+name: Build Mi Pad 2 CachyOS bzImage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cachyos-mipad2
+    paths:
+      - drivers/hid/**
+      - arch/x86/configs/xiaomipad2_defconfig
+      - .github/workflows/mipad2-bzimage.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             build-essential bc bison flex libssl-dev libelf-dev dwarves zstd
+
+      - name: Configure Mi Pad 2 CachyOS kernel
+        run: |
+          make xiaomipad2_defconfig
+          test "$(make -s kernelrelease)" = "6.14.0-mipad2-cachyos"
+          grep -q '^CONFIG_HID_MULTITOUCH=y' .config
+          grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' .config
+
+      - name: Build bzImage
+        run: |
+          make -j"$(nproc)" bzImage
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p dist
+          cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos
+          cp .config dist/config-linux-latte-cachyos
+          make -s kernelrelease > dist/kernelrelease.txt
+          git rev-parse HEAD > dist/commit.txt
+          sha256sum dist/vmlinuz-linux-latte-cachyos > dist/vmlinuz-linux-latte-cachyos.sha256
+          ls -lh dist
+          cat dist/kernelrelease.txt
+          cat dist/vmlinuz-linux-latte-cachyos.sha256
+
+      - name: Upload bzImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-latte-cachyos-bzimage
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
