@@ -464,6 +464,53 @@ static int bq25890_get_vbus_voltage(struct bq25890_device *bq)
 	return bq25890_find_val(ret, TBL_VBUSV);
 }
 
+/*
+ * BQ25890/BQ25895 have an integrated BC1.2 charger detector.  The VBUS_STAT
+ * field already tells us whether the attached source is SDP, CDP or DCP.
+ * Export that through the power-supply class instead of making userspace
+ * treat every source as a generic USB supply.
+ *
+ * Values 4-6 are high-voltage / non-standard adapters.  They are still
+ * dedicated charging ports from the USB power-supply point of view; we do
+ * not change charge voltage or current here.
+ */
+static int bq25890_get_usb_type(struct bq25890_device *bq)
+{
+	int ret;
+
+	/* BQ25892 gets charger type from an external USB supply. */
+	if (bq->chip_version == BQ25892)
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+
+	/*
+	 * F_VBUS_STAT is defined for BQ25890/BQ25895.  Keep the BQ25896
+	 * conservative because the field is not usable in the same way there.
+	 */
+	if (bq->chip_version == BQ25896)
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+
+	ret = bq25890_field_read(bq, F_VBUS_STAT);
+	if (ret < 0)
+		return ret;
+
+	switch (ret) {
+	case 1:
+		return POWER_SUPPLY_USB_TYPE_SDP;
+	case 2:
+		return POWER_SUPPLY_USB_TYPE_CDP;
+	case 3:
+		return POWER_SUPPLY_USB_TYPE_DCP;
+	case 4: /* HVDCP */
+	case 5: /* unknown adapter */
+	case 6: /* non-standard adapter */
+		return POWER_SUPPLY_USB_TYPE_DCP;
+	case 0: /* no input / unknown */
+	case 7: /* OTG */
+	default:
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+	}
+}
+
 static void bq25890_update_state(struct bq25890_device *bq,
 				 enum power_supply_property psp,
 				 struct bq25890_state *state)
@@ -534,6 +581,22 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = state.online && !state.hiz;
+		break;
+
+	case POWER_SUPPLY_PROP_USB_TYPE:
+		if (bq->chip_version == BQ25892) {
+			ret = power_supply_get_property_from_supplier(psy,
+							      POWER_SUPPLY_PROP_USB_TYPE,
+							      val);
+			if (ret)
+				val->intval = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+			break;
+		}
+
+		ret = bq25890_get_usb_type(bq);
+		if (ret < 0)
+			return ret;
+		val->intval = ret;
 		break;
 
 	case POWER_SUPPLY_PROP_HEALTH:
@@ -992,6 +1055,7 @@ static const enum power_supply_property bq25890_power_supply_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
 	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_USB_TYPE,
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
@@ -1011,6 +1075,10 @@ static char *bq25890_charger_supplied_to[] = {
 
 static const struct power_supply_desc bq25890_power_supply_desc = {
 	.type = POWER_SUPPLY_TYPE_USB,
+	.usb_types = BIT(POWER_SUPPLY_USB_TYPE_UNKNOWN) |
+		     BIT(POWER_SUPPLY_USB_TYPE_SDP) |
+		     BIT(POWER_SUPPLY_USB_TYPE_CDP) |
+		     BIT(POWER_SUPPLY_USB_TYPE_DCP),
 	.properties = bq25890_power_supply_props,
 	.num_properties = ARRAY_SIZE(bq25890_power_supply_props),
 	.get_property = bq25890_power_supply_get_property,
