@@ -196,7 +196,7 @@ static int tfa989x_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_component *component = dai->component;
 	int sr;
 
-    pr_info("tfa989x received sample_rate: %d\n",params_rate(params));
+	dev_dbg(component->dev, "sample rate: %d\n", params_rate(params));
 
 	sr = tfa989x_find_sample_rate(params_rate(params));
 	if (sr < 0)
@@ -219,7 +219,7 @@ static int tfa989x_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 	u16 val;
 
 	pr_debug("\n");
-    pr_info("tfa989x received fmt: %d\n",fmt);
+	dev_dbg(component->dev, "DAI format: %#x\n", fmt);
 
 	/* set master/slave audio interface */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
@@ -452,14 +452,14 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 
     dev_dbg(&i2c->dev, "tfa989x i2c addr is: %x \n",i2c->addr);
 
-    pr_info("tfa989x test 0 \n");
+	dev_dbg(dev, "probing amplifier\n");
 
 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
 		dev_err(&i2c->dev, "tfa989x check_functionality failed\n");
 		return -EIO;
 	}
     else{
-        pr_info("tfa989x check_functionality OK \n");
+		dev_dbg(dev, "I2C functionality check passed\n");
     }
 
     my_i2c_read_reg(i2c, myreg, &myval);
@@ -468,7 +468,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 
 	rev = device_get_match_data(dev);
 	if (!rev) {
-	    pr_info("tfa989x dev name: %s", name);
+		dev_dbg(dev, "matching ACPI-created device %s\n", name);
         if (strstr(name, "i2c-tfa9890")) {
 	        rev = &tfa9890_rev;
         }
@@ -482,7 +482,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	if (!tfa989x)
 		return -ENOMEM;
 
-    pr_info("tfa989x test 1 \n");
+	dev_dbg(dev, "allocated driver data\n");
 
 	tfa989x->rev = rev;
 	i2c_set_clientdata(i2c, tfa989x);
@@ -502,7 +502,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
-    pr_info("tfa989x test 2 \n");
+	dev_dbg(dev, "regmap initialized\n");
 
 	ret = regulator_enable(tfa989x->vddd_supply);
 	if (ret) {
@@ -526,7 +526,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 		return ret;
 	}
 
-    pr_info("tfa989x test 3 \n");
+	dev_dbg(dev, "revision register read\n");
 
 	val &= TFA989X_REVISIONNUMBER_REV_MSK;
 	if (val != rev->rev) {
@@ -535,8 +535,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 		return -ENODEV;
 	}
 
-    pr_info("tfa989x revision number, expected %#x, got %#x\n",
-			rev->rev, val);
+	dev_dbg(dev, "revision number %#x verified\n", val);
 
 	ret = regmap_write(regmap, TFA989X_SYS_CTRL, BIT(TFA989X_SYS_CTRL_I2CR));
 	if (ret) {
@@ -559,14 +558,14 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 
 	const char id = name[13];
 
-    pr_info("tfa989x test 4, id = %c\n", id);
+	dev_dbg(dev, "Mi Pad 2 amplifier instance id=%c\n", id);
 
 	if (id == '1') {
-		pr_info("tfa989x --> Right\n");
+		dev_dbg(dev, "registering right amplifier\n");
 		return devm_snd_soc_register_component(dev, &tfa9890_component,
 	 				       					&tfa989x_dai, 1);
 	}
-	pr_info("tfa989x --> Left\n");
+	dev_dbg(dev, "registering left amplifier\n");
 	return devm_snd_soc_register_component(dev, &tfa989x_component,
 	 				        &tfa989x_dai, 1);
 }
