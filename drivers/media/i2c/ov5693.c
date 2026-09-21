@@ -66,7 +66,9 @@
 #define OV5693_DIGITAL_GAIN_STEP		1
 #define OV5693_COLOR_BALANCE_MIN		256
 #define OV5693_COLOR_BALANCE_MAX		4095
-#define OV5693_COLOR_BALANCE_DEF		1024
+#define OV5693_COLOR_BALANCE_UNITY		1024
+#define OV5693_RED_BALANCE_DEF			1650
+#define OV5693_BLUE_BALANCE_DEF			1633
 
 /* Timing and Format */
 #define OV5693_CROP_START_X_REG			CCI_REG16(0x3800)
@@ -443,9 +445,9 @@ static int ov5693_color_gain_configure(struct ov5693_device *ov5693)
 	 * DIGITAL_GAIN as the common/green gain and scale R/B around it.
 	 */
 	red_gain = DIV_ROUND_CLOSEST(gain * ov5693->ctrls.red_balance->val,
-				     OV5693_COLOR_BALANCE_DEF);
+				     OV5693_COLOR_BALANCE_UNITY);
 	blue_gain = DIV_ROUND_CLOSEST(gain * ov5693->ctrls.blue_balance->val,
-				      OV5693_COLOR_BALANCE_DEF);
+				      OV5693_COLOR_BALANCE_UNITY);
 
 	cci_write(ov5693->regmap, OV5693_MWB_RED_GAIN_REG,
 		  min(red_gain, (u32)OV5693_MWB_GAIN_MAX), &ret);
@@ -1149,12 +1151,12 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 					      V4L2_CID_RED_BALANCE,
 					      OV5693_COLOR_BALANCE_MIN,
 					      OV5693_COLOR_BALANCE_MAX, 1,
-					      OV5693_COLOR_BALANCE_DEF);
+					      OV5693_RED_BALANCE_DEF);
 	ctrls->blue_balance = v4l2_ctrl_new_std(&ctrls->handler, ops,
 					       V4L2_CID_BLUE_BALANCE,
 					       OV5693_COLOR_BALANCE_MIN,
 					       OV5693_COLOR_BALANCE_MAX, 1,
-					       OV5693_COLOR_BALANCE_DEF);
+					       OV5693_BLUE_BALANCE_DEF);
 
 	/* Flip */
 	ctrls->hflip = v4l2_ctrl_new_std(&ctrls->handler, ops,
