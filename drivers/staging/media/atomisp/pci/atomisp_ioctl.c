@@ -1045,6 +1045,7 @@ static int atomisp_g_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct atomisp_device *isp = asd->isp;
 	int i, ret = -EINVAL;
 
 	for (i = 0; i < ctrls_num; i++) {
@@ -1058,6 +1059,22 @@ static int atomisp_g_ctrl(struct file *file, void *fh,
 		return ret;
 
 	switch (control->id) {
+	case V4L2_CID_AUTO_WHITE_BALANCE:
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+	case V4L2_CID_GAMMA:
+		/*
+		 * These controls historically appeared in ci_v4l2_controls but had
+		 * no implementation, so every VIDIOC_G_CTRL returned -EINVAL.
+		 * Forward them to the active sensor when the sensor implements them.
+		 * T4KA3/OV5693 expose RED/BLUE_BALANCE as real Q10 hardware gains.
+		 */
+		if (!isp->inputs[asd->input_curr].camera ||
+		    !isp->inputs[asd->input_curr].camera->ctrl_handler)
+			return -ENODEV;
+		ret = v4l2_g_ctrl(isp->inputs[asd->input_curr].camera->ctrl_handler,
+				  control);
+		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 0, &control->value);
 		break;
@@ -1097,6 +1114,7 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct atomisp_device *isp = asd->isp;
 	int i, ret = -EINVAL;
 
 	for (i = 0; i < ctrls_num; i++) {
@@ -1110,6 +1128,17 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 		return ret;
 
 	switch (control->id) {
+	case V4L2_CID_AUTO_WHITE_BALANCE:
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+	case V4L2_CID_GAMMA:
+		if (!isp->inputs[asd->input_curr].camera ||
+		    !isp->inputs[asd->input_curr].camera->ctrl_handler)
+			return -ENODEV;
+		ret = v4l2_s_ctrl(NULL,
+				  isp->inputs[asd->input_curr].camera->ctrl_handler,
+				  control);
+		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 1, &control->value);
 		break;
@@ -1147,10 +1176,32 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 static int atomisp_queryctl(struct file *file, void *fh,
 			    struct v4l2_queryctrl *qc)
 {
+	struct video_device *vdev = video_devdata(file);
+	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct atomisp_device *isp = asd->isp;
 	int i, ret = -EINVAL;
 
 	if (qc->id & V4L2_CTRL_FLAG_NEXT_CTRL)
 		return ret;
+
+	/*
+	 * Sensor-owned controls must report the sensor's actual range.  The old
+	 * hard-coded AtomISP ranges (0..255) are wrong for T4KA3/OV5693, whose
+	 * color gains are Q10 values in the 256..4095 range.
+	 */
+	switch (qc->id) {
+	case V4L2_CID_AUTO_WHITE_BALANCE:
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+	case V4L2_CID_GAMMA:
+		if (!isp->inputs[asd->input_curr].camera ||
+		    !isp->inputs[asd->input_curr].camera->ctrl_handler)
+			return -ENODEV;
+		return v4l2_queryctrl(
+			isp->inputs[asd->input_curr].camera->ctrl_handler, qc);
+	default:
+		break;
+	}
 
 	for (i = 0; i < ctrls_num; i++) {
 		if (ci_v4l2_controls[i].id == qc->id) {
