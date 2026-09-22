@@ -2053,6 +2053,18 @@ config SND_SOC_TFA989X
 	  Note that the driver currently bypasses the built-in "CoolFlux DSP"
 	  and does not support (hardware) volume control.
 
+config SND_SOC_TFA98XX_XIAOMI
+	tristate "Xiaomi Mi Pad 2 factory TFA9890 CoolFlux DSP"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Enable the Xiaomi/Intel Cherry Trail era NXP TFA9890 driver used by
+	  Mi Pad 2. This driver understands the factory PM1_00 tfa98xx.cnt
+	  container and can load the CoolFlux DSP speaker profiles.
+
+	  This is a board-specific compatibility driver. Do not enable it
+	  together with SND_SOC_TFA989X for the same i2c:tfa9890 devices.
+
 config SND_SOC_TLV320ADC3XXX
 	tristate "Texas Instruments TLV320ADC3001/3101 audio ADC"
 	depends on I2C

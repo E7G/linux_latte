@@ -132,6 +132,8 @@ static const struct snd_soc_dapm_route cht_audio_map[] = {
 	{"Headphone", NULL, "HPOR"},
 	{"Ext Spk", NULL, "SPOL"},
 	{"Ext Spk", NULL, "SPOR"},
+	{"i2c-tfa9890:00 Playback", NULL, "AIF2 Capture"},
+	{"i2c-tfa9890:01 Playback", NULL, "AIF2 Capture"},
 };
 
 static const struct snd_soc_dapm_route cht_audio_ssp0_map[] = {
@@ -517,8 +519,12 @@ SND_SOC_DAILINK_DEF(ssp2_codec,
 SND_SOC_DAILINK_DEF(platform,
 	DAILINK_COMP_ARRAY(COMP_PLATFORM("sst-mfld-platform")));
 
-SND_SOC_DAILINK_DEF(rt5659_aif2_cpu,
-	DAILINK_COMP_ARRAY(COMP_CPU("rt5659-aif2")));
+SND_SOC_DAILINK_DEF(rt5659_aif1_cpu,
+	DAILINK_COMP_ARRAY(COMP_CPU("rt5659-aif1")));
+
+SND_SOC_DAILINK_DEF(rt5659_aif2_codec,
+	DAILINK_COMP_ARRAY(COMP_CODEC("i2c-10EC5659:00",
+					  "rt5659-aif2")));
 
 SND_SOC_DAILINK_DEF(spk_l_codec,
 	DAILINK_COMP_ARRAY(COMP_CODEC("i2c-tfa9890:00",
@@ -537,6 +543,18 @@ static const struct snd_soc_pcm_stream nxp_tfa989x_params[] = {
 	.channels_max = 2,
 	.rates = SNDRV_PCM_RATE_48000,
 	.sig_bits = 16,
+	},
+};
+
+static const struct snd_soc_pcm_stream rt5659_aif2_params[] = {
+	{
+	.formats = SNDRV_PCM_FMTBIT_S24_LE,
+	.rate_min = 48000,
+	.rate_max = 48000,
+	.channels_min = 2,
+	.channels_max = 2,
+	.rates = SNDRV_PCM_RATE_48000,
+	.sig_bits = 24,
 	},
 };
 
@@ -575,21 +593,32 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.ignore_pmdown_time = 1,
 	},
 	{
-		.name = "rt5659_AIF2-TFA989x_Speaker_L",
-		.stream_name = "aif2-spk_l",
-		SND_SOC_DAILINK_REG(rt5659_aif2_cpu, spk_l_codec),
+		.name = "Codec AIF2 Port",
+		.stream_name = "rt5659 AIF2 capture",
+		SND_SOC_DAILINK_REG(rt5659_aif1_cpu, rt5659_aif2_codec),
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-			SND_SOC_DAIFMT_CBS_CFS,
-		.c2c_params = nxp_tfa989x_params,
+			SND_SOC_DAIFMT_CBM_CFM,
+		.c2c_params = rt5659_aif2_params,
 		.num_c2c_params = 1,
+		.ignore_suspend = 1,
 	},{
-		.name = "rt5659_AIF2-TFA989x_Speaker_R",
-		.stream_name = "aif2-spk_r",
-		SND_SOC_DAILINK_REG(rt5659_aif2_cpu, spk_r_codec),
+		.name = "Left TFA98xx Speaker Port",
+		.stream_name = "Left TFA98xx Speaker",
+		SND_SOC_DAILINK_REG(dummy, spk_l_codec, dummy),
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_CBS_CFS,
 		.c2c_params = nxp_tfa989x_params,
 		.num_c2c_params = 1,
+		.ignore_suspend = 1,
+	},{
+		.name = "Right TFA98xx Speaker Port",
+		.stream_name = "Right TFA98xx Speaker",
+		SND_SOC_DAILINK_REG(dummy, spk_r_codec, dummy),
+		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_CBS_CFS,
+		.c2c_params = nxp_tfa989x_params,
+		.num_c2c_params = 1,
+		.ignore_suspend = 1,
 	},
 };
 
@@ -697,7 +726,16 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 		if (adev) {
 			snprintf(drv->codec_name, sizeof(drv->codec_name),
 				 "i2c-%s", acpi_dev_name(adev));
-			cht_dailink[dai_index].codecs->name = drv->codec_name;
+			for (i = 0; i < ARRAY_SIZE(cht_dailink); i++) {
+				int c;
+
+				for (c = 0; c < cht_dailink[i].num_codecs; c++) {
+					if (cht_dailink[i].codecs[c].name &&
+					    !strcmp(cht_dailink[i].codecs[c].name,
+						    RT5659_I2C_DEFAULT))
+						cht_dailink[i].codecs[c].name = drv->codec_name;
+				}
+			}
 		}
 		acpi_dev_put(adev);
 
@@ -762,6 +800,7 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, &snd_soc_card_cht);
 
+	dev_info(&pdev->dev, "Mi Pad 2 Android TFA AIF2 topology enabled (S24; codec hw_params BCLK)\n");
 	pr_info("cht-bsw-rt5659 mach test 3\n");
 
 	return ret_val;

@@ -3336,6 +3336,32 @@ static int rt5659_hw_params(struct snd_pcm_substream *substream,
 		val_clk = pre_div << RT5659_I2S_PD2_SFT;
 		snd_soc_component_update_bits(component, RT5659_I2S2_SDP,
 			RT5659_I2S_DL_MASK, val_len);
+
+		/*
+		 * Xiaomi Mi Pad 2 Android kernel derived BCLK ratio from the
+		 * negotiated frame size here.  Modern RT5659 moved that policy
+		 * to set_bclk_ratio(), but codec-to-codec DAPM links call the DAI
+		 * hw_params() directly and do not invoke machine-link ops.  Restore
+		 * the old behaviour for AIF2 so S24 stereo uses 64fs and TFA9890
+		 * can lock PLL/AREFS.
+		 */
+		if (frame_size > 32) {
+			rt5659->bclk[dai->id] = rt5659->lrck[dai->id] * 64;
+			snd_soc_component_update_bits(component, RT5659_ADDA_CLK_1,
+				RT5659_I2S_BCLK_MS2_MASK,
+				RT5659_I2S_BCLK_MS2_64);
+			dev_info(component->dev,
+				 "Mi Pad 2 AIF2 hw_params: %d Hz frame=%d -> 64fs\n",
+				 rt5659->lrck[dai->id], frame_size);
+		} else {
+			rt5659->bclk[dai->id] = rt5659->lrck[dai->id] * 32;
+			snd_soc_component_update_bits(component, RT5659_ADDA_CLK_1,
+				RT5659_I2S_BCLK_MS2_MASK,
+				RT5659_I2S_BCLK_MS2_32);
+			dev_info(component->dev,
+				 "Mi Pad 2 AIF2 hw_params: %d Hz frame=%d -> 32fs\n",
+				 rt5659->lrck[dai->id], frame_size);
+		}
 		break;
 	case RT5659_AIF3:
 		mask_clk = RT5659_I2S_PD3_MASK;
