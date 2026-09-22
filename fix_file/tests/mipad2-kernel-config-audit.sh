@@ -74,7 +74,17 @@ need 'CONFIG_SERIAL_DEV_BUS=y'
 # Audio and both camera pipelines.
 need 'CONFIG_SND_SST_ATOM_HIFI2_PLATFORM_ACPI=m'
 need 'CONFIG_SND_SOC_INTEL_CHT_BSW_RT5659_MACH=m'
-need 'CONFIG_SND_SOC_TFA989X=y'
+if grep -Eq '^CONFIG_SND_SOC_TFA989X=y$' "$config"; then
+	printf 'OK   %s
+' 'CONFIG_SND_SOC_TFA989X=y'
+elif grep -Eq '^CONFIG_SND_SOC_TFA98XX_XIAOMI=m$' "$config"; then
+	printf 'OK   %s
+' 'CONFIG_SND_SOC_TFA98XX_XIAOMI=m'
+else
+	printf 'MISS %s
+' 'CONFIG_SND_SOC_TFA989X=y or CONFIG_SND_SOC_TFA98XX_XIAOMI=m' >&2
+	fail=1
+fi
 need 'CONFIG_VIDEO_OV5693=m'
 need 'CONFIG_VIDEO_T4KA3=m'
 need 'CONFIG_VIDEO_DW9719=m'
