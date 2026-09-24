@@ -132,3 +132,22 @@ the sensor data and iio-sensor-proxy behavior. On-device, the hardware smoke
 test also checks that accel, gravity, gyro, and magnetometer sysfs mount
 matrices equal the Android-derived correction; this does not validate live
 axis response or automatic display rotation.
+
+For a reproducible live test, install the distribution's iio-sensor-proxy
+package, start a terminal session, and run:
+
+    monitor-sensor --accel
+
+With the tablet screen facing you, slowly rotate it through portrait, both
+landscape sides, and inverted portrait. Record each reported accelerometer
+orientation and check that it follows the display without a 90/180-degree
+offset or rapid flapping. Then run the read-only hardware smoke test once
+after cold boot and again after suspend/resume. If the matrix is present but
+the proxy does not report all expected orientations, save:
+
+    udevadm info --export-db | grep -A12 -B4 -E 'iio:device|ACCEL_MOUNT_MATRIX'
+    journalctl -b -u iio-sensor-proxy.service
+    dmesg | grep -Ei 'hid.sensor|sensor.hub|iio'
+
+monitor-sensor is the iio-sensor-proxy project's diagnostic client for
+observing accelerometer orientation changes.
