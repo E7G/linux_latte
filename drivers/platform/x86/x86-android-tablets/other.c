@@ -872,9 +872,15 @@ static const struct software_node rt5659_swnode = {
 
 static int match_rt5659_client(struct device *dev, const void *data)
 {
-	struct acpi_device *adev = ACPI_COMPANION(dev);
+	struct acpi_device *adev;
+	struct i2c_client *client;
 
-	if (!adev || !strstr(dev_name(dev), "10EC5659"))
+	client = i2c_verify_client(dev);
+	if (!client || !strstr(dev_name(dev), "10EC5659"))
+		return 0;
+
+	adev = ACPI_COMPANION(dev);
+	if (!adev)
 		return 0;
 
 	dev_dbg(dev, "matched ACPI RT5659 client\n");
