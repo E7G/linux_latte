@@ -86,6 +86,12 @@ jobs:
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
 
+      - name: Compile Mi Pad 2 RT5659 and TFA9890 audio drivers
+        run: |
+          make -j"$(nproc)" W=1 \
+            sound/soc/codecs/tfa989x.o \
+            sound/soc/intel/boards/cht_bsw_rt5659.o
+
       - name: Test Mi Pad 2 thermal diagnostics
         run: |
           sh -n fix_file/tests/mipad2-thermal-audit.sh
