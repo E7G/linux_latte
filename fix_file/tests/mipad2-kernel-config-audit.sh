@@ -56,6 +56,7 @@ need 'CONFIG_HID_SENSOR_DEVICE_ROTATION=y'
 # Power/charging and thermal management. Windows backup includes Intel DPTF
 # thermal/power participant drivers; retain the corresponding Linux stack.
 need 'CONFIG_BATTERY_BQ27XXX=y'
+need 'CONFIG_BATTERY_BQ27XXX_I2C=y'
 need 'CONFIG_CHARGER_BQ25890=y'
 need 'CONFIG_INTEL_SOC_PMIC=y'
 need 'CONFIG_INTEL_SOC_PMIC_CHTWC=y'
