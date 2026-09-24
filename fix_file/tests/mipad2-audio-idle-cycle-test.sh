@@ -19,7 +19,11 @@ export XDG_RUNTIME_DIR="/run/user/$uid"
 command -v pw-cat >/dev/null
 start=$(date '+%Y-%m-%d %H:%M:%S')
 log="$HOME/mipad2-silent-idle-cycle-$(date +%Y%m%d-%H%M%S).log"
-cycles=20
+cycles="${CYCLES:-20}"
+[[ "$cycles" =~ ^[1-9][0-9]{0,2}$ ]] && (( cycles <= 100 )) || {
+  echo "CYCLES must be an integer from 1 through 100" >&2
+  exit 9
+}
 echo "start=$start cycles=$cycles playback=3s idle=7s; signal is digital silence"
 for i in $(seq 1 "$cycles"); do
   echo "cycle=$i"

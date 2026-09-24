@@ -105,7 +105,7 @@ bash fix_file/tests/mipad2-stereo-acoustic-test.sh
 bash fix_file/tests/mipad2-audio-idle-cycle-test.sh
 ```
 
-脚本用数字静音循环 20 次，每次播放 3 秒、空闲 7 秒，以覆盖 RT5659/TFA DSP 的启动、停机、再启动和空闲停放路径。它不应产生测试音，但会周期性启用内置音频设备。脚本检查当前内核、三个声卡模块和 PipeWire socket，保存本轮 kernel journal，并要求左右功放各出现至少 20 次 DSP 初始化与停放、RT5659 至少出现 20 次启动；出现 DSP `ret=-22`、启动超时或明显 kernel fault 也会失败。默认只匹配 `6.14.0-mipad2-cachyos-navkeys`，可通过 `EXPECTED_KERNEL` 覆盖。约需 3 分 20 秒，不更改音量、录音控件、模块或启动配置。
+脚本默认用数字静音循环 20 次，每次播放 3 秒、空闲 7 秒，以覆盖 RT5659/TFA DSP 的启动、停机、再启动和空闲停放路径。可用 `CYCLES=50` 增加循环数（上限 100）。它不应产生测试音，但会周期性启用内置音频设备。脚本检查当前内核、三个声卡模块和 PipeWire socket，保存本轮 kernel journal，并要求左右功放各出现至少指定次数的 DSP 初始化与停放、RT5659 至少出现相同次数的启动；出现 DSP `ret=-22`、启动超时或明显 kernel fault 也会失败。默认只匹配 `6.14.0-mipad2-cachyos-navkeys`，可通过 `EXPECTED_KERNEL` 覆盖。默认约需 3 分 20 秒，不更改音量、录音控件、模块或启动配置。
 
 ## 推荐回归顺序
 
