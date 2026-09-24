@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
-root_source=$(findmnt -n -o SOURCE /) || exit 1
+root_source=$(findmnt --evaluate -n -o SOURCE /) || exit 1
 [ "$(findmnt -n -o FSTYPE /)" = btrfs ] || { echo "Root filesystem is not BTRFS." >&2; exit 1; }
 dev=$(printf '%s\n' "$root_source" | sed 's/\[.*$//')
 [ -b "$dev" ] || { echo "Invalid BTRFS root device: $root_source" >&2; exit 1; }

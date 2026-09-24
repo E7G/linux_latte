@@ -31,7 +31,7 @@ export MOCK_ROOT_DEV
 cat > "$tmp/bin/findmnt" <<'MOCK'
 #!/bin/sh
 case "$*" in
-  "-n -o SOURCE /") echo "$MOCK_ROOT_DEV[/@]" ;;
+  "--evaluate -n -o SOURCE /") echo "$MOCK_ROOT_DEV[/@]" ;;
   "-n -o FSTYPE /") echo "${MOCK_ROOT_FSTYPE:-btrfs}" ;;
   "-n -o FSTYPE /boot") echo "${MOCK_BOOT_FSTYPE:-vfat}" ;;
   "-n -o SOURCE /boot") echo "/dev/loop1" ;;
