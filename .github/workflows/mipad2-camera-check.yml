@@ -94,7 +94,7 @@ jobs:
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
           grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
-          if [ "${GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
+          if [ "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
             grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3=y' arch/x86/configs/xiaomipad2_defconfig
