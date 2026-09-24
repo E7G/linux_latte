@@ -215,44 +215,42 @@ static int tfa989x_hw_params(struct snd_pcm_substream *substream,
 static int tfa989x_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 {
 	struct snd_soc_component *component = codec_dai->component;
-	//struct tfa989x *tfa989x = snd_soc_component_get_drvdata(component);
-	u16 val;
+	unsigned int format;
+	int ret;
 
-	pr_debug("\n");
-	dev_dbg(component->dev, "DAI format: %#x\n", fmt);
-
-	/* set master/slave audio interface */
+	/* The amplifier is a clock slave. */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS:
-		/* default value */
 		break;
-	case SND_SOC_DAIFMT_CBM_CFM:
 	default:
-		/* only supports Slave mode */
-		pr_err("tfa989x: invalid DAI master/slave interface\n");
+		dev_err(component->dev, "invalid DAI master/slave interface\n");
 		return -EINVAL;
 	}
-	val = snd_soc_component_read(component, TFA989X_I2SREG);
+
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
-		/* default value */
+		format = 0;
 		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_LSB;
+		format = TFA98XX_FORMAT_LSB;
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_MSB;
+		format = TFA98XX_FORMAT_MSB;
 		break;
 	default:
-		pr_err("tfa989x: invalid DAI interface format\n");
+		dev_err(component->dev, "invalid DAI interface format\n");
 		return -EINVAL;
 	}
 
-	snd_soc_component_write(component, TFA989X_I2SREG, val);
+	/*
+	 * Update only the format bits and propagate I2C/regmap failures. A raw
+	 * component_read() returns an unsigned value and cannot safely be
+	 * narrowed to u16 to detect errors.
+	 */
+	ret = snd_soc_component_update_bits(component, TFA989X_I2SREG,
+					    TFA98XX_FORMAT_MASK, format);
 
-	return 0;
+	return ret < 0 ? ret : 0;
 }
 /*****************************************************************************/
 
