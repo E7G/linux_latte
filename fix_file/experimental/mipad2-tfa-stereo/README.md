@@ -43,9 +43,14 @@ successful initialization, verifies DSP parking/recovery and rejects observed
 `ret=-22` or timeout errors. It leaves the new modules resident only after
 these tests pass. Rollback does not replace any on-disk system module.
 
-The hotload was verified on the tablet with two low-volume microphone-assisted
-left/right acoustic tests. That establishes distinct channel routing, not
-speaker frequency response, loudness calibration or long-term reliability.
+An earlier hotload build was verified on the tablet with two low-volume
+microphone-assisted left/right acoustic tests. The TFA and RT5659 modules
+rebuilt here match the live modules' `srcversion`, but the rebuilt machine
+driver currently does **not** match the live module's `srcversion` and has not
+been reloaded on the tablet. Treat this package as buildable experimental
+source, not as a fully reproduced live stack. The acoustic tests establish
+distinct channel routing, not speaker frequency response, loudness calibration
+or long-term reliability.
 
 ## Remaining validation
 
