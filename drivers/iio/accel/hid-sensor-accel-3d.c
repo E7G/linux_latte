@@ -25,6 +25,7 @@ struct accel_3d_state {
 	struct hid_sensor_hub_callbacks callbacks;
 	struct hid_sensor_common common_attributes;
 	struct hid_sensor_hub_attribute_info accel[ACCEL_3D_CHANNEL_MAX];
+	struct iio_mount_matrix orientation;
 	/* Ensure timestamp is naturally aligned */
 	struct {
 		u32 accel_val[3];
@@ -35,6 +36,20 @@ struct accel_3d_state {
 	int scale_precision;
 	int value_offset;
 	int64_t timestamp;
+};
+
+static const struct iio_mount_matrix *
+hid_accel_3d_get_mount_matrix(const struct iio_dev *indio_dev,
+			     const struct iio_chan_spec *chan)
+{
+	struct accel_3d_state *state = iio_priv(indio_dev);
+
+	return &state->orientation;
+}
+
+static const struct iio_chan_spec_ext_info accel_3d_ext_info[] = {
+	IIO_MOUNT_MATRIX(IIO_SHARED_BY_ALL, hid_accel_3d_get_mount_matrix),
+	{ }
 };
 
 static const u32 accel_3d_addresses[ACCEL_3D_CHANNEL_MAX] = {
@@ -59,6 +74,7 @@ static const struct iio_chan_spec accel_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_X,
+		.ext_info = accel_3d_ext_info,
 	}, {
 		.type = IIO_ACCEL,
 		.modified = 1,
@@ -69,6 +85,7 @@ static const struct iio_chan_spec accel_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Y,
+		.ext_info = accel_3d_ext_info,
 	}, {
 		.type = IIO_ACCEL,
 		.modified = 1,
@@ -79,6 +96,7 @@ static const struct iio_chan_spec accel_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Z,
+		.ext_info = accel_3d_ext_info,
 	},
 	IIO_CHAN_SOFT_TIMESTAMP(CHANNEL_SCAN_INDEX_TIMESTAMP)
 };
@@ -95,6 +113,7 @@ static const struct iio_chan_spec gravity_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_X,
+		.ext_info = accel_3d_ext_info,
 	}, {
 		.type = IIO_GRAVITY,
 		.modified = 1,
@@ -105,6 +124,7 @@ static const struct iio_chan_spec gravity_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Y,
+		.ext_info = accel_3d_ext_info,
 	}, {
 		.type = IIO_GRAVITY,
 		.modified = 1,
@@ -115,6 +135,7 @@ static const struct iio_chan_spec gravity_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Z,
+		.ext_info = accel_3d_ext_info,
 	},
 	IIO_CHAN_SOFT_TIMESTAMP(CHANNEL_SCAN_INDEX_TIMESTAMP),
 };
@@ -358,6 +379,10 @@ static int hid_accel_3d_probe(struct platform_device *pdev)
 		channel_size = sizeof(gravity_channels);
 		indio_dev->num_channels = ARRAY_SIZE(gravity_channels);
 	}
+	ret = iio_read_mount_matrix(&pdev->dev, &accel_state->orientation);
+	if (ret)
+		return dev_err_probe(&pdev->dev, ret, "reading mount matrix\n");
+
 	ret = hid_sensor_parse_common_attributes(hsdev,
 						 hsdev->usage,
 						 &accel_state->common_attributes,

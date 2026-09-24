@@ -120,3 +120,12 @@ v4l2-ctl --list-devices > /tmp/mipad2-v4l2.txt 2>&1
 ```
 
 脚本本身不会修改 BIOS、I2C 寄存器、音频 mixer 或系统电源策略；但显式开启主动摄像头测试或运行 `mipad2-camera-test.sh` 会实际启动摄像头硬件和 AtomISP pipeline。
+
+### Sensor orientation
+
+mipad2-sensor-orientation-audit.sh checks that the Android sensor-HAL correction
+(rotation matrix diag(-1, 1, -1)) is attached only to the Mi Pad 2 Intel ISS HID
+hub and exposed through standard IIO mount_matrix metadata for accel/gravity,
+gyro, and magnetometer. It is a source/configuration regression check; a real
+device must still be rotated through all four display orientations to validate
+the sensor data and iio-sensor-proxy behavior.
