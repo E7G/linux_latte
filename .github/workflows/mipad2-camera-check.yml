@@ -86,6 +86,18 @@ jobs:
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
 
+      - name: Test Mi Pad 2 thermal diagnostics
+        run: |
+          sh -n fix_file/tests/mipad2-thermal-audit.sh
+          sh -n fix_file/tests/mipad2-thermal-audit-selftest.sh
+          sh fix_file/tests/mipad2-thermal-audit-selftest.sh
+          grep -q '^CONFIG_ACPI_DPTF=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_DPTF_POWER=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_INT340X_THERMAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_INTEL_SOC_DTS_THERMAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BATTERY_BQ27XXX_I2C=y' .config
+          grep -q '^CONFIG_CHARGER_BQ25890=y' arch/x86/configs/xiaomipad2_defconfig
+
       - name: Audit Mi Pad 2 i915 display-power quirk
         run: |
           sh -n fix_file/tests/mipad2-i915-quirk.sh

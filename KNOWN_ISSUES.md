@@ -62,6 +62,8 @@ sudo sh fix_file/tests/mipad2-hardware-smoke.sh
 
 注意 smoke test 主要验证设备枚举和接口存在性，不能替代实际播放、录音、传感器数据和摄像头采集测试。
 
+Windows' archived DPTF INF models include generic INT3400/INT3403/INT3406-INT3409 IDs. Linux config enables ACPI_DPTF, DPTF_POWER and INT340X thermal support, but neither config nor a generic INF proves the tablet exposes functioning runtime thermal zones. Use `sudo sh fix_file/tests/mipad2-thermal-audit.sh` to record zone temperatures/trips, cooling devices and INT340x ACPI status; this is diagnostic output, not a thermal-throttling benchmark.
+
 ## 4. USB gadget 依赖固件暴露可用 UDC
 
 内核 defconfig 已启用 DWC3 PCI dual-role、USB Gadget、ConfigFS ACM 和 gadget serial console 支持，但某些 Mi Pad 2 固件设置仍可能让 `/sys/class/udc/` 为空。
