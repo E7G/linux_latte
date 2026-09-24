@@ -6,15 +6,24 @@ on:
       - main
       - cachyos-mipad2
       - test/mipad2-camera-20260829
+      - fix/mipad2-sensor-mount-matrix
+  pull_request:
+    paths:
+      - 'drivers/hid/hid-sensor-hub.c'
+      - 'drivers/iio/accel/hid-sensor-accel-3d.c'
+      - 'drivers/iio/gyro/hid-sensor-gyro-3d.c'
+      - 'drivers/iio/magnetometer/hid-sensor-magn-3d.c'
+      - 'fix_file/tests/mipad2-sensor-orientation-audit.sh'
+      - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
 jobs:
   camera-drivers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install kernel build dependencies
         run: |
@@ -89,7 +98,7 @@ jobs:
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
           grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
-          if [ "${GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
+          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = cachyos-mipad2 ] || [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = fix/mipad2-sensor-mount-matrix ]; then
             grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3=y' arch/x86/configs/xiaomipad2_defconfig
@@ -114,6 +123,10 @@ jobs:
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o \
             drivers/hid/i2c-hid/i2c-hid-of.o \
+            drivers/hid/hid-sensor-hub.o \
+            drivers/iio/accel/hid-sensor-accel-3d.o \
+            drivers/iio/gyro/hid-sensor-gyro-3d.o \
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o \
             drivers/platform/x86/x86-android-tablets/core.o \
             drivers/platform/x86/x86-android-tablets/other.o
 
@@ -132,6 +145,8 @@ jobs:
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
           sh -n fix_file/tests/mipad2-kernel-config-audit.sh
+          sh -n fix_file/tests/mipad2-sensor-orientation-audit.sh
+          sh fix_file/tests/mipad2-sensor-orientation-audit.sh
           grep -q '^ExecStart=.*mipad2-hardware-smoke' \
             fix_file/tests/mipad2-hardware-audit.service
           grep -q 'serial-getty@ttyGS0.service' \
