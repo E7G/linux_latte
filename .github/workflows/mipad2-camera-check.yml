@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - test/mipad2-camera-20260829
+  pull_request:
+    paths:
+      - 'drivers/platform/x86/x86-android-tablets/other.c'
+      - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
 jobs:
@@ -52,6 +56,7 @@ jobs:
           grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
           grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
           grep -q 'mt_map_key_clear(KEY_HOME)' drivers/hid/hid-multitouch.c
+          grep -q 'struct acpi_device \*adev = ACPI_COMPANION(dev)' drivers/platform/x86/x86-android-tablets/other.c
           grep -q '^CONFIG_USB_DWC3_DUAL_ROLE=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_USB_DWC3_PCI=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
@@ -79,6 +84,7 @@ jobs:
             drivers/media/i2c/ov5693.o \
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
+            drivers/platform/x86/x86-android-tablets/other.o \
             drivers/hid/hid-multitouch.o
 
       - name: Validate local recovery and USB debug packages

@@ -872,19 +872,12 @@ static const struct software_node rt5659_swnode = {
 
 static int match_rt5659_client(struct device *dev, const void *data)
 {
-	struct acpi_device *adev;
+	struct acpi_device *adev = ACPI_COMPANION(dev);
 
-	/* 1. 检查设备名是否为 RT5659 */
-	if (!strstr(dev_name(dev), "10EC5659"))
+	if (!adev || !strstr(dev_name(dev), "10EC5659"))
 		return 0;
 
-	/* 2. 获取 ACPI parent device */
-	/* 直接假设 parent 是 ACPI device（ACPI 创建的 I2C client 必然如此） */
-	adev = to_acpi_device(dev->parent);
-	if (!adev)
-		return 0;
-
-	dev_dbg(dev, "[match_rt5659_client]: is acpi device\n");
+	dev_dbg(dev, "matched ACPI RT5659 client\n");
 	return 1;
 }
 
