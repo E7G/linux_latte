@@ -17,3 +17,5 @@ The scripts assume the installed system's root BTRFS device is the Timeshift sna
 ## Test without changing a system
 
 Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, and `sync`, and verifies detected-device routing, archive/checksum matching, and fail-closed behavior. It does not mount or restore real filesystems.
+
+The `Mi Pad 2 recovery safety` GitHub Actions workflow runs shell syntax checks and this mocked test when the recovery package or test changes.
