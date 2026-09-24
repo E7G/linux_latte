@@ -85,6 +85,18 @@ sudo sh fix_file/tests/mipad2-camera-select.sh front
 
 该脚本用于选择输入，不代表目标应用一定兼容 AtomISP 的媒体拓扑或格式协商方式。
 
+## `mipad2-stereo-acoustic-test.sh`
+
+设备旁保持安静、不要接耳机，确认默认输出为内置 Speaker，然后运行：
+
+```bash
+bash fix_file/tests/mipad2-stereo-acoustic-test.sh
+```
+
+脚本以低音量依次播放左声道 440 Hz 和右声道 880 Hz，同时用平板内置麦克风回录。它比较两个频率与播放前的环境底噪，并输出 `PASS`/`FAIL`；能发现双功放都错误选取左 I²S 声道时的右声道缺失。测量结果受周围噪声和麦克风位置影响，`FAIL` 时在安静环境重试并结合实际听感判断。
+
+需要 `wpctl`、`pw-cat`、`arecord`、`amixer` 和 Python 3。脚本临时降低 Speaker 音量、打开麦克风采集并调整 IN3/IN4 Boost；退出时恢复原音量、静音状态和三个 mixer 控件。不会修改内核模块或开机配置。
+
 ## 推荐回归顺序
 
 建议至少在以下场景运行 smoke test：
@@ -119,4 +131,4 @@ media-ctl -p > /tmp/mipad2-media.txt 2>&1
 v4l2-ctl --list-devices > /tmp/mipad2-v4l2.txt 2>&1
 ```
 
-脚本本身不会修改 BIOS、I2C 寄存器、音频 mixer 或系统电源策略；但显式开启主动摄像头测试或运行 `mipad2-camera-test.sh` 会实际启动摄像头硬件和 AtomISP pipeline。
+默认的 `mipad2-hardware-smoke.sh` 不会修改 BIOS、I2C 寄存器、音频 mixer 或系统电源策略；主动摄像头测试会启动摄像头硬件，立体声回录测试会临时修改并恢复音频控件。
