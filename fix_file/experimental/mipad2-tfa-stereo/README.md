@@ -44,13 +44,12 @@ successful initialization, verifies DSP parking/recovery and rejects observed
 these tests pass. Rollback does not replace any on-disk system module.
 
 An earlier hotload build was verified on the tablet with two low-volume
-microphone-assisted left/right acoustic tests. The TFA and RT5659 modules
-rebuilt here match the live modules' `srcversion`, but the rebuilt machine
-driver currently does **not** match the live module's `srcversion` and has not
-been reloaded on the tablet. Treat this package as buildable experimental
-source, not as a fully reproduced live stack. The acoustic tests establish
-distinct channel routing, not speaker frequency response, loudness calibration
-or long-term reliability.
+microphone-assisted left/right acoustic tests. The three modules rebuilt here
+now all match the live modules' `srcversion` (including the Cherry Trail
+machine driver), and their SHA256 manifest verifies. The newly rebuilt files
+have not yet been loaded on-device; the acoustic tests establish distinct
+channel routing, not speaker frequency response, loudness calibration or
+long-term reliability.
 
 ## Remaining validation
 

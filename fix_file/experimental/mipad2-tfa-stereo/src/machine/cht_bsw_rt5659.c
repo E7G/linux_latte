@@ -24,7 +24,6 @@
 #include "../atom/sst-atom-controls.h"
 #include "../common/soc-intel-quirks.h"
 
-extern void tfa98xx_set_playback_active(bool active);
 
 
 /* The platform clock #3 outputs 19.2Mhz clock to codec as I2S MCLK */
@@ -503,26 +502,6 @@ static const struct snd_soc_ops cht_be_ssp2_ops = {
 	.hw_params = cht_aif1_hw_params,
 };
 
-static int cht_aif2_hw_params(struct snd_pcm_substream *substream,
-			      struct snd_pcm_hw_params *params)
-{
-	pr_info("Mi Pad 2 AIF2 stream active; waking TFA DSP monitors\n");
-	tfa98xx_set_playback_active(true);
-	return 0;
-}
-
-static int cht_aif2_hw_free(struct snd_pcm_substream *substream)
-{
-	pr_info("Mi Pad 2 AIF2 stream idle; parking TFA DSP monitors\n");
-	tfa98xx_set_playback_active(false);
-	return 0;
-}
-
-static const struct snd_soc_ops cht_aif2_ops = {
-	.hw_params = cht_aif2_hw_params,
-	.hw_free = cht_aif2_hw_free,
-};
-
 SND_SOC_DAILINK_DEF(dummy,
 	DAILINK_COMP_ARRAY(COMP_DUMMY()));
 
@@ -619,7 +598,6 @@ static struct snd_soc_dai_link cht_dailink[] = {
 	{
 		.name = "Codec AIF2 Port",
 		.stream_name = "rt5659 AIF2 capture",
-		.ops = &cht_aif2_ops,
 		SND_SOC_DAILINK_REG(rt5659_aif1_cpu, rt5659_aif2_codec),
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_CBM_CFM,
