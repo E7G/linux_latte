@@ -41,7 +41,9 @@ This page separates **code/configuration presence** from **runtime validation**.
 | VA-API video decode | Userspace feature | Project hardware-verified userspace setup | Current notes record `libva 2.24.0` + Intel i965 2.4.5 on CherryView; this is not a special kernel driver in this tree. |
 | Suspend / resume | Kernel PM present | **Needs repeated regression** | Re-test wireless, audio, IIO, camera and USB after resume. |
 
-## Windows driver reference audit
+## Driver-reference and stability audit
+
+A July 2026 [Debian report](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1142004) describes a full-platform i915 probe wedge on an unmodified Debian 6.12.95 kernel. The current branch already carries a Xiaomi PCI-subsystem-specific DPIO common B/C power-well quirk and initializes i915 quirks before display power-domain setup. CI now checks this device match, both guarded power-well paths, initialization order and compiles the affected objects. This static coverage is not proof of this branch's real-device display or suspend/resume behavior; those still need controlled Mi Pad 2 validation.
 
 The [public Mi Pad 2 Windows 10 driver backup](https://github.com/brianwoo/mipad2-win10-howto) is useful for identifying device classes and candidate IDs, but its generic INF model lists are not a live Device Manager/ACPI dump and do not prove which compatible ID matched on a specific tablet. Do not copy proprietary Windows binaries into this kernel or infer a Linux register protocol from the driver name.
 
@@ -59,6 +61,7 @@ The Linux battery/charger mapping is also documented in [the upstream x86 Androi
 
 `.github/workflows/mipad2-camera-check.yml` currently validates important Mi Pad 2 configuration and source assumptions, including:
 
+- Mi Pad 2 i915 PCI-subsystem match, DPIO common B/C power-well guard and quirk-before-power-domain ordering, plus W=1 compilation of affected i915 objects;
 - camera module config for AtomISP, OV5693, T4KA3 and DW9719;
 - Mi Pad 2 T4KA3 bridge/platform definitions;
 - the 1280×720 AtomISP fallback-format change;
