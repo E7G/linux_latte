@@ -4,7 +4,7 @@ pkgrel=1
 pkgdesc="Timeshift/BTRFS backup and one-command recovery tools for Mi Pad 2"
 arch=(x86_64)
 license=(GPL2)
-depends=(btrfs-progs timeshift zstd)
+depends=(btrfs-progs timeshift util-linux zstd)
 
 package() {
   install -Dm755 "$srcdir/mp2-backup" "$pkgdir/usr/local/sbin/mp2-backup"

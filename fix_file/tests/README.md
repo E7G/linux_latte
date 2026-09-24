@@ -127,4 +127,4 @@ v4l2-ctl --list-devices > /tmp/mipad2-v4l2.txt 2>&1
 sudo sh fix_file/tests/test-mipad2-recovery.sh
 ```
 
-This is a mocked test of detected BTRFS device routing, per-snapshot boot archive/checksum matching, and fail-closed restore guards. It never runs Timeshift against the real system.
+This is a mocked test of detected BTRFS device routing, per-snapshot boot archive/checksum matching (including a simulated concurrent auto-snapshot), backup-lock enforcement, and fail-closed restore guards. It never runs Timeshift against the real system.

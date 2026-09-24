@@ -9,18 +9,21 @@ dev=$(printf '%s\n' "$root_source" | sed 's/\[.*$//')
 [ -b "$dev" ] || { echo "Invalid BTRFS root device: $root_source" >&2; exit 1; }
 dir=${MIPAD2_RECOVERY_DIR:-/var/lib/mipad2-recovery}
 mkdir -p "$dir"
+exec 9>"$dir/.backup.lock"
+flock -n 9 || { echo "Another Mi Pad 2 backup is already running." >&2; exit 1; }
 tmpdir=$(mktemp -d "$dir/.backup.XXXXXX")
 trap 'rm -rf "$tmpdir"' EXIT
 trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
+comment=mipad2-manual-backup
 list_snapshots() {
   timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
-    awk '{for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' | sort -u
+    awk -v description="$comment" '$NF == description {for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' | sort -u
 }
 list_snapshots > "$tmpdir/before"
 tar --zstd -cpf "$tmpdir/boot.tar.zst" -C /boot .
-timeshift --create --snapshot-device "$dev" --btrfs --comments "mipad2-manual-backup" --tags D --scripted --yes
+timeshift --create --snapshot-device "$dev" --btrfs --comments "$comment" --tags D --scripted --yes
 list_snapshots > "$tmpdir/after"
 snap=$(comm -13 "$tmpdir/before" "$tmpdir/after" | tail -1)
 [ -n "$snap" ] || { echo "No new Timeshift snapshot detected." >&2; exit 1; }

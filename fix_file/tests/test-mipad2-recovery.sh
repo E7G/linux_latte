@@ -43,8 +43,13 @@ case "$1" in
     n=$((n + 1))
     printf '%s\n' "$n" > "$MOCK_COUNT"
     echo "Device: $MOCK_ROOT_DEV"
-    echo "2026-09-24_20-00-00"
-    if [ "$n" -ge 2 ]; then echo "2026-09-25_01-10-00"; fi
+    echo "Num  Name                 Tags  Description"
+    echo "0    > 2026-09-24_20-00-00 D     mipad2-manual-backup"
+    if [ "$n" -ge 2 ]; then
+      echo "1    > 2026-09-25_01-10-00 D     mipad2-manual-backup"
+      # An unrelated automatic snapshot arrives after the manual one.
+      echo "2    > 2026-09-25_01-11-00 H     hourly"
+    fi
     ;;
   --create) exit 0 ;;
   --restore) exit 0 ;;
@@ -61,6 +66,10 @@ MOCK
 cat > "$tmp/bin/sync" <<'MOCK'
 #!/bin/sh
 exit 0
+MOCK
+cat > "$tmp/bin/flock" <<'MOCK'
+#!/bin/sh
+[ "${MOCK_FLOCK_FAIL:-0}" = 0 ]
 MOCK
 chmod +x "$tmp/bin/"*
 export PATH="$tmp/bin:$PATH"
@@ -110,4 +119,12 @@ export MOCK_BOOT_FSTYPE
 if "$recover" --yes >/dev/null 2>&1; then echo "non-VFAT /boot was accepted" >&2; exit 1; fi
 if [ -s "$MOCK_LOG" ]; then echo "Timeshift ran for non-VFAT /boot" >&2; exit 1; fi
 unset MOCK_BOOT_FSTYPE
+
+# A concurrent backup must fail before touching Timeshift or archives.
+: > "$MOCK_LOG"
+MOCK_FLOCK_FAIL=1
+export MOCK_FLOCK_FAIL
+if "$backup" >/dev/null 2>&1; then echo "concurrent backup lock was ignored" >&2; exit 1; fi
+if [ -s "$MOCK_LOG" ]; then echo "Timeshift ran while backup lock was held" >&2; exit 1; fi
+unset MOCK_FLOCK_FAIL
 echo "PASS: recovery path detects root device, binds boot archive to snapshot, and fails closed."

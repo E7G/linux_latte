@@ -4,7 +4,7 @@ These local-console tools create and restore BTRFS Timeshift snapshots for the c
 
 ## Backup
 
-Run `sudo mp2-backup`. It verifies `/` is BTRFS and `/boot` is a separate VFAT mount, detects the actual BTRFS root block device, archives `/boot`, then creates a manual Timeshift snapshot on that device. The archive and SHA-256 checksum are named for the exact snapshot, so an older root snapshot is never paired with an unrelated boot archive.
+Run `sudo mp2-backup`. It verifies `/` is BTRFS and `/boot` is a separate VFAT mount, detects the actual BTRFS root block device, archives `/boot`, then creates a manual Timeshift snapshot on that device. A process lock prevents overlapping manual backups, and the archive is assigned by the unique Timeshift description rather than merely choosing the latest new timestamp. The archive and SHA-256 checksum are named for the exact snapshot, so an unrelated concurrent automatic snapshot cannot be paired with it.
 
 ## Inspect and restore
 
@@ -16,6 +16,6 @@ The scripts assume the installed system's root BTRFS device is the Timeshift sna
 
 ## Test without changing a system
 
-Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, and `sync`, and verifies detected-device routing, archive/checksum matching, and fail-closed behavior. It does not mount or restore real filesystems.
+Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, `sync`, and `flock`; it simulates an unrelated automatic snapshot racing with a manual one, and verifies device routing, archive/checksum matching, lock enforcement, and fail-closed behavior. It does not mount or restore real filesystems.
 
 The `Mi Pad 2 recovery safety` GitHub Actions workflow runs shell syntax checks and this mocked test when the recovery package or test changes.
