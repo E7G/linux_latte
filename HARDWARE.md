@@ -25,6 +25,7 @@ This page separates **code/configuration presence** from **runtime validation**.
 | Headset / microphones | Integrated/project profile | Functional audio test required | Use `wpctl`, jack-state observation and recording tests from `fix_file/audio.md`. |
 | DWC3 USB host/device dual-role | Integrated | Runtime-checked | Defconfig enables DWC3 PCI dual-role. Smoke test expects an actual UDC for gadget mode. |
 | CDC ACM USB serial | Integrated + helper package | Optional runtime check | `mipad2-usb-serial` configures `/dev/ttyGS0`; gadget serial console support is enabled in the kernel. |
+| BTRFS /boot recovery helper | Userspace package | Mocked safety regression; real restore not validated | `mipad2-recovery` discovers the running BTRFS root device and expects a separate VFAT `/boot`; Timeshift/boot restore still requires real-layout validation. |
 | Battery | Integrated target | Runtime-checked | Smoke test discovers a power-supply device with type `Battery`. |
 | BQ25890 charging path | Integrated target | Runtime-checked | Smoke test expects a `USB` or `Mains` charger power-supply node. |
 | Ambient light sensor | Integrated target | Runtime-checked | Smoke test expects IIO name `als`. |

@@ -18,7 +18,7 @@ makepkg -si
 | `mipad2-alsa-ucm` | **推荐** | 安装 RT5659 + 双 TFA9890 的 ALSA UCM2 profile，供 PipeWire/WirePlumber 或其他 UCM2 音频栈使用。 |
 | `mipad2-camera-support` | **推荐（使用摄像头时）** | 安装 AtomISP 2401 固件到 `/usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin`，并安装 Mi Pad 2 相机模块加载配置。 |
 | `mipad2-usb-serial` | **推荐（调试/恢复）** | 配置 ConfigFS CDC ACM gadget，提供 `/dev/ttyGS0`、serial getty，并利用当前内核的 gadget serial console 支持获取 printk。 |
-| `mipad2-recovery` | 可选 | 提供 `mp2-backup` / `mp2-recover`。当前恢复脚本硬编码 snapshot device 为 `/dev/mmcblk0p2`，并假定独立 VFAT `/boot` 已正确挂载。 |
+| `mipad2-recovery` | 可选 | 提供 `mp2-backup` / `mp2-recover`。脚本检测当前 BTRFS root 设备，但仍要求 Timeshift 使用同一设备，并要求独立 VFAT `/boot` 已正确挂载。 |
 | `mipad2-test-no-idle` | 可选，仅测试 | 临时抑制 GNOME idle blanking / suspend，便于长时间真机测试；不建议作为日常默认电源策略。 |
 | `mipad2-usb-gadget` | **旧方案 / 不推荐新装** | 旧的 USB Ethernet ConfigFS gadget。当前 `mipad2-usb-serial` 在 PKGBUILD 中明确 `conflicts` / `replaces` 它，两者不能同时绑定同一个 UDC。 |
 
@@ -53,7 +53,7 @@ replaces=(mipad2-usb-gadget)
 
 ### Recovery 包不是通用恢复系统
 
-`mipad2-recovery` 假定特定的文件系统与 Timeshift 使用方式。当前 `mp2-recover` 明确把 `/dev/mmcblk0p2` 当作 snapshot/restore target，并在恢复 boot archive 时直接写入当前 `/boot` 挂载点。
+`mipad2-recovery` 假定特定的文件系统与 Timeshift 使用方式。它从运行中系统解析 BTRFS root 设备并在恢复前验证 `/boot`；仍假设 Timeshift 快照位于该 root 设备、独立 VFAT `/boot` 已挂载。恢复 hook 在 Timeshift 恢复后重建 `/boot`，开机 service 只负责失败重试。
 
 因此安装或运行前必须先阅读 `mipad2-recovery/src/README`，确认：
 
@@ -62,7 +62,11 @@ findmnt /
 findmnt /boot
 ```
 
-与当前脚本假设一致。不同分区布局不能直接照用默认恢复命令。
+与当前脚本假设一致。它不支持从 Live USB 自动发现/挂载目标系统，也不是通用分区恢复工具。运行无真实分区写入的模拟测试：
+
+```bash
+sudo sh fix_file/tests/test-mipad2-recovery.sh
+```
 
 ## 与内核版本的关系
 
