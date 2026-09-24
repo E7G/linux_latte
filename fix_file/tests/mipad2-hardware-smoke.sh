@@ -121,6 +121,23 @@ for path in /sys/class/input/event*/device/name; do
             break
             ;;
     esac
+
+    # Mi Pad 2's ACPI FTSC1000 is exposed by hid-multitouch as a generic
+    # "hid-over-i2c 2808:509C" input name.  Match its physical I2C node
+    # and udev touchscreen classification, not just the display name.
+    phys=$(cat "${path%/name}/phys" 2>/dev/null || true)
+    case "$phys" in
+        *i2c-FTSC1000*)
+            event=${path#/sys/class/input/}
+            event=${event%/device/name}
+            if command -v udevadm >/dev/null 2>&1 &&
+               udevadm info -q property -n "/dev/input/$event" 2>/dev/null |
+                   grep -qx 'ID_INPUT_TOUCHSCREEN=1'; then
+                touch_name="$name ($phys)"
+                break
+            fi
+            ;;
+    esac
 done
 if [ -n "$touch_name" ]; then
     printf 'OK   touchscreen %s\n' "$touch_name"
