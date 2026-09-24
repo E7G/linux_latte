@@ -21,17 +21,19 @@ case "$arg" in
 esac
 check_boot || exit 1
 snapshots=$(timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null)
-dir=${MIPAD2_RECOVERY_DIR:-/var/lib/mipad2-recovery}
+dir=${MIPAD2_RECOVERY_DIR:-/boot/.mipad2-recovery}
 snap=$(printf '%s\n' "$snapshots" |
   awk '{for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' |
   sort -u |
   while IFS= read -r candidate; do
-    [ -s "$dir/boot-$candidate.tar.zst" ] && [ -s "$dir/boot-$candidate.tar.zst.sha256" ] && printf '%s\n' "$candidate"
+    [ -s "$dir/boot-$candidate.tar.zst" ] && [ -s "$dir/boot-$candidate.tar.zst.sha256" ] && [ -s "$dir/boot-$candidate.tar.zst.meta" ] && printf '%s\n' "$candidate"
   done |
   tail -1)
 [ -n "$snap" ] || { echo "No snapshot with a matching /boot archive found on $dev." >&2; exit 1; }
 archive="$dir/boot-$snap.tar.zst"
 (cd "$dir" && sha256sum -c "boot-$snap.tar.zst.sha256") || { echo "Saved /boot archive checksum failed." >&2; exit 1; }
+token=$(cat "$archive.meta")
+case "$token" in ????????-????-????-????-????????????) ;; *) echo "Saved snapshot token is invalid." >&2; exit 1 ;; esac
 echo "Root/snapshot device: $dev"
 echo "Mounted /boot device: $boot_source ($boot_fstype)"
 echo "Selected snapshot: $snap"
@@ -41,10 +43,14 @@ if [ "$yes" != 1 ]; then
   read -r answer
   [ "$answer" = RECOVER ] || { echo "Cancelled."; exit 1; }
 fi
-original_boot_source=$boot_source
-timeshift --restore --snapshot "$snap" --snapshot-device "$dev" --target "$dev" --skip-grub --btrfs --scripted --yes
-check_boot || exit 1
-[ "$boot_source" = "$original_boot_source" ] || { echo "/boot device changed; refusing extraction." >&2; exit 1; }
-tar --zstd -xpf "$archive" -C /boot
+marker="$dir/pending-restore"
+printf '%s\n%s\n' "boot-$snap.tar.zst" "$boot_source" > "$marker.tmp.$$"
 sync
-echo "Recovery complete. Reboot with: sudo reboot"
+mv "$marker.tmp.$$" "$marker"
+sync
+timeshift --restore --snapshot "$snap" --snapshot-device "$dev" --target "$dev" --skip-grub --btrfs --scripted --yes
+if [ -e "$marker" ]; then
+  echo "Timeshift returned before the restore hook completed; the enabled boot-time fallback will retry on next boot." >&2
+  exit 1
+fi
+echo "Boot files restored by the Timeshift hook. Timeshift is rebooting the device."

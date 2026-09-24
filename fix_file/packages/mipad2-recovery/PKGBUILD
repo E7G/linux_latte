@@ -1,6 +1,6 @@
 pkgname=mipad2-recovery
 pkgver=20260925
-pkgrel=1
+pkgrel=2
 pkgdesc="Timeshift/BTRFS backup and one-command recovery tools for Mi Pad 2"
 arch=(x86_64)
 license=(GPL2)
@@ -9,6 +9,14 @@ depends=(btrfs-progs timeshift util-linux zstd)
 package() {
   install -Dm755 "$srcdir/mp2-backup" "$pkgdir/usr/local/sbin/mp2-backup"
   install -Dm755 "$srcdir/mp2-recover" "$pkgdir/usr/local/sbin/mp2-recover"
+  install -Dm755 "$srcdir/mp2-restore-boot" "$pkgdir/usr/local/sbin/mp2-restore-boot"
+  install -Dm755 "$srcdir/99-mipad2-restore-boot" \
+    "$pkgdir/etc/timeshift/restore-hooks.d/99-mipad2-restore-boot"
+  install -Dm644 "$srcdir/mipad2-restore-boot.service" \
+    "$pkgdir/usr/lib/systemd/system/mipad2-restore-boot.service"
+  install -d "$pkgdir/usr/lib/systemd/system/multi-user.target.wants"
+  ln -s ../mipad2-restore-boot.service \
+    "$pkgdir/usr/lib/systemd/system/multi-user.target.wants/mipad2-restore-boot.service"
   install -Dm644 "$srcdir/README" \
     "$pkgdir/usr/share/doc/mipad2-recovery/README"
 }

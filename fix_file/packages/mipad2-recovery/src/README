@@ -4,18 +4,18 @@ These local-console tools create and restore BTRFS Timeshift snapshots for the c
 
 ## Backup
 
-Run `sudo mp2-backup`. It verifies `/` is BTRFS and `/boot` is a separate VFAT mount, detects the actual BTRFS root block device, archives `/boot`, then creates a manual Timeshift snapshot on that device. A process lock prevents overlapping manual backups, and the archive is assigned by the unique Timeshift description rather than merely choosing the latest new timestamp. The archive and SHA-256 checksum are named for the exact snapshot, so an unrelated concurrent automatic snapshot cannot be paired with it.
+Run `sudo mp2-backup`. It verifies `/` is BTRFS and `/boot` is a separate VFAT mount, detects the actual BTRFS root block device, archives `/boot` outside the root filesystem at `/boot/.mipad2-recovery`, then creates a manual Timeshift snapshot on that device. The archive excludes its own recovery directory. A lock prevents overlapping manual backups; each archive carries a unique token shared with the snapshot and is bound by its unique Timeshift description. Backup refuses to run unless the pre-reboot restore hook, helper, and enabled fallback service are installed.
 
 ## Inspect and restore
 
 `sudo mp2-recover --status` lists snapshots on the detected root device. `sudo mp2-recover` performs an interactive restore; `sudo mp2-recover --yes` is for deliberate non-interactive recovery.
 
-Restore requires a matching per-snapshot `/boot` archive and valid checksum, plus `/boot` currently mounted as VFAT. Missing/corrupt archives, a non-BTRFS root, a changed `/boot` source, or an unknown root block device stop the restore before boot files are extracted. The utility does not mount partitions itself.
+The archive and checksum must be present on VFAT `/boot`. Before calling Timeshift, recovery atomically stages a pending marker there. Timeshift restores the root and invokes the installed restore hook before reboot; the hook verifies the restored root's snapshot token, boot source, archive name, and checksum, then repairs `/boot`. An enabled systemd fallback retries on the next boot if Timeshift did not complete the hook, and reboots once boot files are repaired. A token/source/checksum mismatch fails closed and leaves the marker for diagnosis. Recovery never relies on shell commands continuing after a current-system Timeshift restore.
 
-The scripts assume the installed system's root BTRFS device is the Timeshift snapshot device and that `/boot` is VFAT. Check `findmnt /` and `findmnt /boot` before relying on recovery. Old backups made by versions before the per-snapshot archive change are not auto-restorable by the new script; preserve them separately until migrated or no longer needed.
+The utility does not mount partitions itself. The scripts assume the installed system's root BTRFS device is the Timeshift snapshot device and `/boot` is VFAT. Old backups made by versions before per-snapshot archives and tokens are not auto-restorable; preserve them separately until migrated or no longer needed.
 
 ## Test without changing a system
 
-Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, `sync`, and `flock`; it simulates an unrelated automatic snapshot racing with a manual one, and verifies device routing, archive/checksum matching, lock enforcement, and fail-closed behavior. It does not mount or restore real filesystems.
+Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, `sync`, `flock`, and `systemctl`; it simulates a pre-reboot hook, token mismatch, next-boot fallback, automatic snapshot race, and fail-closed behavior. It does not mount or restore real filesystems.
 
 The `Mi Pad 2 recovery safety` GitHub Actions workflow runs shell syntax checks and this mocked test when the recovery package or test changes.
