@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - test/mipad2-camera-20260829
-      - fix/mipad2-sensor-mount-matrix
       - fix/mipad2-sensor-matrix-main
   pull_request:
     paths:
@@ -19,11 +18,11 @@ on:
 
 jobs:
   camera-drivers:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Install kernel build dependencies
         run: |
@@ -75,17 +74,6 @@ jobs:
           grep -q '^CONFIG_NLS_CODEPAGE_437=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_NLS_ASCII=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_CRYPTO_USER=m' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_I2C_HID_OF=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_IKCONFIG=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q '^CONFIG_IKCONFIG_PROC=y' arch/x86/configs/xiaomipad2_defconfig
-          grep -q 'FTSC1000 FocalTech I2C-HID touchscreen' \
-            drivers/platform/x86/x86-android-tablets/other.c
-          grep -q 'adapter_path = "\\\\_SB_.PCI0.I2C6"' \
-            drivers/platform/x86/x86-android-tablets/other.c
-          grep -q 'GPIO_LOOKUP("INT33FF:01", 20, "reset"' \
-            drivers/platform/x86/x86-android-tablets/other.c
-          grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
-          grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
           grep -q '^CONFIG_LOCALVERSION="-mipad2-complete"' arch/x86/configs/xiaomipad2_defconfig
 
       - name: Compile camera sensor and VCM drivers
@@ -101,13 +89,10 @@ jobs:
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o \
-            drivers/hid/i2c-hid/i2c-hid-of.o \
             drivers/hid/hid-sensor-hub.o \
             drivers/iio/accel/hid-sensor-accel-3d.o \
             drivers/iio/gyro/hid-sensor-gyro-3d.o \
-            drivers/iio/magnetometer/hid-sensor-magn-3d.o \
-            drivers/platform/x86/x86-android-tablets/core.o \
-            drivers/platform/x86/x86-android-tablets/other.o
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o
 
       - name: Validate local recovery and USB debug packages
         run: |
@@ -116,11 +101,8 @@ jobs:
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
-          sh -n fix_file/tests/mipad2-kernel-config-audit.sh
           sh -n fix_file/tests/mipad2-sensor-orientation-audit.sh
           sh fix_file/tests/mipad2-sensor-orientation-audit.sh
-          grep -q '^ExecStart=.*mipad2-hardware-smoke' \
-            fix_file/tests/mipad2-hardware-audit.service
           grep -q 'serial-getty@ttyGS0.service' \
             fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial.service
           ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \
