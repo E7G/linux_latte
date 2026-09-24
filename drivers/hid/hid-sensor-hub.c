@@ -5,16 +5,60 @@
  */
 
 #include <linux/device.h>
+#include <linux/dmi.h>
 #include <linux/hid.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/mfd/core.h>
+#include <linux/property.h>
 #include <linux/list.h>
 #include <linux/hid-sensor-ids.h>
 #include <linux/hid-sensor-hub.h>
 #include "hid-ids.h"
 
 #define HID_SENSOR_HUB_ENUM_QUIRK	0x01
+
+/*
+ * Android's latte sensor HAL applies ro.iio.*.x.opt_scale=-1 and
+ * ro.iio.*.z.opt_scale=-1 to the accelerometer, gyroscope, and magnetometer.
+ * Export the equivalent board orientation through the standard IIO
+ * mount-matrix property for Linux consumers.
+ */
+static const char * const xiaomi_mipad2_sensor_mount_matrix[] = {
+	"-1", "0", "0",
+	"0", "1", "0",
+	"0", "0", "-1",
+};
+
+static const struct property_entry xiaomi_mipad2_sensor_props[] = {
+	PROPERTY_ENTRY_STRING_ARRAY("mount-matrix",
+				    xiaomi_mipad2_sensor_mount_matrix),
+	{ }
+};
+
+static const struct software_node xiaomi_mipad2_accel_swnode = {
+	.properties = xiaomi_mipad2_sensor_props,
+};
+
+static const struct software_node xiaomi_mipad2_gravity_swnode = {
+	.properties = xiaomi_mipad2_sensor_props,
+};
+
+static const struct software_node xiaomi_mipad2_gyro_swnode = {
+	.properties = xiaomi_mipad2_sensor_props,
+};
+
+static const struct software_node xiaomi_mipad2_magn_swnode = {
+	.properties = xiaomi_mipad2_sensor_props,
+};
+
+static bool hid_sensor_is_xiaomi_mipad2(const struct hid_device *hdev)
+{
+	/* Windows driver backup identifies the Mi Pad 2 ISS hub as 8086:0002. */
+	return hdev->vendor == 0x8086 && hdev->product == 0x0002 &&
+	       dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+}
 
 /**
  * struct sensor_hub_data - Hold a instance data for a HID hub device
@@ -610,6 +654,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
 	int i;
 	char *name;
 	int dev_cnt;
+	bool mipad2;
 	struct hid_sensor_hub_device *hsdev;
 	struct hid_sensor_hub_device *last_hsdev = NULL;
 	struct hid_sensor_hub_device *collection_hsdev = NULL;
@@ -621,6 +666,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
 	}
 
 	hid_set_drvdata(hdev, sd);
+	mipad2 = hid_sensor_is_xiaomi_mipad2(hdev);
 
 	spin_lock_init(&sd->lock);
 	spin_lock_init(&sd->dyn_callback_lock);
@@ -701,6 +747,30 @@ static int sensor_hub_probe(struct hid_device *hdev,
 			sd->hid_sensor_hub_client_devs[
 				sd->hid_sensor_client_cnt].pdata_size =
 							sizeof(*hsdev);
+			if (mipad2) {
+				switch (collection->usage) {
+				case HID_USAGE_SENSOR_ACCEL_3D:
+					sd->hid_sensor_hub_client_devs[
+						sd->hid_sensor_client_cnt].swnode =
+						&xiaomi_mipad2_accel_swnode;
+					break;
+				case HID_USAGE_SENSOR_GRAVITY_VECTOR:
+					sd->hid_sensor_hub_client_devs[
+						sd->hid_sensor_client_cnt].swnode =
+						&xiaomi_mipad2_gravity_swnode;
+					break;
+				case HID_USAGE_SENSOR_GYRO_3D:
+					sd->hid_sensor_hub_client_devs[
+						sd->hid_sensor_client_cnt].swnode =
+						&xiaomi_mipad2_gyro_swnode;
+					break;
+				case HID_USAGE_SENSOR_COMPASS_3D:
+					sd->hid_sensor_hub_client_devs[
+						sd->hid_sensor_client_cnt].swnode =
+						&xiaomi_mipad2_magn_swnode;
+					break;
+				}
+			}
 			hid_dbg(hdev, "Adding %s:%d\n", name,
 					hsdev->start_collection_index);
 			sd->hid_sensor_client_cnt++;
