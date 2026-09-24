@@ -52,6 +52,7 @@ This page separates **code/configuration presence** from **runtime validation**.
 - Mi Pad 2 capacitive-key HID hooks;
 - DWC3 dual-role and USB gadget serial config;
 - modular BCM4356 Wi-Fi/Bluetooth config;
+- AtomISP sensor/VCM module load-order audit against Mi Pad 2 Android init requirements;
 - syntax/basic integration of recovery, USB serial and hardware smoke scripts.
 
 It also compiles selected camera/HID objects. This is a useful regression guard, but **it is not equivalent to a full real-device hardware test and should not be described as such**.

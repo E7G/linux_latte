@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - test/mipad2-camera-20260829
+  pull_request:
+    paths:
+      - 'fix_file/packages/mipad2-camera-support/**'
+      - 'fix_file/tests/mipad2-camera-module-order.sh'
+      - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
 jobs:
@@ -80,6 +85,11 @@ jobs:
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
+
+      - name: Audit Mi Pad 2 camera module order
+        run: |
+          sh -n fix_file/tests/mipad2-camera-module-order.sh
+          sh fix_file/tests/mipad2-camera-module-order.sh
 
       - name: Validate local recovery and USB debug packages
         run: |
