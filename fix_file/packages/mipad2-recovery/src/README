@@ -1,91 +1,19 @@
 # Mi Pad 2 recovery tools
 
-These helpers are intentionally tied to the filesystem layout used by this Mi Pad 2 setup. **Read the assumptions below before using them on another installation.**
-
-## Current layout assumptions
-
-The current `mp2-recover` script uses the Timeshift snapshot device:
-
-```text
-/dev/mmcblk0p2
-```
-
-This value is currently hard-coded in the script. If your BTRFS root/snapshot device is different, do not run recovery unchanged; update/verify the script for your layout first.
-
-The tools also assume a separate `/boot` filesystem. `mp2-backup` refuses to create a backup unless:
-
-- `/boot` is mounted; and
-- the mounted `/boot` filesystem reports `vfat`.
-
-This prevents creating a misleading backup that contains only the root filesystem's empty `/boot` mount point.
+These local-console tools create and restore BTRFS Timeshift snapshots for the current Mi Pad 2 installation.
 
 ## Backup
 
-Run:
+Run `sudo mp2-backup`. It verifies `/` is BTRFS and `/boot` is a separate VFAT mount, detects the actual BTRFS root block device, archives `/boot`, then creates a manual Timeshift snapshot on that device. The archive and SHA-256 checksum are named for the exact snapshot, so an older root snapshot is never paired with an unrelated boot archive.
 
-```sh
-sudo mp2-backup
-```
+## Inspect and restore
 
-It:
+`sudo mp2-recover --status` lists snapshots on the detected root device. `sudo mp2-recover` performs an interactive restore; `sudo mp2-recover --yes` is for deliberate non-interactive recovery.
 
-1. archives the currently mounted `/boot` as `/var/lib/mipad2-recovery/boot-known-good.tar.zst`;
-2. writes a SHA-256 checksum next to the archive;
-3. creates a Timeshift BTRFS snapshot tagged as a manual Mi Pad 2 backup.
+Restore requires a matching per-snapshot `/boot` archive and valid checksum, plus `/boot` currently mounted as VFAT. Missing/corrupt archives, a non-BTRFS root, a changed `/boot` source, or an unknown root block device stop the restore before boot files are extracted. The utility does not mount partitions itself.
 
-If `/boot` is not mounted as VFAT, the script exits instead of making an incomplete backup.
+The scripts assume the installed system's root BTRFS device is the Timeshift snapshot device and that `/boot` is VFAT. Check `findmnt /` and `findmnt /boot` before relying on recovery. Old backups made by versions before the per-snapshot archive change are not auto-restorable by the new script; preserve them separately until migrated or no longer needed.
 
-## Inspect snapshots
+## Test without changing a system
 
-```sh
-sudo mp2-recover --status
-```
-
-or:
-
-```sh
-sudo mp2-recover --list
-```
-
-Both list snapshots using `/dev/mmcblk0p2` as the current snapshot device.
-
-## Restore
-
-Before restoring, make sure the expected `/boot` filesystem is actually mounted at `/boot`. The current recovery script restores the saved boot archive with `tar -C /boot`; it does not independently discover or mount the boot partition.
-
-Interactive restore:
-
-```sh
-sudo mp2-recover
-```
-
-The script selects the newest matching Timeshift snapshot and requires typing:
-
-```text
-RECOVER
-```
-
-before restoring. The non-interactive form is:
-
-```sh
-sudo mp2-recover --yes
-```
-
-Recovery restores the root snapshot with Timeshift using `--skip-grub`, then extracts the saved `/boot` archive when that archive exists.
-
-## Console use
-
-The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or SSH. They are suitable for use from the project's USB ACM serial console when normal networking or the graphical session is unavailable.
-
-## Before relying on recovery
-
-Verify at least once while the system is healthy:
-
-```sh
-findmnt /boot
-findmnt /
-sudo mp2-recover --status
-ls -lh /var/lib/mipad2-recovery/boot-known-good.tar.zst*
-```
-
-A recovery tool is only useful if its device/layout assumptions match the installation that will be restored.
+Run `sudo sh fix_file/tests/test-mipad2-recovery.sh`. The test stubs `findmnt`, `mountpoint`, `timeshift`, `tar`, and `sync`, and verifies detected-device routing, archive/checksum matching, and fail-closed behavior. It does not mount or restore real filesystems.

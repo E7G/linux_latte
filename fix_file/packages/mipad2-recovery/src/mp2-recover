@@ -1,38 +1,50 @@
 #!/bin/sh
 set -eu
-
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
-
-dev=/dev/mmcblk0p2
-boot=/var/lib/mipad2-recovery/boot-known-good.tar.zst
-
-case "${1:-}" in
-  --status|--list)
-    timeshift --list --snapshot-device "$dev" --btrfs --scripted
-    exit 0
-    ;;
+root_source=$(findmnt -n -o SOURCE /) || exit 1
+[ "$(findmnt -n -o FSTYPE /)" = btrfs ] || { echo "Root filesystem is not BTRFS." >&2; exit 1; }
+dev=$(printf '%s\n' "$root_source" | sed 's/\[.*$//')
+[ -b "$dev" ] || { echo "Invalid BTRFS root device: $root_source" >&2; exit 1; }
+check_boot() {
+  mountpoint -q /boot || { echo "/boot is not a separate mounted filesystem." >&2; return 1; }
+  boot_fstype=$(findmnt -n -o FSTYPE /boot) || return 1
+  [ "$boot_fstype" = vfat ] || { echo "/boot is not VFAT." >&2; return 1; }
+  boot_source=$(findmnt -n -o SOURCE /boot) || return 1
+  [ -n "$boot_source" ]
+}
+arg=${1-}
+case "$arg" in
+  --status|--list) timeshift --list --snapshot-device "$dev" --btrfs --scripted; exit 0 ;;
   --yes) yes=1 ;;
   "") yes=0 ;;
   *) echo "Usage: sudo mp2-recover [--status|--yes]" >&2; exit 2 ;;
 esac
-
-snap="$(timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
-  awk '{for (i=1; i<=NF; i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' |
-  tail -1)"
-[ -n "$snap" ] || { echo "No Timeshift snapshot found." >&2; exit 1; }
-
+check_boot || exit 1
+snapshots=$(timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null)
+dir=${MIPAD2_RECOVERY_DIR:-/var/lib/mipad2-recovery}
+snap=$(printf '%s\n' "$snapshots" |
+  awk '{for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' |
+  sort -u |
+  while IFS= read -r candidate; do
+    [ -s "$dir/boot-$candidate.tar.zst" ] && [ -s "$dir/boot-$candidate.tar.zst.sha256" ] && printf '%s\n' "$candidate"
+  done |
+  tail -1)
+[ -n "$snap" ] || { echo "No snapshot with a matching /boot archive found on $dev." >&2; exit 1; }
+archive="$dir/boot-$snap.tar.zst"
+(cd "$dir" && sha256sum -c "boot-$snap.tar.zst.sha256") || { echo "Saved /boot archive checksum failed." >&2; exit 1; }
+echo "Root/snapshot device: $dev"
+echo "Mounted /boot device: $boot_source ($boot_fstype)"
 echo "Selected snapshot: $snap"
-echo "This restores the root filesystem and the saved /boot."
-echo "Type RECOVER to continue:"
 if [ "$yes" != 1 ]; then
+  [ -t 0 ] || { echo "Interactive confirmation requires a terminal; use --yes deliberately." >&2; exit 2; }
+  echo "Type RECOVER to continue:"
   read -r answer
   [ "$answer" = RECOVER ] || { echo "Cancelled."; exit 1; }
 fi
-
-timeshift --restore --snapshot "$snap" --target "$dev" \
-  --skip-grub --btrfs --scripted --yes
-if [ -f "$boot" ]; then
-  tar --zstd -xpf "$boot" -C /boot
-fi
+original_boot_source=$boot_source
+timeshift --restore --snapshot "$snap" --snapshot-device "$dev" --target "$dev" --skip-grub --btrfs --scripted --yes
+check_boot || exit 1
+[ "$boot_source" = "$original_boot_source" ] || { echo "/boot device changed; refusing extraction." >&2; exit 1; }
+tar --zstd -xpf "$archive" -C /boot
 sync
 echo "Recovery complete. Reboot with: sudo reboot"

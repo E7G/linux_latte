@@ -1,21 +1,29 @@
 #!/bin/sh
 set -eu
-
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
-
-mountpoint -q /boot || {
-  echo "/boot is not mounted; refusing an incomplete backup" >&2
-  exit 1
-}
-findmnt -n -o FSTYPE /boot | grep -qx vfat || {
-  echo "/boot is not a vfat filesystem; refusing an incomplete backup" >&2
-  exit 1
-}
-
-dir=/var/lib/mipad2-recovery
+mountpoint -q /boot || { echo "/boot is not mounted." >&2; exit 1; }
+[ "$(findmnt -n -o FSTYPE /boot)" = vfat ] || { echo "/boot is not VFAT." >&2; exit 1; }
+root_source=$(findmnt -n -o SOURCE /) || exit 1
+[ "$(findmnt -n -o FSTYPE /)" = btrfs ] || { echo "Root filesystem is not BTRFS." >&2; exit 1; }
+dev=$(printf '%s\n' "$root_source" | sed 's/\[.*$//')
+[ -b "$dev" ] || { echo "Invalid BTRFS root device: $root_source" >&2; exit 1; }
+dir=${MIPAD2_RECOVERY_DIR:-/var/lib/mipad2-recovery}
 mkdir -p "$dir"
-tar --zstd -cpf "$dir/boot-known-good.tar.zst" -C /boot .
-sha256sum "$dir/boot-known-good.tar.zst" > \
-    "$dir/boot-known-good.tar.zst.sha256"
-timeshift --create --comments "mipad2-manual-backup" --tags D --scripted
-echo "Backup complete. Restore with: sudo mp2-recover"
+tmpdir=$(mktemp -d "$dir/.backup.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+list_snapshots() {
+  timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
+    awk '{for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' | sort -u
+}
+list_snapshots > "$tmpdir/before"
+tar --zstd -cpf "$tmpdir/boot.tar.zst" -C /boot .
+timeshift --create --snapshot-device "$dev" --btrfs --comments "mipad2-manual-backup" --tags D --scripted --yes
+list_snapshots > "$tmpdir/after"
+snap=$(comm -13 "$tmpdir/before" "$tmpdir/after" | tail -1)
+[ -n "$snap" ] || { echo "No new Timeshift snapshot detected." >&2; exit 1; }
+mv "$tmpdir/boot.tar.zst" "$dir/boot-$snap.tar.zst"
+(cd "$dir" && sha256sum "boot-$snap.tar.zst" > "boot-$snap.tar.zst.sha256")
+echo "Backup complete for snapshot $snap on $dev."
