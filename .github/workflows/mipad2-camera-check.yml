@@ -86,6 +86,15 @@ jobs:
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o
 
+      - name: Audit Mi Pad 2 i915 display-power quirk
+        run: |
+          sh -n fix_file/tests/mipad2-i915-quirk.sh
+          sh fix_file/tests/mipad2-i915-quirk.sh
+          make -j"$(nproc)" W=1 \
+            drivers/gpu/drm/i915/display/intel_display_power.o \
+            drivers/gpu/drm/i915/display/intel_display_driver.o \
+            drivers/gpu/drm/i915/display/intel_quirks.o
+
       - name: Audit Mi Pad 2 camera module order
         run: |
           sh -n fix_file/tests/mipad2-camera-module-order.sh
