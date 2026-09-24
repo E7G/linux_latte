@@ -115,6 +115,8 @@ jobs:
           grep -q 'PCI_DEVICE_ID_INTEL_ISH_CHV' drivers/hid/intel-ish-hid/ipc/hw-ish.h
           grep -q '^CONFIG_I2C_DESIGNWARE_BAYTRAIL=y' arch/x86/configs/xiaomipad2_defconfig
           grep -q '^CONFIG_SERIAL_8250_DW=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -Fq '"808622C1"' drivers/acpi/x86/lpss.c
+          grep -Fq '"8086228A"' drivers/acpi/x86/lpss.c
 
       - name: Audit Mi Pad 2 i915 display-power quirk
         run: |
