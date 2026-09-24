@@ -106,22 +106,15 @@ fix_file/BCM4356A2.hcd
 
 ## 7. Recovery 工具不是通用分区恢复器
 
-当前 `mipad2-recovery` 只适用于项目当前假定的安装布局。尤其是 `mp2-recover` 目前把 Timeshift snapshot/restore device **硬编码为**：
+mipad2-recovery 现从运行中的系统检测 BTRFS root 设备，并拒绝不匹配的 root、/boot 挂载、快照、归档校验和恢复 token；但它仍只支持本项目的安装模型：Timeshift BTRFS 快照位于当前 root 设备，/boot 为独立 VFAT 文件系统，恢复工具/Timeshift hook/systemd fallback 已安装。它不会在 Live USB 或未启动系统上自动发现并挂载目标分区，也不是通用分区重建工具。
 
-```text
-/dev/mmcblk0p2
-```
+恢复前仍应检查：
 
-而 `/boot` archive 的恢复会直接执行到当前 `/boot` 路径，脚本不会替你发现或挂载 boot 分区。
+    findmnt /
+    findmnt /boot
+    sudo mp2-recover --status
 
-因此在恢复前必须确认：
-
-```bash
-findmnt /
-findmnt /boot
-```
-
-与脚本假设一致。`mp2-backup` 已经会拒绝未挂载或非 VFAT 的 `/boot`，但这不意味着 `mp2-recover` 能自动适配不同分区布局。改过分区、root 设备或 boot 布局的安装不能直接使用默认恢复命令。
+sudo sh fix_file/tests/test-mipad2-recovery.sh 是无真实分区写入的 mock guard test；不能替代在 Mi Pad 2 安装布局上的实际备份、恢复和冷启动验证。
 
 ## 8. 当前 defconfig 不是 hardened / generic distro 配置
 

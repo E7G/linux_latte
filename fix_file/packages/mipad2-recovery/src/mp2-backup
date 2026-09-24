@@ -1,21 +1,46 @@
 #!/bin/sh
 set -eu
-
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
-
-mountpoint -q /boot || {
-  echo "/boot is not mounted; refusing an incomplete backup" >&2
-  exit 1
-}
-findmnt -n -o FSTYPE /boot | grep -qx vfat || {
-  echo "/boot is not a vfat filesystem; refusing an incomplete backup" >&2
-  exit 1
-}
-
-dir=/var/lib/mipad2-recovery
+mountpoint -q /boot || { echo "/boot is not mounted." >&2; exit 1; }
+[ "$(findmnt -n -o FSTYPE /boot)" = vfat ] || { echo "/boot is not VFAT." >&2; exit 1; }
+root_source=$(findmnt -n -o SOURCE /) || exit 1
+[ "$(findmnt -n -o FSTYPE /)" = btrfs ] || { echo "Root filesystem is not BTRFS." >&2; exit 1; }
+dev=$(printf '%s\n' "$root_source" | sed 's/\[.*$//')
+[ -b "$dev" ] || { echo "Invalid BTRFS root device: $root_source" >&2; exit 1; }
+dir=${MIPAD2_RECOVERY_DIR:-/boot/.mipad2-recovery}
 mkdir -p "$dir"
-tar --zstd -cpf "$dir/boot-known-good.tar.zst" -C /boot .
-sha256sum "$dir/boot-known-good.tar.zst" > \
-    "$dir/boot-known-good.tar.zst.sha256"
-timeshift --create --comments "mipad2-manual-backup" --tags D --scripted
-echo "Backup complete. Restore with: sudo mp2-recover"
+state_dir=${MIPAD2_RECOVERY_STATE_DIR:-/var/lib/mipad2-recovery-state}
+umask 077
+mkdir -p "$state_dir"
+exec 9>"$state_dir/backup.lock"
+flock -n 9 || { echo "Another Mi Pad 2 backup is already running." >&2; exit 1; }
+[ ! -e "$dir/pending-restore" ] || { echo "A restore is pending; refusing to create another backup." >&2; exit 1; }
+hook=${MIPAD2_RESTORE_HOOK:-/etc/timeshift/restore-hooks.d/99-mipad2-restore-boot}
+helper=${MIPAD2_RESTORE_HELPER:-/usr/local/sbin/mp2-restore-boot}
+service_link=${MIPAD2_RESTORE_SERVICE_LINK:-/usr/lib/systemd/system/multi-user.target.wants/mipad2-restore-boot.service}
+[ -x "$hook" ] && [ -x "$helper" ] && [ -e "$service_link" ] || { echo "Mi Pad 2 restore hook/helper/fallback is not installed; refusing an unrestorable snapshot." >&2; exit 1; }
+token=$(cat /proc/sys/kernel/random/uuid)
+case "$token" in ????????-????-????-????-????????????) ;; *) echo "Unable to generate a snapshot token." >&2; exit 1 ;; esac
+printf '%s\n' "$token" > "$state_dir/snapshot-token.tmp.$$"
+mv "$state_dir/snapshot-token.tmp.$$" "$state_dir/snapshot-token"
+tmpdir=$(mktemp -d "$dir/.backup.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+comment=mipad2-manual-backup-$token
+list_snapshots() {
+  timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
+    awk -v description="$comment" '$NF == description {for (i=1;i<=NF;i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' | sort -u
+}
+list_snapshots > "$tmpdir/before"
+tar --zstd --exclude=./.mipad2-recovery -cpf "$tmpdir/boot.tar.zst" -C /boot .
+timeshift --create --snapshot-device "$dev" --btrfs --comments "$comment" --tags D --scripted --yes
+list_snapshots > "$tmpdir/after"
+snap=$(comm -13 "$tmpdir/before" "$tmpdir/after" | tail -1)
+[ -n "$snap" ] || { echo "No new Timeshift snapshot detected." >&2; exit 1; }
+mv "$tmpdir/boot.tar.zst" "$dir/boot-$snap.tar.zst"
+(cd "$dir" && sha256sum "boot-$snap.tar.zst" > "boot-$snap.tar.zst.sha256")
+printf '%s\n' "$token" > "$tmpdir/snapshot-token"
+mv "$tmpdir/snapshot-token" "$dir/boot-$snap.tar.zst.meta"
+echo "Backup complete for snapshot $snap on $dev."

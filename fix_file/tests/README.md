@@ -120,3 +120,12 @@ v4l2-ctl --list-devices > /tmp/mipad2-v4l2.txt 2>&1
 ```
 
 脚本本身不会修改 BIOS、I2C 寄存器、音频 mixer 或系统电源策略；但显式开启主动摄像头测试或运行 `mipad2-camera-test.sh` 会实际启动摄像头硬件和 AtomISP pipeline。
+
+
+### Recovery safety test
+
+Run the mocked recovery guard test with root privileges:
+
+    sudo sh fix_file/tests/test-mipad2-recovery.sh
+
+It stubs Timeshift, mounts, tar, and service-manager calls to verify detected root-device routing, snapshot-bound /boot archives, checksum/token validation, pre-reboot restoration, and fail-closed behavior without touching real filesystems.

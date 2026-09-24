@@ -1,0 +1,35 @@
+name: Mi Pad 2 recovery safety
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "fix_file/packages/mipad2-recovery/**"
+      - "fix_file/tests/test-mipad2-recovery.sh"
+      - "fix_file/tests/README.md"
+  push:
+    branches: [main]
+    paths:
+      - "fix_file/packages/mipad2-recovery/**"
+      - "fix_file/tests/test-mipad2-recovery.sh"
+      - "fix_file/tests/README.md"
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-safety:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          sparse-checkout: fix_file
+          sparse-checkout-cone-mode: true
+      - name: Check shell syntax
+        run: |
+          sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
+          sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
+          sh -n fix_file/tests/test-mipad2-recovery.sh
+      - name: Run mocked recovery guards
+        run: sudo sh fix_file/tests/test-mipad2-recovery.sh
