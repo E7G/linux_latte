@@ -25,6 +25,7 @@ This page separates **code/configuration presence** from **runtime validation**.
 | Headset / microphones | Integrated/project profile | Functional audio test required | Use `wpctl`, jack-state observation and recording tests from `fix_file/audio.md`. |
 | DWC3 USB host/device dual-role | Integrated | Runtime-checked | Defconfig enables DWC3 PCI dual-role. Smoke test expects an actual UDC for gadget mode. |
 | CDC ACM USB serial | Integrated + helper package | Optional runtime check | `mipad2-usb-serial` configures `/dev/ttyGS0`; gadget serial console support is enabled in the kernel. |
+| Intel DPTF / platform thermal | Configured (ACPI_DPTF, DPTF_POWER, INT340X, Intel SoC DTS) | Diagnostic-only | Compare thermal zones, trips and cooling states at idle/load and after resume. Windows INF IDs are generic; real ACPI/runtime presence remains unverified. |
 | Battery | Integrated target | Runtime-checked | Smoke test discovers a power-supply device with type `Battery`. |
 | BQ25890 charging path | Integrated target | Runtime-checked | Smoke test expects a `USB` or `Mains` charger power-supply node. |
 | Ambient light sensor | Integrated target | Runtime-checked | Smoke test expects IIO name `als`. |
@@ -70,6 +71,7 @@ The Linux battery/charger mapping is also documented in [the upstream x86 Androi
 - DWC3 dual-role and USB gadget serial config;
 - modular BCM4356 Wi-Fi/Bluetooth config;
 - AtomISP sensor/VCM module load-order audit against Mi Pad 2 Android init requirements;
+- DPTF/thermal/charger defconfig settings plus mock-backed thermal readout tests;
 - syntax/basic integration of recovery, USB serial and hardware smoke scripts.
 
 It also compiles selected camera/HID objects. This is a useful regression guard, but **it is not equivalent to a full real-device hardware test and should not be described as such**.
@@ -80,6 +82,7 @@ After installing a new kernel:
 
 ```bash
 sudo sh fix_file/tests/mipad2-hardware-smoke.sh
+sudo sh fix_file/tests/mipad2-thermal-audit.sh
 ```
 
 Then exercise the subsystems that a node-existence test cannot fully validate, especially audio, suspend/resume and cameras.
