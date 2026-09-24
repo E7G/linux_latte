@@ -53,12 +53,20 @@ need 'CONFIG_HID_SENSOR_MAGNETOMETER_3D=y'
 need 'CONFIG_HID_SENSOR_INCLINOMETER_3D=y'
 need 'CONFIG_HID_SENSOR_DEVICE_ROTATION=y'
 
-# Power, charging and thermal management.
+# Power/charging and thermal management. Windows backup includes Intel DPTF
+# thermal/power participant drivers; retain the corresponding Linux stack.
 need 'CONFIG_BATTERY_BQ27XXX=y'
 need 'CONFIG_CHARGER_BQ25890=y'
 need 'CONFIG_INTEL_SOC_PMIC=y'
 need 'CONFIG_INTEL_SOC_PMIC_CHTWC=y'
 need 'CONFIG_SENSORS_CORETEMP=y'
+need 'CONFIG_ACPI_DPTF=y'
+need 'CONFIG_DPTF_POWER=y'
+need 'CONFIG_INT340X_THERMAL=y'
+need 'CONFIG_INT3406_THERMAL=y'
+need 'CONFIG_INTEL_SOC_DTS_THERMAL=y'
+need 'CONFIG_X86_PKG_TEMP_THERMAL=y'
+need 'CONFIG_INTEL_HFI_THERMAL=y'
 need 'CONFIG_RTC_CLASS=y'
 need 'CONFIG_PWM_LPSS_PLATFORM=y'
 
