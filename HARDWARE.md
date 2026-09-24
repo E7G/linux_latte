@@ -41,6 +41,20 @@ This page separates **code/configuration presence** from **runtime validation**.
 | VA-API video decode | Userspace feature | Project hardware-verified userspace setup | Current notes record `libva 2.24.0` + Intel i965 2.4.5 on CherryView; this is not a special kernel driver in this tree. |
 | Suspend / resume | Kernel PM present | **Needs repeated regression** | Re-test wireless, audio, IIO, camera and USB after resume. |
 
+## Windows driver reference audit
+
+The [public Mi Pad 2 Windows 10 driver backup](https://github.com/brianwoo/mipad2-win10-howto) is useful for identifying device classes and candidate IDs, but its generic INF model lists are not a live Device Manager/ACPI dump and do not prove which compatible ID matched on a specific tablet. Do not copy proprietary Windows binaries into this kernel or infer a Linux register protocol from the driver name.
+
+| Windows archive entry / ID evidence | Linux tree comparison | Remaining proof |
+| --- | --- | --- |
+| FocalTech touchscreen, FTSC1000 | Mi Pad 2 x86 Android-tablet support recognizes FTSC1000. | Confirm touch, orientation and suspend/resume on hardware. |
+| LP8556 backlight, XMCC0001 | Kernel backlight driver has the Mi Pad 2 ACPI match. | Confirm brightness range and panel/backlight power sequencing after resume. |
+| OV5693 (INT33BE) and T4KA3 (XMCC0003) | Corresponding Linux sensor drivers/AtomISP bridge entries exist. | Stream both cameras and test controls/focus on hardware. |
+| BQMG0890 charger controller (XMCC0002) | No BQMG0890 Linux driver/ACPI match is present. Linux separately instantiates the TI BQ25890 charger and BQ27520 fuel gauge through the Cherry Trail Whiskey Cove path; this is not proof of parity with the OEM BQMG0890 interface. The archived BQMG0890 is a proprietary KMDF driver and imports ACPI OpRegion registration APIs, so its protocol cannot be safely inferred from the INF name. | Compare live ACPI devices and power-supply readings, then verify charge detection/current and battery reporting on-device. Treat exact BQMG0890 behavior as unresolved. |
+| Realtek I2S codec INF lists INTCCFFD and 10EC5640 among its compatible IDs | Linux target configures the RT5659 path. The backup's broad INF model list does not identify which ID matched on this tablet. | Capture the tablet's actual ACPI codec ID and ALSA/I2C binding before claiming cross-OS codec equivalence. |
+
+The Linux battery/charger mapping is also documented in [the upstream x86 Android-tablet device table](https://android.googlesource.com/kernel/common/%2B/e445c8b2aa2df0e49f6037886c32d54a5e3960b1/drivers/platform/x86/x86-android-tablets.c) and [the Cherry Trail Whiskey Cove I2C driver](https://android.googlesource.com/kernel/common/%2B/28174b15b2df1f47c005ec71ee5427e4ac8f46f0/drivers/i2c/busses/i2c-cht-wc.c). These establish the Linux BQ27520/BQ25890 path, not equivalence to the separate Windows BQMG0890 driver.
+
 ## What CI actually proves
 
 `.github/workflows/mipad2-camera-check.yml` currently validates important Mi Pad 2 configuration and source assumptions, including:
