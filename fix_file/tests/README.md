@@ -128,4 +128,7 @@ mipad2-sensor-orientation-audit.sh checks that the Android sensor-HAL correction
 hub and exposed through standard IIO mount_matrix metadata for accel/gravity,
 gyro, and magnetometer. It is a source/configuration regression check; a real
 device must still be rotated through all four display orientations to validate
-the sensor data and iio-sensor-proxy behavior.
+the sensor data and iio-sensor-proxy behavior. On-device, the hardware smoke
+test also checks that accel, gravity, gyro, and magnetometer sysfs mount
+matrices equal the Android-derived correction; this does not validate live
+axis response or automatic display rotation.

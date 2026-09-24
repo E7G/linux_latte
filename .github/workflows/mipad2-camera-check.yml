@@ -13,6 +13,7 @@ on:
       - 'drivers/iio/gyro/hid-sensor-gyro-3d.c'
       - 'drivers/iio/magnetometer/hid-sensor-magn-3d.c'
       - 'fix_file/tests/mipad2-sensor-orientation-audit.sh'
+      - 'fix_file/tests/mipad2-hardware-smoke.sh'
       - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
