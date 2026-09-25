@@ -62,6 +62,18 @@ The [public Mi Pad 2 Windows 10 driver backup](https://github.com/brianwoo/mipad
 
 The Linux battery/charger mapping is also documented in [the upstream x86 Android-tablet device table](https://android.googlesource.com/kernel/common/%2B/e445c8b2aa2df0e49f6037886c32d54a5e3960b1/drivers/platform/x86/x86-android-tablets.c) and [the Cherry Trail Whiskey Cove I2C driver](https://android.googlesource.com/kernel/common/%2B/28174b15b2df1f47c005ec71ee5427e4ac8f46f0/drivers/i2c/busses/i2c-cht-wc.c). These establish the Linux BQ27520/BQ25890 path, not equivalence to the separate Windows BQMG0890 driver.
 
+
+
+## Live Mi Pad 2 audit snapshot (2026-09-25)
+
+A read-only SSH audit of the installed CachyOS kernel (`6.14.0-mipad2-cachyos-navkeys`) confirmed runtime enumeration, not full functional validation:
+
+- FTSC1000 touch input appears under a generic `hid-over-i2c 2808:509C` event name; its `phys` field is `i2c-FTSC1000`. The smoke test matches that physical path. Touch interaction/orientation/resume are still untested.
+- BCM4356A2 Bluetooth HCI and firmware enumerate, but `rfkill` reported Bluetooth soft-blocked (not hard-blocked); pairing and radio operation remain untested. The audit did not change this user/device state.
+- The `INT34D3:00` Whiskey Cove PMIC is bound to `intel_soc_pmic_chtwc`; `i2c-14` is the BQ25890 charger adapter, with BQ25890 and BQ27520 clients bound to their Linux drivers. Battery was reported at 83%, 4.165 V. This does not establish parity with the OEM Windows BQMG0890 driver or validate charging under load.
+- Thermal/DPTF zones and cooling devices enumerate. No load, trip-point, suspend/resume or throttling test was performed.
+- No real audio playback/capture, touch gesture, camera streaming, BT pairing, or suspend/resume test was performed. These remain explicit gaps; node enumeration alone is not a pass.
+
 ## What CI actually proves
 
 `.github/workflows/mipad2-camera-check.yml` currently validates important Mi Pad 2 configuration and source assumptions, including:

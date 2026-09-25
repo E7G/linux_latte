@@ -81,7 +81,7 @@ done
 if [ -n "$touch_name" ]; then
     printf 'OK   touchscreen %s\n' "$touch_name"
 else
-    optional 'touchscreen name not recognized (check manually)'
+    miss 'FTSC1000 touchscreen input device'
 fi
 
 if [ -e /sys/class/drm/card0 ] && [ -e /sys/class/drm/renderD128 ]; then
