@@ -1,0 +1,45 @@
+name: Publish Mi Pad 2 one-shot test artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download validated kernel artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir artifact
+          gh run download 36105230928 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name linux-latte-cachyos-navkeys-kernel-bundle \
+            --dir artifact
+          cd artifact
+          sha256sum -c SHA256SUMS
+          test "$(cat commit.txt)" = "8503f9cf9c6dad4099b6d7f917eb88aa29dde8da"
+
+      - name: Publish temporary prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: mipad2-final-once-test-20260925
+        run: |
+          set -euxo pipefail
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$TAG" \
+            artifact/vmlinuz-linux-latte-cachyos-navkeys \
+            artifact/modules-linux-latte-cachyos-navkeys.tar.zst \
+            artifact/kernelrelease.txt \
+            artifact/SHA256SUMS \
+            artifact/commit.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target 8503f9cf9c6dad4099b6d7f917eb88aa29dde8da \
+            --prerelease \
+            --title "Mi Pad 2 one-shot test 2026-09-25" \
+            --notes "Temporary one-shot validation build. Combined charging VREG fix and TFA9890 probe cleanup; not for general installation."
