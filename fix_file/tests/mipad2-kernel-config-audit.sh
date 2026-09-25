@@ -15,16 +15,6 @@ need() {
 	fi
 }
 
-need_tristate() {
-	symbol=$1
-	if grep -Eq "^${symbol}=[ym]$" "$config"; then
-		grep -E "^${symbol}=[ym]$" "$config" | sed 's/^/OK   /'
-	else
-		printf 'MISS %s=[ym]\n' "$symbol" >&2
-		fail=1
-	fi
-}
-
 # Boot, storage and on-device diagnostics.
 need 'CONFIG_EFI=y'
 need 'CONFIG_EFI_MIXED=y'
