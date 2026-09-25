@@ -192,6 +192,8 @@ jobs:
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-camera-test.sh
+          grep -q 'mipad2-camera-test.sh.*both' fix_file/tests/mipad2-hardware-smoke.sh
           grep -q 'OV5693 and T4KA3 camera inputs enumerated' fix_file/tests/mipad2-hardware-smoke.sh
           sh -n fix_file/tests/mipad2-rfkill-audit.sh
           sh -n fix_file/tests/mipad2-rfkill-audit-selftest.sh
