@@ -215,6 +215,19 @@ for node in /dev/video*; do
 done
 if [ -n "$video_node" ]; then printf 'OK   %s\n' "$video_node"; else miss '/dev/video*'; fi
 
+if [ -n "$video_node" ] && command -v v4l2-ctl >/dev/null 2>&1; then
+    camera_inputs=$(v4l2-ctl -d "$video_node" --list-inputs 2>/dev/null || true)
+    if printf '%s\n' "$camera_inputs" | grep -qi 'ov5693' &&
+       printf '%s\n' "$camera_inputs" | grep -qi 't4ka3'; then
+        printf 'OK   OV5693 and T4KA3 camera inputs enumerated (capture untested)\n'
+    else
+        miss 'both OV5693 and T4KA3 AtomISP inputs'
+    fi
+elif [ -n "$video_node" ]; then
+    optional 'v4l2-ctl missing; camera input enumeration skipped'
+fi
+
+
 ov5693_node=
 for link in /sys/class/video4linux/v4l-subdev*; do
     [ -e "$link" ] || continue
