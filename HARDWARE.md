@@ -72,6 +72,7 @@ A read-only SSH audit of the installed CachyOS kernel (`6.14.0-mipad2-cachyos-na
 - BCM4356A2 Bluetooth HCI and firmware enumerate, but `rfkill` reported Bluetooth soft-blocked (not hard-blocked); pairing and radio operation remain untested. The audit did not change this user/device state.
 - The `INT34D3:00` Whiskey Cove PMIC is bound to `intel_soc_pmic_chtwc`; `i2c-14` is the BQ25890 charger adapter, with BQ25890 and BQ27520 clients bound to their Linux drivers. Battery was reported at 83%, 4.165 V. This does not establish parity with the OEM Windows BQMG0890 driver or validate charging under load.
 - Thermal/DPTF zones and cooling devices enumerate. No load, trip-point, suspend/resume or throttling test was performed.
+- The refreshed thermal audit identified acpitz=0 mC as suspicious and STR0/STR2/STR3 -273150 mC values as unavailable sentinels; other live readings included SoC DTS at 39-40 C, charger at 38 C, battery at 28.3 C and PNIT at 36 C. Cooling states were idle. No load/thermal-trip test was attempted.
 - No real audio playback/capture, touch gesture, camera streaming, BT pairing, or suspend/resume test was performed. These remain explicit gaps; node enumeration alone is not a pass.
 
 ## What CI actually proves

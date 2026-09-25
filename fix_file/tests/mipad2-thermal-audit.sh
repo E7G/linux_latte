@@ -23,8 +23,24 @@ for zone in "$thermal_root"/thermal_zone*; do
         continue
         ;;
     esac
+    # A few firmware/DPTF zones can expose the absolute-zero sentinel while
+    # still having a readable sysfs temp file. Do not count that as a usable
+    # thermal reading. Zero is retained but highlighted for manual review.
+    case "$temp" in
+        -273150|-273151|-273152)
+            printf 'WARN thermal_zone=%s type=%s temp_mC=%s likely_unavailable_sentinel=true\n' \
+                "${zone##*/}" "$name" "$temp"
+            continue
+            ;;
+        0)
+            quality=' suspicious_zero=true'
+            ;;
+        *)
+            quality=
+            ;;
+    esac
     zone_count=$((zone_count + 1))
-    printf 'THERMAL zone=%s type=%s temp_mC=%s\n' "${zone##*/}" "$name" "$temp"
+    printf 'THERMAL zone=%s type=%s temp_mC=%s%s\n' "${zone##*/}" "$name" "$temp" "$quality"
     for trip in "$zone"/trip_point_*_temp; do
         [ -r "$trip" ] || continue
         trip_name=${trip##*/trip_point_}
