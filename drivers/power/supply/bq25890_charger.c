@@ -127,6 +127,7 @@ struct bq25890_device {
 	bool force_hiz;
 	u32 pump_express_vbus_max;
 	u32 iinlim_percentage;
+	u32 jeita_warm_regulation_uv;
 	enum bq25890_chip_version chip_version;
 	struct bq25890_init_data init_data;
 	struct bq25890_state state;
@@ -877,6 +878,42 @@ static int bq25890_get_chip_state(struct bq25890_device *bq,
 	return 0;
 }
 
+static int bq25890_apply_board_jeita_vreg(struct bq25890_device *bq,
+					     const struct bq25890_state *state)
+{
+	u32 base_uv, target_uv;
+	int jeita_vset;
+
+	if (!bq->jeita_warm_regulation_uv)
+		return 0;
+
+	base_uv = bq25890_find_val(bq->init_data.vreg, TBL_VREG);
+	target_uv = base_uv;
+
+	if (state->ntc_fault == NTC_FAULT_WARM) {
+		target_uv = bq->jeita_warm_regulation_uv;
+
+		/*
+		 * With JEITA_VSET=0 the BQ25890 internally regulates 200 mV
+		 * below VREG in the 45-60 C warm zone.  The board property
+		 * describes the desired effective battery voltage, so program
+		 * VREG 200 mV higher and round to the nearest 16 mV step.
+		 */
+		jeita_vset = bq25890_field_read(bq, F_JEITA_VSET);
+		if (jeita_vset < 0)
+			return jeita_vset;
+		if (!jeita_vset)
+			target_uv += 200000;
+
+		target_uv += bq25890_tables[TBL_VREG].rt.step / 2;
+		if (target_uv > base_uv)
+			target_uv = base_uv;
+	}
+
+	return bq25890_field_write(bq, F_VREG,
+				    bq25890_find_idx(target_uv, TBL_VREG));
+}
+
 static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 {
 	bool adc_conv_rate, new_adc_conv_rate;
@@ -907,6 +944,12 @@ static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 
 	if (new_adc_conv_rate != adc_conv_rate) {
 		ret = bq25890_field_write(bq, F_CONV_RATE, new_adc_conv_rate);
+		if (ret < 0)
+			goto error;
+	}
+
+	if (new_state.ntc_fault != bq->state.ntc_fault) {
+		ret = bq25890_apply_board_jeita_vreg(bq, &new_state);
 		if (ret < 0)
 			goto error;
 	}
@@ -1057,9 +1100,19 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		}
 	}
 
+	device_property_read_u32(bq->dev,
+				 "linux,jeita-warm-regulation-voltage",
+				 &bq->jeita_warm_regulation_uv);
+
 	ret = bq25890_get_chip_state(bq, &bq->state);
 	if (ret < 0) {
 		dev_dbg(bq->dev, "Get state failed %d\n", ret);
+		return ret;
+	}
+
+	ret = bq25890_apply_board_jeita_vreg(bq, &bq->state);
+	if (ret < 0) {
+		dev_dbg(bq->dev, "Applying board JEITA VREG failed %d\n", ret);
 		return ret;
 	}
 
