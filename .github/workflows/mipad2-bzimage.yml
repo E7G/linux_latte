@@ -27,7 +27,7 @@ jobs:
       - name: Configure Mi Pad 2 CachyOS navkeys kernel
         run: |
           make xiaomipad2_defconfig
-          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
+          release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
           echo "kernelrelease=$release"
           grep '^CONFIG_HID_MULTITOUCH=' .config
           grep '^CONFIG_LOCALVERSION=' .config
@@ -37,15 +37,15 @@ jobs:
 
       - name: Build bzImage and modules
         run: |
-          make LOCALVERSION=-navkeys -j"$(nproc)" bzImage modules
+          make LOCALVERSION="$MIPAD2_LOCALVERSION" -j"$(nproc)" bzImage modules
 
       - name: Stage matching modules
         run: |
           set -eux
-          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
+          release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
           rm -rf modules-root
           mkdir -p modules-root
-          make LOCALVERSION=-navkeys INSTALL_MOD_PATH="$PWD/modules-root" modules_install
+          make LOCALVERSION="$MIPAD2_LOCALVERSION" INSTALL_MOD_PATH="$PWD/modules-root" modules_install
           rm -f "modules-root/lib/modules/$release/build" "modules-root/lib/modules/$release/source"
           depmod -b "$PWD/modules-root" "$release"
 
@@ -64,7 +64,7 @@ jobs:
       - name: Prepare kernel bundle
         run: |
           set -eux
-          release="$(make -s LOCALVERSION=-navkeys kernelrelease)"
+          release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
           mkdir -p dist
           cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos-navkeys
           cp .config dist/config-linux-latte-cachyos-navkeys
