@@ -336,6 +336,12 @@ static const struct property_entry xiaomi_mipad2_props[] = {
 	 * Keep every other firmware charger setting, overriding only VREG.
 	 */
 	PROPERTY_ENTRY_U32("ti,battery-regulation-voltage", 4400000),
+	/*
+	 * OEM0 specifies 4.100 V in the 45-60 C warm zone.  The BQ25890
+	 * hardware JEITA logic (JEITA_VSET=0) subtracts 200 mV from VREG;
+	 * the charger driver combines this effective target with that offset.
+	 */
+	PROPERTY_ENTRY_U32("linux,jeita-warm-regulation-voltage", 4100000),
 	{ }
 };
 
