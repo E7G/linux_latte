@@ -31,6 +31,8 @@ need 'CONFIG_CPU_FREQ=y'
 need 'CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y'
 need 'CONFIG_X86_INTEL_PSTATE=y'
 need 'CONFIG_INTEL_IDLE=y'
+need 'CONFIG_INTEL_MEI=y'
+need 'CONFIG_INTEL_MEI_TXE=y'
 
 # Display, input, GPIO, LEDs and sensors.
 need 'CONFIG_DRM_I915=y'
