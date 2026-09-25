@@ -128,6 +128,9 @@ jobs:
           sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
+          sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
+          grep -q 'mipad2-usb-serial.service' \
+            fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
           sh -n fix_file/tests/mipad2-kernel-config-audit.sh
