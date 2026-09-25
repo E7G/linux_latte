@@ -250,21 +250,12 @@ if [ -n "$t4ka3_node" ] && command -v v4l2-ctl >/dev/null 2>&1; then
     fi
 fi
 
-if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ] && [ -n "$video_node" ] &&
-   command -v v4l2-ctl >/dev/null 2>&1; then
-    for input in 0 1; do
-        output="/tmp/mipad2-camera-input-$input.raw"
-        rm -f "$output"
-        if v4l2-ctl -d "$video_node" --set-input="$input" >/dev/null 2>&1 &&
-           timeout 20 v4l2-ctl -d "$video_node" --stream-mmap=4 \
-               --stream-count=3 --stream-to="$output" >/dev/null 2>&1 &&
-           [ -s "$output" ]; then
-            printf 'OK   camera input %s streams without prior S_FMT\n' "$input"
-        else
-            miss "camera input $input stream"
-        fi
-        rm -f "$output"
-    done
+if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ]; then
+    if [ ! -r "$script_dir/mipad2-camera-test.sh" ]; then
+        miss 'mipad2-camera-test.sh required for active camera test'
+    elif ! sh "$script_dir/mipad2-camera-test.sh" both; then
+        miss 'active camera capture test failed (later sensor skipped after first failure)'
+    fi
 fi
 
 exit "$fail"
