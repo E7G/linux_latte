@@ -99,6 +99,19 @@ else
     miss 'RT5659 ALSA UCM profile'
 fi
 
+tfa_count=0
+for path in /sys/bus/i2c/devices/*/name; do
+    [ -r "$path" ] || continue
+    case "$(cat "$path" 2>/dev/null)" in
+        tfa9890|tfa989x) tfa_count=$((tfa_count + 1)) ;;
+    esac
+done
+if [ "$tfa_count" -ge 2 ]; then
+    printf 'OK   dual TFA9890 speaker amplifiers (%s)\n' "$tfa_count"
+else
+    miss "dual TFA9890 speaker amplifiers (found $tfa_count)"
+fi
+
 backlight_path=
 for path in /sys/class/backlight/*; do
     [ -f "$path/max_brightness" ] || continue
