@@ -328,6 +328,13 @@ static struct bq25890_platform_data bq2589x_pdata = {
 static const struct property_entry xiaomi_mipad2_props[] = {
 	PROPERTY_ENTRY_BOOL("linux,skip-reset"),
 	PROPERTY_ENTRY_BOOL("linux,read-back-settings"),
+	/*
+	 * Keep the firmware-provided charge current / voltage and other limits,
+	 * but restore the two BQ2589x values programmed by Xiaomi's Android
+	 * driver during probe.
+	 */
+	PROPERTY_ENTRY_U32("ti,termination-current", 128000),
+	PROPERTY_ENTRY_U32("ti,precharge-current", 512000),
 	{ }
 };
 
