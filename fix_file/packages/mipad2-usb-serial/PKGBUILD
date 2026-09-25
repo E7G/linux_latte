@@ -1,5 +1,5 @@
 pkgname=mipad2-usb-serial
-pkgver=20260910
+pkgver=20260925
 pkgrel=1
 pkgdesc="Persistent Mi Pad 2 USB ACM serial console"
 arch=(x86_64)
@@ -13,6 +13,8 @@ package() {
     "$pkgdir/usr/local/libexec/mipad2-usb-serial"
   install -Dm644 "$srcdir/mipad2-usb-serial.service" \
     "$pkgdir/etc/systemd/system/mipad2-usb-serial.service"
+  install -Dm755 "$srcdir/mipad2-usb-serial-sleep" \
+    "$pkgdir/usr/lib/systemd/system-sleep/mipad2-usb-serial"
   install -Dm644 "$srcdir/README" \
     "$pkgdir/usr/share/doc/mipad2-usb-serial/README"
 }
