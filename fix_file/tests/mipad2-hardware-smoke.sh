@@ -128,8 +128,9 @@ touch_name=
 for path in /sys/class/input/event*/device/name; do
     [ -r "$path" ] || continue
     name=$(cat "$path" 2>/dev/null || true)
-    case "$name" in
-        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|FTSC1000:00*)
+    device_path=$(readlink -f "${path%/name}" 2>/dev/null || true)
+    case "$name $device_path" in
+        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|*FTSC1000*|*"hid-over-i2c 2808:509C"*)
             touch_name=$name
             break
             ;;
