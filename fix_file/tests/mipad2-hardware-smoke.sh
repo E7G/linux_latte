@@ -179,6 +179,13 @@ if [ -r /sys/power/mem_sleep ]; then
     esac
 fi
 
+if [ -r /sys/kernel/debug/pmc_atom/sleep_state ]; then
+    printf 'INFO Cherry Trail PMC residency:\n'
+    sed 's/^/     /' /sys/kernel/debug/pmc_atom/sleep_state
+else
+    optional 'PMC S0ix residency unavailable to this audit (debugfs may require root)'
+fi
+
 if find /sys/class/thermal -maxdepth 1 -name 'thermal_zone*' -print -quit 2>/dev/null | grep -q .; then
     printf 'OK   thermal zones\n'
 else
