@@ -106,24 +106,16 @@ fix_file/BCM4356A2.hcd
 
 如果无线没有出现，应先检查 `dmesg` 中驱动实际请求的 firmware/NVRAM 文件名，而不是盲目重命名唯一副本。
 
-## 7. Recovery 工具不是通用分区恢复器
+## 7. Recovery helper layout constraints
 
-当前 `mipad2-recovery` 只适用于项目当前假定的安装布局。尤其是 `mp2-recover` 目前把 Timeshift snapshot/restore device **硬编码为**：
+mp2-recover now uses the snapshot location configured in Timeshift and derives the restore target from the mounted root reported by findmnt. Before it runs Timeshift restore, it fails closed unless the root is a single-device Btrfs filesystem, /boot is a separate VFAT mount, and the saved boot archive exists, passes SHA-256 verification, and is a readable zstd tar file. It stages the verified archive on /boot before restoring root so an online rollback cannot replace its source.
 
-```text
-/dev/mmcblk0p2
-```
+The helper does not mount partitions or support multi-device Btrfs. Confirm the actual mounts before recovery:
 
-而 `/boot` archive 的恢复会直接执行到当前 `/boot` 路径，脚本不会替你发现或挂载 boot 分区。
+    findmnt /
+    findmnt /boot
 
-因此在恢复前必须确认：
-
-```bash
-findmnt /
-findmnt /boot
-```
-
-与脚本假设一致。`mp2-backup` 已经会拒绝未挂载或非 VFAT 的 `/boot`，但这不意味着 `mp2-recover` 能自动适配不同分区布局。改过分区、root 设备或 boot 布局的安装不能直接使用默认恢复命令。
+Do not use the helper unchanged after changing away from the project Btrfs-root plus VFAT-/boot layout.
 
 ## 8. 当前 defconfig 不是 hardened / generic distro 配置
 

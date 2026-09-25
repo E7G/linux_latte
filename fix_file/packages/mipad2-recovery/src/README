@@ -1,91 +1,25 @@
 # Mi Pad 2 recovery tools
 
-These helpers are intentionally tied to the filesystem layout used by this Mi Pad 2 setup. **Read the assumptions below before using them on another installation.**
-
-## Current layout assumptions
-
-The current `mp2-recover` script uses the Timeshift snapshot device:
-
-```text
-/dev/mmcblk0p2
-```
-
-This value is currently hard-coded in the script. If your BTRFS root/snapshot device is different, do not run recovery unchanged; update/verify the script for your layout first.
-
-The tools also assume a separate `/boot` filesystem. `mp2-backup` refuses to create a backup unless:
-
-- `/boot` is mounted; and
-- the mounted `/boot` filesystem reports `vfat`.
-
-This prevents creating a misleading backup that contains only the root filesystem's empty `/boot` mount point.
+These helpers use the current Timeshift configuration and expect a Btrfs root with a separately mounted VFAT /boot.
 
 ## Backup
 
-Run:
-
-```sh
-sudo mp2-backup
-```
-
-It:
-
-1. archives the currently mounted `/boot` as `/var/lib/mipad2-recovery/boot-known-good.tar.zst`;
-2. writes a SHA-256 checksum next to the archive;
-3. creates a Timeshift BTRFS snapshot tagged as a manual Mi Pad 2 backup.
-
-If `/boot` is not mounted as VFAT, the script exits instead of making an incomplete backup.
+Run sudo mp2-backup. It verifies /boot is mounted as VFAT, stores an archive and SHA-256 checksum under /var/lib/mipad2-recovery, then creates a Timeshift Btrfs snapshot using the configured snapshot location.
 
 ## Inspect snapshots
 
-```sh
-sudo mp2-recover --status
-```
-
-or:
-
-```sh
-sudo mp2-recover --list
-```
-
-Both list snapshots using `/dev/mmcblk0p2` as the current snapshot device.
+Run sudo mp2-recover --status or sudo mp2-recover --list. Listing uses the snapshot device from current Timeshift configuration; no block device is hard-coded.
 
 ## Restore
 
-Before restoring, make sure the expected `/boot` filesystem is actually mounted at `/boot`. The current recovery script restores the saved boot archive with `tar -C /boot`; it does not independently discover or mount the boot partition.
+Run sudo mp2-recover. The helper discovers the mounted root device with findmnt, strips any Btrfs subvolume suffix, and uses that device as Timeshift's restore target. Before restoring it refuses unless the root is a single-device Btrfs filesystem; /boot is separately mounted as VFAT; the saved boot archive and SHA-256 file exist and verify; and the archive is a readable zstd tar file.
 
-Interactive restore:
+The verified boot archive is staged on /boot before restoring the root, so an online rollback cannot replace the source archive. Timeshift then restores the root snapshot with --skip-grub, the staged boot archive is extracted, and the temporary copy is removed.
 
-```sh
-sudo mp2-recover
-```
+The newest matching Timeshift snapshot is selected and the helper requires typing RECOVER before proceeding. For unattended use, run sudo mp2-recover --yes; this skips only the final confirmation, not the layout and integrity checks.
 
-The script selects the newest matching Timeshift snapshot and requires typing:
+## Console use and verification
 
-```text
-RECOVER
-```
+The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or SSH. Before relying on recovery, run findmnt /, findmnt /boot, sudo mp2-recover --status, and inspect /var/lib/mipad2-recovery/boot-known-good.tar.zst*.
 
-before restoring. The non-interactive form is:
-
-```sh
-sudo mp2-recover --yes
-```
-
-Recovery restores the root snapshot with Timeshift using `--skip-grub`, then extracts the saved `/boot` archive when that archive exists.
-
-## Console use
-
-The tools are local-console tools and do not depend on Wi-Fi, Bluetooth, or SSH. They are suitable for use from the project's USB ACM serial console when normal networking or the graphical session is unavailable.
-
-## Before relying on recovery
-
-Verify at least once while the system is healthy:
-
-```sh
-findmnt /boot
-findmnt /
-sudo mp2-recover --status
-ls -lh /var/lib/mipad2-recovery/boot-known-good.tar.zst*
-```
-
-A recovery tool is only useful if its device/layout assumptions match the installation that will be restored.
+Recovery is fail-closed when the configured layout or backup artifacts do not match.

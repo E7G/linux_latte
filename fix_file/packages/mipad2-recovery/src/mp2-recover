@@ -3,36 +3,85 @@ set -eu
 
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 
-dev=/dev/mmcblk0p2
 boot=/var/lib/mipad2-recovery/boot-known-good.tar.zst
 
 case "${1:-}" in
   --status|--list)
-    timeshift --list --snapshot-device "$dev" --btrfs --scripted
-    exit 0
+    exec timeshift --list --btrfs --scripted
     ;;
   --yes) yes=1 ;;
   "") yes=0 ;;
   *) echo "Usage: sudo mp2-recover [--status|--yes]" >&2; exit 2 ;;
 esac
 
-snap="$(timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
+root_source="$(findmnt -n -o SOURCE --target /)" || {
+  echo "Unable to identify the mounted root device." >&2
+  exit 1
+}
+root_dev=${root_source%%\[*}
+case "$root_dev" in
+  /dev/*) ;;
+  *) echo "Root source is not a block device: $root_source" >&2; exit 1 ;;
+esac
+case "$root_dev" in
+  *,*) echo "Multi-device Btrfs root is unsupported by this helper." >&2; exit 1 ;;
+esac
+root_fs="$(findmnt -n -o FSTYPE --target /)" || {
+  echo "Unable to determine root filesystem type." >&2
+  exit 1
+}
+[ "$root_fs" = btrfs ] || {
+  echo "Root filesystem is '$root_fs', not Btrfs; refusing a Btrfs restore." >&2
+  exit 1
+}
+
+boot_target="$(findmnt -n -o TARGET --target /boot)" || {
+  echo "Unable to determine the /boot mount." >&2
+  exit 1
+}
+boot_fs="$(findmnt -n -o FSTYPE --target /boot)" || {
+  echo "Unable to determine the /boot filesystem." >&2
+  exit 1
+}
+[ "$boot_target" = /boot ] && [ "$boot_fs" = vfat ] || {
+  echo "/boot must be a separately mounted vfat filesystem; refusing recovery." >&2
+  exit 1
+}
+[ -f "$boot" ] && [ -f "$boot.sha256" ] || {
+  echo "Missing saved /boot archive or checksum; create a complete backup first." >&2
+  exit 1
+}
+sha256sum -c "$boot.sha256" >/dev/null || {
+  echo "Saved /boot archive failed checksum verification." >&2
+  exit 1
+}
+tar --zstd -tf "$boot" >/dev/null || {
+  echo "Saved /boot archive is not a readable zstd tar archive." >&2
+  exit 1
+}
+
+snap="$(timeshift --list --btrfs --scripted 2>/dev/null |
   awk '{for (i=1; i<=NF; i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' |
   tail -1)"
-[ -n "$snap" ] || { echo "No Timeshift snapshot found." >&2; exit 1; }
+[ -n "$snap" ] || { echo "No Timeshift snapshot found in the configured snapshot location." >&2; exit 1; }
 
 echo "Selected snapshot: $snap"
-echo "This restores the root filesystem and the saved /boot."
+echo "Root restore target: $root_dev"
+echo "Saved /boot will be restored to the mounted VFAT /boot."
 echo "Type RECOVER to continue:"
 if [ "$yes" != 1 ]; then
   read -r answer
   [ "$answer" = RECOVER ] || { echo "Cancelled."; exit 1; }
 fi
 
-timeshift --restore --snapshot "$snap" --target "$dev" \
-  --skip-grub --btrfs --scripted --yes
-if [ -f "$boot" ]; then
-  tar --zstd -xpf "$boot" -C /boot
+staged_boot="/boot/.mp2-recovery-boot-$snap.tar.zst"
+cp "$boot" "$staged_boot"
+if ! timeshift --restore --snapshot "$snap" --target "$root_dev" \
+  --skip-grub --btrfs --scripted --yes; then
+  echo "Timeshift restore failed; the verified boot archive remains at $staged_boot." >&2
+  exit 1
 fi
+tar --zstd -xpf "$staged_boot" -C /boot
+rm -f "$staged_boot"
 sync
 echo "Recovery complete. Reboot with: sudo reboot"
