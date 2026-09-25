@@ -79,4 +79,28 @@ case "$target" in
 	[ "$fail" -eq 0 ] && capture_target front "$front_input"
 		;;
 esac
+# Optional front/rear switch stress. The live Mi Pad 2 has passed six
+# alternating cycles; keep this opt-in for regression testing.
+cycles=${MIPAD2_CAMERA_SWITCH_CYCLES:-0}
+if [ "$target" = both ] && [ "$fail" -eq 0 ] && [ "$cycles" -gt 0 ] 2>/dev/null; then
+	i=0
+	while [ "$i" -lt "$cycles" ]; do
+		if [ $((i % 2)) -eq 0 ]; then
+			input=$rear_input
+			label=rear
+		else
+			input=$front_input
+			label=front
+		fi
+		if ! timeout 12s v4l2-ctl -d "$video_node" --set-input="$input" \
+			--stream-mmap=4 --stream-count=2 --stream-to=/dev/null >/dev/null 2>&1; then
+			printf 'MISS camera switch cycle %s (%s)\n' "$i" "$label"
+			fail=1
+			break
+		fi
+		i=$((i + 1))
+	done
+	[ "$fail" -eq 0 ] && printf 'OK   camera switch stress (%s cycles)\n' "$cycles"
+fi
+
 exit "$fail"
