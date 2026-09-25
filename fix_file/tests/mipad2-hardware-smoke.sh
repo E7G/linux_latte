@@ -169,6 +169,16 @@ else
 fi
 
 if [ -e /sys/class/rtc/rtc0 ]; then printf 'OK   RTC rtc0\n'; else miss 'RTC rtc0'; fi
+
+if [ -r /sys/power/mem_sleep ]; then
+    mem_sleep=$(cat /sys/power/mem_sleep 2>/dev/null || true)
+    printf 'INFO suspend modes %s\n' "$mem_sleep"
+    case "$mem_sleep" in
+        *deep*) printf 'OK   deep suspend advertised\n' ;;
+        *) optional 'deep suspend is not advertised; system currently relies on s2idle' ;;
+    esac
+fi
+
 if find /sys/class/thermal -maxdepth 1 -name 'thermal_zone*' -print -quit 2>/dev/null | grep -q .; then
     printf 'OK   thermal zones\n'
 else
@@ -240,7 +250,22 @@ for path in /sys/class/power_supply/*; do
             ;;
     esac
 done
-if [ -n "$charger_path" ]; then printf 'OK   charger %s\n' "$charger_path"; else miss 'BQ25890 charger'; fi
+if [ -n "$charger_path" ]; then
+    printf 'OK   charger %s\n' "$charger_path"
+    charger_status=$(cat "$charger_path/status" 2>/dev/null || true)
+else
+    miss 'BQ25890 charger'
+    charger_status=
+fi
+
+if [ -n "$battery_path" ]; then
+    battery_capacity=$(cat "$battery_path/capacity" 2>/dev/null || true)
+    battery_status=$(cat "$battery_path/status" 2>/dev/null || true)
+    if [ "$charger_status" = Full ] && [ -n "$battery_capacity" ] &&
+       [ "$battery_capacity" -lt 95 ] 2>/dev/null; then
+        optional "charger reports Full while fuel gauge reports ${battery_capacity}% (${battery_status:-unknown}); inspect BQ25890 termination and BQ27520 gauge calibration"
+    fi
+fi
 
 for sensor in als accel_3d gyro_3d magn_3d incli_3d dev_rotation; do
     found=
