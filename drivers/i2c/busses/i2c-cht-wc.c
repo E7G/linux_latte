@@ -329,6 +329,13 @@ static const struct property_entry xiaomi_mipad2_props[] = {
 	PROPERTY_ENTRY_BOOL("linux,skip-reset"),
 	PROPERTY_ENTRY_BOOL("linux,read-back-settings"),
 	/*
+	 * Xiaomi's original 6190 mAh high-voltage battery profile charges at
+	 * 4.400 V with a 256 mA termination current. Firmware leaves BQ25890
+	 * VREG at 4.208 V, which can terminate charging before BQ27520 is full.
+	 * Preserve every other firmware-provided setting and override only VREG.
+	 */
+	PROPERTY_ENTRY_U32("ti,battery-regulation-voltage", 4400000),
+	/*
 	 * Xiaomi's original Mi Pad 2 battery profile is a 6190 mAh high-voltage
 	 * pack with a 4.400 V charge voltage and 256 mA termination current.
 	 * Firmware leaves BQ25890 VREG at only 4.208 V, which can terminate
