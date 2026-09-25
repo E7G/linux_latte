@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+STATE=/run/mipad2-usb-serial-sleep
+
+case "${1:-}" in
+    pre)
+        if systemctl is-active --quiet mipad2-usb-serial.service; then
+            : > "$STATE"
+            systemctl stop mipad2-usb-serial.service
+        fi
+        ;;
+    post)
+        if [ -e "$STATE" ]; then
+            unlink "$STATE"
+            systemctl start mipad2-usb-serial.service
+        fi
+        ;;
+esac
