@@ -4,6 +4,7 @@
 # Device numbers and I2C bus numbers are intentionally discovered at runtime.
 set -u
 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 fail=0
 miss() {
     printf 'MISS %s\n' "$1"
@@ -75,7 +76,12 @@ for path in /sys/class/bluetooth/hci*; do
     break
 done
 if [ -n "$bt_node" ]; then
-    printf 'OK   Bluetooth %s\n' "${bt_node##*/}"
+    printf 'OK   Bluetooth HCI %s enumerated\n' "${bt_node##*/}"
+    if [ -r "$script_dir/mipad2-rfkill-audit.sh" ]; then
+        sh "$script_dir/mipad2-rfkill-audit.sh"
+    else
+        optional 'Bluetooth rfkill helper missing; radio state not checked'
+    fi
 else
     miss 'Bluetooth HCI device'
 fi
@@ -115,9 +121,11 @@ touch_name=
 for path in /sys/class/input/event*/device/name; do
     [ -r "$path" ] || continue
     name=$(cat "$path" 2>/dev/null || true)
-    case "$name" in
-        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|FTSC1000:00*)
-            touch_name=$name
+    phys=$(cat "${path%/name}/phys" 2>/dev/null || true)
+    # Firmware exposes FTSC1000 as a generic hid-over-i2c event name.
+    case "$name $phys" in
+        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|*FTSC1000*)
+            touch_name="$name ($phys)"
             break
             ;;
     esac
@@ -170,9 +178,14 @@ fi
 
 if [ -e /sys/class/rtc/rtc0 ]; then printf 'OK   RTC rtc0\n'; else miss 'RTC rtc0'; fi
 if find /sys/class/thermal -maxdepth 1 -name 'thermal_zone*' -print -quit 2>/dev/null | grep -q .; then
-    printf 'OK   thermal zones\n'
+    printf 'OK   thermal zone entries (readings audited below)\n'
 else
     miss 'thermal zones'
+fi
+if [ -r "$script_dir/mipad2-thermal-audit.sh" ]; then
+    sh "$script_dir/mipad2-thermal-audit.sh"
+else
+    optional 'mipad2-thermal-audit.sh missing; thermal reading quality not checked'
 fi
 
 for led in mipad2:rgb:indicator mipad2:white:touch-buttons-backlight; do
@@ -206,6 +219,19 @@ for node in /dev/video*; do
     fi
 done
 if [ -n "$video_node" ]; then printf 'OK   %s\n' "$video_node"; else miss '/dev/video*'; fi
+
+if [ -n "$video_node" ] && command -v v4l2-ctl >/dev/null 2>&1; then
+    camera_inputs=$(v4l2-ctl -d "$video_node" --list-inputs 2>/dev/null || true)
+    if printf '%s\n' "$camera_inputs" | grep -qi 'ov5693' &&
+       printf '%s\n' "$camera_inputs" | grep -qi 't4ka3'; then
+        printf 'OK   OV5693 and T4KA3 camera inputs enumerated (capture untested)\n'
+    else
+        miss 'both OV5693 and T4KA3 AtomISP inputs'
+    fi
+elif [ -n "$video_node" ]; then
+    optional 'v4l2-ctl missing; camera input enumeration skipped'
+fi
+
 
 ov5693_node=
 for link in /sys/class/video4linux/v4l-subdev*; do
@@ -334,21 +360,12 @@ if [ -n "$t4ka3_node" ] && command -v v4l2-ctl >/dev/null 2>&1; then
     fi
 fi
 
-if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ] && [ -n "$video_node" ] &&
-   command -v v4l2-ctl >/dev/null 2>&1; then
-    for input in 0 1; do
-        output="/tmp/mipad2-camera-input-$input.raw"
-        rm -f "$output"
-        if v4l2-ctl -d "$video_node" --set-input="$input" >/dev/null 2>&1 &&
-           timeout 20 v4l2-ctl -d "$video_node" --stream-mmap=4 \
-               --stream-count=3 --stream-to="$output" >/dev/null 2>&1 &&
-           [ -s "$output" ]; then
-            printf 'OK   camera input %s streams without prior S_FMT\n' "$input"
-        else
-            miss "camera input $input stream"
-        fi
-        rm -f "$output"
-    done
+if [ "${MIPAD2_ACTIVE_CAMERA_TEST:-0}" = 1 ]; then
+    if [ ! -r "$script_dir/mipad2-camera-test.sh" ]; then
+        miss 'mipad2-camera-test.sh required for active camera test'
+    elif ! sh "$script_dir/mipad2-camera-test.sh" both; then
+        miss 'active camera capture test failed (later sensor skipped after first failure)'
+    fi
 fi
 
 if dmesg >/dev/null 2>&1; then

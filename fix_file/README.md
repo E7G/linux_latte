@@ -104,9 +104,9 @@ makepkg -si
 
 - 安装 AtomISP 固件到 `/usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin`；
 - 安装 `/etc/modules-load.d/mipad2-camera.conf`；
-- 通过该配置优先加载 `atomisp_gmin_platform`，其余 AtomISP、sensor 与 VCM 再由 PCI/I2C modalias 触发加载。
+- 通过该配置优先加载 `atomisp_gmin_platform`，通过 modprobe softdep 保证 OV5693、T4KA3 和 DW9719 在 AtomISP PCI 驱动前加载，避免依赖 PCI/I2C uevent 的竞态。
 
-当前这个包**没有安装额外的 camera systemd service**，不要按旧说明期待相关 service unit。
+该加载顺序参考 Android init.latte.rc 对 AtomISP 初始化顺序的明确要求。当前这个包**没有安装额外的 camera systemd service**，不要按旧说明期待相关 service unit。
 
 ### 手工固件方式
 

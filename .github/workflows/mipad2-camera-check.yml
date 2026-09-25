@@ -6,6 +6,11 @@ on:
       - main
       - cachyos-mipad2
       - test/mipad2-camera-20260829
+  pull_request:
+    paths:
+      - 'fix_file/packages/mipad2-camera-support/**'
+      - 'fix_file/tests/mipad2-camera-module-order.sh'
+      - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
 jobs:
@@ -89,7 +94,7 @@ jobs:
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
           grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
-          if [ "${GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
+          if [ "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
             grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3=y' arch/x86/configs/xiaomipad2_defconfig
@@ -124,13 +129,76 @@ jobs:
             kernel/sched/bore.o \
             block/adios.o
 
+      - name: Compile Mi Pad 2 RT5659 and TFA9890 audio drivers
+        run: |
+          make -j"$(nproc)" W=1 \
+            sound/soc/codecs/tfa989x.o \
+            sound/soc/intel/boards/cht_bsw_rt5659.o
+
+      - name: Audit Mi Pad 2 ACPI-hidden I2C board devices
+        run: |
+          sh -n fix_file/tests/mipad2-platform-board-audit.sh
+          sh fix_file/tests/mipad2-platform-board-audit.sh
+          make -j"$(nproc)" W=1 \
+            drivers/platform/x86/x86-android-tablets/other.o \
+            drivers/mfd/intel_soc_pmic_chtwc.o
+
+      - name: Audit Mi Pad 2 stereo UCM routes
+        run: |
+          sh -n fix_file/tests/mipad2-audio-route-audit.sh
+          sh fix_file/tests/mipad2-audio-route-audit.sh
+
+      - name: Test Mi Pad 2 thermal diagnostics
+        run: |
+          sh -n fix_file/tests/mipad2-thermal-audit.sh
+          sh -n fix_file/tests/mipad2-thermal-audit-selftest.sh
+          sh fix_file/tests/mipad2-thermal-audit-selftest.sh
+          grep -q '^CONFIG_ACPI_DPTF=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_DPTF_POWER=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_INT340X_THERMAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_INTEL_SOC_DTS_THERMAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BATTERY_BQ27XXX_I2C=y' .config
+          grep -q '^CONFIG_CHARGER_BQ25890=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_INTEL_HID_EVENT=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '"INT33D5"' drivers/platform/x86/intel/hid.c
+          grep -q '^CONFIG_INTEL_ISH_HID=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_HID_SENSOR_HUB=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q 'PCI_DEVICE_ID_INTEL_ISH_CHV' drivers/hid/intel-ish-hid/ipc/hw-ish.h
+          grep -q '^CONFIG_I2C_DESIGNWARE_BAYTRAIL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_SERIAL_8250_DW=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -Fq '"808622C1"' drivers/acpi/x86/lpss.c
+          grep -Fq '"8086228A"' drivers/acpi/x86/lpss.c
+
+      - name: Audit Mi Pad 2 i915 display-power quirk
+        run: |
+          sh -n fix_file/tests/mipad2-i915-quirk.sh
+          sh fix_file/tests/mipad2-i915-quirk.sh
+          make -j"$(nproc)" W=1 \
+            drivers/gpu/drm/i915/display/intel_display_power.o \
+            drivers/gpu/drm/i915/display/intel_display_driver.o \
+            drivers/gpu/drm/i915/display/intel_quirks.o
+
+      - name: Audit Mi Pad 2 camera module order
+        run: |
+          sh -n fix_file/tests/mipad2-camera-module-order.sh
+          sh fix_file/tests/mipad2-camera-module-order.sh
+
       - name: Validate local recovery and USB debug packages
         run: |
           sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
+          sh -n fix_file/tests/mipad2-recovery-selftest.sh
+          sh fix_file/tests/mipad2-recovery-selftest.sh
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          grep -q 'mipad2-thermal-audit.sh' fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-camera-test.sh
+          grep -q 'mipad2-camera-test.sh.*both' fix_file/tests/mipad2-hardware-smoke.sh
+          grep -q 'OV5693 and T4KA3 camera inputs enumerated' fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-rfkill-audit.sh
+          sh -n fix_file/tests/mipad2-rfkill-audit-selftest.sh
+          sh fix_file/tests/mipad2-rfkill-audit-selftest.sh
           sh -n fix_file/tests/mipad2-kernel-config-audit.sh
           grep -q '^ExecStart=.*mipad2-hardware-smoke' \
             fix_file/tests/mipad2-hardware-audit.service

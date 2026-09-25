@@ -12,6 +12,7 @@
 - 前后摄切换、重复打开或异常退出后可能出现 pipeline 卡住；
 - 用户空间 `timeout` 只能终止进程，不能保证已经卡死的内核驱动恢复；
 - 遇到持续不可恢复的摄像头卡死时，当前可靠恢复方式仍可能是重启。
+- 冒烟脚本的可选活动相机测试（MIPAD2_ACTIVE_CAMERA_TEST=1）现在委托给 mipad2-camera-test.sh both，与单摄测试共用失败即停止策略；普通冒烟仍不启动相机。该活动路径尚未在实机执行。
 
 优先使用仓库提供的测试脚本：
 
@@ -62,6 +63,8 @@ sudo sh fix_file/tests/mipad2-hardware-smoke.sh
 
 注意 smoke test 主要验证设备枚举和接口存在性，不能替代实际播放、录音、传感器数据和摄像头采集测试。
 
+Windows' archived DPTF INF models include generic INT3400/INT3403/INT3406-INT3409 IDs. Linux config enables ACPI_DPTF, DPTF_POWER and INT340X thermal support, but neither config nor a generic INF proves the tablet exposes functioning runtime thermal zones. Use `sudo sh fix_file/tests/mipad2-thermal-audit.sh` to record zone temperatures/trips, cooling devices and INT340x ACPI status; this is diagnostic output, not a thermal-throttling benchmark.
+
 ## 4. USB gadget 依赖固件暴露可用 UDC
 
 内核 defconfig 已启用 DWC3 PCI dual-role、USB Gadget、ConfigFS ACM 和 gadget serial console 支持，但某些 Mi Pad 2 固件设置仍可能让 `/sys/class/udc/` 为空。
@@ -104,24 +107,16 @@ fix_file/BCM4356A2.hcd
 
 如果无线没有出现，应先检查 `dmesg` 中驱动实际请求的 firmware/NVRAM 文件名，而不是盲目重命名唯一副本。
 
-## 7. Recovery 工具不是通用分区恢复器
+## 7. Recovery helper layout constraints
 
-当前 `mipad2-recovery` 只适用于项目当前假定的安装布局。尤其是 `mp2-recover` 目前把 Timeshift snapshot/restore device **硬编码为**：
+mp2-recover now uses the snapshot location configured in Timeshift and derives the restore target from the mounted root reported by findmnt. Before it runs Timeshift restore, it fails closed unless the root is a single-device Btrfs filesystem, /boot is a separate VFAT mount, and the saved boot archive exists, passes SHA-256 verification, and is a readable zstd tar file. It stages the verified archive on /boot before restoring root so an online rollback cannot replace its source.
 
-```text
-/dev/mmcblk0p2
-```
+The helper does not mount partitions or support multi-device Btrfs. Confirm the actual mounts before recovery:
 
-而 `/boot` archive 的恢复会直接执行到当前 `/boot` 路径，脚本不会替你发现或挂载 boot 分区。
+    findmnt /
+    findmnt /boot
 
-因此在恢复前必须确认：
-
-```bash
-findmnt /
-findmnt /boot
-```
-
-与脚本假设一致。`mp2-backup` 已经会拒绝未挂载或非 VFAT 的 `/boot`，但这不意味着 `mp2-recover` 能自动适配不同分区布局。改过分区、root 设备或 boot 布局的安装不能直接使用默认恢复命令。
+Do not use the helper unchanged after changing away from the project Btrfs-root plus VFAT-/boot layout.
 
 ## 8. 当前 defconfig 不是 hardened / generic distro 配置
 

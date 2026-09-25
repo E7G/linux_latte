@@ -58,6 +58,8 @@ sudo MIPAD2_ACTIVE_CAMERA_TEST=1 \
 sudo sh fix_file/tests/mipad2-camera-test.sh [front|rear|both]
 ```
 
+安装或更新 camera-support 包后可运行 `sh fix_file/tests/mipad2-camera-module-order.sh`，确认 AtomISP PCI 驱动前置加载 sensor/VCM 的 softdep 没有回归。该静态检查不替代真机采集。
+
 脚本会动态发现 AtomISP 的视频节点，并用同一次 `v4l2-ctl` 打开过程完成格式设置和采集。当前 AtomISP 路径中，格式设置与 stream 分成两次独立打开可能导致节点恢复到传感器默认尺寸，从而触发错误或固件 pipeline 选择问题。
 
 建议先单独测试一个方向：
