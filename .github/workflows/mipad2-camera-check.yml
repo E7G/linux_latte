@@ -149,6 +149,9 @@ jobs:
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-rfkill-audit.sh
+          sh -n fix_file/tests/mipad2-rfkill-audit-selftest.sh
+          sh fix_file/tests/mipad2-rfkill-audit-selftest.sh
           grep -q 'serial-getty@ttyGS0.service' \
             fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial.service
           ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \
