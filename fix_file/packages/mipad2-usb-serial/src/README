@@ -12,3 +12,13 @@ On Windows it appears as **Mi Pad 2 USB Serial**, normally a `COM` port. Use
 The package does not install, replace, or configure Wi-Fi or Bluetooth
 firmware/modules. It replaces the old Mi Pad 2 USB Ethernet gadget because a
 single UDC cannot bind both legacy `g_ether` and the ACM function.
+
+
+## Suspend / S0ix
+
+The USB serial service is stopped immediately before system sleep and restored
+after resume only when it was active beforehand. This temporarily detaches the
+configfs ACM gadget from the Cherry Trail DWC3 UDC so the OTG block is free to
+enter a low-power state instead of remaining in D0 throughout s2idle. The
+gadget configuration itself is preserved and the serial console returns after
+resume.

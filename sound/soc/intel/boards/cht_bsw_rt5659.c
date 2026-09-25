@@ -178,8 +178,7 @@ static int cht_aif1_hw_params(struct snd_pcm_substream *substream,
 	/* TDM 4 slot 24 bit set the Rx and Tx bitmask to
 	 * 4 active slots as 0xF
 	 */
-	ret = snd_soc_dai_set_tdm_slot(codec_dai, 0xF, 0xF, 4,
-			SNDRV_PCM_FORMAT_GSM);
+	ret = snd_soc_dai_set_tdm_slot(codec_dai, 0xF, 0xF, 4, 24);
 	if (ret < 0) {
 		pr_err("can't set codec TDM slot %d\n", ret);
 		return ret;
@@ -332,6 +331,11 @@ static int cht_audio_init(struct snd_soc_pcm_runtime *runtime)
 	ret = rt5659_set_jack_detect(component, &ctx->headset);
 	if (ret)
 		return ret;
+
+	/* Match the Android board mapping for the three headset buttons. */
+	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_0, KEY_PLAYPAUSE);
+	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_1, KEY_VOLUMEUP);
+	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_2, KEY_VOLUMEDOWN);
 
 	int codec_gpio;
 	int pol = 0, val = 0;

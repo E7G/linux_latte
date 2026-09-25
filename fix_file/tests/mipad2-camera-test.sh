@@ -1,6 +1,6 @@
 #!/bin/sh
-# Capture one frame from a Mi Pad 2 camera through the legacy AtomISP node.
-# Keep format setup and streaming in the same v4l2-ctl invocation.
+# Capture short streams from the Mi Pad 2 cameras through the legacy AtomISP node.
+# AtomISP may warn that VIDIOC_CREATE_BUFS is unsupported even when mmap streaming succeeds.
 set -u
 
 target=${1:-both}
@@ -45,7 +45,7 @@ capture_one()
 	if timeout --signal=TERM --kill-after=2s 15s \
 		v4l2-ctl -d "$video_node" --set-input="$input" \
 		--set-fmt-video=width=1280,height=720,pixelformat=YU12 \
-		--stream-mmap --stream-count=1 --stream-to="$out" >"$log" 2>&1 \
+		--stream-mmap=4 --stream-count=3 --stream-to="$out" >"$log" 2>&1 \
 		&& size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
 		printf 'OK   %s capture (%s bytes)\n' "$label" "$size"
 	else
@@ -79,4 +79,28 @@ case "$target" in
 	[ "$fail" -eq 0 ] && capture_target front "$front_input"
 		;;
 esac
+# Optional front/rear switch stress. The live Mi Pad 2 has passed six
+# alternating cycles; keep this opt-in for regression testing.
+cycles=${MIPAD2_CAMERA_SWITCH_CYCLES:-0}
+if [ "$target" = both ] && [ "$fail" -eq 0 ] && [ "$cycles" -gt 0 ] 2>/dev/null; then
+	i=0
+	while [ "$i" -lt "$cycles" ]; do
+		if [ $((i % 2)) -eq 0 ]; then
+			input=$rear_input
+			label=rear
+		else
+			input=$front_input
+			label=front
+		fi
+		if ! timeout 12s v4l2-ctl -d "$video_node" --set-input="$input" \
+			--stream-mmap=4 --stream-count=2 --stream-to=/dev/null >/dev/null 2>&1; then
+			printf 'MISS camera switch cycle %s (%s)\n' "$i" "$label"
+			fail=1
+			break
+		fi
+		i=$((i + 1))
+	done
+	[ "$fail" -eq 0 ] && printf 'OK   camera switch stress (%s cycles)\n' "$cycles"
+fi
+
 exit "$fail"
