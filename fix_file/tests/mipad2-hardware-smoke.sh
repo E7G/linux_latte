@@ -96,6 +96,17 @@ else
     miss 'i915 DRM card/render node'
 fi
 
+if find /sys/class/thermal -maxdepth 1 -name 'thermal_zone*' -print -quit 2>/dev/null | grep -q .; then
+    printf 'OK   thermal zone entries (readings audited below)\n'
+else
+    miss 'thermal zones'
+fi
+if [ -r "$script_dir/mipad2-thermal-audit.sh" ]; then
+    sh "$script_dir/mipad2-thermal-audit.sh"
+else
+    optional 'mipad2-thermal-audit.sh missing; thermal reading quality not checked'
+fi
+
 for led in mipad2:rgb:indicator mipad2:white:touch-buttons-backlight; do
     if [ -e "/sys/class/leds/$led" ]; then
         printf 'OK   LED %s\n' "$led"
