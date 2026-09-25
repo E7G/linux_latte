@@ -96,6 +96,9 @@ jobs:
         run: |
           sh -n fix_file/tests/mipad2-platform-board-audit.sh
           sh fix_file/tests/mipad2-platform-board-audit.sh
+          make -j"$(nproc)" W=1 \
+            drivers/platform/x86/x86-android-tablets/other.o \
+            drivers/mfd/intel_soc_pmic_chtwc.o
 
       - name: Audit Mi Pad 2 stereo UCM routes
         run: |

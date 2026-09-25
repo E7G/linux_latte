@@ -11,6 +11,13 @@ dmi=drivers/platform/x86/x86-android-tablets/dmi.c
 board=drivers/platform/x86/x86-android-tablets/other.c
 
 grep -q '^CONFIG_X86_ANDROID_TABLETS=y' "$config"
+grep -q '^CONFIG_INTEL_SOC_PMIC_CHTWC=y' "$config"
+pmic=drivers/mfd/intel_soc_pmic_chtwc.c
+if [ -r "$pmic" ]; then
+	grep -Fq '"INT34D3"' "$pmic"
+else
+	git show "HEAD:$pmic" | grep -Fq '"INT34D3"'
+fi
 grep -Fq 'DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc")' "$dmi"
 grep -Fq 'DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2")' "$dmi"
 grep -Fq 'driver_data = (void *)&xiaomi_mipad2_info' "$dmi"
@@ -30,5 +37,5 @@ grep -Fq '.addr = 0x34' "$board"
 grep -Fq '.addr = 0x37' "$board"
 grep -Fq '.addr = 0x30' "$board"
 
-echo "PASS: Xiaomi DMI entry and hidden fuel-gauge, audio-amp, and LED I2C board declarations and the firmware-created fuel-gauge fixup exist."
+echo "PASS: Xiaomi DMI entry and hidden fuel-gauge, audio-amp, and LED I2C board declarations, the firmware-created fuel-gauge fixup, and Cherry Trail Whiskey Cove PMIC ACPI match exist."
 echo "NOTE: this audit does not verify that firmware exposes the buses or devices bind at runtime."
