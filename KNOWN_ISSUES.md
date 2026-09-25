@@ -6,12 +6,19 @@
 
 当前树已经包含 OV5693 前摄、T4KA3 后摄、DW9761 兼容对焦、Mi Pad 2 AtomISP bridge、1280×720 保守默认格式、frame-interval 处理以及近期的 AtomISP 内存分配健壮性修复。
 
-但 AtomISP 仍是当前移植中风险最高的部分：
+2026-09-25 真机回归已经确认：
 
-- 某些 V4L2 应用的格式协商流程可能与 AtomISP 不兼容；
-- 前后摄切换、重复打开或异常退出后可能出现 pipeline 卡住；
-- 用户空间 `timeout` 只能终止进程，不能保证已经卡死的内核驱动恢复；
-- 遇到持续不可恢复的摄像头卡死时，当前可靠恢复方式仍可能是重启。
+- OV5693 前摄和 T4KA3 后摄都能通过 `/dev/video0` 完成 mmap 短流采集；
+- 连续 6 次前/后摄交替切换和采集通过；
+- DW9719 对焦控制正常暴露 `focus_absolute=0..1023`；
+- `v4l2-ctl` 可能打印 `VIDIOC_CREATE_BUFS: Inappropriate ioctl for device`，但当前 AtomISP mmap 路径仍会成功采集并返回 0，因此这条消息本身不能当作采集失败。
+
+当前剩余风险主要变成：
+
+- 某些 V4L2 应用仍可能因为格式协商或旧 AtomISP ioctl 差异而不兼容；
+- 前后摄白平衡/3A tuning 仍需继续校准，当前偏绿问题不是 Bayer order 错误；
+- 后摄自动对焦策略还需要继续优化；
+- suspend/resume 后的摄像头采集仍需持续回归。
 
 优先使用仓库提供的测试脚本：
 
@@ -46,7 +53,9 @@ shisp_2401a0_v21.bin
 
 ## 3. Suspend / resume 仍需持续回归
 
-目前不能把 suspend/resume 视为所有外设都已完全稳定。每次修改 ACPI、电源管理、音频、无线、IIO 或媒体代码后，至少重新检查：
+当前固件只对 Linux 暴露 `[s2idle]`，但这不等价于“缺少低功耗休眠”。Cherry Trail 的当前 6.14 `pmc_atom` 已注册 s2idle/S0ix 检查，并提供 S0I1/S0I2/S0I3 residency；真机 CPU idle 也已经确认 C6/C7/C7S 都在累计。正确验收目标是确认系统实际进入 S0i3，并排除阻止 S0i3 的 D0 设备或 forced-on PMC clock，而不是强行制造一个 `deep` 选项。
+
+仍不能把 suspend/resume 视为所有外设都已完全稳定。每次修改 ACPI、电源管理、音频、无线、IIO 或媒体代码后，至少重新检查：
 
 - Wi-Fi / Bluetooth 是否恢复；
 - RT5659/TFA9890 音频是否仍可播放和录音；
@@ -133,6 +142,17 @@ findmnt /boot
 - 多个 Mi Pad 2 运行时组件采用模块形式。
 
 如果设备用于处理不可信工作负载，尤其需要重新评估 CPU mitigations 等安全选项。若改变工具链或 defconfig，记得检查最终 `.config`，不要仅根据 defconfig 文件推断最终编译配置。
+
+## 9. BQ25890 充电上限仍在真机验证
+
+当前稳定内核使用 `linux,read-back-settings`，直接沿用固件留给 BQ25890 的充电参数。2026-09-25 真机读数显示：
+
+- BQ27520 设计容量：6190 mAh；
+- BQ25890 终止电流：256 mA；
+- BQ25890 VREG：4.208 V；
+- 在约 4.165 V 时 BQ25890 已报告 `Full`，但 BQ27520 仍为 83%。
+
+Android 原厂 `intel_em_config.c` 的 Xiaomi 默认电池档案同样是 6190 mAh / 256 mA，但充电电压是 4.400 V。因此当前正在验证一个最小修复：保留固件提供的其余电流、预充、温控和 OTG 参数，只把 Mi Pad 2 的 VREG 修正到原厂 4.400 V。该改动在真机验证完成前不应直接视为稳定结论。
 
 ## 报告新问题
 
