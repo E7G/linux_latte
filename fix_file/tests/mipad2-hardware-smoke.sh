@@ -69,9 +69,11 @@ touch_name=
 for path in /sys/class/input/event*/device/name; do
     [ -r "$path" ] || continue
     name=$(cat "$path" 2>/dev/null || true)
-    case "$name" in
-        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|FTSC1000:00*)
-            touch_name=$name
+    phys=$(cat "${path%/name}/phys" 2>/dev/null || true)
+    # Firmware exposes FTSC1000 as a generic hid-over-i2c event name.
+    case "$name $phys" in
+        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|*FTSC1000*)
+            touch_name="$name ($phys)"
             break
             ;;
     esac
