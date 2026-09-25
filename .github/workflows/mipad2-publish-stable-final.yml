@@ -1,0 +1,33 @@
+name: Publish Mi Pad 2 stable final artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download validated stable artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir artifact
+          gh run download 36159010392             --repo "$GITHUB_REPOSITORY"             --name linux-latte-cachyos-navkeys-kernel-bundle             --dir artifact
+          cd artifact
+          sha256sum -c SHA256SUMS
+          test "$(cat kernelrelease.txt)" = "6.14.0-mipad2-cachyos-navkeys"
+          test "$(cat commit.txt)" = "c95eff5db44d5471cba60ea13f3a111afedb9ed6"
+
+      - name: Publish temporary stable prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: mipad2-stable-final-20260926
+        run: |
+          set -euxo pipefail
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$TAG"             artifact/vmlinuz-linux-latte-cachyos-navkeys             artifact/modules-linux-latte-cachyos-navkeys.tar.zst             artifact/kernelrelease.txt             artifact/SHA256SUMS             artifact/commit.txt             --repo "$GITHUB_REPOSITORY"             --target c8e0c358955360df164fe2e6aa0a6a01714bff8f             --prerelease             --title "Mi Pad 2 stable final 2026-09-26"             --notes "Temporary deployment release for the validated stable Mi Pad 2 kernel. Remove after device verification."
