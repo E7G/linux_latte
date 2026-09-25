@@ -23,9 +23,9 @@ for zone in "$thermal_root"/thermal_zone*; do
         continue
         ;;
     esac
-    # A few firmware/DPTF zones can expose the absolute-zero sentinel while
-    # still having a readable sysfs temp file. Do not count that as a usable
-    # thermal reading. Zero is retained but highlighted for manual review.
+    # Firmware/DPTF zones may expose a readable sysfs file with an invalid
+    # absolute-zero sample. -274000 mC is THERMAL_TEMP_INVALID in linux/thermal.h;
+    # -273150 mC is the ACPI 0 K conversion. Zero is retained for manual review.
     case "$temp" in
         -273150|-273151|-273152)
             printf 'WARN thermal_zone=%s type=%s temp_mC=%s likely_unavailable_sentinel=true\n' \
@@ -41,11 +41,34 @@ for zone in "$thermal_root"/thermal_zone*; do
     esac
     zone_count=$((zone_count + 1))
     printf 'THERMAL zone=%s type=%s temp_mC=%s%s\n' "${zone##*/}" "$name" "$temp" "$quality"
+    for link in "$zone"/cdev[0-9]*; do
+        [ -L "$link" ] || continue
+        link_name=${link##*/}
+        bound_trip=$(cat "$zone/${link_name}_trip_point" 2>/dev/null || echo unknown)
+        weight=$(cat "$zone/${link_name}_weight" 2>/dev/null || echo unknown)
+        printf 'BINDING zone=%s cdev=%s target=%s trip=%s weight=%s\n' \
+            "${zone##*/}" "$link_name" "$(readlink "$link" 2>/dev/null || echo unknown)" \
+            "$bound_trip" "$weight"
+    done
     for trip in "$zone"/trip_point_*_temp; do
         [ -r "$trip" ] || continue
         trip_name=${trip##*/trip_point_}
         trip_name=${trip_name%_temp}
-        printf 'TRIP zone=%s trip=%s temp_mC=%s\n' "${zone##*/}" "$trip_name" "$(cat "$trip" 2>/dev/null || echo unknown)"
+        trip_type=$(cat "$zone/trip_point_${trip_name}_type" 2>/dev/null || echo unknown)
+        trip_temp=$(cat "$trip" 2>/dev/null || echo unknown)
+        case "$trip_temp" in
+            -274000|-273150|-273151|-273152)
+                trip_quality=' likely_unavailable_sentinel=true'
+                ;;
+            0)
+                trip_quality=' suspicious_zero=true'
+                ;;
+            *)
+                trip_quality=
+                ;;
+        esac
+        printf 'TRIP zone=%s trip=%s type=%s temp_mC=%s%s\n' \
+            "${zone##*/}" "$trip_name" "$trip_type" "$trip_temp" "$trip_quality"
     done
 done
 
