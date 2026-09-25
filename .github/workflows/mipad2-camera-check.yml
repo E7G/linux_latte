@@ -89,8 +89,7 @@ jobs:
             drivers/platform/x86/x86-android-tablets/other.c
           grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
           grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
-          if [ "${GITHUB_REF_NAME}" = cachyos-mipad2 ]; then
-            grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig
+          if grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig; then
             grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3=y' arch/x86/configs/xiaomipad2_defconfig
             grep -q '^CONFIG_SCHED_BORE=y' arch/x86/configs/xiaomipad2_defconfig
@@ -129,6 +128,9 @@ jobs:
           sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
           sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
+          sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
+          grep -q 'mipad2-usb-serial.service' \
+            fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
           sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
           sh -n fix_file/tests/mipad2-kernel-config-audit.sh

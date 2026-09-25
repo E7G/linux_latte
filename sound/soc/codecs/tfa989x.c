@@ -401,41 +401,6 @@ static void tfa989x_regulator_disable(void *data)
 }
 
 
-static int my_i2c_read_reg(struct i2c_client *client, u8 reg, u16 *val)
-{
-    int ret = 0;
-    unsigned char reg_buf[4] = {0x00};
-    unsigned char val_buf[4] = {0x00};
-    struct i2c_msg msg[] = 
-    {
-        {
-            .addr = client->addr,
-            .flags = 0,
-            .len = 1,
-            .buf = &reg_buf[0],
-        },
-        {
-            .addr = client->addr,
-            .flags = I2C_M_RD,
-            .len = 2,
-            .buf = &val_buf[0],
-        },
-    };
-
-    reg_buf[0] = reg & 0xFF;
-
-    ret = i2c_transfer(client->adapter,msg,2);
-    pr_debug("my i2c read ret got: %d \n", ret);
-
-    if(ret == 2)
-    {
-        *val = (val_buf[0] << 8) | val_buf[1];
-    }
-    
-    return ret;
-}
-
-
 static int tfa989x_i2c_probe(struct i2c_client *i2c)
 {
 	struct device *dev = &i2c->dev;
@@ -444,39 +409,15 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	struct regmap *regmap;
 	unsigned int val;
 	int ret;
-	const char* name = dev_name(dev);
 
-    u8 myreg = 0x03;
-	u16 myval = 0x0000;
-	//const struct acpi_device_id *id;
+	dev_dbg(dev, "probing amplifier at I2C address %#x\n", i2c->addr);
 
-    dev_dbg(&i2c->dev, "tfa989x i2c addr is: %x \n",i2c->addr);
+	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C))
+		return dev_err_probe(dev, -EIO, "I2C transfers are not supported\n");
 
-	dev_dbg(dev, "probing amplifier\n");
-
-	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
-		dev_err(&i2c->dev, "tfa989x check_functionality failed\n");
-		return -EIO;
-	}
-    else{
-		dev_dbg(dev, "I2C functionality check passed\n");
-    }
-
-    my_i2c_read_reg(i2c, myreg, &myval);
-    dev_dbg(&i2c->dev, "tfa989x i2c read got: %x \n",myval);
-
-
-	rev = device_get_match_data(dev);
-	if (!rev) {
-		dev_dbg(dev, "matching ACPI-created device %s\n", name);
-        if (strstr(name, "i2c-tfa9890")) {
-	        rev = &tfa9890_rev;
-        }
-        else{
-			dev_err(dev, "unknown device revision\n");
-			return -ENODEV;
-		}
-	}
+	rev = i2c_get_match_data(i2c);
+	if (!rev)
+		return dev_err_probe(dev, -ENODEV, "missing amplifier match data\n");
 
 	tfa989x = devm_kzalloc(dev, sizeof(*tfa989x), GFP_KERNEL);
 	if (!tfa989x)
@@ -556,14 +497,14 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	}
 	regcache_cache_bypass(regmap, false);
 
-	const char id = name[13];
-
-	dev_dbg(dev, "Mi Pad 2 amplifier instance id=%c\n", id);
-
-	if (id == '1') {
+	/*
+	 * Mi Pad 2 registers its left/right TFA9890 amplifiers at 0x34/0x37
+	 * respectively. Avoid depending on the formatting of dev_name().
+	 */
+	if (i2c->addr == 0x37) {
 		dev_dbg(dev, "registering right amplifier\n");
 		return devm_snd_soc_register_component(dev, &tfa9890_component,
-	 				       					&tfa989x_dai, 1);
+						       &tfa989x_dai, 1);
 	}
 	dev_dbg(dev, "registering left amplifier\n");
 	return devm_snd_soc_register_component(dev, &tfa989x_component,
@@ -571,11 +512,8 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 }
 
 static const struct i2c_device_id tfa989x_i2c_id[] = {
-	{ "tfa989x", 0 },
-	{ "tfa9890", 0 },
-#ifdef CONFIG_ACPI
-	{ "i2c-tfa9890", 0},
-#endif
+	{ "tfa989x", (kernel_ulong_t)&tfa9890_rev },
+	{ "tfa9890", (kernel_ulong_t)&tfa9890_rev },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, tfa989x_i2c_id);
@@ -589,8 +527,8 @@ static const struct of_device_id tfa989x_of_match[] = {
 MODULE_DEVICE_TABLE(of, tfa989x_of_match);
 
 static const struct acpi_device_id tfa9890_acpi_match[] = {
-	{ "NXP9890", 0},
-	{ "TFA9890", 0},
+	{ "NXP9890", (kernel_ulong_t)&tfa9890_rev },
+	{ "TFA9890", (kernel_ulong_t)&tfa9890_rev },
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, tfa9890_acpi_match);
