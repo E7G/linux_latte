@@ -1,0 +1,32 @@
+#!/bin/sh
+set -eu
+[ "$(id -u)" -eq 0 ] || exit 1
+mode=${1:-hook}
+[ "$mode" = hook ] || [ "$mode" = service ] || exit 2
+dir=${MIPAD2_RECOVERY_DIR:-/boot/.mipad2-recovery}
+state_dir=${MIPAD2_RECOVERY_STATE_DIR:-/var/lib/mipad2-recovery-state}
+marker="$dir/pending-restore"
+[ -f "$marker" ] || exit 0
+mountpoint -q /boot || { echo "Pending restore: /boot is not mounted." >&2; exit 1; }
+[ "$(findmnt -n -o FSTYPE /boot)" = vfat ] || { echo "Pending restore: /boot is not VFAT." >&2; exit 1; }
+boot_source=$(findmnt -n -o SOURCE /boot)
+{
+  IFS= read -r archive_name
+  IFS= read -r expected_source
+} < "$marker"
+case "$archive_name" in boot-20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].tar.zst) ;; *) echo "Pending restore marker has an invalid archive name." >&2; exit 1 ;; esac
+[ -n "$expected_source" ] && [ "$boot_source" = "$expected_source" ] || { echo "Pending restore: /boot source changed; refusing extraction." >&2; exit 1; }
+archive="$dir/$archive_name"
+meta="$archive.meta"
+[ -s "$archive" ] && [ -s "$meta" ] && [ -s "$archive.sha256" ] || { echo "Pending restore archive or metadata is missing." >&2; exit 1; }
+token=$(cat "$meta")
+case "$token" in ????????-????-????-????-????????????) ;; *) echo "Pending restore token is invalid." >&2; exit 1 ;; esac
+[ -s "$state_dir/snapshot-token" ] && [ "$(cat "$state_dir/snapshot-token")" = "$token" ] || { echo "Restored root token does not match the pending boot archive; refusing extraction." >&2; exit 1; }
+(cd "$dir" && sha256sum -c "$archive_name.sha256") || { echo "Pending restore archive checksum failed." >&2; exit 1; }
+tar --zstd -xpf "$archive" -C /boot
+sync
+rm -f "$marker"
+sync
+if [ "$mode" = service ]; then
+  systemctl reboot
+fi
