@@ -4,6 +4,7 @@
 # Device numbers and I2C bus numbers are intentionally discovered at runtime.
 set -u
 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 fail=0
 miss() {
     printf 'MISS %s\n' "$1"
@@ -75,7 +76,12 @@ for path in /sys/class/bluetooth/hci*; do
     break
 done
 if [ -n "$bt_node" ]; then
-    printf 'OK   Bluetooth %s\n' "${bt_node##*/}"
+    printf 'OK   Bluetooth HCI %s enumerated\n' "${bt_node##*/}"
+    if [ -r "$script_dir/mipad2-rfkill-audit.sh" ]; then
+        sh "$script_dir/mipad2-rfkill-audit.sh"
+    else
+        optional 'Bluetooth rfkill helper missing; radio state not checked'
+    fi
 else
     miss 'Bluetooth HCI device'
 fi
