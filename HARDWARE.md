@@ -28,6 +28,7 @@ This page separates **code/configuration presence** from **runtime validation**.
 | Intel DPTF / platform thermal | Configured (ACPI_DPTF, DPTF_POWER, INT340X, Intel SoC DTS) | Diagnostic-only | Compare thermal zones, trips and cooling states at idle/load and after resume. Windows INF IDs are generic; real ACPI/runtime presence remains unverified. |
 | Battery | Integrated target | Runtime-checked | Smoke test discovers a power-supply device with type `Battery`. |
 | BQ25890 charging path | Integrated target | Runtime-checked | Smoke test expects a `USB` or `Mains` charger power-supply node. |
+| Cherry Trail Whiskey Cove PMIC | INT34D3 Linux MFD/ACPI driver enabled | Compile-checked; runtime unverified | Windows PMIC INF lists generic Intel PMIC candidates including INT34D3; only live ACPI enumeration can identify the actual Mi Pad 2 variant. |
 | Ambient light sensor | Integrated target | Runtime-checked | Smoke test expects IIO name `als`. |
 | Accelerometer | Integrated target | Runtime-checked | Smoke test expects IIO name `accel_3d`. |
 | Gyroscope | Integrated target | Runtime-checked | Smoke test expects IIO name `gyro_3d`. |
