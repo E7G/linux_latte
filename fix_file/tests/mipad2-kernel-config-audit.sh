@@ -15,6 +15,16 @@ need() {
 	fi
 }
 
+need_tristate() {
+	symbol=$1
+	if grep -Eq "^${symbol}=[ym]$" "$config"; then
+		grep -E "^${symbol}=[ym]$" "$config" | sed 's/^/OK   /'
+	else
+		printf 'MISS %s=[ym]\n' "$symbol" >&2
+		fail=1
+	fi
+}
+
 # Boot, storage and on-device diagnostics.
 need 'CONFIG_EFI=y'
 need 'CONFIG_EFI_MIXED=y'
@@ -31,8 +41,8 @@ need 'CONFIG_CPU_FREQ=y'
 need 'CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y'
 need 'CONFIG_X86_INTEL_PSTATE=y'
 need 'CONFIG_INTEL_IDLE=y'
-need 'CONFIG_INTEL_MEI=y'
-need 'CONFIG_INTEL_MEI_TXE=y'
+need_tristate 'CONFIG_INTEL_MEI'
+need_tristate 'CONFIG_INTEL_MEI_TXE'
 
 # Display, input, GPIO, LEDs and sensors.
 need 'CONFIG_DRM_I915=y'
