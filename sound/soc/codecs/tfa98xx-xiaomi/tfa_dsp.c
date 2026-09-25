@@ -851,12 +851,16 @@ static int tfa98xx_startup(struct tfa98xx *tfa98xx)
 	/*  powered on
 	 *    - now check if it is allowed to access DSP specifics
 	 */
-	for (tries = 1; tries < CFSTABLE_TRIES; tries++) {
+	for (tries = 0; tries < AREFS_TRIES; tries++) {
 		status = (u16)snd_soc_component_read(tfa98xx->component, TFA98XX_STATUSREG);
 		if (status & TFA98XX_STATUSREG_AREFS_MSK)
 			break;
-		else
-			msleep_interruptible(1);
+		msleep(1);
+	}
+	if (tries == AREFS_TRIES) {
+		pr_err("TFA startup timed out waiting for AREFS (status=0x%04x)\n",
+		       status);
+		return -ETIMEDOUT;
 	}
 
 	/* NXP: Added putting DSP to reset mode to start TFA in proper sequence */
@@ -878,8 +882,11 @@ static int tfa98xx_startup(struct tfa98xx *tfa98xx)
 	pr_debug("Waiting for DSP system stable...()\n");
 	for (tries = 1; tries < CFSTABLE_TRIES; tries++) {
 		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
+		if (ret)
+			return ret;
 		if (status)
 			break;
+		msleep(1);
 	}
 
 	if (tries == CFSTABLE_TRIES) {
@@ -996,30 +1003,52 @@ int tfa98xx_coldboot(struct tfa98xx *tfa98xx, int state)
  */
 int tfa98xx_dsp_power_up(struct tfa98xx *tfa98xx)
 {
+	struct snd_soc_component *component = tfa98xx->component;
 	int ret = 0;
 	int tries, status;
+	u16 statusreg;
 
 	pr_debug("\n");
 
 	/* power on the sub system */
 	ret = tfa98xx_powerdown(tfa98xx, 0);
+	if (ret)
+		return ret;
 
-	pr_debug("Waiting for DSP system stable...\n");
-
-	/* wait until everything is stable, in case clock has been off */
-	for (tries = CFSTABLE_TRIES; tries > 0; tries--) {
-		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
-		if (status)
+	/*
+	 * After s2idle the TFA9890's analog reference can take a few
+	 * milliseconds to become ready after PWDN is cleared.  The old
+	 * resume path polled CFSTABLE_TRIES times without any delay and
+	 * could exhaust all retries before AREFS asserted.  Match the
+	 * factory startup sequence: wait explicitly for AREFS first.
+	 */
+	for (tries = 0; tries < AREFS_TRIES; tries++) {
+		statusreg = snd_soc_component_read(component, TFA98XX_STATUSREG);
+		if (statusreg & TFA98XX_STATUSREG_AREFS_MSK)
 			break;
+		msleep(1);
 	}
-
-	if (tries == 0) {
-		/* timedout */
-		pr_err("DSP subsystem start timed out\n");
+	if (tries == AREFS_TRIES) {
+		pr_err("DSP power-up timed out waiting for AREFS (status=0x%04x)\n",
+		       statusreg);
 		return -ETIMEDOUT;
 	}
 
-	return ret;
+	pr_debug("Waiting for DSP system stable...\n");
+
+	/* Allow hardware state to settle between readiness checks as well. */
+	for (tries = 0; tries < CFSTABLE_TRIES; tries++) {
+		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
+		if (ret)
+			return ret;
+		if (status)
+			return 0;
+		msleep(1);
+	}
+
+	pr_err("DSP subsystem start timed out (status=0x%04x)\n",
+	       snd_soc_component_read(component, TFA98XX_STATUSREG));
+	return -ETIMEDOUT;
 }
 
 /*
@@ -2311,9 +2340,21 @@ int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 	} else {
 		/* already warm, so just pwr on */
 		ret = tfa98xx_dsp_power_up(tfa98xx);
+		if (ret == -ETIMEDOUT) {
+			/*
+			 * After S0i3 some Mi Pad 2 units retain a warm ACS
+			 * indication while the TFA9890 analog reference has
+			 * actually lost state.  A warm retry can then loop
+			 * forever with AREFS clear.  Recover once through the
+			 * factory cold-start path, which restores registers,
+			 * patch/profile data and calibration state.
+			 */
+			pr_warn("warm DSP resume failed; forcing cold restart\n");
+			return tfaRunSpeakerBoost(tfa98xx, 1);
+		}
+		if (ret)
+			return ret;
 	}
-
-
 
 	if (!tfaIsCalibrated(tfa98xx)) {
 		pr_err("Not calibrated, power down devcie\n");
