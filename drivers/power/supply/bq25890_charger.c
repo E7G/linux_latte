@@ -998,6 +998,37 @@ static int bq25890_rw_init_data(struct bq25890_device *bq)
 	return 0;
 }
 
+static int bq25890_apply_readback_overrides(struct bq25890_device *bq)
+{
+	struct bq25890_init_data *init = &bq->init_data;
+	u32 val;
+	int ret;
+
+	/*
+	 * Some firmware-initialized boards need to preserve most of the charger
+	 * register setup while overriding a small number of board-specific values.
+	 * Allow the standard TI properties to selectively override ITERM/IPRECHG
+	 * after the register values have been read back.
+	 */
+	ret = device_property_read_u32(bq->dev, "ti,termination-current", &val);
+	if (!ret) {
+		init->iterm = bq25890_find_idx(val, TBL_ITERM);
+		ret = bq25890_field_write(bq, F_ITERM, init->iterm);
+		if (ret)
+			return ret;
+	}
+
+	ret = device_property_read_u32(bq->dev, "ti,precharge-current", &val);
+	if (!ret) {
+		init->iprechg = bq25890_find_idx(val, TBL_ITERM);
+		ret = bq25890_field_write(bq, F_IPRECHG, init->iprechg);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
 static int bq25890_hw_init(struct bq25890_device *bq)
 {
 	int ret;
@@ -1032,6 +1063,12 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 	ret = bq25890_rw_init_data(bq);
 	if (ret)
 		return ret;
+
+	if (bq->read_back_init_data) {
+		ret = bq25890_apply_readback_overrides(bq);
+		if (ret)
+			return ret;
+	}
 
 	ret = bq25890_get_chip_state(bq, &bq->state);
 	if (ret < 0) {
