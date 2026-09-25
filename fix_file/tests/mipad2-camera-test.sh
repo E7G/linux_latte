@@ -1,6 +1,6 @@
 #!/bin/sh
-# Capture one frame from a Mi Pad 2 camera through the legacy AtomISP node.
-# Keep format setup and streaming in the same v4l2-ctl invocation.
+# Capture short streams from the Mi Pad 2 cameras through the legacy AtomISP node.
+# AtomISP may warn that VIDIOC_CREATE_BUFS is unsupported even when mmap streaming succeeds.
 set -u
 
 target=${1:-both}
@@ -45,7 +45,7 @@ capture_one()
 	if timeout --signal=TERM --kill-after=2s 15s \
 		v4l2-ctl -d "$video_node" --set-input="$input" \
 		--set-fmt-video=width=1280,height=720,pixelformat=YU12 \
-		--stream-mmap --stream-count=1 --stream-to="$out" >"$log" 2>&1 \
+		--stream-mmap=4 --stream-count=3 --stream-to="$out" >"$log" 2>&1 \
 		&& size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
 		printf 'OK   %s capture (%s bytes)\n' "$label" "$size"
 	else
