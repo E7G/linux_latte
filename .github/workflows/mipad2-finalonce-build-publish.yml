@@ -1,0 +1,81 @@
+name: Build and publish Mi Pad 2 finalonce kernel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout combined validation branch
+        uses: actions/checkout@v4
+        with:
+          ref: mipad2-final-once-20260925
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod
+
+      - name: Configure isolated finalonce kernel
+        run: |
+          set -euxo pipefail
+          make xiaomipad2_defconfig
+          release="$(make -s LOCALVERSION="-navkeys-finalonce" kernelrelease)"
+          test "$release" = "6.14.0-mipad2-cachyos-navkeys-finalonce"
+          echo "$release"
+
+      - name: Build kernel and modules
+        run: |
+          make LOCALVERSION="-navkeys-finalonce" -j"$(nproc)" bzImage modules
+
+      - name: Stage bundle
+        run: |
+          set -euxo pipefail
+          release="$(make -s LOCALVERSION="-navkeys-finalonce" kernelrelease)"
+          rm -rf modules-root dist
+          mkdir -p modules-root dist
+          make LOCALVERSION="-navkeys-finalonce" INSTALL_MOD_PATH="$PWD/modules-root" modules_install
+          rm -f "modules-root/lib/modules/$release/build" "modules-root/lib/modules/$release/source"
+          depmod -b "$PWD/modules-root" "$release"
+          cp arch/x86/boot/bzImage dist/vmlinuz-linux-latte-cachyos-navkeys-finalonce
+          tar --zstd -C modules-root/lib/modules -cf dist/modules-linux-latte-cachyos-navkeys-finalonce.tar.zst "$release"
+          printf '%s\n' "$release" > dist/kernelrelease.txt
+          git rev-parse HEAD > dist/commit.txt
+          (
+            cd dist
+            sha256sum vmlinuz-linux-latte-cachyos-navkeys-finalonce modules-linux-latte-cachyos-navkeys-finalonce.tar.zst > SHA256SUMS
+          )
+          cat dist/kernelrelease.txt
+          cat dist/commit.txt
+          cat dist/SHA256SUMS
+
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-latte-finalonce-kernel-bundle
+          path: dist/
+          retention-days: 7
+
+      - name: Publish temporary prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: mipad2-final-once-test-20260925
+        run: |
+          set -euxo pipefail
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$TAG" \
+            dist/vmlinuz-linux-latte-cachyos-navkeys-finalonce \
+            dist/modules-linux-latte-cachyos-navkeys-finalonce.tar.zst \
+            dist/kernelrelease.txt \
+            dist/SHA256SUMS \
+            dist/commit.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" \
+            --prerelease \
+            --title "Mi Pad 2 isolated finalonce test 2026-09-25" \
+            --notes "Temporary isolated one-shot kernel with unique module release; charging VREG + TFA9890 probe validation."
