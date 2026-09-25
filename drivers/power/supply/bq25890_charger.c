@@ -1033,6 +1033,30 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 	if (ret)
 		return ret;
 
+	/*
+	 * Some firmware leaves a conservative VREG programmed even when the
+	 * board's battery profile allows a higher regulation voltage. Boards
+	 * using linux,read-back-settings may provide only
+	 * ti,battery-regulation-voltage as a targeted correction while all
+	 * other charger settings continue to come from firmware.
+	 */
+	if (bq->read_back_init_data) {
+		u32 vreg_uv;
+
+		ret = device_property_read_u32(bq->dev,
+					       "ti,battery-regulation-voltage",
+					       &vreg_uv);
+		if (!ret) {
+			bq->init_data.vreg = bq25890_find_idx(vreg_uv, TBL_VREG);
+			ret = bq25890_field_write(bq, F_VREG, bq->init_data.vreg);
+			if (ret < 0) {
+				dev_dbg(bq->dev, "Setting board VREG override failed %d\n",
+					ret);
+				return ret;
+			}
+		}
+	}
+
 	ret = bq25890_get_chip_state(bq, &bq->state);
 	if (ret < 0) {
 		dev_dbg(bq->dev, "Get state failed %d\n", ret);
