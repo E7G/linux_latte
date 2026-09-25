@@ -280,6 +280,16 @@ if [ -n "$charger_path" ]; then
     printf 'INFO BQ25890 status=%s online=%s VREG=%s uV ITERM=%s uA\n' \
         "${charger_status:-unknown}" "${charger_online:-unknown}" \
         "${charger_vreg:-unknown}" "${charger_iterm:-unknown}"
+    if [ "$charger_vreg" = 4400000 ]; then
+        printf 'OK   BQ25890 Mi Pad 2 VREG 4.400 V\n'
+    else
+        miss "BQ25890 VREG 4.400 V (got ${charger_vreg:-unknown})"
+    fi
+    if [ "$charger_iterm" = 256000 ]; then
+        printf 'OK   BQ25890 termination current 256 mA\n'
+    else
+        miss "BQ25890 termination current 256 mA (got ${charger_iterm:-unknown})"
+    fi
 else
     miss 'BQ25890 charger'
     charger_status=
@@ -290,9 +300,15 @@ if [ -n "$battery_path" ]; then
     battery_status=$(cat "$battery_path/status" 2>/dev/null || true)
     battery_voltage=$(cat "$battery_path/voltage_now" 2>/dev/null || true)
     battery_current=$(cat "$battery_path/current_now" 2>/dev/null || true)
-    printf 'INFO BQ27520 status=%s capacity=%s%% voltage=%s uV current=%s uA\n' \
+    design_full=$(cat "$battery_path/charge_full_design" 2>/dev/null || true)
+    printf 'INFO BQ27520 status=%s capacity=%s%% voltage=%s uV current=%s uA design=%s uAh\n' \
         "${battery_status:-unknown}" "${battery_capacity:-unknown}" \
-        "${battery_voltage:-unknown}" "${battery_current:-unknown}"
+        "${battery_voltage:-unknown}" "${battery_current:-unknown}" "${design_full:-unknown}"
+    if [ "$design_full" = 6190000 ]; then
+        printf 'OK   BQ27520 design capacity 6190 mAh\n'
+    else
+        optional "BQ27520 design capacity is ${design_full:-unknown}; expected Xiaomi profile 6190000 uAh"
+    fi
     if [ "$charger_status" = Full ] && [ -n "$battery_capacity" ] &&
        [ "$battery_capacity" -lt 95 ] 2>/dev/null; then
         optional "charger reports Full while fuel gauge reports ${battery_capacity}% (${battery_status:-unknown}); inspect BQ25890 termination and BQ27520 gauge calibration"
