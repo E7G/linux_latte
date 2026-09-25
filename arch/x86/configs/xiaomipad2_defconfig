@@ -906,7 +906,7 @@ CONFIG_FUNCTION_ERROR_INJECTION=y
 CONFIG_MEMTEST=y
 
 # CachyOS-derived Mi Pad 2 profile (Cherry Trail/Airmont, 2 GiB RAM).
-CONFIG_LOCALVERSION="-mipad2-cachyos"
+CONFIG_LOCALVERSION="-mipad2-cachyos-meitxe-once"
 # CONFIG_LOCALVERSION_AUTO is not set
 # CONFIG_MATOM is not set
 CONFIG_MSILVERMONT=y
