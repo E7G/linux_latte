@@ -135,6 +135,11 @@ jobs:
             sound/soc/codecs/tfa989x.o \
             sound/soc/intel/boards/cht_bsw_rt5659.o
 
+      - name: Audit Mi Pad 2 ACPI-hidden I2C board devices
+        run: |
+          sh -n fix_file/tests/mipad2-platform-board-audit.sh
+          sh fix_file/tests/mipad2-platform-board-audit.sh
+
       - name: Audit Mi Pad 2 stereo UCM routes
         run: |
           sh -n fix_file/tests/mipad2-audio-route-audit.sh

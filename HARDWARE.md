@@ -75,6 +75,7 @@ The Linux battery/charger mapping is also documented in [the upstream x86 Androi
 - modular BCM4356 Wi-Fi/Bluetooth config;
 - AtomISP sensor/VCM module load-order audit against Mi Pad 2 Android init requirements;
 - DPTF/thermal/charger defconfig settings plus mock-backed thermal readout tests;
+- Xiaomi DMI board-file mapping and declarations for ACPI-hidden BQ27520, dual TFA9890 and KTD2026 I2C devices;
 - RT5659/TFA989x audio-driver W=1 compilation plus static checks tying UCM left/right selections to the two amplifier DAIs;
 - syntax/basic integration of recovery, USB serial and hardware smoke scripts.
 
