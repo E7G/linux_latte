@@ -273,12 +273,30 @@ done
 if [ -n "$charger_path" ]; then
     printf 'OK   charger %s\n' "$charger_path"
     charger_status=$(cat "$charger_path/status" 2>/dev/null || true)
+    charger_vreg=$(cat "$charger_path/constant_charge_voltage_max" 2>/dev/null || true)
+    if [ "$charger_vreg" = 4400000 ]; then
+        printf 'OK   BQ25890 Mi Pad 2 VREG 4.400 V\n'
+    else
+        miss "BQ25890 VREG 4.400 V (got ${charger_vreg:-unknown})"
+    fi
+    charger_iterm=$(cat "$charger_path/charge_term_current" 2>/dev/null || true)
+    if [ "$charger_iterm" = 256000 ]; then
+        printf 'OK   BQ25890 termination current 256 mA\n'
+    else
+        miss "BQ25890 termination current 256 mA (got ${charger_iterm:-unknown})"
+    fi
 else
     miss 'BQ25890 charger'
     charger_status=
 fi
 
 if [ -n "$battery_path" ]; then
+    design_full=$(cat "$battery_path/charge_full_design" 2>/dev/null || true)
+    if [ "$design_full" = 6190000 ]; then
+        printf 'OK   BQ27520 design capacity 6190 mAh\n'
+    else
+        optional "BQ27520 design capacity is ${design_full:-unknown}; expected Xiaomi profile 6190000 uAh"
+    fi
     battery_capacity=$(cat "$battery_path/capacity" 2>/dev/null || true)
     battery_status=$(cat "$battery_path/status" 2>/dev/null || true)
     if [ "$charger_status" = Full ] && [ -n "$battery_capacity" ] &&
