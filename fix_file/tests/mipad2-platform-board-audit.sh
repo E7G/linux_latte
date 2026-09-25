@@ -10,7 +10,7 @@ config=arch/x86/configs/xiaomipad2_defconfig
 dmi=drivers/platform/x86/x86-android-tablets/dmi.c
 board=drivers/platform/x86/x86-android-tablets/other.c
 
-grep -Fqx 'CONFIG_X86_ANDROID_TABLETS=y' "$config"
+grep -q '^CONFIG_X86_ANDROID_TABLETS=y' "$config"
 grep -Fq 'DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc")' "$dmi"
 grep -Fq 'DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2")' "$dmi"
 grep -Fq 'driver_data = (void *)&xiaomi_mipad2_info' "$dmi"
