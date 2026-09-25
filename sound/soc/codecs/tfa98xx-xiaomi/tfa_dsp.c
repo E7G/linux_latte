@@ -996,30 +996,52 @@ int tfa98xx_coldboot(struct tfa98xx *tfa98xx, int state)
  */
 int tfa98xx_dsp_power_up(struct tfa98xx *tfa98xx)
 {
+	struct snd_soc_component *component = tfa98xx->component;
 	int ret = 0;
 	int tries, status;
+	u16 statusreg;
 
 	pr_debug("\n");
 
 	/* power on the sub system */
 	ret = tfa98xx_powerdown(tfa98xx, 0);
+	if (ret)
+		return ret;
 
-	pr_debug("Waiting for DSP system stable...\n");
-
-	/* wait until everything is stable, in case clock has been off */
-	for (tries = CFSTABLE_TRIES; tries > 0; tries--) {
-		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
-		if (status)
+	/*
+	 * After s2idle the TFA9890's analog reference can take a few
+	 * milliseconds to become ready after PWDN is cleared.  The old
+	 * resume path polled CFSTABLE_TRIES times without any delay and
+	 * could exhaust all retries before AREFS asserted.  Match the
+	 * factory startup sequence: wait explicitly for AREFS first.
+	 */
+	for (tries = 0; tries < AREFS_TRIES; tries++) {
+		statusreg = snd_soc_component_read(component, TFA98XX_STATUSREG);
+		if (statusreg & TFA98XX_STATUSREG_AREFS_MSK)
 			break;
+		msleep(1);
 	}
-
-	if (tries == 0) {
-		/* timedout */
-		pr_err("DSP subsystem start timed out\n");
+	if (tries == AREFS_TRIES) {
+		pr_err("DSP power-up timed out waiting for AREFS (status=0x%04x)\n",
+		       statusreg);
 		return -ETIMEDOUT;
 	}
 
-	return ret;
+	pr_debug("Waiting for DSP system stable...\n");
+
+	/* Allow hardware state to settle between readiness checks as well. */
+	for (tries = 0; tries < CFSTABLE_TRIES; tries++) {
+		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
+		if (ret)
+			return ret;
+		if (status)
+			return 0;
+		msleep(1);
+	}
+
+	pr_err("DSP subsystem start timed out (status=0x%04x)\n",
+	       snd_soc_component_read(component, TFA98XX_STATUSREG));
+	return -ETIMEDOUT;
 }
 
 /*
