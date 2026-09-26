@@ -874,6 +874,13 @@ static const struct software_node xiaomi_mipad2_touchscreen_node = {
  */
 static const struct property_entry xiaomi_mipad2_camera_otp_props[] = {
 	PROPERTY_ENTRY_BOOL("read-only"),
+	/*
+	 * Android reads the calibration EEPROM with a 16-bit internal address
+	 * pointer even though the useful payload is only 578 bytes. Keep the
+	 * 24c08 (1 KiB) geometry but override the at24 address width so Linux
+	 * matches the factory protocol and uses only the base 0x58 address.
+	 */
+	PROPERTY_ENTRY_U32("address-width", 16),
 	{ }
 };
 
@@ -1073,8 +1080,10 @@ static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst 
 	}, {
 		/*
 		 * Rear camera module calibration EEPROM. Android addresses this as
-		 * DW9761_OTP_ADDR (0x58) and reads 578 bytes. A 24c08 is the
-		 * smallest standard at24 geometry that safely covers that payload.
+		 * DW9761_OTP_ADDR (0x58) and reads 578 bytes using a 16-bit
+		 * internal address. A 24c08 gives the smallest sufficient byte
+		 * length; the software-node address-width property above makes
+		 * at24 use the same 16-bit protocol as the factory driver.
 		 */
 		.board_info = {
 			.type = "24c08",
