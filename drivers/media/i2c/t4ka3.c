@@ -279,6 +279,8 @@ static int t4ka3_mipad2_otp_read(void *context, unsigned int offset,
 	if (offset > T4KA3_MIPAD2_OTP_SIZE ||
 	    bytes > T4KA3_MIPAD2_OTP_SIZE - offset)
 		return -EINVAL;
+	if (!bytes)
+		return 0;
 
 	mutex_lock(&sensor->lock);
 	ret = t4ka3_mipad2_fetch_otp(sensor);
