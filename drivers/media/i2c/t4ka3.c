@@ -13,12 +13,14 @@
 #include <linux/delay.h>
 #include <linux/dev_printk.h>
 #include <linux/device.h>
+#include <linux/dmi.h>
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/mod_devicetable.h>
 #include <linux/mutex.h>
+#include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/types.h>
@@ -65,6 +67,16 @@
 #define T4KA3_REG_PRODUCT_ID_HIGH		CCI_REG8(0x0000)
 #define T4KA3_REG_PRODUCT_ID_LOW		CCI_REG8(0x0001)
 #define T4KA3_PRODUCT_ID			0x1490
+
+#define T4KA3_MIPAD2_OTP_ADDR			0x58
+#define T4KA3_MIPAD2_OTP_SIZE			578
+#define T4KA3_MIPAD2_OTP_MODULE_END		15
+#define T4KA3_MIPAD2_OTP_AF_START		16
+#define T4KA3_MIPAD2_OTP_AF_END			31
+#define T4KA3_MIPAD2_OTP_LS1_START		32
+#define T4KA3_MIPAD2_OTP_LS1_END		303
+#define T4KA3_MIPAD2_OTP_LS2_START		304
+#define T4KA3_MIPAD2_OTP_LS2_END		577
 
 #define T4KA3_REG_STREAM			CCI_REG8(0x0100)
 #define T4KA3_REG_IMG_ORIENTATION		CCI_REG8(0x0101)
@@ -155,10 +167,149 @@ struct t4ka3_data {
 	struct gpio_desc *reset_gpio;
 	int streaming;
 
+	/* Mi Pad 2 rear-module factory calibration cache. */
+	struct nvmem_device *otp_nvmem;
+	u8 otp_data[T4KA3_MIPAD2_OTP_SIZE];
+	bool otp_cached;
+
 	/* MIPI lane info */
 	u32 link_freq_index;
 	u8 mipi_lanes;
 };
+
+static bool t4ka3_has_mipad2_otp(struct t4ka3_data *sensor)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       ACPI_COMPANION(sensor->dev);
+}
+
+static u8 t4ka3_mipad2_otp_checksum(const u8 *data, size_t len)
+{
+	u16 sum = 0;
+	size_t i;
+
+	for (i = 0; i < len; i++)
+		sum += data[i];
+
+	return sum % 255;
+}
+
+static int t4ka3_mipad2_validate_otp(struct t4ka3_data *sensor)
+{
+	const u8 *data = sensor->otp_data;
+
+	if (data[0] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[1], 14) !=
+		data[T4KA3_MIPAD2_OTP_MODULE_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_AF_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_AF_START + 1], 14) !=
+		data[T4KA3_MIPAD2_OTP_AF_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_LS1_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_LS1_START + 1], 270) !=
+		data[T4KA3_MIPAD2_OTP_LS1_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_LS2_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_LS2_START + 1], 272) !=
+		data[T4KA3_MIPAD2_OTP_LS2_END])
+		return -EBADMSG;
+
+	return 0;
+}
+
+static int t4ka3_mipad2_fetch_otp(struct t4ka3_data *sensor)
+{
+	struct i2c_client *client = to_i2c_client(sensor->dev);
+	u8 addr_buf[2] = { 0x00, 0x00 };
+	struct i2c_msg msgs[] = {
+		{
+			.addr = T4KA3_MIPAD2_OTP_ADDR,
+			.flags = 0,
+			.len = sizeof(addr_buf),
+			.buf = addr_buf,
+		}, {
+			.addr = T4KA3_MIPAD2_OTP_ADDR,
+			.flags = I2C_M_RD,
+			.len = T4KA3_MIPAD2_OTP_SIZE,
+			.buf = sensor->otp_data,
+		},
+	};
+	int ret;
+
+	if (sensor->otp_cached)
+		return 0;
+
+	ret = pm_runtime_resume_and_get(sensor->dev);
+	if (ret < 0)
+		return ret;
+
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	pm_runtime_put(sensor->dev);
+	if (ret != ARRAY_SIZE(msgs))
+		return ret < 0 ? ret : -EIO;
+
+	ret = t4ka3_mipad2_validate_otp(sensor);
+	if (ret) {
+		dev_err(sensor->dev, "invalid Mi Pad 2 rear-camera OTP data\n");
+		return ret;
+	}
+
+	sensor->otp_cached = true;
+	dev_info(sensor->dev,
+		 "validated Mi Pad 2 rear-camera OTP (vendor %u, AF %u..%u)\n",
+		 sensor->otp_data[1],
+		 (sensor->otp_data[19] << 8) | sensor->otp_data[20],
+		 (sensor->otp_data[21] << 8) | sensor->otp_data[22]);
+
+	return 0;
+}
+
+static int t4ka3_mipad2_otp_read(void *context, unsigned int offset,
+				 void *val, size_t bytes)
+{
+	struct t4ka3_data *sensor = context;
+	int ret;
+
+	if (offset > T4KA3_MIPAD2_OTP_SIZE ||
+	    bytes > T4KA3_MIPAD2_OTP_SIZE - offset)
+		return -EINVAL;
+
+	mutex_lock(&sensor->lock);
+	ret = t4ka3_mipad2_fetch_otp(sensor);
+	if (!ret)
+		memcpy(val, sensor->otp_data + offset, bytes);
+	mutex_unlock(&sensor->lock);
+
+	return ret;
+}
+
+static int t4ka3_register_mipad2_otp(struct t4ka3_data *sensor)
+{
+	struct nvmem_config config = {
+		.dev = sensor->dev,
+		.name = "mipad2-t4ka3-otp",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = t4ka3_mipad2_otp_read,
+		.size = T4KA3_MIPAD2_OTP_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = sensor,
+	};
+
+	if (!t4ka3_has_mipad2_otp(sensor))
+		return 0;
+
+	sensor->otp_nvmem = devm_nvmem_register(sensor->dev, &config);
+	return PTR_ERR_OR_ZERO(sensor->otp_nvmem);
+}
 
 /* init settings */
 static const struct cci_reg_sequence t4ka3_init_config[] = {
@@ -1122,6 +1273,10 @@ static int t4ka3_probe(struct i2c_client *client)
 	}
 
 	ret = t4ka3_init_controls(sensor);
+	if (ret)
+		goto err_controls;
+
+	ret = t4ka3_register_mipad2_otp(sensor);
 	if (ret)
 		goto err_controls;
 
