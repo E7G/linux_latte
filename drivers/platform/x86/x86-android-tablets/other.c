@@ -864,31 +864,6 @@ static const struct software_node xiaomi_mipad2_touchscreen_node = {
 	.properties = xiaomi_mipad2_touchscreen_props,
 };
 
-/*
- * Factory calibration EEPROM paired with the rear T4KA3 / DW9761 module.
- * Xiaomi's Android driver reads 578 bytes from I2C address 0x58 and parses
- * module information, AF endpoints, AWB and lens-shading calibration.
- *
- * Expose it read-only through at24/NVMEM. Never allow writes to the factory
- * calibration contents.
- */
-static const struct property_entry xiaomi_mipad2_camera_otp_props[] = {
-	PROPERTY_ENTRY_BOOL("read-only"),
-	/*
-	 * Android writes a 16-bit big-endian offset to 0x58, then reads the
-	 * 578-byte raw factory-calibration payload. Expose exactly that range
-	 * through NVMEM and keep the client on a single I2C address.
-	 */
-	PROPERTY_ENTRY_U32("address-width", 16),
-	PROPERTY_ENTRY_U32("size", 578),
-	PROPERTY_ENTRY_U32("num-addresses", 1),
-	{ }
-};
-
-static const struct software_node xiaomi_mipad2_camera_otp_node = {
-	.properties = xiaomi_mipad2_camera_otp_props,
-};
-
 static int xiaomi_mipad2_brightness_set(struct led_classdev *led_cdev,
 					enum led_brightness val)
 {
@@ -1078,21 +1053,7 @@ static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst 
 			.swnode = &ktd2026_node,
 		},
 		.adapter_path = "\\_SB_.PCI0.I2C3",
-	}, {
-		/*
-		 * Rear camera module calibration EEPROM. Android addresses this as
-		 * DW9761_OTP_ADDR (0x58) and reads exactly 578 bytes using a
-		 * 16-bit internal address. The software-node properties above
-		 * override the generic at24 geometry to match that factory protocol.
-		 */
-		.board_info = {
-			.type = "24c08",
-			.addr = 0x58,
-			.dev_name = "mipad2-camera-otp",
-			.swnode = &xiaomi_mipad2_camera_otp_node,
-		},
-		.adapter_path = "\\_SB_.PCI0.I2C4",
-	},
+	}, 
 };
 
 static struct gpiod_lookup_table xiaomi_mipad2_codec_rt5659_gpios = {
