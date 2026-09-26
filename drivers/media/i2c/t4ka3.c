@@ -23,6 +23,7 @@
 #include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
+#include <linux/string.h>
 #include <linux/types.h>
 
 #include <media/media-entity.h>
