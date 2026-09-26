@@ -1035,7 +1035,7 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 
 	/*
 	 * Some firmware leaves a conservative VREG programmed even when the
-	 * board's battery profile allows a higher regulation voltage. Boards
+	 * board's battery profile allows a higher regulation voltage.  Boards
 	 * using linux,read-back-settings may provide only
 	 * ti,battery-regulation-voltage as a targeted correction while all
 	 * other charger settings continue to come from firmware.
