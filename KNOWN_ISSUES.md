@@ -1,6 +1,6 @@
 # Known issues / 当前已知限制
 
-本文档只记录与当前 `main` 分支和 `xiaomipad2_defconfig` 相符的已知限制。这里的“已集成”表示代码、配置或辅助工具已经存在，**不等于该功能已经在所有发行版和所有使用场景下完全稳定**。
+本文档只记录与当前 `cachyos-mipad2` 分支和 `xiaomipad2_defconfig` 相符的已知限制。这里的“已集成”表示代码、配置或辅助工具已经存在，**不等于该功能已经在所有发行版和所有使用场景下完全稳定**。
 
 ## 1. AtomISP 摄像头仍是实验性功能
 
@@ -18,7 +18,7 @@
 - 某些 V4L2 应用仍可能因为格式协商或旧 AtomISP ioctl 差异而不兼容；
 - 前后摄白平衡/3A tuning 仍需继续校准，当前偏绿问题不是 Bayer order 错误；
 - 后摄自动对焦策略还需要继续优化；
-- suspend/resume 后的摄像头采集仍需持续回归。
+- 2026-09-26 正式稳定内核已通过一次 8 秒 S0i3 suspend/resume，唤醒后前/后摄采集和连续 6 次切换再次通过；后续媒体/电源改动后仍应重复该回归。
 
 优先使用仓库提供的测试脚本：
 
@@ -53,7 +53,7 @@ shisp_2401a0_v21.bin
 
 ## 3. Suspend / resume 仍需持续回归
 
-当前固件只对 Linux 暴露 `[s2idle]`，但这不等价于“缺少低功耗休眠”。Cherry Trail 的当前 6.14 `pmc_atom` 已注册 s2idle/S0ix 检查，并提供 S0I1/S0I2/S0I3 residency；真机 CPU idle 也已经确认 C6/C7/C7S 都在累计。正确验收目标是确认系统实际进入 S0i3，并排除阻止 S0i3 的 D0 设备或 forced-on PMC clock，而不是强行制造一个 `deep` 选项。
+当前固件只对 Linux 暴露 `[s2idle]`，但这不等价于“缺少低功耗休眠”。Cherry Trail 的当前 6.14 `pmc_atom` 已注册 s2idle/S0ix 检查，并提供 S0I1/S0I2/S0I3 residency；真机 CPU idle 也已经确认 C6/C7/C7S 都在累计。2026-09-26 在正式 `6.14.0-mipad2-cachyos-navkeys` 上用 RTC 做 8 秒 suspend，S0I3 residency 增加约 7.43 秒（约 93%），唤醒后 Wi-Fi/SSH 自动恢复，USB gadget、RT5659/TFA9890 和摄像头回归均通过。正确验收目标仍然是确认系统实际进入 S0i3，而不是强行制造一个 `deep` 选项。
 
 仍不能把 suspend/resume 视为所有外设都已完全稳定。每次修改 ACPI、电源管理、音频、无线、IIO 或媒体代码后，至少重新检查：
 
@@ -143,16 +143,22 @@ findmnt /boot
 
 如果设备用于处理不可信工作负载，尤其需要重新评估 CPU mitigations 等安全选项。若改变工具链或 defconfig，记得检查最终 `.config`，不要仅根据 defconfig 文件推断最终编译配置。
 
-## 9. BQ25890 充电上限仍在真机验证
+## 9. BQ25890 充电上限已按原厂档案修正并通过真机验证
 
-当前稳定内核使用 `linux,read-back-settings`，直接沿用固件留给 BQ25890 的充电参数。2026-09-25 真机读数显示：
+旧稳定内核使用 `linux,read-back-settings` 时，固件给 BQ25890 留下的 VREG 只有 4.208 V。真机曾出现约 4.165 V 时 charger 已报告 `Full`，但 BQ27520 仍只有 83%。
 
-- BQ27520 设计容量：6190 mAh；
-- BQ25890 终止电流：256 mA；
-- BQ25890 VREG：4.208 V；
-- 在约 4.165 V 时 BQ25890 已报告 `Full`，但 BQ27520 仍为 83%。
+Android 原厂 Xiaomi 电池档案与真机 fuel gauge 一致：设计容量 6190 mAh、终止电流 256 mA、充电电压 4.400 V。当前稳定内核保留固件提供的其余充电电流、预充、温控和 OTG 参数，只针对 Mi Pad 2 覆盖 VREG 为 4.400 V。
 
-Android 原厂 `intel_em_config.c` 的 Xiaomi 默认电池档案同样是 6190 mAh / 256 mA，但充电电压是 4.400 V。因此当前正在验证一个最小修复：保留固件提供的其余电流、预充、温控和 OTG 参数，只把 Mi Pad 2 的 VREG 修正到原厂 4.400 V。该改动在真机验证完成前不应直接视为稳定结论。
+2026-09-26 one-shot 和最终稳定内核验证结果：
+
+- `constant_charge_voltage_max = 4400000`；
+- `charge_term_current = 256000`；
+- BQ27520 设计容量仍为 6190 mAh；
+- 旧的 `Full@83%` 提前终止现象消失；
+- 实测电量从 83% 继续充到 100%，满电附近电压约 4.35 V；
+- 正式稳定内核在 USB 500 mA 输入下仍保持 4.400 V VREG。高负载时 battery 可能短暂显示 Discharging，这是系统负载高于当前 USB 输入限流的表现，不等同于 VREG 回退。
+
+该路径已经进入 `cachyos-mipad2`，后续若修改充电器或 fuel-gauge 代码，应重新运行硬件 smoke test 并核对 VREG/ITERM/容量读数。
 
 ## 报告新问题
 

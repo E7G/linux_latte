@@ -18,16 +18,17 @@ The table below describes what is present in the current source/configuration. â
 | Capacitive bezel keys | Integrated | Mi Pad 2-specific HID handling is in the kernel tree. The old udev hwdb mapping in `fix_file/README.md` is now only a fallback. |
 | Wi-Fi | Available, firmware required | BCM4356 support is built as modules (`cfg80211` / `brcmfmac`). Device NVRAM is kept under `fix_file/`. |
 | Bluetooth | Available, firmware required | Broadcom HCI UART support is modular. `BCM4356A2.hcd` is provided under `fix_file/`. |
-| Audio | Available with userspace profile | RT5659 / dual TFA9890 support uses the `mipad2-alsa-ucm` profile. See `fix_file/audio.md`. |
+| Audio | Available and live-validated | RT5659 / dual TFA9890 enumerate correctly; repeated PCM start/stop and suspend/resume regression passed. Uses the `mipad2-alsa-ucm` profile. |
 | USB host / device mode | Available | DWC3 PCI dual-role support is enabled. Gadget mode may still require the firmware/BIOS OTG setting described in `fix_file/USB_OTG_Gadget.md`. |
 | USB serial debug | Available | `mipad2-usb-serial` exposes CDC ACM `/dev/ttyGS0`; with the current kernel config it can also act as a kernel console and replay the printk ring buffer after USB enumeration. |
-| Battery / charger | Integrated, verify on device | The regression script checks a battery power-supply node and the BQ25890 charger path. |
+| Battery / charger | Integrated and live-validated | BQ25890 uses the Xiaomi 4.400 V VREG / 256 mA termination profile; BQ27520 reports the 6190 mAh design capacity and the former Full@83% issue is resolved. |
+| TXE / MEI | Integrated and live-validated | Intel Trusted Execution Engine 8086:2298 binds to `mei_txe` and exposes `/dev/mei0`. |
 | IIO sensors | Integrated, verify on device | The regression script expects ALS, accelerometer, gyro, magnetometer, inclination and device-rotation IIO devices. |
 | Indicator / touch-key LEDs | Integrated, verify on device | The regression script checks `mipad2:rgb:indicator` and `mipad2:white:touch-buttons-backlight`. |
 | Front camera | Experimental | OV5693 uses the in-tree driver through AtomISP. |
 | Rear camera | Experimental | T4KA3 support is integrated in this kernel tree; DW9761 focus is handled through the compatible `dw9719` driver. |
 | Video decode | Userspace-verified | `libva 2.24.0` with Intel i965 driver 2.4.5 has been verified on CherryView; see `fix_file/README.md`. |
-| Suspend / resume | Needs regression testing | Re-test cameras, audio, wireless and sensors after suspend/resume; do not assume all peripherals recover on every userspace stack. |
+| Suspend / resume | Baseline validated; keep regression testing | An 8 s s2idle test spent about 7.43 s in S0I3 (~93%); Wi-Fi/SSH, USB gadget, audio and camera recovered successfully. Re-run after power/ACPI/media changes. |
 
 ### Camera status
 
