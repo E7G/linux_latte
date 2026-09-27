@@ -8,8 +8,8 @@
  * from: https://github.com/MiCode/Xiaomi_Kernel_OpenSource/
  */
 
-#include <linux/delay.h>
-#include <linux/i2c.h>
+#include <linux/delay.h>\n#include <linux/dmi.h>
+#include <linux/i2c.h>\n#include <linux/nvmem-consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
@@ -46,6 +46,9 @@
 #define DW9761_VCM_PRELOAD		CCI_REG8(8)
 #define DW9761_DEFAULT_VCM_PRELOAD	0x73
 
+#define MIPAD2_OTP_AF_OFFSET		16
+#define MIPAD2_OTP_AF_SIZE		16
+
 #define to_dw9719_device(x) container_of(x, struct dw9719_device, sd)
 
 struct dw9719_device {
@@ -57,12 +60,74 @@ struct dw9719_device {
 	u32 mode_low_bits;
 	u32 sac_mode;
 	u32 vcm_freq;
+	u16 focus_min;
+	u16 focus_max;
+	u16 focus_default;
 
 	struct dw9719_v4l2_ctrls {
 		struct v4l2_ctrl_handler handler;
 		struct v4l2_ctrl *focus;
 	} ctrls;
 };
+
+static bool dw9719_is_mipad2(void)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+}
+
+static u8 dw9719_mipad2_otp_checksum(const u8 *data, size_t len)
+{
+	u16 sum = 0;
+	size_t i;
+
+	for (i = 0; i < len; i++)
+		sum += data[i];
+
+	return sum % 255;
+}
+
+static int dw9719_load_mipad2_af_calibration(struct dw9719_device *dw9719)
+{
+	struct nvmem_device *nvmem;
+	u8 af[MIPAD2_OTP_AF_SIZE];
+	u16 infinity, macro;
+	int ret;
+
+	if (!dw9719_is_mipad2())
+		return 0;
+
+	nvmem = nvmem_device_get(dw9719->dev, "mipad2-t4ka3-otp");
+	if (IS_ERR(nvmem))
+		return PTR_ERR(nvmem);
+
+	ret = nvmem_device_read(nvmem, MIPAD2_OTP_AF_OFFSET,
+				MIPAD2_OTP_AF_SIZE, af);
+	nvmem_device_put(nvmem);
+	if (ret < 0)
+		return ret;
+	if (ret != MIPAD2_OTP_AF_SIZE)
+		return -EIO;
+
+	if (af[0] != 0x01 ||
+	    dw9719_mipad2_otp_checksum(&af[1], 14) != af[15])
+		return -EBADMSG;
+
+	infinity = ((u16)af[3] << 8) | af[4];
+	macro = ((u16)af[5] << 8) | af[6];
+	if (infinity > DW9719_MAX_FOCUS_POS ||
+	    macro > DW9719_MAX_FOCUS_POS || infinity >= macro)
+		return -ERANGE;
+
+	dw9719->focus_min = infinity;
+	dw9719->focus_max = macro;
+	dw9719->focus_default = infinity;
+	dev_info(dw9719->dev,
+		 "Mi Pad 2 OTP AF calibration: infinity=%u macro=%u\n",
+		 infinity, macro);
+
+	return 0;
+}
 
 static int dw9719_detect(struct dw9719_device *dw9719)
 {
@@ -261,8 +326,10 @@ static int dw9719_init_controls(struct dw9719_device *dw9719)
 	v4l2_ctrl_handler_init(&dw9719->ctrls.handler, 1);
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
-						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						V4L2_CID_FOCUS_ABSOLUTE,
+						dw9719->focus_min,
+						dw9719->focus_max, 1,
+						dw9719->focus_default);
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
@@ -294,6 +361,16 @@ static int dw9719_probe(struct i2c_client *client)
 		return PTR_ERR(dw9719->regmap);
 
 	dw9719->dev = &client->dev;
+	dw9719->focus_min = 0;
+	dw9719->focus_max = DW9719_MAX_FOCUS_POS;
+	dw9719->focus_default = 0;
+
+	ret = dw9719_load_mipad2_af_calibration(dw9719);
+	if (ret == -EPROBE_DEFER)
+		return ret;
+	if (ret)
+		dev_warn(&client->dev,
+			 "ignoring Mi Pad 2 AF calibration: %d\n", ret);
 
 	dw9719->regulator = devm_regulator_get_optional(&client->dev, "vdd");
 	if (IS_ERR(dw9719->regulator)) {
@@ -331,6 +408,12 @@ static int dw9719_probe(struct i2c_client *client)
 	ret = dw9719_power_up(dw9719, true);
 	if (ret)
 		goto err_cleanup_media;
+
+	ret = dw9719_t_focus_abs(dw9719, dw9719->ctrls.focus->val);
+	if (ret) {
+		dw9719_power_down(dw9719);
+		goto err_cleanup_media;
+	}
 
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
