@@ -9,7 +9,9 @@
  */
 
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/i2c.h>
+#include <linux/nvmem-consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
@@ -185,6 +187,68 @@ static int dw9719_set_ctrl(struct v4l2_ctrl *ctrl)
 	return ret;
 }
 
+
+#define MIPAD2_T4KA3_OTP_NVMEM	"mipad2-t4ka3-otp"
+#define MIPAD2_T4KA3_AF_OFFSET	19
+#define MIPAD2_T4KA3_AF_SIZE	4
+
+static bool dw9719_is_mipad2(void)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+}
+
+static int dw9719_apply_mipad2_otp_focus(struct dw9719_device *dw9719)
+{
+	struct nvmem_device *nvmem;
+	u8 af[MIPAD2_T4KA3_AF_SIZE];
+	u16 infinity;
+	u16 macro;
+	int ret;
+
+	if (!dw9719->is_dw9761 || !dw9719_is_mipad2())
+		return 0;
+
+	nvmem = nvmem_device_get(dw9719->dev, MIPAD2_T4KA3_OTP_NVMEM);
+	if (IS_ERR(nvmem))
+		return PTR_ERR(nvmem);
+
+	ret = nvmem_device_read(nvmem, MIPAD2_T4KA3_AF_OFFSET,
+				MIPAD2_T4KA3_AF_SIZE, af);
+	nvmem_device_put(nvmem);
+	if (ret)
+		return ret;
+
+	infinity = (af[0] << 8) | af[1];
+	macro = (af[2] << 8) | af[3];
+	if (infinity >= macro || macro > DW9719_MAX_FOCUS_POS)
+		return -EINVAL;
+
+	ret = v4l2_ctrl_modify_range(dw9719->ctrls.focus, 0,
+				     DW9719_MAX_FOCUS_POS, 1, infinity);
+	if (ret)
+		return ret;
+
+	/*
+	 * Runtime PM is not enabled yet, so setting the V4L2 control updates
+	 * its cached value without issuing a second I2C write. Move the lens
+	 * explicitly while it is already powered from probe.
+	 */
+	ret = v4l2_ctrl_s_ctrl(dw9719->ctrls.focus, infinity);
+	if (ret)
+		return ret;
+
+	ret = dw9719_t_focus_abs(dw9719, infinity);
+	if (ret)
+		return ret;
+
+	dev_info(dw9719->dev,
+		 "Mi Pad 2 OTP focus calibration: infinity %u, macro %u\n",
+		 infinity, macro);
+
+	return 0;
+}
+
 static const struct v4l2_ctrl_ops dw9719_ctrl_ops = {
 	.s_ctrl = dw9719_set_ctrl,
 };
@@ -332,6 +396,14 @@ static int dw9719_probe(struct i2c_client *client)
 	if (ret)
 		goto err_cleanup_media;
 
+	ret = dw9719_apply_mipad2_otp_focus(dw9719);
+	if (ret == -EPROBE_DEFER)
+		goto err_power_down;
+	if (ret)
+		dev_warn(dw9719->dev,
+			 "could not apply Mi Pad 2 OTP focus calibration: %d\n",
+			 ret);
+
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
 	pm_runtime_enable(&client->dev);
@@ -349,6 +421,8 @@ static int dw9719_probe(struct i2c_client *client)
 err_pm_runtime:
 	pm_runtime_disable(&client->dev);
 	pm_runtime_put_noidle(&client->dev);
+	dw9719_power_down(dw9719);
+err_power_down:
 	dw9719_power_down(dw9719);
 err_cleanup_media:
 	media_entity_cleanup(&dw9719->sd.entity);
