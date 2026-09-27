@@ -9,6 +9,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/i2c.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
@@ -20,6 +21,8 @@
 #include <media/v4l2-subdev.h>
 
 #define DW9719_MAX_FOCUS_POS	1023
+#define DW9761_MIPAD2_FOCUS_INFINITY	237
+#define DW9761_MIPAD2_FOCUS_MACRO	366
 #define DW9719_CTRL_STEPS	16
 #define DW9719_CTRL_DELAY_US	1000
 
@@ -256,13 +259,30 @@ static const struct v4l2_subdev_internal_ops dw9719_internal_ops = {
 static int dw9719_init_controls(struct dw9719_device *dw9719)
 {
 	const struct v4l2_ctrl_ops *ops = &dw9719_ctrl_ops;
+	int focus_min = 0;
+	int focus_max = DW9719_MAX_FOCUS_POS;
+	int focus_default = 0;
 	int ret;
+
+	/*
+	 * Xiaomi Mi Pad 2 factory OTP reports the rear DW9761 VCM working
+	 * range as infinity=237, macro=366. Keep generic DW9719 users on the
+	 * full 0..1023 range, but expose the calibrated optical range on this
+	 * board so userspace autofocus cannot waste time outside useful travel.
+	 */
+	if (dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	    dmi_match(DMI_PRODUCT_NAME, "Mipad2")) {
+		focus_min = DW9761_MIPAD2_FOCUS_INFINITY;
+		focus_max = DW9761_MIPAD2_FOCUS_MACRO;
+		focus_default = DW9761_MIPAD2_FOCUS_INFINITY;
+	}
 
 	v4l2_ctrl_handler_init(&dw9719->ctrls.handler, 1);
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
-						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						V4L2_CID_FOCUS_ABSOLUTE,
+						focus_min, focus_max, 1,
+						focus_default);
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
