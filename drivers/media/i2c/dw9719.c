@@ -59,6 +59,7 @@ struct dw9719_device {
 	u32 mode_low_bits;
 	u32 sac_mode;
 	u32 vcm_freq;
+	u16 focus_default;
 
 	struct dw9719_v4l2_ctrls {
 		struct v4l2_ctrl_handler handler;
@@ -198,7 +199,7 @@ static bool dw9719_is_mipad2(void)
 	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
 }
 
-static int dw9719_apply_mipad2_otp_focus(struct dw9719_device *dw9719)
+static int dw9719_load_mipad2_otp_focus(struct dw9719_device *dw9719)
 {
 	struct nvmem_device *nvmem;
 	u8 af[MIPAD2_T4KA3_AF_SIZE];
@@ -224,24 +225,7 @@ static int dw9719_apply_mipad2_otp_focus(struct dw9719_device *dw9719)
 	if (infinity >= macro || macro > DW9719_MAX_FOCUS_POS)
 		return -EINVAL;
 
-	ret = v4l2_ctrl_modify_range(dw9719->ctrls.focus, 0,
-				     DW9719_MAX_FOCUS_POS, 1, infinity);
-	if (ret)
-		return ret;
-
-	/*
-	 * Runtime PM is not enabled yet, so setting the V4L2 control updates
-	 * its cached value without issuing a second I2C write. Move the lens
-	 * explicitly while it is already powered from probe.
-	 */
-	ret = v4l2_ctrl_s_ctrl(dw9719->ctrls.focus, infinity);
-	if (ret)
-		return ret;
-
-	ret = dw9719_t_focus_abs(dw9719, infinity);
-	if (ret)
-		return ret;
-
+	dw9719->focus_default = infinity;
 	dev_info(dw9719->dev,
 		 "Mi Pad 2 OTP focus calibration: infinity %u, macro %u\n",
 		 infinity, macro);
@@ -326,7 +310,8 @@ static int dw9719_init_controls(struct dw9719_device *dw9719)
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
 						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						DW9719_MAX_FOCUS_POS, 1,
+						dw9719->focus_default);
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
@@ -375,34 +360,38 @@ static int dw9719_probe(struct i2c_client *client)
 	dw9719->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	dw9719->sd.internal_ops = &dw9719_internal_ops;
 
-	ret = dw9719_init_controls(dw9719);
-	if (ret)
-		return ret;
-
 	ret = media_entity_pads_init(&dw9719->sd.entity, 0, NULL);
 	if (ret < 0)
-		goto err_free_ctrl_handler;
+		return ret;
 
 	dw9719->sd.entity.function = MEDIA_ENT_F_LENS;
 
 	/*
-	 * We need the driver to work in the event that pm runtime is disable in
-	 * the kernel, so power up and verify the chip now. In the event that
-	 * runtime pm is disabled this will leave the chip on, so that the lens
-	 * will work.
+	 * Power up and identify the VCM before creating the focus control so
+	 * Mi Pad 2 can seed its per-module default from factory OTP without
+	 * invoking a V4L2 control callback before runtime PM is enabled.
 	 */
-
 	ret = dw9719_power_up(dw9719, true);
 	if (ret)
 		goto err_cleanup_media;
 
-	ret = dw9719_apply_mipad2_otp_focus(dw9719);
+	ret = dw9719_load_mipad2_otp_focus(dw9719);
 	if (ret == -EPROBE_DEFER)
 		goto err_power_down;
 	if (ret)
 		dev_warn(dw9719->dev,
-			 "could not apply Mi Pad 2 OTP focus calibration: %d\n",
+			 "could not load Mi Pad 2 OTP focus calibration: %d\n",
 			 ret);
+
+	ret = dw9719_init_controls(dw9719);
+	if (ret)
+		goto err_power_down;
+
+	if (dw9719->focus_default) {
+		ret = dw9719_t_focus_abs(dw9719, dw9719->focus_default);
+		if (ret)
+			goto err_free_ctrl_handler;
+	}
 
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
@@ -421,12 +410,12 @@ static int dw9719_probe(struct i2c_client *client)
 err_pm_runtime:
 	pm_runtime_disable(&client->dev);
 	pm_runtime_put_noidle(&client->dev);
+err_free_ctrl_handler:
+	v4l2_ctrl_handler_free(&dw9719->ctrls.handler);
 err_power_down:
 	dw9719_power_down(dw9719);
 err_cleanup_media:
 	media_entity_cleanup(&dw9719->sd.entity);
-err_free_ctrl_handler:
-	v4l2_ctrl_handler_free(&dw9719->ctrls.handler);
 
 	return ret;
 }
