@@ -69,3 +69,29 @@ END {
 '
 
 sha256sum "$tmp"
+
+set -- $(od -An -j 19 -N 4 -tu1 "$tmp")
+inf=$(($1 * 256 + $2))
+macro=$(($3 * 256 + $4))
+
+if command -v media-ctl >/dev/null 2>&1 && command -v v4l2-ctl >/dev/null 2>&1; then
+	lens_dev=$(media-ctl -p 2>/dev/null | awk '
+		/dw9719 [0-9]+-[0-9a-f]+/ { lens = 1; next }
+		lens && /device node name/ { print $4; exit }
+	')
+	if [ -n "$lens_dev" ] && [ -e "$lens_dev" ]; then
+		focus_line=$(v4l2-ctl -d "$lens_dev" --list-ctrls 2>/dev/null |
+			grep 'focus_absolute' || true)
+		focus_default=$(printf '%s\n' "$focus_line" |
+			sed -n 's/.*default=\([0-9][0-9]*\).*/\1/p')
+		focus_value=$(printf '%s\n' "$focus_line" |
+			sed -n 's/.*value=\([0-9][0-9]*\).*/\1/p')
+		if [ "$focus_default" != "$inf" ]; then
+			echo "MISS DW9761 focus default: $focus_default (OTP infinity $inf)" >&2
+			exit 3
+		fi
+		echo "OK   DW9761 OTP focus default=$focus_default current=${focus_value:-unknown} macro=$macro"
+	else
+		echo "INFO DW9761 lens subdev not found; skipped focus-default check"
+	fi
+fi
