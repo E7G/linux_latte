@@ -8,8 +8,10 @@
  * from: https://github.com/MiCode/Xiaomi_Kernel_OpenSource/
  */
 
-#include <linux/delay.h>\n#include <linux/dmi.h>
-#include <linux/i2c.h>\n#include <linux/nvmem-consumer.h>
+#include <linux/delay.h>
+#include <linux/dmi.h>
+#include <linux/i2c.h>
+#include <linux/nvmem-consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
