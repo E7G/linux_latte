@@ -103,4 +103,27 @@ if [ "$target" = both ] && [ "$fail" -eq 0 ] && [ "$cycles" -gt 0 ] 2>/dev/null;
 	[ "$fail" -eq 0 ] && printf 'OK   camera switch stress (%s cycles)\n' "$cycles"
 fi
 
+# Verify the Mi Pad 2 rear DW9761 exposes its factory-calibrated AF range.
+focus_node=
+for node in /dev/v4l-subdev*; do
+	[ -c "$node" ] || continue
+	ctrls=$(v4l2-ctl -d "$node" --list-ctrls 2>/dev/null || true)
+	if printf '%s\n' "$ctrls" | grep -q 'focus_absolute'; then
+		focus_node=$node
+		break
+	fi
+done
+if [ -n "$focus_node" ]; then
+	focus_ctrl=$(v4l2-ctl -d "$focus_node" --list-ctrls 2>/dev/null | grep 'focus_absolute' || true)
+	if printf '%s\n' "$focus_ctrl" | grep -Eq 'min=237 max=366 .*default=237'; then
+		printf 'OK   rear focus range 237..366 default 237 (%s)\n' "$focus_node"
+	else
+		printf 'MISS rear factory focus range (%s): %s\n' "$focus_node" "$focus_ctrl"
+		fail=1
+	fi
+else
+	printf 'MISS rear focus control\n'
+	fail=1
+fi
+
 exit "$fail"
