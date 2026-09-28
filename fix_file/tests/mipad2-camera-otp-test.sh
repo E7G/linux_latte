@@ -69,3 +69,36 @@ END {
 '
 
 sha256sum "$tmp"
+
+set -- $(od -An -j19 -N4 -tu1 "$tmp")
+otp_inf=$(($1 * 256 + $2))
+otp_macro=$(($3 * 256 + $4))
+
+focus_node=
+focus_ctrl=
+for node in /dev/v4l-subdev*; do
+	[ -c "$node" ] || continue
+	ctrl=$(v4l2-ctl -d "$node" --list-ctrls 2>/dev/null | grep 'focus_absolute' || true)
+	if [ -n "$ctrl" ]; then
+		focus_node=$node
+		focus_ctrl=$ctrl
+		break
+	fi
+done
+
+if [ -z "$focus_node" ]; then
+	echo "MISS rear focus control" >&2
+	exit 3
+fi
+
+case "$focus_ctrl" in
+	*"min=$otp_inf max=$otp_macro "*"default=$otp_inf "*)
+		printf 'OK   rear focus range from OTP %s..%s default %s (%s)\n' \
+			"$otp_inf" "$otp_macro" "$otp_inf" "$focus_node"
+		;;
+	*)
+		echo "MISS rear focus control does not match OTP: $focus_ctrl" >&2
+		exit 4
+		;;
+esac
+
