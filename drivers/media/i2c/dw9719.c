@@ -9,6 +9,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/i2c.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
@@ -22,6 +23,7 @@
 #define DW9719_MAX_FOCUS_POS	1023
 #define DW9719_CTRL_STEPS	16
 #define DW9719_CTRL_DELAY_US	1000
+#define DW9761_MIPAD2_FOCUS_INFINITY	237
 
 #define DW9719_INFO			CCI_REG8(0)
 #define DW9719_ID			0xF1
@@ -256,13 +258,27 @@ static const struct v4l2_subdev_internal_ops dw9719_internal_ops = {
 static int dw9719_init_controls(struct dw9719_device *dw9719)
 {
 	const struct v4l2_ctrl_ops *ops = &dw9719_ctrl_ops;
+	int focus_default = 0;
 	int ret;
+
+	/*
+	 * Xiaomi's factory OTP on the Mi Pad 2 rear module reports an
+	 * infinity endpoint of 237 (macro 366). The Android DW9761 driver
+	 * likewise parks the lens near infinity (230) at power-up. Keep the
+	 * generic 0..1023 control range, but use the calibrated infinity
+	 * position as this tablet's initial focus instead of leaving the lens
+	 * at an arbitrary cached position.
+	 */
+	if (dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	    dmi_match(DMI_PRODUCT_NAME, "Mipad2"))
+		focus_default = DW9761_MIPAD2_FOCUS_INFINITY;
 
 	v4l2_ctrl_handler_init(&dw9719->ctrls.handler, 1);
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
 						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						DW9719_MAX_FOCUS_POS, 1,
+						focus_default);
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
@@ -332,6 +348,12 @@ static int dw9719_probe(struct i2c_client *client)
 	if (ret)
 		goto err_cleanup_media;
 
+	if (dw9719->ctrls.focus->val) {
+		ret = dw9719_t_focus_abs(dw9719, dw9719->ctrls.focus->val);
+		if (ret)
+			goto err_power_down;
+	}
+
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
 	pm_runtime_enable(&client->dev);
@@ -349,6 +371,9 @@ static int dw9719_probe(struct i2c_client *client)
 err_pm_runtime:
 	pm_runtime_disable(&client->dev);
 	pm_runtime_put_noidle(&client->dev);
+	dw9719_power_down(dw9719);
+	goto err_cleanup_media;
+err_power_down:
 	dw9719_power_down(dw9719);
 err_cleanup_media:
 	media_entity_cleanup(&dw9719->sd.entity);
