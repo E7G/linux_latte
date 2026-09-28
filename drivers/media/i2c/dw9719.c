@@ -9,7 +9,9 @@
  */
 
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/i2c.h>
+#include <linux/nvmem-consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
@@ -46,6 +48,10 @@
 #define DW9761_VCM_PRELOAD		CCI_REG8(8)
 #define DW9761_DEFAULT_VCM_PRELOAD	0x73
 
+#define DW9761_MIPAD2_OTP_NAME		"mipad2-t4ka3-otp"
+#define DW9761_MIPAD2_AF_OFFSET	19
+#define DW9761_MIPAD2_AF_SIZE		4
+
 #define to_dw9719_device(x) container_of(x, struct dw9719_device, sd)
 
 struct dw9719_device {
@@ -57,6 +63,9 @@ struct dw9719_device {
 	u32 mode_low_bits;
 	u32 sac_mode;
 	u32 vcm_freq;
+	u16 focus_min;
+	u16 focus_max;
+	u16 focus_default;
 
 	struct dw9719_v4l2_ctrls {
 		struct v4l2_ctrl_handler handler;
@@ -95,6 +104,64 @@ static int dw9719_detect(struct dw9719_device *dw9719)
 				 &dw9719->sac_mode);
 	device_property_read_u32(dw9719->dev, "dongwoon,vcm-freq",
 				 &dw9719->vcm_freq);
+
+	return 0;
+}
+
+static bool dw9719_is_mipad2(void)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+}
+
+static int dw9719_read_mipad2_focus_range(struct dw9719_device *dw9719)
+{
+	struct nvmem_device *nvmem;
+	u8 af[DW9761_MIPAD2_AF_SIZE];
+	u16 infinity;
+	u16 macro;
+	int ret;
+
+	dw9719->focus_min = 0;
+	dw9719->focus_max = DW9719_MAX_FOCUS_POS;
+	dw9719->focus_default = 0;
+
+	if (!dw9719_is_mipad2())
+		return 0;
+
+	/*
+	 * The T4KA3 provider validates all four Xiaomi factory OTP checksums
+	 * before returning any data. Defer until that provider is registered,
+	 * then use this tablet's own calibrated infinity/macro endpoints.
+	 */
+	nvmem = nvmem_device_get(dw9719->dev, DW9761_MIPAD2_OTP_NAME);
+	if (IS_ERR(nvmem))
+		return dev_err_probe(dw9719->dev, PTR_ERR(nvmem),
+				     "waiting for Mi Pad 2 rear-camera OTP\n");
+
+	ret = nvmem_device_read(nvmem, DW9761_MIPAD2_AF_OFFSET,
+				sizeof(af), af);
+	nvmem_device_put(nvmem);
+	if (ret < 0)
+		return dev_err_probe(dw9719->dev, ret,
+				     "reading Mi Pad 2 AF calibration\n");
+	if (ret != sizeof(af))
+		return dev_err_probe(dw9719->dev, -EIO,
+				     "short Mi Pad 2 AF calibration read\n");
+
+	infinity = (af[0] << 8) | af[1];
+	macro = (af[2] << 8) | af[3];
+
+	if (infinity > macro || macro > DW9719_MAX_FOCUS_POS)
+		return dev_err_probe(dw9719->dev, -EINVAL,
+				     "invalid Mi Pad 2 AF range %u..%u\n",
+				     infinity, macro);
+
+	dw9719->focus_min = infinity;
+	dw9719->focus_max = macro;
+	dw9719->focus_default = infinity;
+	dev_info(dw9719->dev, "using Mi Pad 2 OTP AF range %u..%u\n",
+		 infinity, macro);
 
 	return 0;
 }
@@ -229,6 +296,15 @@ static int dw9719_resume(struct device *dev)
 		usleep_range(DW9719_CTRL_DELAY_US, DW9719_CTRL_DELAY_US + 10);
 	}
 
+	/*
+	 * The stepped ramp can stop below non-aligned calibrated targets
+	 * such as the Mi Pad 2 infinity point 237. Finish at the exact
+	 * cached V4L2 control value so focus is unchanged across resume.
+	 */
+	ret = dw9719_t_focus_abs(dw9719, current_focus);
+	if (ret)
+		goto err_power_down;
+
 	return 0;
 
 err_power_down:
@@ -261,8 +337,10 @@ static int dw9719_init_controls(struct dw9719_device *dw9719)
 	v4l2_ctrl_handler_init(&dw9719->ctrls.handler, 1);
 
 	dw9719->ctrls.focus = v4l2_ctrl_new_std(&dw9719->ctrls.handler, ops,
-						V4L2_CID_FOCUS_ABSOLUTE, 0,
-						DW9719_MAX_FOCUS_POS, 1, 0);
+						V4L2_CID_FOCUS_ABSOLUTE,
+						dw9719->focus_min,
+						dw9719->focus_max, 1,
+						dw9719->focus_default);
 
 	if (dw9719->ctrls.handler.error) {
 		dev_err(dw9719->dev, "Error initialising v4l2 ctrls\n");
@@ -307,6 +385,10 @@ static int dw9719_probe(struct i2c_client *client)
 		}
 	}
 
+	ret = dw9719_read_mipad2_focus_range(dw9719);
+	if (ret)
+		return ret;
+
 	v4l2_i2c_subdev_init(&dw9719->sd, client, &dw9719_ops);
 	dw9719->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	dw9719->sd.internal_ops = &dw9719_internal_ops;
@@ -331,6 +413,12 @@ static int dw9719_probe(struct i2c_client *client)
 	ret = dw9719_power_up(dw9719, true);
 	if (ret)
 		goto err_cleanup_media;
+
+	if (dw9719->focus_default) {
+		ret = dw9719_t_focus_abs(dw9719, dw9719->focus_default);
+		if (ret)
+			goto err_cleanup_media;
+	}
 
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
