@@ -885,8 +885,13 @@ int atomisp_q_video_buffer_to_css(struct atomisp_sub_device *asd,
 
 	err = ia_css_pipe_enqueue_buffer(
 		  stream_env->pipes[css_pipe_id], &css_buf);
-	if (err)
+	if (err) {
+		dev_err_ratelimited(asd->isp->dev,
+				    "CSS enqueue failed: %d (stream=%d pipe=%d type=%d state=%d)\n",
+				    err, stream_id, css_pipe_id, css_buf_type,
+				    stream_env->stream_state);
 		return -EINVAL;
+	}
 
 	return 0;
 }

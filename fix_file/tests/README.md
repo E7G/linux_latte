@@ -60,6 +60,15 @@ sudo sh fix_file/tests/mipad2-camera-test.sh [front|rear|both]
 
 脚本会动态发现 AtomISP 的视频节点，并用同一次 `v4l2-ctl` 打开过程完成格式设置和采集。当前 AtomISP 路径中，格式设置与 stream 分成两次独立打开可能导致节点恢复到传感器默认尺寸，从而触发错误或固件 pipeline 选择问题。
 
+默认测试 1280×720 `YU12`。可用 `MIPAD2_CAMERA_PIXEL_FORMAT=NV12` 或 `YUYV` 覆盖格式，例如：
+
+```bash
+sudo MIPAD2_CAMERA_PIXEL_FORMAT=NV12 sh fix_file/tests/mipad2-camera-test.sh both
+sudo MIPAD2_CAMERA_SWITCH_CYCLES=6 sh fix_file/tests/mipad2-camera-test.sh both
+```
+
+脚本会检查本次采集期间是否新增 AtomISP CSS 队列错误，并在退出时恢复运行前选中的摄像头 input；如无权限读取 `dmesg`，仍会验证采集命令与非空帧，但跳过内核日志判定。
+
 建议先单独测试一个方向：
 
 ```bash

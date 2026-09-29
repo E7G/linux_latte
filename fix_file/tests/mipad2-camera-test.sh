@@ -16,6 +16,16 @@ case "$target" in
 		;;
 esac
 
+pixel_format=${MIPAD2_CAMERA_PIXEL_FORMAT:-YU12}
+case "$pixel_format" in
+	YU12|NV12|YUYV) ;;
+	*)
+		printf 'Unsupported test pixel format: %s\n' "$pixel_format" >&2
+		printf 'Use YU12, NV12 or YUYV.\n' >&2
+		exit 2
+		;;
+esac
+
 fail=0
 video_node=
 for node in /dev/video*; do
@@ -32,6 +42,27 @@ if [ -z "$video_node" ]; then
 fi
 printf 'OK   camera node %s\n' "$video_node"
 
+# Camera selection persists across processes. Leave the tablet as we found it.
+original_input=$(v4l2-ctl -d "$video_node" --get-input 2>/dev/null |
+	sed -n 's/^Video input : \([0-9][0-9]*\).*/\1/p')
+restore_input()
+{
+	[ -n "$original_input" ] || return 0
+	v4l2-ctl -d "$video_node" --set-input="$original_input" >/dev/null 2>&1 || true
+}
+trap restore_input EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+can_read_dmesg=0
+if dmesg >/dev/null 2>&1; then
+	can_read_dmesg=1
+fi
+css_error_count()
+{
+	dmesg 2>/dev/null | grep -cF 'atomisp_q_video_buffers_to_css, css q fails' || true
+}
+
 inputs=$(v4l2-ctl -d "$video_node" --list-inputs 2>&1 || true)
 front_input=$(printf '%s\n' "$inputs" | awk '$1 == "Input" { id=$3 } tolower($0) ~ /ov5693/ { print id; exit }')
 rear_input=$(printf '%s\n' "$inputs" | awk '$1 == "Input" { id=$3 } tolower($0) ~ /t4ka3/ { print id; exit }')
@@ -42,12 +73,21 @@ capture_one()
 	input=$2
 	out=$(mktemp)
 	log=$(mktemp)
+	css_before=0
+	[ "$can_read_dmesg" -eq 0 ] || css_before=$(css_error_count)
 	if timeout --signal=TERM --kill-after=2s 15s \
 		v4l2-ctl -d "$video_node" --set-input="$input" \
-		--set-fmt-video=width=1280,height=720,pixelformat=YU12 \
+		--set-fmt-video=width=1280,height=720,pixelformat="$pixel_format" \
 		--stream-mmap=4 --stream-count=3 --stream-to="$out" >"$log" 2>&1 \
 		&& size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
-		printf 'OK   %s capture (%s bytes)\n' "$label" "$size"
+		if [ "$can_read_dmesg" -eq 1 ] &&
+			[ "$(css_error_count)" -gt "$css_before" ]; then
+			printf 'MISS %s capture: new AtomISP CSS queue error\n' "$label"
+			cat "$log"
+			fail=1
+		else
+			printf 'OK   %s %s capture (%s bytes)\n' "$label" "$pixel_format" "$size"
+		fi
 	else
 		printf 'MISS %s capture\n' "$label"
 		cat "$log"
@@ -85,6 +125,8 @@ cycles=${MIPAD2_CAMERA_SWITCH_CYCLES:-0}
 if [ "$target" = both ] && [ "$fail" -eq 0 ] && [ "$cycles" -gt 0 ] 2>/dev/null; then
 	i=0
 	while [ "$i" -lt "$cycles" ]; do
+		css_before=0
+		[ "$can_read_dmesg" -eq 0 ] || css_before=$(css_error_count)
 		if [ $((i % 2)) -eq 0 ]; then
 			input=$rear_input
 			label=rear
@@ -95,6 +137,12 @@ if [ "$target" = both ] && [ "$fail" -eq 0 ] && [ "$cycles" -gt 0 ] 2>/dev/null;
 		if ! timeout 12s v4l2-ctl -d "$video_node" --set-input="$input" \
 			--stream-mmap=4 --stream-count=2 --stream-to=/dev/null >/dev/null 2>&1; then
 			printf 'MISS camera switch cycle %s (%s)\n' "$i" "$label"
+			fail=1
+			break
+		fi
+		if [ "$can_read_dmesg" -eq 1 ] &&
+			[ "$(css_error_count)" -gt "$css_before" ]; then
+			printf 'MISS camera switch cycle %s (%s): CSS queue error\n' "$i" "$label"
 			fail=1
 			break
 		fi
