@@ -6,14 +6,83 @@
  *	Andrew F. Davis <afd@ti.com>
  */
 
+#include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
+#include <linux/property.h>
 #include <linux/unaligned.h>
 
 #include <linux/power/bq27xxx_battery.h>
 
 static DEFINE_IDA(battery_id);
+
+#define BQ27XXX_I2C_MAX_ATTEMPTS	10
+#define BQ27XXX_I2C_MAX_RETRY_DELAY_MS	1000
+
+/*
+ * Most boards should keep the historical single transfer.  Broken firmware
+ * descriptions may opt in to a small retry window through a software node.
+ * Xiaomi's Mi Pad 2 factory Android driver used 3 attempts with 20 ms between
+ * failures for its BQ27520.
+ */
+static void bq27xxx_battery_i2c_retry_config(struct i2c_client *client,
+					     u32 *attempts, u32 *delay_ms)
+{
+	*attempts = 1;
+	*delay_ms = 0;
+
+	device_property_read_u32(&client->dev, "i2c-transfer-attempts", attempts);
+	device_property_read_u32(&client->dev, "i2c-retry-delay-ms", delay_ms);
+
+	if (*attempts < 1)
+		*attempts = 1;
+	else if (*attempts > BQ27XXX_I2C_MAX_ATTEMPTS)
+		*attempts = BQ27XXX_I2C_MAX_ATTEMPTS;
+
+	if (*delay_ms > BQ27XXX_I2C_MAX_RETRY_DELAY_MS)
+		*delay_ms = BQ27XXX_I2C_MAX_RETRY_DELAY_MS;
+}
+
+static int bq27xxx_battery_i2c_transfer(struct i2c_client *client,
+					struct i2c_msg *msgs, int num)
+{
+	u32 attempts, delay_ms, attempt;
+	int ret;
+
+	bq27xxx_battery_i2c_retry_config(client, &attempts, &delay_ms);
+
+	for (attempt = 0; attempt < attempts; attempt++) {
+		ret = i2c_transfer(client->adapter, msgs, num);
+		if (ret >= 0)
+			return ret;
+
+		if (attempt + 1 < attempts && delay_ms)
+			msleep(delay_ms);
+	}
+
+	return ret;
+}
+
+static int bq27xxx_battery_i2c_block_read(struct i2c_client *client, u8 reg,
+					   u8 *data, int len)
+{
+	u32 attempts, delay_ms, attempt;
+	int ret;
+
+	bq27xxx_battery_i2c_retry_config(client, &attempts, &delay_ms);
+
+	for (attempt = 0; attempt < attempts; attempt++) {
+		ret = bq27xxx_battery_i2c_block_read(client, reg, data, len);
+		if (ret >= 0)
+			return ret;
+
+		if (attempt + 1 < attempts && delay_ms)
+			msleep(delay_ms);
+	}
+
+	return ret;
+}
 
 static irqreturn_t bq27xxx_battery_irq_handler_thread(int irq, void *data)
 {
@@ -47,7 +116,7 @@ static int bq27xxx_battery_i2c_read(struct bq27xxx_device_info *di, u8 reg,
 	else
 		msg[1].len = 2;
 
-	ret = i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg));
+	ret = bq27xxx_battery_i2c_transfer(client, msg, ARRAY_SIZE(msg));
 	if (ret < 0)
 		return ret;
 
@@ -83,7 +152,7 @@ static int bq27xxx_battery_i2c_write(struct bq27xxx_device_info *di, u8 reg,
 	msg.addr = client->addr;
 	msg.flags = 0;
 
-	ret = i2c_transfer(client->adapter, &msg, 1);
+	ret = bq27xxx_battery_i2c_transfer(client, &msg, 1);
 	if (ret < 0)
 		return ret;
 	if (ret != 1)
@@ -127,7 +196,7 @@ static int bq27xxx_battery_i2c_bulk_write(struct bq27xxx_device_info *di,
 	msg.flags = 0;
 	msg.len = len + 1;
 
-	ret = i2c_transfer(client->adapter, &msg, 1);
+	ret = bq27xxx_battery_i2c_transfer(client, &msg, 1);
 	if (ret < 0)
 		return ret;
 	if (ret != 1)
