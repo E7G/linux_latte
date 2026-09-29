@@ -886,6 +886,17 @@ static const struct software_node rt5659_swnode = {
 	},
 };
 
+static const struct property_entry xiaomi_mipad2_bq27520_props[] = {
+	PROPERTY_ENTRY_STRING_ARRAY("supplied-from", bq25890_psy),
+	PROPERTY_ENTRY_U32("i2c-transfer-attempts", 3),
+	PROPERTY_ENTRY_U32("i2c-retry-delay-ms", 20),
+	{ }
+};
+
+static const struct software_node xiaomi_mipad2_bq27520_node = {
+	.properties = xiaomi_mipad2_bq27520_props,
+};
+
 static int match_mipad2_bq27520_client(struct device *dev, const void *data)
 {
 	struct acpi_device *adev;
@@ -967,7 +978,7 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 	if (client_dev) {
 		client = to_i2c_client(client_dev);
 		strscpy(client->name, "bq27520", sizeof(client->name));
-		ret = device_add_software_node(&client->dev, &fg_bq25890_supply_node);
+		ret = device_add_software_node(&client->dev, &xiaomi_mipad2_bq27520_node);
 		if (ret && ret != -EEXIST)
 			dev_warn(dev, "adding BQ27520 properties failed: %d\n", ret);
 		else {
