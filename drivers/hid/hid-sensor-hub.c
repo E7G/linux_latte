@@ -54,8 +54,11 @@ static const struct software_node xiaomi_mipad2_magn_swnode = {
 
 static bool hid_sensor_is_xiaomi_mipad2(const struct hid_device *hdev)
 {
-	/* Windows driver backup identifies the Mi Pad 2 ISS hub as 8086:0002. */
-	return hdev->vendor == 0x8086 && hdev->product == 0x0002 &&
+	/*
+ * Real Mi Pad 2 hardware exposes accel/gyro/ALS and compass collections
+ * through two HID sensor-hub instances with HID ID 8086:0001.
+ */
+	return hdev->vendor == 0x8086 && hdev->product == 0x0001 &&
 	       dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
 	       dmi_match(DMI_PRODUCT_NAME, "Mipad2");
 }
