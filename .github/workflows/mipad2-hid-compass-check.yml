@@ -1,0 +1,27 @@
+name: HID compass rotation scale compile check
+
+on:
+  push:
+    branches:
+      - fix/hid-compass-rotation-scale-20261003
+  workflow_dispatch:
+
+jobs:
+  compass-scale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves
+      - name: Configure Mi Pad 2 kernel
+        run: make xiaomipad2_defconfig
+      - name: Compile HID sensor scale path
+        run: |
+          make -j"$(nproc)" W=1 \
+            drivers/iio/common/hid-sensors/hid-sensor-attributes.o \
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o
+          grep -q 'HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH, 0, 1, 0' \
+            drivers/iio/common/hid-sensors/hid-sensor-attributes.c
