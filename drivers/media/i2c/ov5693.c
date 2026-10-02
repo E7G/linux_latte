@@ -141,7 +141,6 @@
 
 #define to_ov5693_sensor(x) container_of(x, struct ov5693_device, sd)
 
-static int ov5693_enable_streaming(struct ov5693_device *ov5693, bool enable);
 
 static const char * const ov5693_supply_names[] = {
 	"avdd",		/* Analog power */
@@ -199,6 +198,8 @@ struct ov5693_device {
 	} ctrls;
 };
 
+static int ov5693_enable_streaming(struct ov5693_device *ov5693, bool enable);
+
 static bool ov5693_has_mipad2_otp(struct ov5693_device *ov5693)
 {
 	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
@@ -245,20 +246,19 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 	if (ov5693->streaming)
 		return -EBUSY;
 
-	ret = pm_runtime_resume_and_get(ov5693->dev);
-	if (ret < 0)
-		return ret;
-
 	/*
 	 * Xiaomi's Android driver enables streaming while reading the sensor's
 	 * OTP window. Do the same, but only while the V4L2 stream is idle.
+	 * The caller has already runtime-resumed the sensor before taking lock.
 	 */
 	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
 		  0x00, &ret);
-	if (!ret)
-		ret = ov5693_enable_streaming(ov5693, true);
 	if (ret)
-		goto out_power;
+		return ret;
+
+	ret = ov5693_enable_streaming(ov5693, true);
+	if (ret)
+		return ret;
 
 	for (bank = 0; bank < OV5693_MIPAD2_OTP_BANKS; bank++) {
 		ret = ov5693_mipad2_read_otp_bank(
@@ -270,19 +270,22 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 
 	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
 		  0x0f, &stop_ret);
-	if (!stop_ret)
-		stop_ret = ov5693_enable_streaming(ov5693, false);
+	{
+		int stream_ret = ov5693_enable_streaming(ov5693, false);
+
+		if (!stop_ret)
+			stop_ret = stream_ret;
+	}
 	if (!ret)
 		ret = stop_ret;
 	if (ret)
-		goto out_power;
+		return ret;
 
 	if (ov5693->otp_data[0] != OV5693_MIPAD2_OTP_TYPE) {
 		dev_err(ov5693->dev,
 			"invalid Mi Pad 2 front-camera OTP type 0x%02x\n",
 			ov5693->otp_data[0]);
-		ret = -EBADMSG;
-		goto out_power;
+		return -EBADMSG;
 	}
 
 	ov5693->otp_cached = true;
@@ -290,9 +293,7 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 		 "cached Mi Pad 2 front-camera OTP (%u raw banks)\n",
 		 OV5693_MIPAD2_OTP_BANKS);
 
-out_power:
-	pm_runtime_put_autosuspend(ov5693->dev);
-	return ret;
+	return 0;
 }
 
 static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
@@ -307,12 +308,21 @@ static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
 	if (!bytes)
 		return 0;
 
+	/*
+	 * Runtime resume takes ov5693->lock, so wake the device before taking
+	 * the same lock here. This avoids self-deadlock from a suspended state.
+	 */
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0)
+		return ret;
+
 	mutex_lock(&ov5693->lock);
 	ret = ov5693_mipad2_fetch_otp(ov5693);
 	if (!ret)
 		memcpy(val, ov5693->otp_data + offset, bytes);
 	mutex_unlock(&ov5693->lock);
 
+	pm_runtime_put_autosuspend(ov5693->dev);
 	return ret;
 }
 
