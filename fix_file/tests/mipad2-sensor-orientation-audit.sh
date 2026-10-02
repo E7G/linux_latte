@@ -12,7 +12,7 @@ need() {
     exit 1
   }
 }
-need "$hub" 'hdev->vendor == 0x8086 && hdev->product == 0x0002'
+need "$hub" 'hdev->vendor == 0x8086 && hdev->product == 0x0001'
 need "$hub" 'dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc")'
 need "$hub" 'dmi_match(DMI_PRODUCT_NAME, "Mipad2")'
 need "$hub" 'PROPERTY_ENTRY_STRING_ARRAY("mount-matrix"'
