@@ -15,9 +15,11 @@
 #include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/device.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
@@ -38,6 +40,16 @@
 #define OV5693_REG_CHIP_ID			CCI_REG16(0x300a)
 /* Yes, this is right. The datasheet for the OV5693 gives its ID as 0x5690 */
 #define OV5693_CHIP_ID				0x5690
+
+/* Mi Pad 2 front-camera OTP banks, from Xiaomi's Android driver. */
+#define OV5693_MIPAD2_OTP_START_REG		0x3d00
+#define OV5693_MIPAD2_OTP_READ_REG		0x3d81
+#define OV5693_MIPAD2_OTP_BANK_REG		0x3d84
+#define OV5693_MIPAD2_OTP_FRAME_OFF_REG		0x4202
+#define OV5693_MIPAD2_OTP_BANKS			26
+#define OV5693_MIPAD2_OTP_BANK_SIZE		16
+#define OV5693_MIPAD2_OTP_SIZE			(OV5693_MIPAD2_OTP_BANKS * OV5693_MIPAD2_OTP_BANK_SIZE)
+#define OV5693_MIPAD2_OTP_TYPE			0x3a
 
 /* Exposure */
 #define OV5693_EXPOSURE_CTRL_REG		CCI_REG24(0x3500)
@@ -129,6 +141,7 @@
 
 #define to_ov5693_sensor(x) container_of(x, struct ov5693_device, sd)
 
+
 static const char * const ov5693_supply_names[] = {
 	"avdd",		/* Analog power */
 	"dovdd",	/* Digital I/O power */
@@ -148,6 +161,12 @@ struct ov5693_device {
 	struct gpio_desc *powerdown;
 	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	struct clk *xvclk;
+
+	/* Mi Pad 2 front-module factory calibration cache. */
+	struct nvmem_device *otp_nvmem;
+	u8 otp_data[OV5693_MIPAD2_OTP_SIZE];
+	bool otp_cached;
+	bool streaming;
 
 	struct ov5693_mode {
 		struct v4l2_rect crop;
@@ -178,6 +197,157 @@ struct ov5693_device {
 		struct v4l2_ctrl *test_pattern;
 	} ctrls;
 };
+
+static int ov5693_enable_streaming(struct ov5693_device *ov5693, bool enable);
+
+static bool ov5693_has_mipad2_otp(struct ov5693_device *ov5693)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       ACPI_COMPANION(ov5693->dev);
+}
+
+static int ov5693_mipad2_read_otp_bank(struct ov5693_device *ov5693,
+				      unsigned int bank, u8 *data)
+{
+	unsigned int i;
+	u64 value;
+	int ret = 0;
+
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_BANK_REG),
+		  0xc0 | bank, &ret);
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_READ_REG), 1,
+		  &ret);
+	if (ret)
+		return ret;
+
+	msleep(5);
+
+	for (i = 0; i < OV5693_MIPAD2_OTP_BANK_SIZE; i++) {
+		ret = cci_read(ov5693->regmap,
+			       CCI_REG8(OV5693_MIPAD2_OTP_START_REG + i),
+			       &value, NULL);
+		if (ret)
+			return ret;
+		data[i] = value;
+	}
+
+	return 0;
+}
+
+static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
+{
+	unsigned int bank;
+	int stop_ret = 0;
+	int ret;
+
+	if (ov5693->otp_cached)
+		return 0;
+	if (ov5693->streaming)
+		return -EBUSY;
+
+	/*
+	 * Xiaomi's Android driver enables streaming while reading the sensor's
+	 * OTP window. Do the same, but only while the V4L2 stream is idle.
+	 * The caller has already runtime-resumed the sensor before taking lock.
+	 */
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x00, &ret);
+	if (ret)
+		return ret;
+
+	ret = ov5693_enable_streaming(ov5693, true);
+	if (ret)
+		return ret;
+
+	for (bank = 0; bank < OV5693_MIPAD2_OTP_BANKS; bank++) {
+		ret = ov5693_mipad2_read_otp_bank(
+			ov5693, bank,
+			&ov5693->otp_data[bank * OV5693_MIPAD2_OTP_BANK_SIZE]);
+		if (ret)
+			break;
+	}
+
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x0f, &stop_ret);
+	{
+		int stream_ret = ov5693_enable_streaming(ov5693, false);
+
+		if (!stop_ret)
+			stop_ret = stream_ret;
+	}
+	if (!ret)
+		ret = stop_ret;
+	if (ret)
+		return ret;
+
+	if (ov5693->otp_data[0] != OV5693_MIPAD2_OTP_TYPE) {
+		dev_err(ov5693->dev,
+			"invalid Mi Pad 2 front-camera OTP type 0x%02x\n",
+			ov5693->otp_data[0]);
+		return -EBADMSG;
+	}
+
+	ov5693->otp_cached = true;
+	dev_info(ov5693->dev,
+		 "cached Mi Pad 2 front-camera OTP (%u raw banks)\n",
+		 OV5693_MIPAD2_OTP_BANKS);
+
+	return 0;
+}
+
+static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
+				  void *val, size_t bytes)
+{
+	struct ov5693_device *ov5693 = context;
+	int ret;
+
+	if (offset > OV5693_MIPAD2_OTP_SIZE ||
+	    bytes > OV5693_MIPAD2_OTP_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	/*
+	 * Runtime resume takes ov5693->lock, so wake the device before taking
+	 * the same lock here. This avoids self-deadlock from a suspended state.
+	 */
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&ov5693->lock);
+	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (!ret)
+		memcpy(val, ov5693->otp_data + offset, bytes);
+	mutex_unlock(&ov5693->lock);
+
+	pm_runtime_put_autosuspend(ov5693->dev);
+	return ret;
+}
+
+static int ov5693_register_mipad2_otp(struct ov5693_device *ov5693)
+{
+	struct nvmem_config config = {
+		.dev = ov5693->dev,
+		.name = "mipad2-ov5693-otp-raw",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = ov5693_mipad2_otp_read,
+		.size = OV5693_MIPAD2_OTP_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = ov5693,
+	};
+
+	if (!ov5693_has_mipad2_otp(ov5693))
+		return 0;
+
+	ov5693->otp_nvmem = devm_nvmem_register(ov5693->dev, &config);
+	return PTR_ERR_OR_ZERO(ov5693->otp_nvmem);
+}
 
 static const struct cci_reg_sequence ov5693_global_regs[] = {
 	{CCI_REG8(0x3016), 0xf0},
@@ -1003,10 +1173,14 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 		}
 
 		ret = ov5693_enable_streaming(ov5693, true);
+		if (!ret)
+			ov5693->streaming = true;
 		mutex_unlock(&ov5693->lock);
 	} else {
 		mutex_lock(&ov5693->lock);
 		ret = ov5693_enable_streaming(ov5693, false);
+		if (!ret)
+			ov5693->streaming = false;
 		mutex_unlock(&ov5693->lock);
 	}
 	if (ret)
@@ -1381,6 +1555,10 @@ static int ov5693_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
 	pm_runtime_enable(&client->dev);
+
+	ret = ov5693_register_mipad2_otp(ov5693);
+	if (ret)
+		goto err_pm_runtime;
 
 	ret = v4l2_async_register_subdev_sensor(&ov5693->sd);
 	if (ret) {
