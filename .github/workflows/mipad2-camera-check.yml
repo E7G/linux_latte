@@ -116,6 +116,18 @@ jobs:
             drivers/platform/x86/x86-android-tablets/core.o \
             drivers/platform/x86/x86-android-tablets/other.o
 
+      - name: Compile Mi Pad 2 HID/IIO sensor orientation support
+        run: |
+          make -j"$(nproc)" W=1 \
+            drivers/hid/hid-sensor-hub.o \
+            drivers/iio/accel/hid-sensor-accel-3d.o \
+            drivers/iio/gyro/hid-sensor-gyro-3d.o \
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o
+          grep -q 'xiaomi_mipad2_sensor_mount_matrix' drivers/hid/hid-sensor-hub.c
+          grep -q 'iio_read_mount_matrix' drivers/iio/accel/hid-sensor-accel-3d.c
+          grep -q 'iio_read_mount_matrix' drivers/iio/gyro/hid-sensor-gyro-3d.c
+          grep -q 'iio_read_mount_matrix' drivers/iio/magnetometer/hid-sensor-magn-3d.c
+
       - name: Compile CachyOS scheduler integration
         if: github.ref_name == 'cachyos-mipad2'
         run: |
