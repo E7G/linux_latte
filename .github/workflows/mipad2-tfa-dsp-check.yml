@@ -1,0 +1,30 @@
+name: Mi Pad 2 TFA9890 DSP compile check
+
+on:
+  push:
+    branches:
+      - experimental/mipad2-tfadsp-rebase-20261003
+  workflow_dispatch:
+
+jobs:
+  tfa-dsp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves
+      - name: Configure Mi Pad 2 kernel
+        run: |
+          make xiaomipad2_defconfig
+          sh fix_file/tests/mipad2-kernel-config-audit.sh .config
+          grep -q '^CONFIG_SND_SOC_TFA98XX_XIAOMI=y' .config
+          grep -q '^# CONFIG_SND_SOC_TFA989X is not set' .config
+      - name: Compile Xiaomi TFA9890 DSP stack
+        run: |
+          make -j"$(nproc)" W=1 \
+            sound/soc/codecs/tfa98xx-xiaomi/tfa98xx.o \
+            sound/soc/codecs/tfa98xx-xiaomi/tfa_container.o \
+            sound/soc/codecs/tfa98xx-xiaomi/tfa_dsp.o
