@@ -205,8 +205,21 @@ userspace helper and needs a real-scene sharpness test.
 The integrated branch now exports Android's Mi Pad 2 correction
 `diag(-1, 1, -1)` for accelerometer, gyro and magnetometer; the hardware smoke
 confirmed each sysfs matrix and the compass scale `0.000010000`. The matrix is
-DMI-scoped and source-regression tested. Dynamic response in four physical
-orientations, including after resume, still needs on-device verification.
+DMI-scoped and source-regression tested. A live topology audit found the
+standard accel/gyro IIO devices under HID `8086:0001` hub `.0002`, and the
+magnetometer, inclinometer and device-rotation collections under hub `.0003`.
+
+The tablet also exposes two `8086:0002` hubs (`.0004` and `.0005`), both bound
+to `hid-sensor-hub`, but neither currently has an IIO child. The saved Windows
+INF identifies `HID\Vid_8086&Pid_0002` as `AdvSensorHIDClassDriverV2`; its Linux
+report descriptor uses the custom sensor collection usage `0x20:0x00e1`.
+That establishes Windows class-driver binding, not the meaning or Linux
+function of those custom reports. Do not count PID `0002` as a working Linux
+sensor until its reports are decoded and a useful interface is validated.
+
+The matrix is verified statically and its current sysfs values were checked on
+the tablet. Dynamic response in four physical orientations, including after
+resume, still needs on-device verification.
 
 ## 12. TFA9890 OEM DSP and 6.18 LTS migration
 
