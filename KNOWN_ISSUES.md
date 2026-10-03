@@ -179,33 +179,34 @@ v4l2-ctl --list-devices
 
 并说明问题发生在冷启动、suspend/resume 后，还是某个外设已经使用过之后。
 
-## 10. 2026-10-03 camera, sensor and AtomISP audit
+## 10. 2026-10-04 integrated 6.14 camera, sensor and resume audit
 
-The currently deployed tablet still runs the 6.14 kernel. A read-only SSH
-check confirmed both camera sensors and the DW9761 V4L2 focus control. Front
-and rear cameras each delivered three DMABUF frames through GStreamer to a
-discarding sink; no image was saved. This proves buffer streaming, not color,
-noise, crop, exposure, white balance, ISP tuning or autofocus quality.
+The local `codex/mipad2-6.14-integrated` branch was booted on the tablet as
+`6.14.0-mipad2-cachyos`. The gated hardware smoke passed after boot and again
+after RTC-timed s2idle/resume. OV5693 and T4KA3 each streamed three frames on
+both checks; no camera module was hot-unloaded or rebound.
+
+The branch's AtomISP `.vidioc_create_bufs = vb2_ioctl_create_bufs` path is now
+runtime-verified: `VIDIOC_CREATE_BUFS` allocated two MMAP buffers for inputs 0
+(OV5693) and 1 (T4KA3), both at 1280x720 YU12. The camera graph also exposes
+the T4KA3 controls and DW9761 `focus_absolute` control.
+
+The OV5693 NVMEM test passed on the branch module: 416-byte raw OTP, 320-byte
+parsed OTP, CRC16/IBM `7bdf`, expected fixed AF block. The parsed calibration
+SHA-256 was `23064aefd4419afe110edc218590dcce1b7b12b97f7d68db28ebacdb65c71b43`.
 
 The live front/rear images still need review on a known target under controlled
 lighting. Green cast / 3A calibration remains open. The rear lens exports the
 standard `focus_absolute` control (0..1023); the AF scan strategy remains in a
 userspace helper and needs a real-scene sharpness test.
 
-The deployed 6.14 kernel reports `VIDIOC_CREATE_BUFS` as unsupported on the
-AtomISP node. This changeset adds the optional `.vidioc_create_bufs = vb2_ioctl_create_bufs` path and
-compiles it against the stable source. The currently installed kernel still predates this
-changeset; re-run `v4l2-ctl` after booting the updated kernel before closing
-the issue.
-
 ## 11. IIO sensor orientation matrix
 
-The deployed kernel enumerates ALS, accelerometer, gyro, magnetometer,
-inclination and device-rotation IIO nodes, but exposes no `*mount_matrix*`
-sysfs attributes. Android's Mi Pad 2 correction is `diag(-1, 1, -1)`. This changeset adds
-the DMI-scoped matrix and source regression check. The currently installed
-kernel still predates it; after booting the updated kernel, verify the exposed
-matrix and test the tablet in four physical orientations.
+The integrated branch now exports Android's Mi Pad 2 correction
+`diag(-1, 1, -1)` for accelerometer, gyro and magnetometer; the hardware smoke
+confirmed each sysfs matrix and the compass scale `0.000010000`. The matrix is
+DMI-scoped and source-regression tested. Dynamic response in four physical
+orientations, including after resume, still needs on-device verification.
 
 ## 12. TFA9890 OEM DSP and 6.18 LTS migration
 
