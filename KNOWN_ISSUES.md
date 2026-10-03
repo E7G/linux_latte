@@ -213,12 +213,13 @@ The tablet also exposes two `8086:0002` hubs (`.0004` and `.0005`), both bound
 to `hid-sensor-hub`. Neither currently has a standard IIO child, but multiple
 `HID-SENSOR-2000e1` children do bind to `hid_sensor_custom` and expose generic
 `enable_sensor`, `input-*` and `feature-*` sysfs attributes. The saved Windows
-INF identifies `HID\Vid_8086&Pid_0002` as `AdvSensorHIDClassDriverV2`; the USB
-HID Usage Tables define collection usage `0x20:0x00e1` as “Other: Custom”. The
-attribute names have been inventoried without reading feature values; the
-custom report semantics and useful sensor data remain uncharacterized. Do not
-claim standard orientation/IIO parity for PID `0002` until those reports are
-decoded and validated.
+INF identifies `HID\Vid_8086&Pid_0002` as `AdvSensorHIDClassDriverV2`; the
+[USB HID Usage Tables](https://usb.org/sites/default/files/hut1_3_0.pdf)
+define collection usage `0x20:0x00e1` as “Other: Custom”. The attribute names
+have been inventoried without reading feature values; the custom report
+semantics and useful sensor data remain uncharacterized. Do not claim standard
+orientation/IIO parity for PID `0002` until those reports are decoded and
+validated.
 
 The matrix is verified statically and its current sysfs values were checked on
 the tablet. Dynamic response in four physical orientations, including after
