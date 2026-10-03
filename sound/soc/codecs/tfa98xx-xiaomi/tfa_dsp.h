@@ -45,6 +45,8 @@ enum Tfa98xx_AgcGainInsert {
 
 int tfa98xx_dsp_start(struct tfa98xx *tfa98xx, int profile, int vstep);
 int tfa98xx_dsp_stop(struct tfa98xx *tfa98xx);
+int tfa98xx_get_volume(struct tfa98xx *tfa98xx, s64 *pVoldB);
+int tfa98xx_resolve_incident(struct tfa98xx *tfa98xx);
 int tfaRunWriteBitfield(struct tfa98xx *tfa98xx, struct nxpTfaBitfield bf);
 int tfaRunWriteRegister(struct tfa98xx *tfa98xx, struct nxpTfaRegpatch *reg);
 

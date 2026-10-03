@@ -153,7 +153,7 @@ int tfaRunWriteRegister(struct tfa98xx *tfa98xx, struct nxpTfaRegpatch *reg)
  * Note: This only works after i2c reset as this will clear the MTP contents.
  * When we are configured then the DSP communication will synchronize access.
  */
-int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
+static int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	int ret = 0;
@@ -319,7 +319,7 @@ static int tfa98xx_read_data(struct tfa98xx *tfa98xx, u8 address, int len,
 	return 0;
 }
 
-void tfa98xx_convert_data2bytes(int num_data, const int *data, u8 *bytes)
+static void tfa98xx_convert_data2bytes(int num_data, const int *data, u8 *bytes)
 {
 	int i, k, d;
 	/*
@@ -346,7 +346,7 @@ void tfa98xx_convert_data2bytes(int num_data, const int *data, u8 *bytes)
  * data contains "len/3" elements
  * bytes contains "len" elements
  */
-void tfa98xx_convert_bytes2data(int len, const u8 *bytes, int *data)
+static void tfa98xx_convert_bytes2data(int len, const u8 *bytes, int *data)
 {
 	int i, k, d;
 	int num_data = len / 3;
@@ -361,7 +361,7 @@ void tfa98xx_convert_bytes2data(int len, const u8 *bytes, int *data)
 }
 
 
-int tfa98xx_dsp_read_mem(struct tfa98xx *tfa98xx, u16 start_offset,
+static int tfa98xx_dsp_read_mem(struct tfa98xx *tfa98xx, u16 start_offset,
 			 int num_words, int *values)
 {
 	struct snd_soc_component *component = tfa98xx->component;
@@ -565,7 +565,7 @@ int tfa98xx_write_filter(struct tfa98xx *tfa98xx,
 			sizeof(data), data);
 }
 
-int tfa98xx_dsp_reset_count(struct tfa98xx *tfa98xx)
+static int tfa98xx_dsp_reset_count(struct tfa98xx *tfa98xx)
 {
 	int count;
 
@@ -784,7 +784,7 @@ static int tfa98xx_init(struct tfa98xx *tfa98xx)
 }
 
 /* NXP: Only restore I2C registers */
-int tfa98xx_restore_i2cmtp(struct tfa98xx *tfa98xx)
+static int tfa98xx_restore_i2cmtp(struct tfa98xx *tfa98xx)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	u16 readValue;
@@ -960,7 +960,7 @@ int tfa98xx_is_pwdn(struct tfa98xx *tfa98xx)
 /*
  * report if device has been calibrated
  */
-int tfaIsCalibrated(struct tfa98xx *tfa98xx)
+static int tfaIsCalibrated(struct tfa98xx *tfa98xx)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	u16 status;
@@ -987,7 +987,7 @@ int tfa98xx_is_amp_running(struct tfa98xx *tfa98xx)
 
 #define CF_CONTROL 0x8100
 
-int tfa98xx_coldboot(struct tfa98xx *tfa98xx, int state)
+static int tfa98xx_coldboot(struct tfa98xx *tfa98xx, int state)
 {
 	int ret = 0;
 	int tries = 10;
@@ -1047,7 +1047,7 @@ int tfa98xx_dsp_power_up(struct tfa98xx *tfa98xx)
  * XMEM address to check: 2 bytes, big endian, 0xFFFF means don't care
  * XMEM value to expect: 3 bytes, big endian
  */
-int tfa98xx_check_ic_rom_version(struct tfa98xx *tfa98xx,
+static int tfa98xx_check_ic_rom_version(struct tfa98xx *tfa98xx,
 				 const u8 patchheader[])
 {
 	int ret = 0;
@@ -1097,7 +1097,7 @@ int tfa98xx_check_ic_rom_version(struct tfa98xx *tfa98xx,
 }
 
 
-int tfa98xx_process_patch_file(struct tfa98xx *tfa98xx, int len, const u8 *data)
+static int tfa98xx_process_patch_file(struct tfa98xx *tfa98xx, int len, const u8 *data)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	u16 size;
@@ -1171,7 +1171,7 @@ int tfa98xx_dsp_patch(struct tfa98xx *tfa98xx, int patchLength,
 }
 
 
-int tfa98xx_set_configured(struct tfa98xx *tfa98xx)
+static int tfa98xx_set_configured(struct tfa98xx *tfa98xx)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	u16 value;
@@ -1190,7 +1190,7 @@ int tfa98xx_set_configured(struct tfa98xx *tfa98xx)
 #define TO_INT(x)	((x)>>32)
 #define TO_FIXED(e)	e
 
-int float_to_int(u32 x)
+static int float_to_int(u32 x)
 {
 	unsigned int e = (0x7F + 31) - ((x & 0x7F800000) >> 23);
 	unsigned int m = 0x80000000U | (x << 8);
@@ -1355,7 +1355,7 @@ int tfa98xx_unmute(struct tfa98xx *tfa98xx)
 
 
 /* check that num_byte matches the memory type selected */
-int tfa98xx_check_size(enum Tfa98xx_DMEM which_mem, int len)
+static int tfa98xx_check_size(enum Tfa98xx_DMEM which_mem, int len)
 {
 	int ret = 0;
 	int modulo_size = 1;
@@ -1382,7 +1382,7 @@ int tfa98xx_check_size(enum Tfa98xx_DMEM which_mem, int len)
 }
 
 
-int tfa98xx_execute_param(struct tfa98xx *tfa98xx)
+static int tfa98xx_execute_param(struct tfa98xx *tfa98xx)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 
@@ -1393,7 +1393,7 @@ int tfa98xx_execute_param(struct tfa98xx *tfa98xx)
 	return snd_soc_component_write(component, TFA98XX_CF_CONTROLS, cf_ctrl);
 }
 
-int tfa98xx_wait_result(struct tfa98xx *tfa98xx, int waitRetryCount)
+static int tfa98xx_wait_result(struct tfa98xx *tfa98xx, int waitRetryCount)
 {
 	struct snd_soc_component *component = tfa98xx->component;
 	int ret = 0;
@@ -1417,7 +1417,7 @@ int tfa98xx_wait_result(struct tfa98xx *tfa98xx, int waitRetryCount)
 
 
 /* read the return code for the RPC call */
-int tfa98xx_check_rpc_status(struct tfa98xx *tfa98xx, int *status)
+static int tfa98xx_check_rpc_status(struct tfa98xx *tfa98xx, int *status)
 {
 	int ret = 0;
 	/* the value to sent to the * CF_CONTROLS register: cf_req=00000000,
@@ -1453,7 +1453,7 @@ int tfa98xx_check_rpc_status(struct tfa98xx *tfa98xx, int *status)
 	return 0;
 }
 
-int tfa98xx_write_parameter(struct tfa98xx *tfa98xx,
+static int tfa98xx_write_parameter(struct tfa98xx *tfa98xx,
 			    u8 module_id,
 			    u8 param_id,
 			    int len, const u8 data[])
@@ -1528,7 +1528,7 @@ int tfa98xx_write_parameter(struct tfa98xx *tfa98xx,
 
 
 /* Execute RPC protocol to write something to the DSP */
-int tfa98xx_dsp_set_param_var_wait(struct tfa98xx *tfa98xx,
+static int tfa98xx_dsp_set_param_var_wait(struct tfa98xx *tfa98xx,
 				   u8 module_id,
 				   u8 param_id, int len,
 				   const u8 data[], int waitRetryCount)
@@ -1815,7 +1815,7 @@ int tfa98xx_dsp_write_drc(struct tfa98xx *tfa98xx, int len, const u8 *data)
 
 
 /* Execute RPC protocol to read something from the DSP */
-int tfa98xx_dsp_get_param(struct tfa98xx *tfa98xx, u8 module_id,
+static int tfa98xx_dsp_get_param(struct tfa98xx *tfa98xx, u8 module_id,
 			  u8 param_id, int len, u8 *data)
 {
 	struct snd_soc_component *component = tfa98xx->component;
@@ -1886,7 +1886,7 @@ int tfa98xx_dsp_get_param(struct tfa98xx *tfa98xx, u8 module_id,
 }
 
 
-int tfa98xx_dsp_get_sw_feature_bits(struct tfa98xx *tfa98xx, int features[2])
+static int tfa98xx_dsp_get_sw_feature_bits(struct tfa98xx *tfa98xx, int features[2])
 {
 	int ret = 0;
 	unsigned char bytes[3 * 2];
@@ -1952,7 +1952,8 @@ int tfa98xx_resolve_incident(struct tfa98xx *tfa98xx)
 	return 0;
 }
 
-int tfa98xx_dsp_get_calibration_impedance(struct tfa98xx *tfa98xx, u32 *re25)
+static int __maybe_unused tfa98xx_dsp_get_calibration_impedance(struct tfa98xx *tfa98xx,
+								 u32 *re25)
 {
 	int ret = 0;
 	u8 bytes[3];
@@ -2136,7 +2137,7 @@ static int tfa9897_dsp_write_cvfracdelay_table(struct tfa98xx *tfa98xx)
 /*
  * load the tables to the DSP, called after patch load is done
  */
-int tfa98xx_dsp_write_tables(struct tfa98xx *tfa98xx)
+static int tfa98xx_dsp_write_tables(struct tfa98xx *tfa98xx)
 {
 	int ret = 0;
 
@@ -2175,7 +2176,7 @@ static int tfaRunStartDSP(struct tfa98xx *tfa98xx)
 /*
  * Run the startup/init sequence and set ACS bit
  */
-int tfaRunColdStartup(struct tfa98xx *tfa98xx)
+static int tfaRunColdStartup(struct tfa98xx *tfa98xx)
 {
 	int ret;
 
@@ -2258,7 +2259,7 @@ module_param(coldboot, int, S_IRUGO | S_IWUSR);
  * Start the maximus speakerboost algorithm this implies a full system
  * startup when the system was not already started.
  */
-int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
+static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 {
 	int ret = 0;
 

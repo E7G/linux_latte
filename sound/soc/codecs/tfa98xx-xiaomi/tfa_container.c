@@ -31,7 +31,7 @@
 #include "tfa_container.h"
 #include "tfa_dsp.h"
 
-int tfa_get_profile_count(struct nxpTfaDevice *dev)
+static int tfa_get_profile_count(struct nxpTfaDevice *dev)
 {
 	int i, hit = 0;
 
@@ -45,7 +45,8 @@ int tfa_get_profile_count(struct nxpTfaDevice *dev)
 	return hit;
 }
 
-struct nxpTfaVolumeStep2File *tfa_get_vsteps(struct tfa98xx *tfa98xx, struct nxpTfaProfile *prof)
+static struct nxpTfaVolumeStep2File *tfa_get_vsteps(struct tfa98xx *tfa98xx,
+						      struct nxpTfaProfile *prof)
 {
 	u8 *base = tfa98xx->fw.base;
 	int i;
@@ -65,7 +66,8 @@ struct nxpTfaVolumeStep2File *tfa_get_vsteps(struct tfa98xx *tfa98xx, struct nxp
 	return NULL;
 }
 
-int tfa_init_profile(struct tfa98xx *tfa98xx, struct nxpTfaProfile *prof, int hit)
+static int tfa_init_profile(struct tfa98xx *tfa98xx,
+			    struct nxpTfaProfile *prof, int hit)
 {
 	struct nxpTfaVolumeStep2File *vp;
 	u8 *base = tfa98xx->fw.base;
@@ -314,30 +316,8 @@ int tfa98xx_cnt_loadfile(struct tfa98xx *tfa98xx, int index)
 	return 0;
 }
 
-int tfa_get_vstep_count(struct tfa98xx *tfa98xx, struct nxpTfaProfile *prof)
-{
-	u8 *base = tfa98xx->fw.base;
-	int i;
-
-	pr_debug("\n");
-
-	for (i = 0; i < prof->length; i++) {
-		if (prof->list[i].type == dscFile) {
-			struct nxpTfaFileDsc *file = (struct nxpTfaFileDsc *)(prof->list[i].offset + base);
-			struct nxpTfaHeader *hdr = (struct nxpTfaHeader *)file->data;
-			if (hdr->id == volstepHdr) {
-				struct nxpTfaVolumeStep2File *vp = (struct nxpTfaVolumeStep2File *)hdr;
-				pr_debug("vsteps: %d\n", vp->vsteps);
-				return vp->vsteps;
-			}
-		}
-	}
-
-	return 0;
-}
-
-
-struct nxpTfaProfile *tfaContProfile(struct tfa98xx *tfa98xx, int index)
+static struct nxpTfaProfile *tfaContProfile(struct tfa98xx *tfa98xx,
+						    int index)
 {
 	struct nxpTfaDevice	*dev = tfa98xx->fw.dev;
 	struct nxpTfaProfile	*prof;
@@ -364,7 +344,7 @@ struct nxpTfaProfile *tfaContProfile(struct tfa98xx *tfa98xx, int index)
 /*
  * return the bitfield
  */
-struct nxpTfaBitfield tfaContDsc2Bf(struct nxpTfaDescPtr dsc)
+static struct nxpTfaBitfield tfaContDsc2Bf(struct nxpTfaDescPtr dsc)
 {
 	u32 *ptr = (u32 *) (&dsc);
 	union {
