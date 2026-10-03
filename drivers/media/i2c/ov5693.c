@@ -17,6 +17,7 @@
 #include <linux/delay.h>
 #include <linux/dmi.h>
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/nvmem-provider.h>
@@ -483,8 +484,12 @@ static int ov5693_mipad2_otp_cal_read(void *context, unsigned int offset,
 		return 0;
 
 	ret = pm_runtime_resume_and_get(ov5693->dev);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 calibrated OTP power-up failed: %pe\n",
+			ERR_PTR(ret));
 		return ret;
+	}
 
 	mutex_lock(&ov5693->lock);
 	ret = ov5693_mipad2_fetch_otp(ov5693);
@@ -494,6 +499,10 @@ static int ov5693_mipad2_otp_cal_read(void *context, unsigned int offset,
 		if (!ret)
 			ov5693->otp_cal_cached = true;
 	}
+	if (ret)
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 calibrated OTP read failed: %pe\n",
+			ERR_PTR(ret));
 	if (!ret)
 		memcpy(val, ov5693->otp_cal_data + offset, bytes);
 	mutex_unlock(&ov5693->lock);
@@ -519,11 +528,18 @@ static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
 	 * the same lock here. This avoids self-deadlock from a suspended state.
 	 */
 	ret = pm_runtime_resume_and_get(ov5693->dev);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 raw OTP power-up failed: %pe\n", ERR_PTR(ret));
 		return ret;
+	}
 
 	mutex_lock(&ov5693->lock);
 	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (ret)
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 raw OTP read failed: %pe\n",
+			ERR_PTR(ret));
 	if (!ret)
 		memcpy(val, ov5693->otp_data + offset, bytes);
 	mutex_unlock(&ov5693->lock);

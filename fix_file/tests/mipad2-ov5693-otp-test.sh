@@ -5,6 +5,11 @@ set -eu
 raw_provider=${1:-/sys/bus/nvmem/devices/mipad2-ov5693-otp-raw/nvmem}
 cal_provider=${2:-/sys/bus/nvmem/devices/mipad2-ov5693-otp-calibrated/nvmem}
 
+raw_tmp=$(mktemp)
+cal_tmp=$(mktemp)
+err_tmp=$(mktemp)
+trap 'rm -f "$raw_tmp" "$cal_tmp" "$err_tmp"' EXIT HUP INT TERM
+
 if [ ! -r "$raw_provider" ]; then
 	echo "MISS Mi Pad 2 front-camera raw OTP NVMEM: $raw_provider" >&2
 	exit 1
@@ -14,23 +19,30 @@ if [ ! -r "$cal_provider" ]; then
 	exit 1
 fi
 
-raw_size=$(wc -c < "$raw_provider")
-raw_type=$(od -An -v -tu1 -N1 "$raw_provider" | tr -d '[:space:]')
+if ! cat "$raw_provider" > "$raw_tmp" 2> "$err_tmp"; then
+	echo "MISS front-camera raw OTP read: $(tr '\n' ' ' < "$err_tmp")" >&2
+	exit 1
+fi
+
+raw_size=$(wc -c < "$raw_tmp")
+raw_type=$(od -An -v -tu1 -N1 "$raw_tmp" | tr -d '[:space:]')
 if [ "$raw_size" -ne 416 ] || [ "$raw_type" -ne 58 ]; then
 	echo "MISS front-camera raw OTP: size=$raw_size type=$raw_type (expected 416/58)" >&2
 	exit 1
 fi
 
-tmp=$(mktemp)
-trap 'rm -f "$tmp"' EXIT HUP INT TERM
-cat "$cal_provider" > "$tmp"
-cal_size=$(wc -c < "$tmp")
+if ! cat "$cal_provider" > "$cal_tmp" 2> "$err_tmp"; then
+	echo "MISS front-camera parsed OTP read: $(tr '\n' ' ' < "$err_tmp")" >&2
+	exit 1
+fi
+
+cal_size=$(wc -c < "$cal_tmp")
 if [ "$cal_size" -ne 320 ]; then
 	echo "MISS front-camera parsed OTP size: $cal_size (expected 320)" >&2
 	exit 1
 fi
 
-od -An -v -tu1 "$tmp" | awk '
+od -An -v -tu1 "$cal_tmp" | awk '
 function xor16(a, b, result, place) {
 	result = 0
 	place = 1
@@ -81,4 +93,4 @@ END {
 }
 '
 
-sha256sum "$tmp"
+sha256sum "$cal_tmp"

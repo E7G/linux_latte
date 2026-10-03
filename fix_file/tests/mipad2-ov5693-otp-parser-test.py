@@ -173,3 +173,21 @@ with tempfile.TemporaryDirectory(prefix="ov5693-otp-fixture-") as tmp:
     if bad.returncode == 0:
         raise SystemExit("host smoke test accepted a corrupted parsed OTP CRC")
     print("front OTP smoke test rejects corrupted CRC")
+
+    unreadable_raw = tmpdir / "raw_read_error"
+    unreadable_raw.mkdir()
+    raw_error = subprocess.run([
+        "/bin/sh", str(smoke), str(unreadable_raw), str(cal_fixture),
+    ], capture_output=True, text=True)
+    if raw_error.returncode == 0 or "MISS front-camera raw OTP read:" not in raw_error.stderr:
+        raise SystemExit("host smoke test did not report a raw OTP read error")
+    print("front OTP smoke test reports raw-provider read errors")
+
+    unreadable_cal = tmpdir / "cal_read_error"
+    unreadable_cal.mkdir()
+    cal_error = subprocess.run([
+        "/bin/sh", str(smoke), str(raw_fixture), str(unreadable_cal),
+    ], capture_output=True, text=True)
+    if cal_error.returncode == 0 or "MISS front-camera parsed OTP read:" not in cal_error.stderr:
+        raise SystemExit("host smoke test did not report a parsed OTP read error")
+    print("front OTP smoke test reports parsed-provider read errors")
