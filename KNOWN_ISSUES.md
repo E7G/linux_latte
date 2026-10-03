@@ -266,11 +266,16 @@ The capture path needs synchronized pose markers and continuous report checks.
 A targeted LUID `0205` probe found `data-field-custom-usage=0x0205` and
 `data-field-custom-value_27` with logical range `0..5`; Windows defines the
 same six-value `SimpleOrientation` enum (`0` not rotated, `1..3` quarter-turns,
-`4/5` face-up/down). Its current value was `3`, while `custom-value_28` advanced
-as a timestamp-like counter. A second 45-second sample kept value `27` at `3`
-and the accelerometer near one static vector; no pose transition was observed
-or confirmed. This is a strong field candidate, not a validated map
-([Microsoft enum](https://learn.microsoft.com/en-us/uwp/api/windows.devices.sensors.simpleorientation?view=winrt-26100)). The probe restored `enable_sensor=0`.
+`4/5` face-up/down). Its current value was `3`. The kernel usage table maps
+`custom-value_27` and `_28` to HID usages `0x055e` and `0x055f`; USB HUT marks
+`0x054a..0x055f` as custom-reserved, so `_28`'s monotonic value is not a
+documented timestamp and its semantics remain unknown. The range match alone
+is only a candidate, not a field mapping
+([Microsoft enum](https://learn.microsoft.com/en-us/uwp/api/windows.devices.sensors.simpleorientation?view=winrt-26100),
+[USB HID Sensor Usages](https://www.usb.org/sites/default/files/hutrr39b_0.pdf)).
+A further 45-second capture again kept value `27` at `3` and the accelerometer
+near one static vector; no pose transition was observed, and physical movement
+was not confirmed. Each probe restored `enable_sensor=0`.
 
 ## 12. TFA9890 factory DSP path remains opt-in
 
