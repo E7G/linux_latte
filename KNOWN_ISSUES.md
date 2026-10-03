@@ -252,6 +252,17 @@ yield a defensible orientation mapping. The sensor was restored to
 This confirms live motion response, not four-way orientation parity. Mapping
 the custom report and checking orientation after resume remain open.
 
+The HID `event-sensor-event` transition `5 -> 1` is not an orientation value:
+the HID Sensor Usage Tables define selector 5 as “Change Sensitivity” and 1 as
+“State Changed”. The actual orientation value must come from the custom data
+fields, which remain undecoded ([HID Sensor Usages, Table 4](https://www.usb.org/sites/default/files/hutrr39b_0.pdf#page=27)).
+
+A follow-up 45-second IIO buffer capture on 2026-10-04 temporarily enabled the
+accelerometer buffer and restored it to `0`. It yielded 104 frames, with no
+confirmed four-pose markers; the sampled vector stayed near `(-0.692, 0.048,
+-0.718) g`. Treat this as inconclusive rather than a regression or validation.
+The capture path needs synchronized pose markers and continuous report checks.
+
 ## 12. TFA9890 factory DSP path remains opt-in
 
 Both TFA9890 amplifiers enumerate on the stable 6.14 path, but the default
