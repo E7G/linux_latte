@@ -216,10 +216,30 @@ to `hid-sensor-hub`. Neither currently has a standard IIO child, but multiple
 INF identifies `HID\Vid_8086&Pid_0002` as `AdvSensorHIDClassDriverV2`; the
 [USB HID Usage Tables](https://usb.org/sites/default/files/hut1_3_0.pdf)
 define collection usage `0x20:0x00e1` as “Other: Custom”. The attribute names
-have been inventoried without reading feature values; the custom report
-semantics and useful sensor data remain uncharacterized. Do not claim standard
-orientation/IIO parity for PID `0002` until those reports are decoded and
-validated.
+and the serial/friendly-name feature reports reveal these eleven sensor types:
+
+| LUID | Friendly name |
+| --- | --- |
+| `0211` | Lift Gesture Sensor |
+| `0212` | Pan Zoom Gesture Sensor |
+| `0230` | Step Counter Sensor |
+| `0200` | Orientation AG Sensor |
+| `0213` | Flick Gesture Sensor |
+| `0232` | Physical Activity Sensor |
+| `0237` | Instant Activity Sensor |
+| `0205` | Simple Orientation Sensor |
+| `0214` | Tilt Gesture Sensor |
+| `0236` | Significant Motion Sensor |
+| `0231` | Dead Reckoning Sensor |
+
+All eleven reported `enable_sensor=0` before sampling. A reversible probe of
+LUID `0205` enabled it through the generic sysfs control, read sensor state,
+event and custom fields twice, then restored `enable_sensor=0`; the post-test
+anti-idle and system-health gates passed. The custom usage field returned
+`0x0205`, while the custom values are still raw and not semantically decoded.
+Thus PID `0002` is not absent on Linux, but its custom interface is not yet a
+standard IIO/orientation API. Do not claim orientation parity until the raw
+reports are mapped and four physical orientations are validated.
 
 The matrix is verified statically and its current sysfs values were checked on
 the tablet. Dynamic response in four physical orientations, including after
