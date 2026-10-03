@@ -198,11 +198,12 @@ SHA-256 was `23064aefd4419afe110edc218590dcce1b7b12b97f7d68db28ebacdb65c71b43`.
 The T4KA3 raw NVMEM audit also passed on-device: 578 bytes; module/AF/LS1/LS2
 checksums `112/103/112/229`; vendor `1`; factory AF range `237..366`; SHA-256
 `18c2dc22c74d97570153864ac4f4273fe0463dff38ebdf9173a6e19b2c45859f`.
-`mipad2-camera-af --fast` then completed a live T4KA3 sweep using that OTP range
-and returned `BEST focus=241`, score `0.00078127`, confidence `good`. This
-verifies the live capture/focus-control path on the current scene; controlled
-near/far chart sharpness and user-visible image review remain open. Lens was
-left at focus position `241`.
+`mipad2-camera-af --fast` completed a live T4KA3 sweep using that OTP range and
+returned `BEST focus=241`, score `0.00078127`, confidence `good`. A subsequent
+full sweep repeated both macro-to-infinity passes and also selected focus `241`
+(score `0.00104341`, confidence `good`). This verifies repeatable live
+capture/focus control on the current scene; controlled near/far chart sharpness
+and user-visible image review remain open. Lens was left at position `241`.
 
 A read-only full hardware smoke passed again after the OTP/AF probes: Wi-Fi,
 Bluetooth, RT5659, touch, DRM, eMMC, charger/fuel gauge, IIO sensors, USB UDC,
