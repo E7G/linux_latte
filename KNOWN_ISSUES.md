@@ -242,8 +242,15 @@ standard IIO/orientation API. Do not claim orientation parity until the raw
 reports are mapped and four physical orientations are validated.
 
 The matrix is verified statically and its current sysfs values were checked on
-the tablet. Dynamic response in four physical orientations, including after
-resume, still needs on-device verification.
+the tablet. A 45-second live capture on 2026-10-04 sampled the standard
+accelerometer and LUID `0205` while the tablet was rotated through four
+orientations. The standard accelerometer changed with movement; on the custom
+sensor, `event-sensor-event` changed from `5` to `1`, but
+`data-field-custom-value_1` stayed `0` and the other custom field did not yet
+yield a defensible orientation mapping. The sensor was restored to
+`enable_sensor=0`, and anti-idle, kernel-version and system-health gates passed.
+This confirms live motion response, not four-way orientation parity. Mapping
+the custom report and checking orientation after resume remain open.
 
 ## 12. TFA9890 OEM DSP and 6.18 LTS migration
 
