@@ -4,6 +4,10 @@
  * Copyright (c) 2015, Intel Corporation.
  */
 
+#include <linux/bug.h>
+#include <linux/limits.h>
+#include <linux/math64.h>
+
 #include "ia_css_types.h"
 #include "sh_css_defs.h"
 #include "ia_css_debug.h"
@@ -33,18 +37,28 @@ const struct ia_css_dp_config default_dp_config = {
 	32768
 };
 
+static unsigned int
+ia_css_dp_encode_coefficient(u32 gain, u32 numerator, u32 denominator)
+{
+	u64 coefficient;
+
+	/* Invalid userspace/firmware WB gains must not crash the kernel. */
+	if (WARN_ON_ONCE(!denominator))
+		denominator = 1U << 15;
+
+	coefficient = div64_u64((u64)gain * numerator, denominator);
+	if (coefficient > U32_MAX)
+		coefficient = U32_MAX;
+
+	return uDIGIT_FITTING((u32)coefficient, 8, SH_CSS_DP_GAIN_SHIFT);
+}
+
 void
 ia_css_dp_encode(
     struct sh_css_isp_dp_params *to,
     const struct ia_css_dp_config *from,
     unsigned int size)
 {
-	int gain = from->gain;
-	int gr   = from->gr;
-	int r    = from->r;
-	int b    = from->b;
-	int gb   = from->gb;
-
 	(void)size;
 	to->threshold_single =
 	    SH_CSS_BAYER_MAXVAL;
@@ -54,21 +68,21 @@ ia_css_dp_encode(
 	    uDIGIT_FITTING(from->gain, 8, SH_CSS_DP_GAIN_SHIFT);
 
 	to->coef_rr_gr =
-	    uDIGIT_FITTING(gain * gr / r, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->gr, from->r);
 	to->coef_rr_gb =
-	    uDIGIT_FITTING(gain * gb / r, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->gb, from->r);
 	to->coef_bb_gb =
-	    uDIGIT_FITTING(gain * gb / b, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->gb, from->b);
 	to->coef_bb_gr =
-	    uDIGIT_FITTING(gain * gr / b, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->gr, from->b);
 	to->coef_gr_rr =
-	    uDIGIT_FITTING(gain * r / gr, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->r, from->gr);
 	to->coef_gr_bb =
-	    uDIGIT_FITTING(gain * b / gr, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->b, from->gr);
 	to->coef_gb_bb =
-	    uDIGIT_FITTING(gain * b / gb, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->b, from->gb);
 	to->coef_gb_rr =
-	    uDIGIT_FITTING(gain * r / gb, 8, SH_CSS_DP_GAIN_SHIFT);
+	    ia_css_dp_encode_coefficient(from->gain, from->r, from->gb);
 }
 
 void

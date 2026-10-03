@@ -77,10 +77,13 @@ After suspend/resume, repeat the smoke test and any subsystem-specific test rele
 
 ## Source of truth
 
-When this document and the code disagree, the current `main` branch is the source of truth. In particular check:
+For Mi Pad 2 releases, `cachyos-mipad2` is the device-kernel source of truth; `main` may diverge and is not authoritative for the installed tablet unless its changes are explicitly ported. The `arch_linux` branch of `E7G/xiaomi-latte-flash_tools` is the image-build source and resolves the configured kernel ref to an exact commit.
 
-- `arch/x86/configs/xiaomipad2_defconfig` for build-time feature selection;
-- `.github/workflows/mipad2-camera-check.yml` for CI-enforced assumptions;
-- `fix_file/tests/mipad2-hardware-smoke.sh` for expected runtime nodes;
-- `fix_file/packages/README.md` for userspace helper-package status;
-- `KNOWN_ISSUES.md` for limitations that should not be presented as fully solved.
+Check these sources in order:
+
+- `E7G/linux_latte:cachyos-mipad2` for device kernel code and `xiaomipad2_defconfig`;
+- `E7G/xiaomi-latte-flash_tools:arch_linux` for the image build recipe and pinned kernel commit;
+- `uname -r`, package metadata and the hardware regression scripts for the installed system and its runtime evidence;
+- `KNOWN_ISSUES.md` for limitations that must not be presented as fully solved.
+
+CI, node-existence checks and code presence are not substitutes for on-device functional testing.

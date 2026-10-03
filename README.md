@@ -4,7 +4,9 @@ This repository contains a Linux 6.14 based kernel tree for the x86_64 Xiaomi Mi
 
 The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. The `cachyos-mipad2` branch uses the local version suffix `-mipad2-cachyos`.
 
-> This is a device enablement/development kernel, not a generic distribution or hardened kernel. The current defconfig intentionally contains development-oriented options and currently has CPU mitigations disabled. Review the configuration before using it for security-sensitive workloads. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the current limitations.
+For the Mi Pad 2 system, `E7G/linux_latte:cachyos-mipad2` is the device-kernel branch and `E7G/xiaomi-latte-flash_tools:arch_linux` is the image-build branch; the image builder pins the resolved kernel commit. `main` can diverge and is not an automatic source of truth for the installed tablet kernel.
+
+> This is a device enablement/development kernel, not a generic distribution or fully hardened kernel. The Mi Pad 2 defconfig enables the kernel CPU mitigation framework by default; performance comparisons may opt out with `mitigations=off` at boot. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for remaining limitations.
 
 ## Current status
 
@@ -114,7 +116,7 @@ The most important current limitations are tracked in [`KNOWN_ISSUES.md`](KNOWN_
 - UDC / firmware dependence for USB gadget mode;
 - the conflict between the current USB serial package and the old USB Ethernet gadget package;
 - firmware/NVRAM requirements for BCM4356;
-- development-oriented defconfig choices such as disabled CPU mitigations.
+- device-oriented rather than generic-distro hardening; the defconfig enables CPU mitigations by default, while `mitigations=off` is an explicit performance-only boot override.
 
 ## Reporting problems
 

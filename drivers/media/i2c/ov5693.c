@@ -15,9 +15,11 @@
 #include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/device.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
@@ -38,6 +40,20 @@
 #define OV5693_REG_CHIP_ID			CCI_REG16(0x300a)
 /* Yes, this is right. The datasheet for the OV5693 gives its ID as 0x5690 */
 #define OV5693_CHIP_ID				0x5690
+
+/* Mi Pad 2 front-camera OTP banks, from Xiaomi's Android driver. */
+#define OV5693_MIPAD2_OTP_START_REG		0x3d00
+#define OV5693_MIPAD2_OTP_READ_REG		0x3d81
+#define OV5693_MIPAD2_OTP_BANK_REG		0x3d84
+#define OV5693_MIPAD2_OTP_FRAME_OFF_REG		0x4202
+#define OV5693_MIPAD2_OTP_BANKS			26
+#define OV5693_MIPAD2_OTP_BANK_SIZE		16
+#define OV5693_MIPAD2_OTP_SIZE \
+	(OV5693_MIPAD2_OTP_BANKS * OV5693_MIPAD2_OTP_BANK_SIZE)
+#define OV5693_MIPAD2_OTP_TYPE			0x3a
+#define OV5693_MIPAD2_OTP_CAL_SIZE		320
+#define OV5693_MIPAD2_OTP_DATA_OFFSET		(3 * OV5693_MIPAD2_OTP_BANK_SIZE)
+#define OV5693_MIPAD2_OTP_DATA_SIZE		(23 * OV5693_MIPAD2_OTP_BANK_SIZE)
 
 /* Exposure */
 #define OV5693_EXPOSURE_CTRL_REG		CCI_REG24(0x3500)
@@ -149,6 +165,15 @@ struct ov5693_device {
 	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	struct clk *xvclk;
 
+	/* Mi Pad 2 front-module factory calibration cache. */
+	struct nvmem_device *otp_nvmem;
+	struct nvmem_device *otp_cal_nvmem;
+	u8 otp_data[OV5693_MIPAD2_OTP_SIZE];
+	u8 otp_cal_data[OV5693_MIPAD2_OTP_CAL_SIZE];
+	bool otp_cached;
+	bool otp_cal_cached;
+	bool streaming;
+
 	struct ov5693_mode {
 		struct v4l2_rect crop;
 		struct v4l2_mbus_framefmt format;
@@ -178,6 +203,374 @@ struct ov5693_device {
 		struct v4l2_ctrl *test_pattern;
 	} ctrls;
 };
+
+static int ov5693_enable_streaming(struct ov5693_device *ov5693, bool enable);
+
+static bool ov5693_has_mipad2_otp(struct ov5693_device *ov5693)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       ACPI_COMPANION(ov5693->dev);
+}
+
+static int ov5693_mipad2_read_otp_bank(struct ov5693_device *ov5693,
+				       unsigned int bank, u8 *data)
+{
+	unsigned int i;
+	u64 value;
+	int ret = 0;
+
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_BANK_REG),
+		  0xc0 | bank, &ret);
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_READ_REG), 1,
+		  &ret);
+	if (ret)
+		return ret;
+
+	usleep_range(5000, 6000);
+
+	for (i = 0; i < OV5693_MIPAD2_OTP_BANK_SIZE; i++) {
+		ret = cci_read(ov5693->regmap,
+			       CCI_REG8(OV5693_MIPAD2_OTP_START_REG + i),
+			       &value, NULL);
+		if (ret)
+			return ret;
+		data[i] = value;
+	}
+
+	return 0;
+}
+
+static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
+{
+	unsigned int bank;
+	int stop_ret = 0;
+	int ret;
+
+	if (ov5693->otp_cached)
+		return 0;
+	if (ov5693->streaming)
+		return -EBUSY;
+
+	/*
+	 * Xiaomi's Android driver enables streaming while reading the sensor's
+	 * OTP window. Do the same, but only while the V4L2 stream is idle.
+	 * The caller has already runtime-resumed the sensor before taking lock.
+	 */
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x00, &ret);
+	if (ret)
+		return ret;
+
+	ret = ov5693_enable_streaming(ov5693, true);
+	if (ret)
+		goto stop_streaming;
+
+	for (bank = 0; bank < OV5693_MIPAD2_OTP_BANKS; bank++) {
+		u8 *bank_data = &ov5693->otp_data[bank * OV5693_MIPAD2_OTP_BANK_SIZE];
+
+		ret = ov5693_mipad2_read_otp_bank(ov5693, bank, bank_data);
+		if (ret)
+			break;
+	}
+
+stop_streaming:
+	/* Always attempt to restore both sensor state registers on failure. */
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x0f, &stop_ret);
+	{
+		int stream_ret = ov5693_enable_streaming(ov5693, false);
+
+		if (!stop_ret)
+			stop_ret = stream_ret;
+	}
+	if (!ret)
+		ret = stop_ret;
+	if (ret)
+		return ret;
+
+	if (ov5693->otp_data[0] != OV5693_MIPAD2_OTP_TYPE) {
+		dev_err(ov5693->dev,
+			"invalid Mi Pad 2 front-camera OTP type 0x%02x\n",
+			ov5693->otp_data[0]);
+		return -EBADMSG;
+	}
+
+	ov5693->otp_cached = true;
+	dev_info(ov5693->dev,
+		 "cached Mi Pad 2 front-camera OTP (%u raw banks)\n",
+		 OV5693_MIPAD2_OTP_BANKS);
+
+	return 0;
+}
+
+/*
+ * Repack the Mi Pad 2 factory OTP into Xiaomi's 320-byte AtomISP layout.
+ * The source layout and checksum rules match Xiaomi's Android OV5693 driver.
+ */
+static bool ov5693_mipad2_otp_checksum(const u8 *data, size_t size, u8 expected)
+{
+	u8 sum = 0;
+	size_t i;
+
+	for (i = 0; i < size; i++)
+		sum = (sum + data[i]) % 255;
+
+	return (u8)(sum + 1) == expected;
+}
+
+static bool ov5693_mipad2_otp_group_valid(const u8 *data)
+{
+	return (data[0] & 0xc0) == 0x40;
+}
+
+static u16 ov5693_mipad2_otp_crc16(const u8 *data, size_t size)
+{
+	u16 crc = 0;
+	size_t i;
+	int bit;
+
+	for (i = 0; i < size; i++) {
+		crc ^= data[i];
+		for (bit = 0; bit < 8; bit++)
+			crc = (crc >> 1) ^ ((crc & 1) ? 0xa001 : 0);
+	}
+
+	return crc;
+}
+
+static int ov5693_mipad2_parse_otp(const u8 *raw, u8 *cal)
+{
+	const u8 *data = raw + OV5693_MIPAD2_OTP_DATA_OFFSET;
+	unsigned int module_bank = 1;
+	unsigned int module_offset = 0;
+	unsigned int light_offset = 38;
+	unsigned int light_data_offset = 38;
+	unsigned int lsc_offset = 79;
+	unsigned int i, j;
+	u16 crc;
+	u8 module;
+
+	if (raw[0] != OV5693_MIPAD2_OTP_TYPE)
+		return -EBADMSG;
+
+	/* Android validates the metadata bank before interpreting its group flag. */
+	if (!ov5693_mipad2_otp_checksum(raw + 1 * OV5693_MIPAD2_OTP_BANK_SIZE + 1,
+					14, raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE + 15]))
+		return -EBADMSG;
+	if ((raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) == 0x00 ||
+	    (raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) == 0xc0)
+		module_bank = 2;
+
+	if (!ov5693_mipad2_otp_checksum(raw + module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 1,
+					14, raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 15]))
+		return -EBADMSG;
+	if ((raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) != 0x40)
+		return -EBADMSG;
+	module = raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 1];
+
+	memset(cal, 0, OV5693_MIPAD2_OTP_CAL_SIZE);
+
+	/* Module and light-source-1 data use one of two 19-byte groups. */
+	if (!ov5693_mipad2_otp_group_valid(data))
+		module_offset = 19;
+	if (!ov5693_mipad2_otp_group_valid(data + module_offset) ||
+	    !ov5693_mipad2_otp_checksum(data + module_offset + 1, 17,
+					data[module_offset ? 37 : 18]))
+		return -EBADMSG;
+	/* Android skips the three-byte prefix only for the fallback group. */
+	i = module_offset ? module_offset + 3 : module_offset;
+	cal[0] = data[i + 1];
+	cal[1] = data[i + 2];
+	cal[13] = data[i + 3];
+	cal[14] = data[i + 4];
+	cal[16] = data[i + 5];
+	cal[18] = data[i + 6];
+	cal[19] = data[i + 7];
+	cal[302] = data[i + 8];
+	cal[303] = data[i + 9];
+	cal[306] = data[i + 10];
+	cal[307] = data[i + 11];
+	cal[310] = data[i + 12];
+	cal[311] = data[i + 13];
+	cal[314] = data[i + 14];
+	cal[315] = data[i + 15];
+
+	/* Light-source-2 values are stored in a second pair of groups. */
+	if (!ov5693_mipad2_otp_group_valid(data + light_offset)) {
+		light_offset += 19;
+		light_data_offset = light_offset + 3;
+	}
+	if (!ov5693_mipad2_otp_group_valid(data + light_offset) ||
+	    !ov5693_mipad2_otp_checksum(data + light_offset + 1, 17,
+					data[light_offset == 38 ? 56 : 75]))
+		return -EBADMSG;
+	i = light_data_offset;
+	cal[15] = data[i + 4];
+	cal[17] = data[i + 5];
+	cal[304] = data[i + 8];
+	cal[305] = data[i + 9];
+	cal[308] = data[i + 10];
+	cal[309] = data[i + 11];
+	cal[312] = data[i + 12];
+	cal[313] = data[i + 13];
+	cal[316] = data[i + 14];
+	cal[317] = data[i + 15];
+
+	/* Android supplies a fixed AF block because this module has no AF OTP. */
+	cal[2] = 1;
+	cal[3] = 0;
+	cal[4] = 10;
+	cal[5] = 0x8a;
+	cal[6] = 0x02;
+	cal[7] = 0x2c;
+	cal[8] = 0x01;
+	cal[9] = 0x64;
+	cal[10] = 0x00;
+	cal[11] = 0x84;
+	cal[12] = 0x03;
+
+	if ((data[lsc_offset] & 0xf0) != 0x50 ||
+	    !ov5693_mipad2_otp_checksum(data + lsc_offset + 1, 141, data[221]))
+		return -EBADMSG;
+	cal[20] = data[lsc_offset + 1];
+	if (module == 1) {
+		for (j = 0; j < 4; j++)
+			for (i = 0; i < 35; i++)
+				cal[21 + i + 35 * j] =
+					data[lsc_offset + 1 + (j + 1) * 35 - i];
+	} else {
+		for (j = 0; j < 20; j++)
+			for (i = 0; i < 7; i++)
+				cal[21 + i + 7 * j] =
+					data[lsc_offset + 1 + (j + 1) * 7 - i];
+	}
+
+	/* Second light-source grid begins at bank 17 (payload offset 224). */
+	lsc_offset = 224;
+	if (!ov5693_mipad2_otp_checksum(data + lsc_offset, 141, data[365]))
+		return -EBADMSG;
+	cal[161] = data[lsc_offset];
+	if (module == 1) {
+		for (j = 0; j < 4; j++)
+			for (i = 0; i < 35; i++)
+				cal[162 + 35 * j + i] =
+					data[lsc_offset + (j + 1) * 35 - i];
+	} else {
+		for (j = 0; j < 20; j++)
+			for (i = 0; i < 7; i++)
+				cal[162 + 7 * j + i] =
+					data[lsc_offset + (j + 1) * 7 - i];
+	}
+
+	crc = ov5693_mipad2_otp_crc16(cal, OV5693_MIPAD2_OTP_CAL_SIZE - 2);
+	cal[OV5693_MIPAD2_OTP_CAL_SIZE - 2] = crc & 0xff;
+	cal[OV5693_MIPAD2_OTP_CAL_SIZE - 1] = crc >> 8;
+
+	return 0;
+}
+
+static int ov5693_mipad2_otp_cal_read(void *context, unsigned int offset,
+				      void *val, size_t bytes)
+{
+	struct ov5693_device *ov5693 = context;
+	int ret;
+
+	if (offset > OV5693_MIPAD2_OTP_CAL_SIZE ||
+	    bytes > OV5693_MIPAD2_OTP_CAL_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&ov5693->lock);
+	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (!ret && !ov5693->otp_cal_cached) {
+		ret = ov5693_mipad2_parse_otp(ov5693->otp_data,
+					      ov5693->otp_cal_data);
+		if (!ret)
+			ov5693->otp_cal_cached = true;
+	}
+	if (!ret)
+		memcpy(val, ov5693->otp_cal_data + offset, bytes);
+	mutex_unlock(&ov5693->lock);
+
+	pm_runtime_put_autosuspend(ov5693->dev);
+	return ret;
+}
+
+static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
+				  void *val, size_t bytes)
+{
+	struct ov5693_device *ov5693 = context;
+	int ret;
+
+	if (offset > OV5693_MIPAD2_OTP_SIZE ||
+	    bytes > OV5693_MIPAD2_OTP_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	/*
+	 * Runtime resume takes ov5693->lock, so wake the device before taking
+	 * the same lock here. This avoids self-deadlock from a suspended state.
+	 */
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&ov5693->lock);
+	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (!ret)
+		memcpy(val, ov5693->otp_data + offset, bytes);
+	mutex_unlock(&ov5693->lock);
+
+	pm_runtime_put_autosuspend(ov5693->dev);
+	return ret;
+}
+
+static int ov5693_register_mipad2_otp(struct ov5693_device *ov5693)
+{
+	struct nvmem_config raw_config = {
+		.dev = ov5693->dev,
+		.name = "mipad2-ov5693-otp-raw",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = ov5693_mipad2_otp_read,
+		.size = OV5693_MIPAD2_OTP_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = ov5693,
+	};
+	struct nvmem_config cal_config = {
+		.dev = ov5693->dev,
+		.name = "mipad2-ov5693-otp-calibrated",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = ov5693_mipad2_otp_cal_read,
+		.size = OV5693_MIPAD2_OTP_CAL_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = ov5693,
+	};
+
+	if (!ov5693_has_mipad2_otp(ov5693))
+		return 0;
+
+	ov5693->otp_nvmem = devm_nvmem_register(ov5693->dev, &raw_config);
+	if (IS_ERR(ov5693->otp_nvmem))
+		return PTR_ERR(ov5693->otp_nvmem);
+
+	ov5693->otp_cal_nvmem = devm_nvmem_register(ov5693->dev, &cal_config);
+	return PTR_ERR_OR_ZERO(ov5693->otp_cal_nvmem);
+}
 
 static const struct cci_reg_sequence ov5693_global_regs[] = {
 	{CCI_REG8(0x3016), 0xf0},
@@ -1003,10 +1396,14 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 		}
 
 		ret = ov5693_enable_streaming(ov5693, true);
+		if (!ret)
+			ov5693->streaming = true;
 		mutex_unlock(&ov5693->lock);
 	} else {
 		mutex_lock(&ov5693->lock);
 		ret = ov5693_enable_streaming(ov5693, false);
+		if (!ret)
+			ov5693->streaming = false;
 		mutex_unlock(&ov5693->lock);
 	}
 	if (ret)
@@ -1381,6 +1778,10 @@ static int ov5693_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
 	pm_runtime_enable(&client->dev);
+
+	ret = ov5693_register_mipad2_otp(ov5693);
+	if (ret)
+		goto err_pm_runtime;
 
 	ret = v4l2_async_register_subdev_sensor(&ov5693->sd);
 	if (ret) {

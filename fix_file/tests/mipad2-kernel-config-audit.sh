@@ -16,6 +16,7 @@ need() {
 }
 
 # Boot, storage and on-device diagnostics.
+need 'CONFIG_CPU_MITIGATIONS=y'
 need 'CONFIG_EFI=y'
 need 'CONFIG_EFI_MIXED=y'
 need 'CONFIG_ACPI=y'

@@ -78,6 +78,22 @@ sudo sh fix_file/tests/mipad2-camera-test.sh front
 
 单次采集有超时保护，但如果驱动进入不可中断状态，用户空间 timeout 不能保证恢复内核状态；遇到持续卡住时应重启后再继续测试。
 
+## OV5693 前摄 OTP 校准
+
+Host parser 回归（无需平板/摄像头）：运行
+python3 fix_file/tests/mipad2-ov5693-otp-parser-test.py
+
+fixture 从内核源抽取实际解析函数，逐值检查 module/AWB 分组与回退布局，并验证 CRC 正向及损坏 CRC 反向。
+
+
+读取 416-byte raw OTP，并检查 Android 格式解析后的 320-byte 校准 NVMEM（CRC16/IBM 与固定 AF block）：
+
+```bash
+sudo sh fix_file/tests/mipad2-ov5693-otp-test.sh
+```
+
+此项验证设备 OTP 的结构与校验，不替代目视图像、色彩/白平衡和 AtomISP 实际消费校准数据的验收。
+
 ## `mipad2-camera-select.sh`
 
 普通 V4L2 应用如果需要先选择当前输入，可使用：
@@ -93,6 +109,21 @@ sudo sh fix_file/tests/mipad2-camera-select.sh front
 ```
 
 该脚本用于选择输入，不代表目标应用一定兼容 AtomISP 的媒体拓扑或格式协商方式。
+
+## 传感器方向矩阵
+
+`mipad2-sensor-orientation-audit.sh` 检查 Xiaomi/Mipad2 DMI 限定下，Mi Pad 2 `8086:0001` 原始三轴传感器 hub 和 Windows 备份识别的 `8086:0002` ISS hub，为加速度计/重力、陀螺仪和磁力计导出 Android HAL 对应的 `diag(-1, 1, -1)` IIO `mount_matrix`；同时检查 rotation-from-north HID 单位指数映射。硬件 smoke test 验证实际 sysfs 矩阵值和 compass rotation scale。
+
+这只验证方向元数据和接口，不替代真机方向响应测试。安装 `iio-sensor-proxy` 后运行 `monitor-sensor --accel`，正面朝向用户依次旋转到竖屏、左右横屏和倒置竖屏；再于冷启动和 suspend/resume 后重复。记录四个朝向，确认没有 90°/180° 偏差或频繁抖动。
+
+## 防息屏前置
+
+运行 Wi-Fi、USB gadget/串口、相机等硬件回归前，先关闭自动息屏并回读状态：
+
+sudo mp2-test-no-idle enable
+sudo mp2-test-no-idle status
+
+status 只有在 inhibitor 为 active 且 idle-delay=0、idle-dim=false、AC/电池 sleep policy 均为 nothing 时才返回 0 并打印 PASS；否则返回非零，不要继续硬件测试。全部测试结束后用 sudo mp2-test-no-idle disable 恢复此前电源设置。
 
 ## 推荐回归顺序
 

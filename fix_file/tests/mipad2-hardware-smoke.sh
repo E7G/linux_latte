@@ -328,6 +328,54 @@ for sensor in als accel_3d gyro_3d magn_3d incli_3d dev_rotation; do
     fi
 done
 
+expected_matrix='-1,0,0;0,1,0;0,0,-1'
+for sensor in accel_3d gravity gyro_3d magn_3d; do
+    name_file=
+    for path in /sys/bus/iio/devices/iio:device*/name; do
+        [ -r "$path" ] || continue
+        [ "$(cat "$path" 2>/dev/null)" = "$sensor" ] && name_file=$path && break
+    done
+    if [ -z "$name_file" ]; then
+        # The enumeration loop above reports missing primary sensor devices.
+        continue
+    fi
+
+    device_path=${name_file%/name}
+    matrix_file=
+    for path in "$device_path"/mount_matrix "$device_path"/*_mount_matrix; do
+        [ -r "$path" ] || continue
+        matrix_file=$path
+        break
+    done
+    if [ -z "$matrix_file" ]; then
+        miss "IIO $sensor mount matrix"
+        continue
+    fi
+
+    actual_matrix=$(tr -d '[:space:]' < "$matrix_file" 2>/dev/null || true)
+    if [ "$actual_matrix" = "$expected_matrix" ]; then
+        printf 'OK   IIO %s mount matrix %s\n' "$sensor" "$actual_matrix"
+    else
+        miss "IIO $sensor mount matrix expected $expected_matrix, got ${actual_matrix:-unreadable}"
+    fi
+done
+
+magn_name_file=
+for path in /sys/bus/iio/devices/iio:device*/name; do
+    [ -r "$path" ] || continue
+    [ "$(cat "$path" 2>/dev/null)" = magn_3d ] && magn_name_file=$path && break
+done
+if [ -n "$magn_name_file" ]; then
+    scale_file=${magn_name_file%/name}/in_rot_scale
+    rotation_scale=$(cat "$scale_file" 2>/dev/null || true)
+    if [ -n "$rotation_scale" ] &&
+       awk -v value="$rotation_scale" 'BEGIN { exit !(value > 0 && value < 1) }'; then
+        printf 'OK   compass rotation scale %s\n' "$rotation_scale"
+    else
+        miss "compass rotation unit scale (${rotation_scale:-unreadable})"
+    fi
+fi
+
 udc_path=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null || true)
 if [ -n "$udc_path" ]; then printf 'OK   %s\n' "$udc_path"; else miss 'an actual UDC under /sys/class/udc'; fi
 

@@ -137,11 +137,11 @@ findmnt /boot
 `xiaomipad2_defconfig` 是面向设备可用性和开发测试的配置。目前包括：
 
 - `CONFIG_LTO_CLANG_THIN=y`；
-- `CONFIG_CPU_MITIGATIONS` 未启用；
+- `CONFIG_CPU_MITIGATIONS=y` 默认启用；仅在受控性能对比中才可通过内核启动参数 `mitigations=off` 显式关闭；
 - `CONFIG_VIRTUALIZATION` 未启用；
 - 多个 Mi Pad 2 运行时组件采用模块形式。
 
-如果设备用于处理不可信工作负载，尤其需要重新评估 CPU mitigations 等安全选项。若改变工具链或 defconfig，记得检查最终 `.config`，不要仅根据 defconfig 文件推断最终编译配置。
+CPU mitigations 默认启用，但该配置仍不是完整的发行版安全加固配置。`mitigations=off` 会关闭所有 CPU 漏洞缓解，仅应用于受控的性能对比。若改变工具链或 defconfig，记得检查最终 `.config`，不要仅根据 defconfig 文件推断最终编译配置。
 
 ## 9. BQ25890 充电上限已按原厂档案修正并通过真机验证
 
@@ -178,3 +178,44 @@ v4l2-ctl --list-devices
 ```
 
 并说明问题发生在冷启动、suspend/resume 后，还是某个外设已经使用过之后。
+
+## 10. 2026-10-03 camera, sensor and AtomISP audit
+
+The currently deployed tablet still runs the 6.14 kernel. A read-only SSH
+check confirmed both camera sensors and the DW9761 V4L2 focus control. Front
+and rear cameras each delivered three DMABUF frames through GStreamer to a
+discarding sink; no image was saved. This proves buffer streaming, not color,
+noise, crop, exposure, white balance, ISP tuning or autofocus quality.
+
+The live front/rear images still need review on a known target under controlled
+lighting. Green cast / 3A calibration remains open. The rear lens exports the
+standard `focus_absolute` control (0..1023); the AF scan strategy remains in a
+userspace helper and needs a real-scene sharpness test.
+
+The deployed 6.14 kernel reports `VIDIOC_CREATE_BUFS` as unsupported on the
+AtomISP node. This changeset adds the optional `.vidioc_create_bufs = vb2_ioctl_create_bufs` path and
+compiles it against the stable source. The currently installed kernel still predates this
+changeset; re-run `v4l2-ctl` after booting the updated kernel before closing
+the issue.
+
+## 11. IIO sensor orientation matrix
+
+The deployed kernel enumerates ALS, accelerometer, gyro, magnetometer,
+inclination and device-rotation IIO nodes, but exposes no `*mount_matrix*`
+sysfs attributes. Android's Mi Pad 2 correction is `diag(-1, 1, -1)`. This changeset adds
+the DMI-scoped matrix and source regression check. The currently installed
+kernel still predates it; after booting the updated kernel, verify the exposed
+matrix and test the tablet in four physical orientations.
+
+## 12. TFA9890 OEM DSP and 6.18 LTS migration
+
+The stable TFA989X path binds both amplifiers, but it bypasses the built-in
+CoolFlux DSP and does not establish OEM profile behavior. The separate
+`mipad2-tfadsp-clean-20260928` branch is experimental. DSP firmware/profile,
+left/right output, playback stop/resume, power and suspend/resume still need
+real-device tests; do not equate codec enumeration with OEM audio parity.
+
+The stable kernel remains 6.14. A local 6.18.54 LTS candidate builds and
+passes its configuration/source checks, but is not published or boot-tested
+on the tablet. Keep the 6.14 boot path until a separate 6.18 boot and hardware
+regression pass is completed.

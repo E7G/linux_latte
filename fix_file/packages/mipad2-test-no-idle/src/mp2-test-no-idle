@@ -3,7 +3,6 @@ set -eu
 
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 state=/var/lib/mipad2-test-no-idle
-mkdir -p "$state"
 user_name=user
 uid=$(id -u "$user_name")
 runtime=/run/user/$uid
@@ -30,6 +29,7 @@ save_once() {
 
 case "${1:-status}" in
   enable)
+    mkdir -p "$state"
     save_once
     gset set org.gnome.desktop.session idle-delay "uint32 0"
     gset set org.gnome.settings-daemon.plugins.power idle-dim false
@@ -50,11 +50,27 @@ case "${1:-status}" in
     echo "test no-idle disabled and previous GNOME power settings restored"
     ;;
   status)
-    systemctl is-active mipad2-test-no-idle.service 2>/dev/null || true
-    gset get org.gnome.desktop.session idle-delay 2>/dev/null || true
-    gset get org.gnome.settings-daemon.plugins.power idle-dim 2>/dev/null || true
-    gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 2>/dev/null || true
-    gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 2>/dev/null || true
+    service_state=$(systemctl is-active mipad2-test-no-idle.service 2>/dev/null || true)
+    idle_delay=$(gset get org.gnome.desktop.session idle-delay 2>/dev/null || true)
+    idle_dim=$(gset get org.gnome.settings-daemon.plugins.power idle-dim 2>/dev/null || true)
+    sleep_ac=$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 2>/dev/null || true)
+    sleep_battery=$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 2>/dev/null || true)
+
+    printf 'inhibitor: %s\n' "${service_state:-unavailable}"
+    printf 'idle-delay: %s\n' "${idle_delay:-unavailable}"
+    printf 'idle-dim: %s\n' "${idle_dim:-unavailable}"
+    printf 'sleep-ac: %s\n' "${sleep_ac:-unavailable}"
+    printf 'sleep-battery: %s\n' "${sleep_battery:-unavailable}"
+
+    if [ "$service_state" != active ] ||
+       [ "$idle_delay" != 'uint32 0' ] ||
+       [ "$idle_dim" != false ] ||
+       [ "$sleep_ac" != "'nothing'" ] ||
+       [ "$sleep_battery" != "'nothing'" ]; then
+      echo "MISS test no-idle is not fully active; run enable and check status again" >&2
+      exit 1
+    fi
+    echo "PASS anti-idle inhibitor active; GNOME idle/sleep disabled"
     ;;
   *) echo "Usage: sudo mp2-test-no-idle {enable|disable|status}" >&2; exit 2 ;;
 esac

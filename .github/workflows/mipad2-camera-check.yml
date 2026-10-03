@@ -6,6 +6,20 @@ on:
       - main
       - cachyos-mipad2
       - test/mipad2-camera-20260829
+  pull_request:
+    paths:
+      - 'drivers/hid/hid-sensor-hub.c'
+      - 'drivers/media/i2c/ov5693.c'
+      - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
+      - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
+      - 'fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle'
+      - 'fix_file/tests/mipad2-test-no-idle-test.sh'
+      - 'fix_file/tests/README.md'
+      - 'drivers/iio/accel/hid-sensor-accel-3d.c'
+      - 'drivers/iio/gyro/hid-sensor-gyro-3d.c'
+      - 'drivers/iio/magnetometer/hid-sensor-magn-3d.c'
+      - 'fix_file/tests/mipad2-sensor-orientation-audit.sh'
+      - '.github/workflows/mipad2-camera-check.yml'
   workflow_dispatch:
 
 jobs:
@@ -25,6 +39,15 @@ jobs:
         run: |
           make xiaomipad2_defconfig
           sh fix_file/tests/mipad2-kernel-config-audit.sh .config
+
+      - name: Verify HID sensor orientation integration
+        run: |
+          sh -n fix_file/tests/mipad2-sensor-orientation-audit.sh
+          sh fix_file/tests/mipad2-sensor-orientation-audit.sh
+          grep -q '^CONFIG_HID_SENSOR_HUB=y' .config
+          grep -q '^CONFIG_HID_SENSOR_ACCEL_3D=y' .config
+          grep -q '^CONFIG_HID_SENSOR_GYRO_3D=y' .config
+          grep -q '^CONFIG_HID_SENSOR_MAGNETOMETER_3D=y' .config
 
       - name: Verify camera configuration
         run: |
@@ -99,6 +122,17 @@ jobs:
             grep -q '^CONFIG_LOCALVERSION="-mipad2-complete"' arch/x86/configs/xiaomipad2_defconfig
           fi
 
+      - name: Validate OV5693 OTP parser mapping and CRC
+        run: |
+          python3 fix_file/tests/mipad2-ov5693-otp-parser-test.py
+          sh -n fix_file/tests/mipad2-ov5693-otp-test.sh
+          make -j"$(nproc)" W=1 drivers/media/i2c/ov5693.o
+
+      - name: Validate no-idle status preflight
+        run: |
+          sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
+          sh fix_file/tests/mipad2-test-no-idle-test.sh
+
       - name: Compile camera sensor and VCM drivers
         run: |
           make -j"$(nproc)" W=1 \
@@ -112,6 +146,10 @@ jobs:
             drivers/media/i2c/t4ka3.o \
             drivers/media/i2c/dw9719.o \
             drivers/hid/hid-multitouch.o \
+            drivers/hid/hid-sensor-hub.o \
+            drivers/iio/accel/hid-sensor-accel-3d.o \
+            drivers/iio/gyro/hid-sensor-gyro-3d.o \
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o \
             drivers/hid/i2c-hid/i2c-hid-of.o \
             drivers/platform/x86/x86-android-tablets/core.o \
             drivers/platform/x86/x86-android-tablets/other.o
