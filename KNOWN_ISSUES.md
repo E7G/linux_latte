@@ -204,6 +204,11 @@ verifies the live capture/focus-control path on the current scene; controlled
 near/far chart sharpness and user-visible image review remain open. Lens was
 left at focus position `241`.
 
+A read-only full hardware smoke passed again after the OTP/AF probes: Wi-Fi,
+Bluetooth, RT5659, touch, DRM, eMMC, charger/fuel gauge, IIO sensors, USB UDC,
+both camera endpoints and T4KA3/VCM controls were present; no known fatal driver
+errors appeared in `dmesg`. The device currently advertises s2idle only.
+
 The live front/rear images still need review on a known target under controlled
 lighting. Green cast / 3A calibration remains open. The Windows OEM camera INFs
 install sensor-specific CPF profiles (`OV5693_12P2BA535_{1,7}_CHT.cpf` and
