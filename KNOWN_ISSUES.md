@@ -252,15 +252,17 @@ yield a defensible orientation mapping. The sensor was restored to
 This confirms live motion response, not four-way orientation parity. Mapping
 the custom report and checking orientation after resume remain open.
 
-## 12. TFA9890 OEM DSP and 6.18 LTS migration
+## 12. TFA9890 factory DSP path remains opt-in
 
-The stable TFA989X path binds both amplifiers, but it bypasses the built-in
-CoolFlux DSP and does not establish OEM profile behavior. The separate
-`mipad2-tfadsp-clean-20260928` branch is experimental. DSP firmware/profile,
-left/right output, playback stop/resume, power and suspend/resume still need
-real-device tests; do not equate codec enumeration with OEM audio parity.
+Both TFA9890 amplifiers enumerate on the stable 6.14 path, but the default
+`SND_SOC_TFA989X` driver bypasses CoolFlux DSP. The Xiaomi/NXP factory DSP
+driver and container parser are now integrated as an optional alternative;
+the Mi Pad 2 defconfig deliberately keeps the known-working driver selected.
+Kconfig prevents both drivers from binding to the same `i2c:tfa9890` clients.
 
-The stable kernel remains 6.14. A local 6.18.54 LTS candidate builds and
-passes its configuration/source checks, but is not published or boot-tested
-on the tablet. Keep the 6.14 boot path until a separate 6.18 boot and hardware
-regression pass is completed.
+The target has `/lib/firmware/tfa98xx.cnt` with the expected factory profiles.
+The candidate driver passes source checks and a local `W=1` object build, but
+OEM DSP startup, left/right profile output, playback stop/resume, recovery,
+power use, and suspend/resume still need real-device validation before making
+it the default. Do not treat device enumeration or compile success as proof of
+OEM audio parity.
