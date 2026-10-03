@@ -263,6 +263,15 @@ confirmed four-pose markers; the sampled vector stayed near `(-0.692, 0.048,
 -0.718) g`. Treat this as inconclusive rather than a regression or validation.
 The capture path needs synchronized pose markers and continuous report checks.
 
+A targeted LUID `0205` probe found `data-field-custom-usage=0x0205` and
+`data-field-custom-value_27` with logical range `0..5`; Windows defines the
+same six-value `SimpleOrientation` enum (`0` not rotated, `1..3` quarter-turns,
+`4/5` face-up/down). Its current value was `3`, while `custom-value_28` advanced
+as a timestamp-like counter. A second 45-second sample kept value `27` at `3`
+and the accelerometer near one static vector; no pose transition was observed
+or confirmed. This is a strong field candidate, not a validated map
+([Microsoft enum](https://learn.microsoft.com/en-us/uwp/api/windows.devices.sensors.simpleorientation?view=winrt-26100)). The probe restored `enable_sensor=0`.
+
 ## 12. TFA9890 factory DSP path remains opt-in
 
 Both TFA9890 amplifiers enumerate on the stable 6.14 path, but the default
