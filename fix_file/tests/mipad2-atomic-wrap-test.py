@@ -48,6 +48,12 @@ def program():
                        ('arch/x86/include/asm/atomic64_64.h', 'arch_atomic64_add_return')]:
         functions.append(function((REPO / path).read_text(), name))
     actual = '\n\n'.join(functions)
+    route = (REPO / 'net/ipv4/route.c').read_text()
+    reserve = route.split('static u32 ip_idents_reserve(', 1)[1].split('\n}', 1)[0]
+    expression = re.search(r'(?m)^\treturn .*atomic_add_return.*;$', reserve)
+    assert expression, 'IPv4 identifier reservation expression missing'
+    reserve_test = ('\nstatic uint32_t reserve_test(atomic_t *p_id, int segs, uint32_t delta)\n{\n' +
+                    expression.group(0) + '\n}\n')
     assert 'no_sanitize' not in actual and '__signed_wrap' not in actual
     return r'''
 #include <assert.h>
@@ -61,6 +67,7 @@ def program():
 #define __always_inline inline __attribute__((always_inline))
 #define unlikely(x) __builtin_expect(!!(x), 0)
 typedef long long s64;
+typedef uint32_t u32;
 typedef struct { int counter; } atomic_t;
 typedef struct { s64 counter; } atomic64_t;
 #define raw_atomic_read(v) __atomic_load_n(&(v)->counter, __ATOMIC_SEQ_CST)
@@ -69,7 +76,7 @@ typedef struct { s64 counter; } atomic64_t;
     __atomic_compare_exchange_n(&(v)->counter, old, new, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
 #define raw_atomic64_try_cmpxchg raw_atomic_try_cmpxchg
 #define xadd(ptr, value) __atomic_fetch_add(ptr, value, __ATOMIC_SEQ_CST)
-''' + wrapping_macro(overflow, 'wrapping_add') + '\n' + wrapping_macro(overflow, 'wrapping_sub') + '\n' + actual + r'''
+''' + wrapping_macro(overflow, 'wrapping_add') + '\n' + wrapping_macro(overflow, 'wrapping_sub') + '\n' + actual + '\n#define atomic_add_return arch_atomic_add_return\n' + reserve_test + r'''
 static atomic_t shared32;
 static atomic64_t shared64;
 static void *worker(void *unused)
@@ -115,6 +122,12 @@ int main(int argc, char **argv)
     }
     BOUNDARIES(atomic_t, raw_atomic, INT_MIN, INT_MAX, arch_atomic_add_return);
     BOUNDARIES(atomic64_t, raw_atomic64, LLONG_MIN, LLONG_MAX, arch_atomic64_add_return);
+    atomic_t ids = { .counter = INT_MAX - 3 };
+    assert(reserve_test(&ids, 8, 0) == (uint32_t)(INT_MAX - 3));
+    assert(ids.counter == INT_MIN + 4);
+    ids.counter = INT_MIN;
+    assert(reserve_test(&ids, 8, UINT_MAX) == (uint32_t)INT_MAX);
+    assert(ids.counter == INT_MIN + 7);
     shared32.counter = INT_MAX - 19999;
     shared64.counter = LLONG_MAX - 19999;
     pthread_t threads[4];

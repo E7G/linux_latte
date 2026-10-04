@@ -21,6 +21,8 @@ on:
       - 'arch/x86/include/asm/atomic64_64.h'
       - 'include/linux/atomic/atomic-arch-fallback.h'
       - 'scripts/atomic/**'
+      - 'net/ipv4/route.c'
+      - 'fix_file/tests/atomic-wrap-module/**'
       - 'fix_file/tests/mipad2-test-no-idle-test.sh'
       - 'fix_file/tests/README.md'
       - 'drivers/iio/accel/hid-sensor-accel-3d.c'

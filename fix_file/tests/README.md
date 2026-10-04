@@ -24,8 +24,6 @@ python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
 VID/PID 与链接，防止 switch_root 或重复启动时无故 rebind。
 模拟“无主机”文件只验证 guard 不依赖连接状态，不能代替真机拔线启动测试。
 
-## 6.14 音频回调与原厂 DSP 回归
-
 ## 原子运算有意回绕回归
 
 ```bash
@@ -35,12 +33,17 @@ python3 fix_file/tests/mipad2-atomic-wrap-test.py --cc clang-21
 
 测试抽取实际 x86 add-return 与生成的 32/64 位条件加减函数，并校验生成文件
 与 generator 一致；仅用用户空间原子操作替代内核底层 read/CAS/xadd。
-覆盖边界、unless guard、四线程更新与独立 sanitizer 对照。
+覆盖边界、unless guard、四线程更新、实际 IPv4 ID 表达式与独立 sanitizer 对照。
 Clang21 下，无关的有符号溢出和数组越界仍应报告；GCC 的内核回绕参数会取消
 有符号溢出诊断，但数组越界对照仍须报告。该测试不替代真实内核头文件构建、
 内存顺序验证或新内核实机启动。没有使用 `no_sanitize` 或全局关闭检查。
 
-以下继续为音频回归：
+`atomic-wrap-module/` 是只操作局部计数器的可选内核测试模块，不安装为默认
+驱动，也不由 CI 加载。用匹配运行内核的完整构建树编译并签名后，才可临时
+加载；1000 轮真实 32/64 位边界与 guard 测试结束后卸载。外部模块会增加
+out-of-tree taint；这不是新内核启动验收，也不证明旧内核其他调用点已更新。
+
+## 6.14 音频回调与原厂 DSP 回归
 
 以下离线测试不会访问硬件、修改音量或播放声音：
 
