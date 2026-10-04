@@ -194,6 +194,12 @@ static void tfa98xx_dsp_init(struct work_struct *work)
 
 	mutex_lock(&tfa98xx->dsp_init_lock);
 
+	/* A queued request may outlive its playback stream or mute request. */
+	if (!tfa98xx->desired_running) {
+		mutex_unlock(&tfa98xx->dsp_init_lock);
+		return;
+	}
+
 	/* start the DSP using the latest profile / vstep */
 	{
 		int ret;
@@ -310,12 +316,13 @@ static int tfa98xx_digital_mute(struct snd_soc_dai *dai, int mute)
 	pr_debug("state: %d\n", mute);
 
 	/*
-	 * The monitor takes dsp_init_lock.  Drain it before taking that mutex,
-	 * otherwise cancel_delayed_work_sync() can wait forever for a worker
-	 * blocked on the lock held by this callback.
+	 * Both workers take dsp_init_lock. Drain them before taking that mutex,
+	 * otherwise cancellation can wait forever for a worker blocked on it.
 	 */
-	if (mute)
+	if (mute) {
 		cancel_delayed_work_sync(&tfa98xx->delay_work);
+		cancel_work_sync(&tfa98xx->init_work);
+	}
 
 	mutex_lock(&tfa98xx->dsp_init_lock);
 

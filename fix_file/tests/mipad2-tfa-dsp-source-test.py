@@ -50,6 +50,11 @@ mute = function_body(codec, "tfa98xx_digital_mute")
 cancel = mute.index("cancel_delayed_work_sync")
 lock = mute.index("mutex_lock(&tfa98xx->dsp_init_lock)")
 assert cancel < lock, "monitor cancellation must happen outside dsp_init_lock"
+assert mute.index("cancel_work_sync(&tfa98xx->init_work)") < lock, \
+    "init cancellation must also happen outside dsp_init_lock"
+worker = function_body(codec, "tfa98xx_dsp_init")
+assert worker.index("if (!tfa98xx->desired_running)") < worker.index("tfa98xx_dsp_start("), \
+    "a stale queued init must not power up an already-muted stream"
 assert "tfa98xx_dsp_stop(tfa98xx)" in mute
 assert "tfa98xx->desired_running = false;" in mute
 assert "tfa98xx->desired_running = true;" in mute

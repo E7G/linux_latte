@@ -10,6 +10,7 @@
 python3 fix_file/tests/mipad2-rt5659-rebind-test.py
 python3 fix_file/tests/mipad2-tfa-format-test.py
 python3 fix_file/tests/mipad2-tfa-start-test.py
+python3 fix_file/tests/mipad2-tfa-mute-worker-test.py
 python3 fix_file/tests/mipad2-tfa-dsp-log-check-test.py
 python3 fix_file/tests/mipad2-tfa-dsp-source-test.py
 ```
@@ -20,8 +21,9 @@ python3 fix_file/tests/mipad2-tfa-dsp-source-test.py
 
 `mipad2_tfa_dsp_test.py CANDIDATE.ko` 使用指定的环境变量
 `MIPAD2_HOST`、`MIPAD2_USER`、`MIPAD2_PASSWORD` 连接测试设备。
-测试默认 `MIPAD2_TFA_TEST_MODE=silent`：6 秒全零 PCM、不提升音量，
-检查左右两颗功放的本轮初始化与实际 DSP/时钟寄存器，然后恢复通用驱动。
+测试默认 `MIPAD2_TFA_TEST_MODE=silent`：两次 6 秒全零 PCM、不提升音量，
+检查左右两颗功放的本轮初始化与实际 DSP/时钟寄存器；每次结束后等待
+7 秒，检查正常桌面 idle 下 PCM 关闭、功放断电，再恢复通用驱动。
 候选 `.ko` 必须与 remote 脚本固定 SHA-256 一致，且 vermagic 匹配。
 
 需要听音时显式使用 `MIPAD2_TFA_TEST_MODE=audible`。先告知听音人员；

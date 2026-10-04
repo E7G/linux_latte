@@ -677,3 +677,40 @@ The settled hardware check caught the warm-handoff false success above.
 Default amp selection remains generic. Factory-DSP listening, profile/volume
 controls, sustained playback, and suspend/resume remain open; do not promote
 the optional candidate based only on these silent successes.
+
+### 2026-10-05: pending DSP-init work drained on mute
+
+The factory mute callback previously drained only its delayed monitor work,
+not the separate DSP-init work queued by that monitor/trigger. The init worker
+also did not recheck `desired_running`. A valid queued-after-mute schedule could
+therefore initialize/power the amp after playback was stopped. The new
+`mipad2-tfa-mute-worker-test.py` compiles and executes both actual callbacks with
+a controllable mock worker schedule: before the fix it failed the assertion
+that a stale post-mute init must leave the amp off. This reproduces the logic
+defect, not a measured kernel-scheduler race on the tablet.
+
+Mute now drains both work items outside the worker's shared mutex; the init
+worker checks the current playback request under that mutex and ignores stale
+requests. This complements synchronous cancellation's limitation in the
+presence of racing enqueues described by the
+[upstream workqueue API](https://kernel.org/doc/html/v6.12/core-api/workqueue.html#c.cancel_work_sync).
+The real-callback regression passes after the fix, including error paths,
+safe-probe mode, and assertions that neither cancellation holds the mutex.
+The full offline audio test set, Clang `W=1`, and strict modpost also passed.
+
+The updated exact-vermagic candidate SHA-256 is
+`bc788ce6a43b7a7ca14ae2e8f288dd39ae8e631a96ec50b60ea2fc646843db03`.
+One live temporary-driver run exercised two six-second digital-zero streams,
+with seven seconds of normal desktop idle after each (audio services were not
+stopped to force the idle check). Both active phases had real STATUS 0xd05f,
+SYS_CTRL 0x827c, DSP input, and MTP 0x0003 on both amps. Both idle phases had
+PCM closed, STATUS 0x025d (AREFS/AMPS clear), and SYS_CTRL 0x8265 (PWDN set).
+The second stream successfully resumed the same driver instance. Current-run
+DSP-init logs, generic-driver restoration, HiFi sink restoration, original
+volume restoration, and anti-idle checks all passed. This is a bounded
+start/stop/idle regression, not a long-duration scheduler stress proof.
+
+The C2C path still schedules its initial monitor after one second; short-sound
+startup latency is not yet optimized or acoustically verified. Keep this and
+the outstanding factory-DSP acoustic/resume gates open rather than claiming
+full audio completion.

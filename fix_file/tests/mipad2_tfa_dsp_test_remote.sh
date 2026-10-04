@@ -7,7 +7,7 @@ modname=snd_soc_tfa98xx_xiaomi
 stock=/sys/bus/i2c/drivers/tfa989x
 candidate=/sys/bus/i2c/drivers/tfa98xx
 devices=(i2c-tfa9890:00 i2c-tfa9890:01)
-expected_sha=43b77eed855313838b255678682a3b60cb62069b6ef597fd99356f9964b3ba0c
+expected_sha=bc788ce6a43b7a7ca14ae2e8f288dd39ae8e631a96ec50b60ea2fc646843db03
 switched=0
 audio_stopped=0
 audio_was_active=()
@@ -337,7 +337,6 @@ if [[ "$test_mode" == audible ]]; then set_test_audio_levels; fi
 
 echo "=== bounded PipeWire speaker test: mode=$test_mode ==="
 bursts=2
-[[ "$test_mode" != silent ]] || bursts=1
 for ((burst=1; burst<=bursts; burst++)); do
 	(timeout --signal=TERM --kill-after=3s 8s runuser -u user -- env XDG_RUNTIME_DIR=/run/user/1000 PULSE_SERVER=unix:/run/user/1000/pulse/native paplay "$tone") &
 	playback_pid=$!
@@ -370,7 +369,24 @@ for dev in ('i2c-tfa9890:00', 'i2c-tfa9890:01'):
 PY
 	fi
 	wait "$playback_pid"
-	[[ "$burst" == "$bursts" ]] || sleep 1
+	if [[ "$test_mode" == silent ]]; then
+		# Wait through PipeWire's suspend timeout without stopping its services.
+		# A mute must not leave queued init able to repower the now-idle amp.
+		sleep 7
+		grep -q closed /proc/asound/chtbswrt5659/pcm0p/sub0/status
+		python3 - <<'PY'
+from pathlib import Path
+for dev in ('i2c-tfa9890:00', 'i2c-tfa9890:01'):
+    path = Path('/sys/kernel/debug/regmap') / dev / 'registers'
+    values = {int(k,16): int(v,16) for k,v in
+              (line.split(':',1) for line in path.read_text().splitlines())}
+    assert values[9] & 1, (dev, 'PWDN not set after idle', hex(values[9]))
+    assert not values[0] & 0xc000, (dev, 'reference/amp still up after idle', hex(values[0]))
+    print(f'PASS idle {dev}: status={values[0]:04x} sys={values[9]:04x}')
+PY
+	elif [[ "$burst" != "$bursts" ]]; then
+		sleep 1
+	fi
 done
 for attempt in {1..30}; do
 	sink_inputs=$(runuser -u user -- env XDG_RUNTIME_DIR=/run/user/1000 PULSE_SERVER=unix:/run/user/1000/pulse/native pactl list short sink-inputs 2>&1) || true
