@@ -170,3 +170,13 @@ sudo python3 fix_file/tests/mipad2-t4ka3-otp-calibrated-test.py
 ```
 
 离线回归可传入 raw 与 calibrated 两个文件路径；应通过 `OK` 且字节完全相同。它验证布局/校验，不代表图像色彩或 ISP 画质验收。
+
+## TFA9890 factory DSP live test
+
+This test temporarily switches both speaker amplifiers from the stock `tfa989x` driver to the optional factory-DSP candidate. It only runs on the integrated 6.14 image and requires SSH/sudo access plus a candidate module matching the pinned SHA-256. Set `MIPAD2_HOST`, `MIPAD2_USER`, and `MIPAD2_PASSWORD`, then run:
+
+```bash
+python3 fix_file/tests/mipad2_tfa_dsp_test.py /path/to/snd_soc_tfa98xx_xiaomi.ko
+```
+
+The runner refuses the stable fallback kernel. It stops PipeWire/WirePlumber, checks every `/dev/snd/*` handle before unbinding, uses bounded playback through the OEM HiFi route, and restores the original audio services and stock drivers. Do not remove these handle gates: ASoC waits synchronously for ALSA files to close when a card component is unbound.

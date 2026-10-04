@@ -9,6 +9,8 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 CODEC = ROOT / "sound/soc/codecs/tfa98xx-xiaomi/tfa98xx.c"
 DSP = ROOT / "sound/soc/codecs/tfa98xx-xiaomi/tfa_dsp.c"
+LIVE_TEST = ROOT / "fix_file/tests/mipad2_tfa_dsp_test_remote.sh"
+LIVE_RUNNER = ROOT / "fix_file/tests/mipad2_tfa_dsp_test.py"
 
 
 def function_body(source: str, name: str) -> str:
@@ -33,6 +35,8 @@ def function_body(source: str, name: str) -> str:
 codec = CODEC.read_text()
 dsp = DSP.read_text()
 container_source = (CODEC.parent / "tfa_container.c").read_text()
+live_test = LIVE_TEST.read_text()
+live_runner = LIVE_RUNNER.read_text()
 
 
 def strip_c_comments(source: str) -> str:
@@ -131,4 +135,21 @@ assert "file->size < sizeof(struct nxpTfaHeader)" in container_source
 assert "tfa98xx_unmute" not in speaker_boost
 assert "tfa98xx_unmute(tfa98xx)" in start
 
-print("TFA DSP deadlock/error-path source checks passed")
+assert "fuser -s /dev/snd/*" in live_test, \
+    "live driver unbind must verify all ALSA control and PCM handles are closed"
+assert "stop_desktop_audio" in live_test and "audio_control stop" in live_test
+assert "refusing driver unbind" in live_test, \
+    "live cleanup must fail closed if ALSA handles remain open"
+assert "timeout --signal=TERM --kill-after=3s 8s runuser" in live_test
+assert 'paplay "$tone"' in live_test, \
+    "live playback must use the configured PipeWire/UCM route"
+assert "aplay -q -D hw:0,0" not in live_test, \
+    "raw front-end playback can bypass the configured HiFi route"
+assert "not in gate.splitlines()" in live_runner, \
+    "host runner must reject fallback kernel suffixes, not substring-match them"
+assert "^expected_sha=([0-9a-f]{64})$" in live_runner, \
+    "host and remote module hash must share one pinned value"
+assert "192.168.1.147" not in live_runner, \
+    "test runner must not hard-code a private device address"
+
+print("TFA DSP deadlock/error-path and live-test safety checks passed")
