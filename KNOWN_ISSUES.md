@@ -307,6 +307,15 @@ A further 45-second capture again kept value `27` at `3` and the accelerometer
 near one static vector; no pose transition was observed, and physical movement
 was not confirmed. Each probe restored `enable_sensor=0`.
 
+On a subsequent 45-second capture, the tablet remained stationary (the user
+confirmed it was not moved and was not laid flat). The event selector stayed
+at `5`, candidate orientation field `value_27` stayed at `0`, and the
+accelerometer raw vector stayed at `(-691984, 49166, -717726)` throughout.
+This is only a stationary single-pose baseline; it does not validate the
+orientation mapping or indicate a motion-report regression. The sensor was
+restored to `enable_sensor=0`, and post-capture anti-idle/system-health checks
+passed.
+
 ## 12. TFA9890 factory DSP path remains opt-in
 
 Both TFA9890 amplifiers enumerate on the stable 6.14 path, but the default
@@ -321,3 +330,12 @@ OEM DSP startup, left/right profile output, playback stop/resume, recovery,
 power use, and suspend/resume still need real-device validation before making
 it the default. Do not treat device enumeration or compile success as proof of
 OEM audio parity.
+
+The candidate's I2C remove path now clears the monitor flag, synchronously
+cancels the self-rearming delayed monitor and any queued DSP-init work, then
+destroys its workqueue. This closes a teardown hang found during an earlier
+module-switch test at source level; the updated teardown has not yet been
+retested on the tablet, and the cause of the previous reboot remains
+undetermined. Keep the stock TFA989X driver selected until a controlled
+candidate load/play/stop/unbind test completes without reboot and audio is
+verified end to end.
