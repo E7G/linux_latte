@@ -279,19 +279,21 @@ event and custom fields twice, then restored `enable_sensor=0`; the post-test
 anti-idle and system-health gates passed. The custom usage field returned
 `0x0205`, while the custom values are still raw and not semantically decoded.
 Thus PID `0002` is not absent on Linux, but its custom interface is not yet a
-standard IIO/orientation API. Do not claim orientation parity until the raw
-reports are mapped and four physical orientations are validated.
+standard IIO/orientation API. The four-way display-rotation result above is
+separate from this Windows Simple Orientation HID report; do not claim HID
+report parity until its raw fields are mapped and its values are validated.
 
-The standard IIO matrices are source-regression tested and checked on the
-tablet. A 45-second live capture on 2026-10-04 sampled the standard
-accelerometer and LUID `0205` while the tablet was rotated through four
-orientations. The standard accelerometer changed with movement; on the custom
-sensor, `event-sensor-event` changed from `5` to `1`, but
+The standard IIO matrices are source-regression tested, checked on the tablet,
+and visually validated in all four physical display orientations above. A
+45-second live capture on 2026-10-04 sampled the standard accelerometer and
+LUID `0205` while the tablet was rotated through four orientations. The
+standard accelerometer changed with movement; on the custom sensor,
+`event-sensor-event` changed from `5` to `1`, but
 `data-field-custom-value_1` stayed `0` and the other custom field did not yet
 yield a defensible orientation mapping. The sensor was restored to
 `enable_sensor=0`, and anti-idle, kernel-version and system-health gates passed.
-This confirms live motion response, not four-way orientation parity. Mapping
-the custom report and checking orientation after resume remain open.
+This confirms custom-HID motion response, not its orientation mapping. Mapping
+that report remains open.
 
 The HID `event-sensor-event` transition `5 -> 1` is not an orientation value:
 the HID Sensor Usage Tables define selector 5 as “Change Sensitivity” and 1 as
@@ -303,6 +305,15 @@ accelerometer buffer and restored it to `0`. It yielded 104 frames, with no
 confirmed four-pose markers; the sampled vector stayed near `(-0.692, 0.048,
 -0.718) g`. Treat this as inconclusive rather than a regression or validation.
 The capture path needs synchronized pose markers and continuous report checks.
+
+After the matrix fix, the integrated 6.14 kernel completed a 10-second
+RTC-timed s2idle cycle on 2026-10-04. PMC S0I3 residency increased by about
+9.77 seconds; the system returned to `running` with the anti-idle inhibitor
+active. A post-resume hardware smoke exited 0 and rechecked Wi-Fi, Bluetooth,
+audio, display/touch, cameras, and all standard IIO devices; the accelerometer,
+gyro, and magnetometer matrices and compass scale matched expected values.
+The display's visual rotation immediately after this resume is being checked
+separately.
 
 A targeted LUID `0205` probe found `data-field-custom-usage=0x0205` and
 `data-field-custom-value_27` with logical range `0..5`; Windows defines the
