@@ -441,3 +441,174 @@ usable capture pin and OpenAL/WASAPI returned `0x80070032`. Therefore no
 acoustic output claim is justified yet. The live module remains loaded only
 for this session; the stable boot entry and stock amplifier driver remain
 unchanged. Anti-idle/system health passed and the speaker volume was restored.
+
+The user subsequently reported no audible output with a freshly built live
+machine module. A read-only snapshot during an active PipeWire sink input
+showed `Ext Spk`, both C2C DAI-link widgets, both TFA AIF inputs, amp power,
+and both output widgets `On`; the RT5659 had `DIG_INF23_DATA=0x2000`,
+`I2S2_SDP=0x0000`, `PWR_DIG_1=0xc080`, and `GLB_CLK=0x4000`. Both TFA9890
+`STATUSREG`s read `0x0a5d`; **do not treat `NOCLK` alone as proof of missing
+external I2S clocks**. That value also has the `CLKS` flag set while `PLLS` and
+`AREFS` are clear according to the local field definitions, so it shows an
+unhealthy/not-ready state but does not isolate the clock fault. PCM/DAPM
+activation is verified; audible output remains unfixed. Android's init value
+is `DIG_INF23_DATA=0x2801`; the active Linux value `0x2000` confirms
+`IF2 ADC IN = DAC_REF`. The separate `IF2 DAC` selector is the RT5659 receive
+path, not the source sent to the TFA amps, so Linux now leaves it DAPM-managed.
+
+Follow-up source audit on 2026-10-04 compared the Android machine driver and
+the Linux 6.14 ASoC C2C implementation. Android routes each TFA `Playback`
+endpoint from RT5659 `AIF2 Capture`, and configures the RT5659 AIF2 as clock
+provider while each TFA is a consumer. The Linux C2C links have the same
+capture-to-playback direction; `snd_soc_get_stream_cpu()` maps C2C playback to
+CPU capture, and `snd_soc_runtime_set_dai_fmt()` flips the provider flags for
+the CPU DAI. The active-stream **cached** register snapshot also showed RT5659 AIF2 master
+mode (`I2S2_SDP=0`), AIF2 enabled (`PWR_DIG_1` bit 14), PLL source selected
+(`GLB_CLK=0x4000`), PLL powered (`PWR_ANLG_3` bit 6), 32fs BCLK, and I2S2 pins
+selected rather than GPIO (`GPIO_CTRL_3=0`). The 2026-10-05 hardware-bypassed
+audit below subsequently invalidated the clock conclusions from those cached
+values. The C2C source/configuration checks make a simple C2C
+direction or master/slave inversion unlikely, but register values do not prove
+the waveform reaches both TFA input pins. Next evidence needed: capture the
+TFA I2S/system-control registers and `PLLS`/`AREFS`/`CLKS` during playback,
+and verify the RT5659 BCLK/WS electrically or with a trustworthy hardware
+clock monitor. A later SSH snapshot was taken idle with no sink input, so its
+C2C widgets being `Off` is expected and is not playback evidence.
+
+Latest read-only SSH snapshot (2026-10-04): PipeWire's selected speaker sink
+was `SUSPENDED` with no sink-input; DAPM C2C links were `Off`, so this snapshot
+cannot diagnose an active playback failure. Software speaker volume was 47%,
+ALSA `Speaker` was 44% and `Mono` was on; neither speaker path was muted.
+Both TFA9890s were bound to the generic `tfa989x` driver. Earlier in this boot,
+the Xiaomi factory `tfa98xx` driver loaded its left/right containers and was
+then removed before `tfa989x` rebound both devices. A prior active-stream test
+did show the PCM/DAPM route powered through both TFA outputs, yet the user heard
+no sound. Therefore the remaining leading suspect is TFA amplifier/DSP or the
+physical I2S-to-amp signal, not a muted desktop sink; capture must be repeated
+while actual playback is active before narrowing further.
+
+Review of the earlier tone harness found its 440 Hz PCM peak was only 2,200 / 32,767
+(6.7% full scale). Combined with the observed PipeWire sink level (-19.67 dB)
+and ALSA Speaker level (-21 dB), the stimulus was roughly -64 dBFS before TFA
+amplifier gain. The user's earlier “no sound” result from that short tone was
+therefore not a valid acoustic-failure verdict. A corrected two-second test
+used a stronger 440 Hz stimulus and temporarily raised PipeWire/Speaker/Mono to
+80%, restoring the original levels afterward. The PCM stream and DAPM route
+were active, but the user still heard no sound. The anti-idle/system-health
+gates passed and the previous volume levels were restored. This rules out the
+earlier near-silent stimulus as an explanation; physical output is confirmed
+absent for this test, while the electrical cause is still unresolved.
+
+On 2026-10-05 a follow-up **digital-zero-only** stream was used to inspect the
+full live DAPM path without producing another audible test. Both TFA9890s had
+their playback input, selected AIF input, input mux, power supply, amp-enable,
+and `OUT Left`/`OUT Right` widgets `On`; RT5659 `AIF2 Capture`, `AIF2TX`,
+`DAC_REF` and `AIF1 Playback` were also `On`. The `HiFi Playback` DAPM stream
+labels displayed `inactive` even though the PCM substream was `RUNNING` and the
+widgets/routes were powered, so those labels alone are not proof that the PCM
+missed the backend.
+
+During that silent stream, a read-only I2C snapshot showed TFA I2S registers
+`0x880b` (left) and `0x884b` (right), and SYS_CTRL `0x8208` on both chips:
+PWDN was clear and AMPE was set, while DCA and CFE were clear. After playback
+stopped, SYS_CTRL read `0x8201` on both (PWDN set, AMPE clear), confirming DAPM
+power sequencing. Both TFA `STATUSREG`s again read `0x0a5d`. These reads still
+cannot prove BCLK/WS/data waveform at the amp pins or acoustic output.
+
+The earlier proposal to enable DCA in the generic bypass path was withdrawn
+after checking the [NXP TFA9890A datasheet, sections 8.1.2 and 8.4](https://yibeiic-shop.oss-cn-hangzhou.aliyuncs.com/media/collection/tfa9890aukn1z-8WzIAdME-VobW9VJNj.pdf).
+Follower mode supplies the amplifier from the battery without boost. NXP
+explicitly recommends keeping boost disabled with the DSP bypassed. Thus the
+generic driver's DCA=0/CFE=0 is intentional, not evidence of the silence's
+root cause; the DSP driver's DCA=1 is a different operating mode. No DCA write
+was performed. Continue with clock/input selection and factory DSP startup,
+not an unprotected boost test. The datasheet also states that valid BCK and WS
+are required for operating mode, even when PWDN is clear.
+
+### 2026-10-05: RT5659 reset/rebind cache-coherence failure identified
+
+A temporary exact-vermagic module used `regmap_read_bypassed()` under regmap's
+normal locking to compare cached values with actual hardware during a
+digital-zero stream. It did not use forced I2C access or change amplifier
+settings. The critical RT5659 differences were:
+
+| Register | Cached configuration | Actual hardware before recovery |
+| --- | --- | --- |
+| `I2S1_SDP` (0x70) | 0x8103 | 0x8000 |
+| `I2S2_SDP` (0x71) | 0x0000 (clock provider) | 0x8000 (clock consumer) |
+| `PLL_CTRL_1` (0x81) | 0x0f03 | 0x0000 |
+| `PLL_CTRL_2` (0x82) | 0x3000 | 0x0001 |
+| `GPIO_CTRL_1` (0xc0) | 0xc800 | 0x0000 |
+
+Power registers matched cache, and the platform MCLK was enabled at 19.2 MHz,
+but neither fact proved that the interface/PLL configuration reached hardware.
+RT5659's component `remove()` resets the chip while its I2C regmap and cached
+DAI/PLL state survive a sound-card/machine-driver rebind. The old callback did
+not mark the regcache dirty, and component `probe()` did not sync it. Subsequent
+cached update-bits/unchanged-PLL fast paths could therefore leave reset hardware
+in consumer mode with reset PLL parameters. This is a concrete failure in the
+live module-reload workflow, not evidence that the C2C provider flags were wrong.
+
+An explicit cache-dirty/sync recovery returned 0. A subsequent digital-zero
+stream showed actual `I2S1_SDP=0x8103`, `I2S2_SDP=0x0000`, and
+`PLL_CTRL_1=0x0f03`, matching cache. Both TFA status registers changed from
+0x0a5d to 0xd85f: PLLS/AREFS/AMPS were set and NOCLK was clear. The user then
+confirmed hearing two 2-second 440 Hz tones at the unchanged desktop/mixer
+volume. Thus generic bypass speaker output is acoustically confirmed for this
+recovered 6.14 session; this does not validate the optional factory DSP driver.
+
+The source fix marks RT5659 regcache dirty after component reset, syncs it before
+component probe registers DAPM controls, and propagates probe/control/resume sync
+errors. `mipad2-rt5659-rebind-test.py` compiles and executes the actual four
+callbacks with mocked persistent cache/hardware, including injected reset,
+sync, and control-registration failures. The Clang `W=1` RT5659/RL6231 module
+build completed with strict modpost and exact running-kernel vermagic.
+
+The candidate codec was loaded temporarily, then the known-working machine
+module was removed and reinserted without unloading the codec. After this
+formerly failing sequence, **without any diagnostic cache repair**, actual
+interface/PLL registers matched the expected configuration and both TFA chips
+passed PLLS/AREFS/AMPS/NOCLK checks. The PCM was RUNNING, desktop audio restarted,
+and system/anti-idle health gates passed (`REBIND_PASS=1`, `CLEANUP_RC=0`).
+Post-candidate acoustic confirmation, suspend/resume, and persistence across
+reboot must be recorded separately rather than inferred from this silent test.
+
+The prior Android `DUMMY_2=0x001d` hypothesis was also tested temporarily with
+digital zeros. Hardware/cache readback verified the write and restoration to
+0x0000; neither TFA clock status improved. No permanent DUMMY_2 quirk was added.
+The matching factory container (SHA-256
+`83709da84f22b5c0ff1f7568478b3ecbfc1c1c29bc3814a8be8a64426f3c2c2a`)
+selects 48 kHz and left/right raw input in its bypass profiles, consistent with
+the generic driver's active I2S settings. DCA/boost was not changed.
+
+`mipad2-tfa-format-test.py` separately executes the real generic TFA set-format
+callback with 38 fault-injection/format/field-preservation cases. It now
+propagates regmap read/write errors and rejects unimplemented clock inversion;
+the OEM I2S reset-format bits are preserved. Its `W=1` object build passed. This
+is error-handling hardening, not the cause of the restored audible output, and
+the running built-in TFA driver has not been replaced with that source change.
+
+The same source audit found a concrete defect in the optional Xiaomi DSP
+driver: its DAPM graph created only an unconnected `I2S1` input and an
+`NXP Output Mixer`, while this board's speaker routes require `OUT Left` and
+`OUT Right`. The DSP candidate therefore lacked board-facing output endpoints.
+The driver now creates the matching endpoint for Mi Pad 2 addresses `0x34`
+(left) and `0x37` (right), connects each per-device playback stream through the
+mixer to that endpoint, and propagates DAPM registration errors. The modified
+driver object compiles with Clang 21 and `W=1`. A full `vmlinux` build then
+generated matching `vmlinux.o`/`Module.symvers`; strict modpost linked the
+candidate `.ko` without unresolved-symbol errors. Its vermagic is
+`6.14.0-mipad2-cachyos SMP preempt mod_unload modversions`, matching the
+running kernel release/config fields. The earlier warning-only `.ko` was
+discarded.
+
+On 2026-10-04 the strict candidate was temporarily loaded on the running 6.14
+system for a **silent DAPM-registration probe**. Both amplifiers bound to
+`tfa98xx`, both factory containers exposed three profiles, and the component
+DAPM trees contained `OUT Left` / `OUT Right` routed through each `NXP Output
+Mixer`. No audio stream or tone was started, so both endpoints correctly read
+`Off`; this proves runtime registration only, not DSP initialization or sound.
+Cleanup restored both devices to `tfa989x`, restored the original PipeWire
+speaker route (`AUDIO_RESTORED=yes`), and passed the anti-idle/system health
+gates. Keep the stock amp driver selected until bounded playback, DSP init,
+audible output, teardown, and suspend/resume all pass on-device.

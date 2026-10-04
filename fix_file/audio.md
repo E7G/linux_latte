@@ -84,6 +84,22 @@ dmesg | grep -Ei 'rt5659|tfa9890|snd|audio'
 
 如果只有 suspend/resume 后失声，请把它当成电源管理回归问题记录：同时保存 suspend 前后的 `wpctl status`、`/proc/asound/cards` 和相关 `dmesg`，不要先用固定 mixer 命令掩盖问题。
 
+### 6.14 声卡重载后的无声：寄存器缓存不等于硬件
+
+2026-10-05 实测发现：卸载机器驱动会触发 RT5659 组件复位，但 I2C
+regmap 缓存仍保存旧的 AIF/PLL 配置。debugfs 缓存显示 AIF2 为主时钟，
+实际硬件却仍为从时钟，功放因此无法就绪。同步缓存后，用户确认扬声器出声。
+整合分支已在组件复位后标记缓存失效、重新绑定时同步，并传递同步错误。
+修复版的声卡重载静音回归已通过；不要再将缓存读数当作真实硬件时钟证据。
+完整记录及测试边界见 `KNOWN_ISSUES.md`。
+
+离线回归（不会播放声音或访问硬件）：
+
+```bash
+python3 fix_file/tests/mipad2-rt5659-rebind-test.py
+python3 fix_file/tests/mipad2-tfa-format-test.py
+```
+
 建议每次修改音频、电源管理或 suspend/resume 相关代码后，同时运行：
 
 ```bash

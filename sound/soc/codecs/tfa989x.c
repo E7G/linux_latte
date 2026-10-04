@@ -215,8 +215,8 @@ static int tfa989x_hw_params(struct snd_pcm_substream *substream,
 static int tfa989x_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 {
 	struct snd_soc_component *component = codec_dai->component;
-	//struct tfa989x *tfa989x = snd_soc_component_get_drvdata(component);
-	u16 val;
+	unsigned int val;
+	int ret;
 
 	pr_debug("\n");
 	dev_dbg(component->dev, "DAI format: %#x\n", fmt);
@@ -232,27 +232,37 @@ static int tfa989x_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 		pr_err("tfa989x: invalid DAI master/slave interface\n");
 		return -EINVAL;
 	}
-	val = snd_soc_component_read(component, TFA989X_I2SREG);
+	/* This driver does not program clock inversion. */
+	if ((fmt & SND_SOC_DAIFMT_INV_MASK) != SND_SOC_DAIFMT_NB_NF)
+		return -EINVAL;
+
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
-		/* default value */
-		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_LSB;
-		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_MSB;
 		break;
 	default:
 		pr_err("tfa989x: invalid DAI interface format\n");
 		return -EINVAL;
 	}
 
-	snd_soc_component_write(component, TFA989X_I2SREG, val);
+	ret = regmap_read(component->regmap, TFA989X_I2SREG, &val);
+	if (ret)
+		return ret;
 
-	return 0;
+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+	case SND_SOC_DAIFMT_RIGHT_J:
+		val = (val & ~TFA98XX_FORMAT_MASK) | TFA98XX_FORMAT_LSB;
+		break;
+	case SND_SOC_DAIFMT_LEFT_J:
+		val = (val & ~TFA98XX_FORMAT_MASK) | TFA98XX_FORMAT_MSB;
+		break;
+	default:
+		/* Preserve the OEM I2S reset format, as before. */
+		break;
+	}
+
+	return regmap_write(component->regmap, TFA989X_I2SREG, val);
 }
 /*****************************************************************************/
 

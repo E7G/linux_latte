@@ -20,12 +20,12 @@ The table below describes what is present in the current source/configuration. â
 | Capacitive bezel keys | Integrated | Mi Pad 2-specific HID handling is in the kernel tree. The old udev hwdb mapping in `fix_file/README.md` is now only a fallback. |
 | Wi-Fi | Available, firmware required | BCM4356 support is built as modules (`cfg80211` / `brcmfmac`). Device NVRAM is kept under `fix_file/`. |
 | Bluetooth | Available, firmware required | Broadcom HCI UART support is modular. `BCM4356A2.hcd` is provided under `fix_file/`. |
-| Audio | Available and live-validated | RT5659 / dual TFA9890 enumerate correctly; repeated PCM start/stop and suspend/resume regression passed. Uses the `mipad2-alsa-ucm` profile. |
+| Audio | Speaker output confirmed on 6.14 | On 2026-10-05 the user heard the generic dual-TFA9890 path after restoring RT5659 hardware/cache coherence. The component-reset/rebind fix passed live clock/amp-ready checks. Factory-DSP, reboot persistence, and subsequent acoustic regressions remain separate gates. Uses the `mipad2-alsa-ucm` profile. |
 | USB host / device mode | Available | DWC3 PCI dual-role support is enabled. Gadget mode may still require the firmware/BIOS OTG setting described in `fix_file/USB_OTG_Gadget.md`. |
 | USB serial debug | Available | `mipad2-usb-serial` exposes CDC ACM `/dev/ttyGS0`; with the current kernel config it can also act as a kernel console and replay the printk ring buffer after USB enumeration. |
 | Battery / charger | Integrated and live-validated | BQ25890 uses the Xiaomi 4.400 V VREG / 256 mA termination profile; BQ27520 reports the 6190 mAh design capacity and the former Full@83% issue is resolved. |
 | TXE / MEI | Integrated and live-validated | Intel Trusted Execution Engine 8086:2298 binds to `mei_txe` and exposes `/dev/mei0`. |
-| IIO sensors | Integrated, verify on device | The regression script expects ALS, accelerometer, gyro, magnetometer, inclination and device-rotation IIO devices. |
+| IIO sensors | Standard orientation live-validated | ALS, accelerometer, gyro, magnetometer, inclination and device-rotation nodes enumerate. The Mi Pad 2 matrices and four physical display orientations were verified; proprietary Windows ISS sensor payloads remain unmapped. |
 | Indicator / touch-key LEDs | Integrated, verify on device | The regression script checks `mipad2:rgb:indicator` and `mipad2:white:touch-buttons-backlight`. |
 | Front camera | Experimental | OV5693 uses the in-tree driver through AtomISP. |
 | Rear camera | Experimental | T4KA3 support is integrated in this kernel tree; DW9761 focus is handled through the compatible `dw9719` driver. |
@@ -47,6 +47,12 @@ The AtomISP camera stack is still the least mature part of this port. The curren
 Camera support should therefore be treated as **testable but still under active development**, not as fully stable. The supplied camera test scripts may expose AtomISP hangs; if a test leaves the driver stuck in an uninterruptible state, reboot before continuing.
 
 ## Build
+
+On Windows hosts, keep the kernel checkout on a case-sensitive Linux filesystem
+(for example, inside WSL's Linux filesystem), not a case-insensitive NTFS path.
+This source tree contains distinct case-only paths such as `xt_DSCP.c` and
+`xt_dscp.c`; a case-insensitive checkout aliases them and can replace a target
+driver with a different match driver without a reliable build failure.
 
 The current Mi Pad 2 defconfig requests Clang ThinLTO (`CONFIG_LTO_CLANG_THIN=y`). For a reproducible build that preserves the intended configuration, LLVM/Clang is therefore the recommended toolchain and `LLVM=1` should be passed consistently:
 

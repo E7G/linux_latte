@@ -3677,18 +3677,22 @@ static int rt5659_probe(struct snd_soc_component *component)
 	struct snd_soc_dapm_context *dapm =
 		snd_soc_component_get_dapm(component);
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
+	int ret;
 
 	rt5659->component = component;
+	/* Component removal resets hardware, but the I2C regmap survives. */
+	ret = regcache_sync(rt5659->regmap);
+	if (ret)
+		return ret;
 
 	switch (rt5659->pdata.jd_src) {
 	case RT5659_JD_HDA_HEADER:
 		break;
 
 	default:
-		snd_soc_dapm_new_controls(dapm,
+		return snd_soc_dapm_new_controls(dapm,
 			rt5659_particular_dapm_widgets,
 			ARRAY_SIZE(rt5659_particular_dapm_widgets));
-		break;
 	}
 
 	return 0;
@@ -3697,8 +3701,13 @@ static int rt5659_probe(struct snd_soc_component *component)
 static void rt5659_remove(struct snd_soc_component *component)
 {
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
+	int ret;
 
-	regmap_write(rt5659->regmap, RT5659_RESET, 0);
+	ret = regmap_write(rt5659->regmap, RT5659_RESET, 0);
+	if (ret)
+		dev_err(component->dev, "failed to reset codec: %d\n", ret);
+	/* Replay cached configuration when the component is rebound. */
+	regcache_mark_dirty(rt5659->regmap);
 }
 
 #ifdef CONFIG_PM
@@ -3716,9 +3725,7 @@ static int rt5659_resume(struct snd_soc_component *component)
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
 
 	regcache_cache_only(rt5659->regmap, false);
-	regcache_sync(rt5659->regmap);
-
-	return 0;
+	return regcache_sync(rt5659->regmap);
 }
 #else
 #define rt5659_suspend NULL
