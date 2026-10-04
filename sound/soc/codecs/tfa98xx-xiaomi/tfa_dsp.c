@@ -2389,7 +2389,7 @@ static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 
 int tfa98xx_dsp_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
 {
-	int forcecoldboot = coldboot;
+	int forcecoldboot = coldboot || tfa98xx->needs_full_init;
 	int active_profile;
 	int active_vstep;
 	int ret = 0;
@@ -2458,9 +2458,12 @@ int tfa98xx_dsp_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
 	if (ret)
 		goto rollback_state;
 
+	tfa98xx->needs_full_init = false;
 	return 0;
 
 rollback_state:
+	/* A failed/partial profile write no longer proves our hardware state. */
+	tfa98xx->needs_full_init = true;
 	{
 		int stop_ret = tfa98xx_dsp_stop(tfa98xx);
 

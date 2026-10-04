@@ -51,6 +51,7 @@ struct tfa98xx {
 	struct regmap *regmap;
 	struct i2c_client *i2c;
 	struct snd_soc_component *component;
+	char playback_stream_name[32];
 	struct workqueue_struct *tfa98xx_wq;
 	struct work_struct init_work;
 	struct delayed_work delay_work;
@@ -74,6 +75,7 @@ struct tfa98xx {
 #endif
 	int monitor_status;
 	bool desired_running;
+	bool needs_full_init;
 };
 
 #endif

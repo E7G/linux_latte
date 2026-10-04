@@ -55,6 +55,21 @@ assert "tfa98xx->desired_running = false;" in mute
 assert "tfa98xx->desired_running = true;" in mute
 assert ".mute_stream\t= tfa98xx_mute_stream" in codec
 
+# Each physical amp must expose the machine driver's board-facing output pin;
+# an unconnected mixer can bind successfully while silently powering no path.
+assert 'SND_SOC_DAPM_OUTPUT("OUT Left")' in codec
+assert 'SND_SOC_DAPM_OUTPUT("OUT Right")' in codec
+probe = function_body(codec, "tfa98xx_probe")
+assert "tfa98xx->i2c->addr == 0x37" in probe
+assert "tfa98xx->i2c->addr == 0x34" in probe
+assert 'output_name = "OUT Right"' in probe
+assert 'output_name = "OUT Left"' in probe
+assert "dapm_routes[0].source = tfa98xx->playback_stream_name;" in probe
+assert 'dapm_routes[1].source = "NXP Output Mixer";' in probe
+assert "if (ret)\n\t\treturn ret;" in probe
+i2c_probe = function_body(codec, "tfa98xx_i2c_probe")
+assert "dai_drv->playback.stream_name = tfa98xx->playback_stream_name;" in i2c_probe
+
 monitor = function_body(codec, "tfa98xx_monitor")
 assert monitor.count("READ_ONCE(tfa98xx->monitor_status)") == 2, \
     "monitor stop flag must be read atomically before and after work"
@@ -134,6 +149,10 @@ assert "tfa_container_file_valid(base, total" in container_source
 assert "file->size < sizeof(struct nxpTfaHeader)" in container_source
 assert "tfa98xx_unmute" not in speaker_boost
 assert "tfa98xx_unmute(tfa98xx)" in start
+assert "coldboot || tfa98xx->needs_full_init" in start
+assert "tfa98xx->needs_full_init = false;" in start
+assert "tfa98xx->needs_full_init = true;" in start[start.index("rollback_state:"):]
+assert "tfa98xx->needs_full_init = true;" in probe
 
 assert "fuser -s /dev/snd/*" in live_test, \
     "live driver unbind must verify all ALSA control and PCM handles are closed"
@@ -143,6 +162,15 @@ assert "refusing driver unbind" in live_test, \
 assert "timeout --signal=TERM --kill-after=3s 8s runuser" in live_test
 assert 'paplay "$tone"' in live_test, \
     "live playback must use the configured PipeWire/UCM route"
+assert "save_test_audio_levels\nstop_desktop_audio" in live_test, \
+    "save speaker levels before stopping the user audio services"
+assert "restore_desktop_audio\n\trestore_test_audio_levels" in live_test, \
+    "restore original speaker levels after the user audio stack is back"
+assert "set_test_audio_levels" in live_test and \
+    "capture_active_playback_state" in live_test, \
+    "bounded playback must use a known audible level and sample live DAPM/TFA state"
+assert "amplitude = 12_000" in live_runner and "frames = 96_000" in live_runner, \
+    "test stimulus must be a two-second non-negligible PCM tone"
 assert "aplay -q -D hw:0,0" not in live_test, \
     "raw front-end playback can bypass the configured HiFi route"
 assert "not in gate.splitlines()" in live_runner, \
@@ -151,5 +179,15 @@ assert "^expected_sha=([0-9a-f]{64})$" in live_runner, \
     "host and remote module hash must share one pinned value"
 assert "192.168.1.147" not in live_runner, \
     "test runner must not hard-code a private device address"
+assert 'MIPAD2_TFA_TEST_MODE:-silent' in live_test
+assert 'if [[ "$test_mode" == audible ]]; then set_test_audio_levels; fi' in live_test
+assert "assert not any(pcm.readframes" in live_test, \
+    "silent tests must reject nonzero PCM before touching audio drivers"
+assert 'printf \'%s\\n\' "$log_marker" > /dev/kmsg' in live_test
+assert '"$log_marker" --containers-only' in live_test
+assert 'python3 "$log_checker" "$log_raw" "$log_marker";' in live_test, \
+    "require both amplifiers in this run, not a historical ret=0"
+assert 'dmesg | grep -F \'factory DSP init ret=0\'' not in live_test
+assert "MIPAD2_TFA_TEST_MODE={test_mode}" in live_runner
 
 print("TFA DSP deadlock/error-path and live-test safety checks passed")

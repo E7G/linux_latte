@@ -629,3 +629,51 @@ Cleanup restored both devices to `tfa989x`, restored the original PipeWire
 speaker route (`AUDIO_RESTORED=yes`), and passed the anti-idle/system health
 gates. Keep the stock amp driver selected until bounded playback, DSP init,
 audible output, teardown, and suspend/resume all pass on-device.
+
+### 2026-10-05: factory DSP warm-handoff recovery and scoped live validation
+
+After the RT5659 cache fix, a six-second digital-zero stream initialized both
+factory DSPs successfully for the first time in this test sequence. However,
+repeating the generic-to-factory driver handoff exposed a second defect:
+the old code returned `ret=0` while SYS_CTRL was 0x8218 (CFE clear) and the
+amplifier input remained raw rather than DSP. The ACS latch was already clear
+from the previous factory initialization, but the intervening generic driver
+had disabled/bypassed CF. A new factory-driver instance incorrectly trusted
+that warm latch and skipped loading its own container/register configuration.
+Thus a successful log message alone was insufficient evidence of DSP playback.
+
+The factory driver now marks each component probe as requiring full DSP
+initialization. `tfa98xx_dsp_start()` forces the existing Xiaomi/NXP cold-start
+sequence until its own initialization/unmute succeeds; a partial profile or
+volume/start failure invalidates this ownership flag again. Normal warm restarts
+after a successful initialization remain warm. The real start callback is
+compiled and exercised by `mipad2-tfa-start-test.py` with mocked operations for
+fresh warm-latch handoff, normal idle restart, recovery, parameter errors, and
+failed/partial-write rollback. The Clang `W=1` candidate module build and strict
+modpost completed with exact running-kernel vermagic.
+
+The freshly built candidate SHA-256 is
+`43b77eed855313838b255678682a3b60cb62069b6ef597fd99356f9964b3ba0c`.
+Two separate on-device **silent** handoff/initialization/teardown runs passed:
+both amps reported current-run DSP init `ret=0`; while PCM remained RUNNING,
+both real (REGCACHE_NONE) register sets had STATUS 0xd05f and SYS_CTRL 0x827c,
+PLLS/AREFS/AMPS set, NOCLK clear, CFE/AMPE/DCA enabled, PWDN clear, and CHSA=2
+(DSP input). Factory MTP remained 0x0003; hardware-bypassed pre/post reads of
+the trim words stayed 0x7f7d (left) and 0x7f55 (right). No calibration/trim
+change was observed. Both runs restored `tfa989x`, the HiFi desktop sink,
+original volumes, and the active anti-idle inhibitor; the subsequent broad
+hardware enumeration/configuration smoke test passed.
+
+The live harness now defaults to `MIPAD2_TFA_TEST_MODE=silent`, checks that its
+six-second WAV contains only digital zeros before touching drivers, and does
+not raise volume in silent mode. Audible mode must be explicitly selected and
+requires a listening result; neither mode's init/clock gate proves acoustic
+output. Each test writes a unique kernel-log marker and requires both physical
+amps' container/init evidence after that marker. Eight executable log-parser
+tests reject old successes, a single-amp success, missing/duplicate markers,
+unrelated messages, deferred-only probes, and a latest initialization failure.
+The settled hardware check caught the warm-handoff false success above.
+
+Default amp selection remains generic. Factory-DSP listening, profile/volume
+controls, sustained playback, and suspend/resume remain open; do not promote
+the optional candidate based only on these silent successes.

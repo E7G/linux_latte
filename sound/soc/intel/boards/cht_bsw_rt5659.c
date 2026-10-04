@@ -301,6 +301,21 @@ static int cht_audio_init(struct snd_soc_pcm_runtime *runtime)
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(runtime->card);
 	int ret;
 	struct snd_soc_card *card = runtime->card;
+	unsigned int if2_adc_in = 2 << RT5659_IF2_ADC_IN_SFT;
+
+	/*
+	 * Android's Mi Pad 2 RT5659 init writes DIG_INF23_DATA = 0x2801.
+	 * Select DAC_REF for AIF2's transmit input (IF2 ADC IN). Leave the
+	 * separate IF2 DAC channel-swap selector to DAPM; it is the receive
+	 * path and is not the source sent to the TFA9890 amplifiers.
+	 */
+	ret = snd_soc_component_update_bits(component, RT5659_DIG_INF23_DATA,
+					    RT5659_IF2_ADC_IN_MASK, if2_adc_in);
+	if (ret < 0) {
+		dev_err(runtime->dev, "failed to select RT5659 AIF2 transmit source: %d\n",
+			ret);
+		return ret;
+	}
 
 	if (ctx->use_ssp0) {
 		ret = snd_soc_dapm_add_routes(&runtime->card->dapm,

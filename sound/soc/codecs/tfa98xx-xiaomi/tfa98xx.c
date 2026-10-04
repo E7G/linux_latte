@@ -411,14 +411,14 @@ static int tfa98xx_trigger(struct snd_pcm_substream *substream, int cmd,
  * ASOC controls
  */
 
-static const struct snd_soc_dapm_widget tfa98xx_dapm_widgets[] = {
-	SND_SOC_DAPM_INPUT("I2S1"),
+static const struct snd_soc_dapm_widget tfa98xx_left_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_OUTPUT("OUT Left"),
 };
 
-static char dapm_name[MAX_CONTROL_NAME];
-static const struct snd_soc_dapm_route tfa98xx_dapm_routes[] = {
-	{"NXP Output Mixer", NULL, dapm_name},
+static const struct snd_soc_dapm_widget tfa98xx_right_dapm_widgets[] = {
+	SND_SOC_DAPM_MIXER("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_OUTPUT("OUT Right"),
 };
 
 
@@ -706,10 +706,16 @@ static struct snd_soc_dai_driver tfa98xx_dai = {
 static int tfa98xx_probe(struct snd_soc_component *component)
 {
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
+	struct snd_soc_dapm_route dapm_routes[2] = { };
+	const struct snd_soc_dapm_widget *dapm_widgets;
+	const char *output_name;
+	unsigned int num_dapm_widgets;
 	int ret;
 	u16 rev;
 
 	tfa98xx->component = component;
+	/* A previous driver may have bypassed CF without setting the ACS latch. */
+	tfa98xx->needs_full_init = true;
 
 	/*
 	 * some device require a dummy read in order to generate
@@ -730,13 +736,36 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 		 "factory container ready: %s profiles=%d defer_dsp_start=%d\n",
 		 tfa98xx->fw.name, tfa98xx->profile_count, defer_dsp_start);
 
-	snd_soc_dapm_new_controls(snd_soc_component_get_dapm(component), tfa98xx_dapm_widgets,
-				  ARRAY_SIZE(tfa98xx_dapm_widgets));
+	/* Mi Pad 2 uses address 0x34 for left and 0x37 for right amplifier. */
+	if (tfa98xx->i2c->addr == 0x37) {
+		dapm_widgets = tfa98xx_right_dapm_widgets;
+		num_dapm_widgets = ARRAY_SIZE(tfa98xx_right_dapm_widgets);
+		output_name = "OUT Right";
+	} else if (tfa98xx->i2c->addr == 0x34) {
+		dapm_widgets = tfa98xx_left_dapm_widgets;
+		num_dapm_widgets = ARRAY_SIZE(tfa98xx_left_dapm_widgets);
+		output_name = "OUT Left";
+	} else {
+		dev_err(component->dev, "unsupported TFA9890 address 0x%02x\n",
+			tfa98xx->i2c->addr);
+		return -EINVAL;
+	}
 
-	scnprintf(dapm_name, MAX_CONTROL_NAME, "%s Playback",
-			dev_name(&tfa98xx->i2c->dev));
-	snd_soc_dapm_add_routes(snd_soc_component_get_dapm(component), tfa98xx_dapm_routes,
-				ARRAY_SIZE(tfa98xx_dapm_routes));
+	ret = snd_soc_dapm_new_controls(snd_soc_component_get_dapm(component),
+					dapm_widgets, num_dapm_widgets);
+	if (ret)
+		return ret;
+
+	dapm_routes[0].sink = "NXP Output Mixer";
+	dapm_routes[0].control = NULL;
+	dapm_routes[0].source = tfa98xx->playback_stream_name;
+	dapm_routes[1].sink = output_name;
+	dapm_routes[1].control = NULL;
+	dapm_routes[1].source = "NXP Output Mixer";
+	ret = snd_soc_dapm_add_routes(snd_soc_component_get_dapm(component),
+				      dapm_routes, ARRAY_SIZE(dapm_routes));
+	if (ret)
+		return ret;
 
 	tfa98xx->profile_current = 0;
 	tfa98xx->vstep_current = 0;
@@ -996,7 +1025,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c)
 	struct tfa98xx *tfa98xx;
 	int ret;
 	struct snd_soc_dai_driver *dai_drv;
-	char stream_name[MAX_CONTROL_NAME];
 
 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
 		dev_err(&i2c->dev, "check_functionality failed\n");
@@ -1061,13 +1089,10 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c)
 	}
 
 	*dai_drv = tfa98xx_dai;
-	scnprintf(stream_name, MAX_CONTROL_NAME, "%s Playback",
-		dev_name(&i2c->dev));
-	dai_drv->playback.stream_name = devm_kstrdup(&i2c->dev, stream_name, GFP_KERNEL);
-	if (dai_drv->playback.stream_name == NULL) {
-		ret = -ENOMEM;
-		goto codec_fail;
-	}
+	scnprintf(tfa98xx->playback_stream_name,
+		  sizeof(tfa98xx->playback_stream_name), "%s Playback",
+		  dev_name(&i2c->dev));
+	dai_drv->playback.stream_name = tfa98xx->playback_stream_name;
 
 	ret = devm_snd_soc_register_component(&i2c->dev, &tfa98xx_soc_component,
 			dai_drv, 1);

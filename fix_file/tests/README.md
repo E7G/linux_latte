@@ -2,6 +2,35 @@
 
 本目录用于当前 Mi Pad 2 内核的真机回归，不是通用 Linux 硬件诊断工具。
 
+## 6.14 音频回调与原厂 DSP 回归
+
+以下离线测试不会访问硬件、修改音量或播放声音：
+
+```bash
+python3 fix_file/tests/mipad2-rt5659-rebind-test.py
+python3 fix_file/tests/mipad2-tfa-format-test.py
+python3 fix_file/tests/mipad2-tfa-start-test.py
+python3 fix_file/tests/mipad2-tfa-dsp-log-check-test.py
+python3 fix_file/tests/mipad2-tfa-dsp-source-test.py
+```
+
+真实 RT5659/TFA 回调测试会抽取当前源码编译为 mock harness，验证重绑定、
+暖启动、参数和故障路径；日志测试防止历史成功或仅一颗功放成功被误判。
+这些测试不替代真机时钟、保护配置和听音验证。
+
+`mipad2_tfa_dsp_test.py CANDIDATE.ko` 使用指定的环境变量
+`MIPAD2_HOST`、`MIPAD2_USER`、`MIPAD2_PASSWORD` 连接测试设备。
+测试默认 `MIPAD2_TFA_TEST_MODE=silent`：6 秒全零 PCM、不提升音量，
+检查左右两颗功放的本轮初始化与实际 DSP/时钟寄存器，然后恢复通用驱动。
+候选 `.ko` 必须与 remote 脚本固定 SHA-256 一致，且 vermagic 匹配。
+
+需要听音时显式使用 `MIPAD2_TFA_TEST_MODE=audible`。先告知听音人员；
+脚本播放两次 2 秒短音，暂时将音量设为 80%，退出后恢复原值。
+只有人工确认实际声音，才能记录 acoustic PASS；不能用初始化日志代替。
+
+完整原厂 DSP 验收仍需：听音、左右声道、profile/volume、持续播放、
+休眠恢复和启动持久性。未完成时保持通用 TFA989x 为默认驱动。
+
 ## `mipad2-hardware-smoke.sh`
 
 默认模式是 **只读 smoke test**。当前脚本实际检查的范围已经远大于早期文档所写的“摄像头、电池和 UDC”，包括：

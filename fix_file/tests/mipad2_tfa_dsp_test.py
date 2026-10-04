@@ -21,8 +21,14 @@ if len(sys.argv) != 2:
     raise SystemExit(f"Usage: {pathlib.Path(sys.argv[0]).name} CANDIDATE.ko")
 MODULE = pathlib.Path(sys.argv[1])
 remote_script = pathlib.Path(__file__).with_name("mipad2_tfa_dsp_test_remote.sh")
+log_checker = pathlib.Path(__file__).with_name("mipad2_tfa_dsp_log_check.py")
 if not remote_script.is_file():
     raise SystemExit(f"Remote test script missing: {remote_script}")
+if not log_checker.is_file():
+    raise SystemExit(f"DSP log checker missing: {log_checker}")
+test_mode = os.environ.get("MIPAD2_TFA_TEST_MODE", "silent")
+if test_mode not in ("silent", "audible"):
+    raise SystemExit("MIPAD2_TFA_TEST_MODE must be silent or audible")
 
 match = re.search(r"(?m)^expected_sha=([0-9a-f]{64})$",
                   remote_script.read_text(encoding="utf-8"))
@@ -43,8 +49,10 @@ if digest != expected_sha:
     raise SystemExit(f"Candidate hash mismatch: {digest}")
 
 sample_rate = 48_000
-frames = 48_000  # One-second burst; play twice with a one-second gap.
-amplitude = 2200
+frames = 96_000  # Two-second burst; play twice with a one-second gap.
+amplitude = 12_000
+if test_mode == "silent":
+    frames, amplitude = 288_000, 0  # Six seconds to observe bounded DSP startup.
 tone_bytes = io.BytesIO()
 with wave.open(tone_bytes, "wb") as tone:
     tone.setnchannels(2)
@@ -109,6 +117,7 @@ try:
 
     with client.open_sftp() as sftp:
         sftp.put(str(MODULE), REMOTE_MODULE)
+        sftp.put(str(log_checker), "/tmp/mipad2_tfa_dsp_log_check.py")
         with sftp.open(REMOTE_TONE, "wb") as remote_tone:
             remote_tone.write(tone_bytes.getvalue())
         with sftp.open(REMOTE_SCRIPT, "wb") as remote_shell:
@@ -118,7 +127,8 @@ try:
         sftp.chmod(REMOTE_SCRIPT, 0o755)
 
     status, out, err = run(
-        f"sudo -S -p '' bash {REMOTE_SCRIPT}", sudo=True, timeout=120
+        f"sudo -S -p '' env MIPAD2_TFA_TEST_MODE={test_mode} bash {REMOTE_SCRIPT}",
+        sudo=True, timeout=120
     )
     print("=== temporary TFA DSP/playback test ===")
     print(out, end="")
@@ -139,7 +149,7 @@ try:
         raise SystemExit("Original PipeWire speaker route was not verified after cleanup.")
 finally:
     try:
-        run(f"rm -f {REMOTE_MODULE} {REMOTE_TONE} {REMOTE_SCRIPT}", timeout=10)
+        run(f"rm -f {REMOTE_MODULE} {REMOTE_TONE} {REMOTE_SCRIPT} /tmp/mipad2_tfa_dsp_log_check.py", timeout=10)
     except Exception:
         pass
     client.close()
