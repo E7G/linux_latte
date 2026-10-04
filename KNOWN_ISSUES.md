@@ -570,8 +570,25 @@ formerly failing sequence, **without any diagnostic cache repair**, actual
 interface/PLL registers matched the expected configuration and both TFA chips
 passed PLLS/AREFS/AMPS/NOCLK checks. The PCM was RUNNING, desktop audio restarted,
 and system/anti-idle health gates passed (`REBIND_PASS=1`, `CLEANUP_RC=0`).
-Post-candidate acoustic confirmation, suspend/resume, and persistence across
-reboot must be recorded separately rather than inferred from this silent test.
+Post-candidate acoustic confirmation and persistence across reboot must be
+recorded separately rather than inferred from this silent test.
+
+The tested codec module was subsequently installed into the existing
+`6.14.0-mipad2-cachyos` module directory. The original compressed module and the
+fixed candidate were saved under
+`/var/lib/mipad2-kernel-backups/rt5659-rebind-20261005T0227/`; compressed readback
+SHA-256 and installed/running source versions matched. Neither 6.14 stable nor
+recovery initramfs contained RT5659, so no boot image/GRUB update was needed or
+performed. Installation passed; a reboot has **not** yet verified persistence.
+
+A subsequent 10-second RTC `s2idle` suspend/resume increased the kernel's
+successful-suspend counter from 0 to 1. Three digital-zero start/stop cycles
+after resume passed PCM RUNNING, actual AIF/PLL configuration, and both TFA
+clock/amp-ready checks. At the end, PCM was closed, TFA SYS_CTRL was 0x8201,
+RT5659 digital/PLL power was off, and GLB_CLK had returned to RCCLK (0x8000).
+SSH/system health and the anti-idle inhibitor remained available
+(`RTC_RESUME_AUDIO_CLOCK_PASS=1`). This is an electrical-status/power regression,
+not a substitute for post-resume listening.
 
 The prior Android `DUMMY_2=0x001d` hypothesis was also tested temporarily with
 digital zeros. Hardware/cache readback verified the write and restoration to
