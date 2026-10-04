@@ -130,8 +130,9 @@ static const struct snd_soc_dapm_route cht_audio_map[] = {
 	{"Int Mic", NULL, "MICBIAS3"},
 	{"Headphone", NULL, "HPOL"},
 	{"Headphone", NULL, "HPOR"},
-	{"Ext Spk", NULL, "SPOL"},
-	{"Ext Spk", NULL, "SPOR"},
+	/* Mi Pad 2 speakers are fed from the TFA9890 codec-to-codec link. */
+	{"Ext Spk", NULL, "OUT Left"},
+	{"Ext Spk", NULL, "OUT Right"},
 };
 
 static const struct snd_soc_dapm_route cht_audio_ssp0_map[] = {

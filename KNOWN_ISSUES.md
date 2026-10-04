@@ -400,3 +400,22 @@ probe briefly raised the speaker sink volume from 41% to 70% for two 1 kHz
 bursts, then restored it to 41%; system health and anti-idle checks passed.
 Acoustic output remains unverified until a working mic/loopback route is
 available. Keep the stock amp driver selected meanwhile.
+
+A bounded 1 kHz DAPM probe during live `paplay` playback on the stock amp
+driver narrowed the failure further. `Ext Spk Switch` was on, but the machine
+`Ext Spk` widget, RT5659 `SPO Playback`/`SPK Amp`/`SPOL`/`SPOR`, and both TFA
+`HiFi Playback` streams remained inactive; RT5659 `AIF1 Playback` was active.
+The TFA codec-to-codec DAI-link widgets existed, but their playback streams
+were inactive. This shows the accepted PCM never made it onto the active
+speaker backend; it is not a volume-only problem.
+
+The machine DAPM map previously connected `Ext Spk` only to the RT5659
+`SPOL`/`SPOR` pins, while this tablet's speakers terminate at TFA9890
+`OUT Left`/`OUT Right`. The working-tree fix connects the machine speaker
+endpoint to those TFA output widgets instead. Its `W=1` machine-driver object
+compile succeeded (one pre-existing unused-GPIO warning); module link and
+live-device validation remain outstanding. ASoC's [codec-to-codec DAI-link
+documentation](https://docs.kernel.org/sound/soc/codec-to-codec.html) confirms
+these links need a valid DAPM endpoint to activate. Do not treat this source
+change as audible-output verification until AIF2/TFA streams and DSP init are
+seen active on device.
