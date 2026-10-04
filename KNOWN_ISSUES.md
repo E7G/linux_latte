@@ -353,11 +353,24 @@ power use, and suspend/resume still need real-device validation before making
 it the default. Do not treat device enumeration or compile success as proof of
 OEM audio parity.
 
-The candidate's I2C remove path now clears the monitor flag, synchronously
-cancels the self-rearming delayed monitor and any queued DSP-init work, then
-destroys its workqueue. This closes a teardown hang found during an earlier
-module-switch test at source level; the updated teardown has not yet been
-retested on the tablet, and the cause of the previous reboot remains
-undetermined. Keep the stock TFA989X driver selected until a controlled
-candidate load/play/stop/unbind test completes without reboot and audio is
-verified end to end.
+The candidate's I2C remove path clears the monitor flag, synchronously cancels
+the self-rearming delayed monitor and queued DSP-init work, then destroys its
+workqueue. The 2026-10-04 live attempt loaded both factory containers (three
+profiles each), but did not establish DSP/audio success. Persistent pstore
+shows the test shell blocked in `unbind_store -> device_release_driver_internal
+-> snd_soc_unregister_component_by_driver -> soc_cleanup_card_resources ->
+snd_card_disconnect_sync`, followed by the configured hung-task panic. This is
+ASoC waiting for open ALSA card file references during unbind, not evidence of
+a DSP workqueue deadlock. On the recovered stable boot, a read-only audit found
+PipeWire and WirePlumber holding `/dev/snd/controlC0` even with no sink inputs;
+the old test checked PCM handles only. It also used unbounded raw `hw:0,0`
+playback, while the kernel logged `no backend DAIs enabled for Audio Port`, so
+that run did not verify the OEM HiFi route.
+
+The temporary live-test runner now quiesces PipeWire/WirePlumber and checks all
+`/dev/snd/*` references before unbind, starts the user audio stack to verify the
+OEM HiFi sink and uses bounded `paplay` bursts, then quiesces it again before
+cleanup. It passes shell syntax and the TFA source regression checks; the
+revised end-to-end test has not yet run on the integrated kernel. Keep the stock
+TFA989X driver selected until candidate DSP init, routed playback, teardown,
+restoration and audio are verified on-device.
