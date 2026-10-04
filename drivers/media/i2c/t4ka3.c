@@ -78,6 +78,19 @@
 #define T4KA3_MIPAD2_OTP_LS1_END		303
 #define T4KA3_MIPAD2_OTP_LS2_START		304
 #define T4KA3_MIPAD2_OTP_LS2_END		577
+#define T4KA3_MIPAD2_OTP_LS1_AWB_START		0x125
+#define T4KA3_MIPAD2_OTP_LS2_AWB_START		0x235
+
+/* Xiaomi Android's 544-byte AtomISP calibration layout. */
+#define T4KA3_MIPAD2_OTP_CAL_SIZE		544
+#define T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET	20
+#define T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET	273
+#define T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET	526
+#define T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET	528
+#define T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET		542
+#define T4KA3_MIPAD2_OTP_CAL_LSC_MAX_SIZE \
+	(T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET - \
+	 T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET)
 
 #define T4KA3_REG_STREAM			CCI_REG8(0x0100)
 #define T4KA3_REG_IMG_ORIENTATION		CCI_REG8(0x0101)
@@ -170,7 +183,10 @@ struct t4ka3_data {
 
 	/* Mi Pad 2 rear-module factory calibration cache. */
 	struct nvmem_device *otp_nvmem;
+	struct nvmem_device *otp_cal_nvmem;
 	u8 otp_data[T4KA3_MIPAD2_OTP_SIZE];
+	u8 otp_cal_data[T4KA3_MIPAD2_OTP_CAL_SIZE];
+	int otp_cal_error;
 	bool otp_cached;
 
 	/* MIPI lane info */
@@ -223,6 +239,108 @@ static int t4ka3_mipad2_validate_otp(struct t4ka3_data *sensor)
 	return 0;
 }
 
+static u16 t4ka3_mipad2_otp_crc16(const u8 *data, size_t len)
+{
+	u16 crc = 0;
+	size_t i;
+	int bit;
+
+	for (i = 0; i < len; i++) {
+		crc ^= data[i];
+		for (bit = 0; bit < 8; bit++)
+			crc = (crc >> 1) ^ ((crc & 1) ? 0xa001 : 0);
+	}
+
+	return crc;
+}
+
+/*
+ * Mirror Xiaomi Android's DW9761 dw9761_otp_format() AtomISP calibration ABI.
+ * Keep the raw NVMEM provider available if an unknown LSC grid cannot fit
+ * this fixed-size layout.
+ */
+static int t4ka3_mipad2_parse_otp(struct t4ka3_data *sensor)
+{
+	const u8 *raw = sensor->otp_data;
+	u8 *cal = sensor->otp_cal_data;
+	u8 grid_x = raw[T4KA3_MIPAD2_OTP_LS1_START + 6];
+	u8 grid_y = raw[T4KA3_MIPAD2_OTP_LS1_START + 7];
+	size_t lsc_size = (size_t)grid_x * grid_y * 4 + 1;
+	u16 crc;
+
+	if (!grid_x || !grid_y ||
+	    lsc_size > T4KA3_MIPAD2_OTP_CAL_LSC_MAX_SIZE)
+		return -EOVERFLOW;
+
+	memset(cal, 0, T4KA3_MIPAD2_OTP_CAL_SIZE);
+	cal[0] = raw[T4KA3_MIPAD2_OTP_LS1_START + 1];
+	cal[1] = raw[T4KA3_MIPAD2_OTP_LS1_START + 2];
+	cal[2] = 1;
+	cal[3] = raw[T4KA3_MIPAD2_OTP_AF_START + 1];
+	cal[4] = raw[T4KA3_MIPAD2_OTP_AF_START + 2];
+	cal[5] = raw[T4KA3_MIPAD2_OTP_AF_START + 6];
+	cal[6] = raw[T4KA3_MIPAD2_OTP_AF_START + 5];
+	cal[7] = raw[T4KA3_MIPAD2_OTP_AF_START + 4];
+	cal[8] = raw[T4KA3_MIPAD2_OTP_AF_START + 3];
+	cal[9] = cal[7];
+	cal[10] = cal[8];
+	cal[11] = cal[5];
+	cal[12] = cal[6];
+
+	cal[13] = raw[T4KA3_MIPAD2_OTP_LS1_START + 3];
+	cal[14] = raw[T4KA3_MIPAD2_OTP_LS1_START + 4];
+	cal[15] = raw[T4KA3_MIPAD2_OTP_LS2_START + 4];
+	cal[16] = raw[T4KA3_MIPAD2_OTP_LS1_START + 5];
+	cal[17] = raw[T4KA3_MIPAD2_OTP_LS2_START + 5];
+	cal[18] = grid_x;
+	cal[19] = grid_y;
+	memcpy(&cal[T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET],
+	       &raw[T4KA3_MIPAD2_OTP_LS1_START + 8], lsc_size);
+	memcpy(&cal[T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET],
+	       &raw[T4KA3_MIPAD2_OTP_LS2_START + 8], lsc_size);
+
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 1] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 1];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 4] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 2];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 5] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 3];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 8] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 4];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 9] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 5];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 12] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 6];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 13] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 7];
+
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 1] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 1];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 4] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 2];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 5] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 3];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 8] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 4];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 9] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 5];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 12] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 6];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 13] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 7];
+
+	crc = t4ka3_mipad2_otp_crc16(cal,
+				     T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET);
+	cal[T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET] = crc & 0xff;
+	cal[T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET + 1] = crc >> 8;
+
+	return 0;
+}
+
 static int t4ka3_mipad2_fetch_otp(struct t4ka3_data *sensor)
 {
 	struct i2c_client *client = to_i2c_client(sensor->dev);
@@ -260,6 +378,17 @@ static int t4ka3_mipad2_fetch_otp(struct t4ka3_data *sensor)
 		return ret;
 	}
 
+	sensor->otp_cal_error = t4ka3_mipad2_parse_otp(sensor);
+	if (sensor->otp_cal_error)
+		dev_warn(sensor->dev,
+			 "cannot repack rear-camera OTP for AtomISP: %d\n",
+			 sensor->otp_cal_error);
+	else
+		dev_info(sensor->dev,
+			 "repacked rear-camera OTP for AtomISP (%ux%u, CRC16/IBM %02x%02x)\n",
+			 sensor->otp_cal_data[18], sensor->otp_cal_data[19],
+			 sensor->otp_cal_data[543], sensor->otp_cal_data[542]);
+
 	sensor->otp_cached = true;
 	dev_info(sensor->dev,
 		 "validated Mi Pad 2 rear-camera OTP (vendor %u, AF %u..%u)\n",
@@ -291,9 +420,32 @@ static int t4ka3_mipad2_otp_read(void *context, unsigned int offset,
 	return ret;
 }
 
+static int t4ka3_mipad2_otp_cal_read(void *context, unsigned int offset,
+				     void *val, size_t bytes)
+{
+	struct t4ka3_data *sensor = context;
+	int ret;
+
+	if (offset > T4KA3_MIPAD2_OTP_CAL_SIZE ||
+	    bytes > T4KA3_MIPAD2_OTP_CAL_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	mutex_lock(&sensor->lock);
+	ret = t4ka3_mipad2_fetch_otp(sensor);
+	if (!ret)
+		ret = sensor->otp_cal_error;
+	if (!ret)
+		memcpy(val, sensor->otp_cal_data + offset, bytes);
+	mutex_unlock(&sensor->lock);
+
+	return ret;
+}
+
 static int t4ka3_register_mipad2_otp(struct t4ka3_data *sensor)
 {
-	struct nvmem_config config = {
+	struct nvmem_config raw_config = {
 		.dev = sensor->dev,
 		.name = "mipad2-t4ka3-otp",
 		.id = NVMEM_DEVID_NONE,
@@ -306,12 +458,39 @@ static int t4ka3_register_mipad2_otp(struct t4ka3_data *sensor)
 		.stride = 1,
 		.priv = sensor,
 	};
+	struct nvmem_config cal_config = {
+		.dev = sensor->dev,
+		.name = "mipad2-t4ka3-otp-calibrated",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = t4ka3_mipad2_otp_cal_read,
+		.size = T4KA3_MIPAD2_OTP_CAL_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = sensor,
+	};
+	int ret;
 
 	if (!t4ka3_has_mipad2_otp(sensor))
 		return 0;
 
-	sensor->otp_nvmem = devm_nvmem_register(sensor->dev, &config);
-	return PTR_ERR_OR_ZERO(sensor->otp_nvmem);
+	sensor->otp_nvmem = devm_nvmem_register(sensor->dev, &raw_config);
+	ret = PTR_ERR_OR_ZERO(sensor->otp_nvmem);
+	if (ret)
+		return ret;
+
+	sensor->otp_cal_nvmem = devm_nvmem_register(sensor->dev, &cal_config);
+	if (IS_ERR(sensor->otp_cal_nvmem)) {
+		ret = PTR_ERR(sensor->otp_cal_nvmem);
+		dev_warn(sensor->dev,
+			 "failed to register calibrated OTP NVMEM: %pe\n",
+			 ERR_PTR(ret));
+		sensor->otp_cal_nvmem = NULL;
+	}
+
+	return 0;
 }
 
 /* init settings */

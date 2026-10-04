@@ -160,3 +160,13 @@ v4l2-ctl --list-devices > /tmp/mipad2-v4l2.txt 2>&1
 ```
 
 脚本本身不会修改 BIOS、I2C 寄存器、音频 mixer 或系统电源策略；但显式开启主动摄像头测试或运行 `mipad2-camera-test.sh` 会实际启动摄像头硬件和 AtomISP pipeline。
+
+## T4KA3 后摄 OTP / Android 标定布局
+
+`mipad2-t4ka3-otp-calibrated-test.py` 校验 578-byte raw OTP 四组校验和，并逐字节比对 544-byte AtomISP 格式与 Xiaomi Android `dw9761_otp_format()` 布局（含 AF、LSC、AWB、CRC16/IBM）。新内核启动后运行：
+
+```bash
+sudo python3 fix_file/tests/mipad2-t4ka3-otp-calibrated-test.py
+```
+
+离线回归可传入 raw 与 calibrated 两个文件路径；应通过 `OK` 且字节完全相同。它验证布局/校验，不代表图像色彩或 ISP 画质验收。

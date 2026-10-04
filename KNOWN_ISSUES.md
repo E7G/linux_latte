@@ -198,6 +198,18 @@ SHA-256 was `23064aefd4419afe110edc218590dcce1b7b12b97f7d68db28ebacdb65c71b43`.
 The T4KA3 raw NVMEM audit also passed on-device: 578 bytes; module/AF/LS1/LS2
 checksums `112/103/112/229`; vendor `1`; factory AF range `237..366`; SHA-256
 `18c2dc22c74d97570153864ac4f4273fe0463dff38ebdf9173a6e19b2c45859f`.
+The new 544-byte calibrated NVMEM view mirrors Xiaomi Android's
+[`dw9761_otp_format()`](https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/cm-13.0/drivers/external_drivers/camera/drivers/media/i2c/micam/dw9761.c)
+layout. A candidate T4KA3 module was built against the tablet's live 6.14
+Clang/LTO configuration; the driver object also passed a `W=1` compile. Its
+shared module-version CRCs matched the running kernel, and it was temporarily
+loaded for an on-device byte-for-byte OTP test: 544 bytes, AF `237..366`, grid
+`9x7`, CRC16/IBM `7e85`, SHA-256
+`9d867793ff344619692df7f8dca65a70e6b3f508cfe90337db17f619f637772d`. The
+stock module was restored immediately afterward. This validates OTP packing,
+not image quality; the calibrated provider remains a source-tree change until
+the branch is rebuilt and installed through its normal release path.
+
 `mipad2-camera-af --fast` completed a live T4KA3 sweep using that OTP range and
 returned `BEST focus=241`, score `0.00078127`, confidence `good`. A subsequent
 full sweep repeated both macro-to-infinity passes and also selected focus `241`
