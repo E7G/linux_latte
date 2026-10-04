@@ -312,8 +312,7 @@ RTC-timed s2idle cycle on 2026-10-04. PMC S0I3 residency increased by about
 active. A post-resume hardware smoke exited 0 and rechecked Wi-Fi, Bluetooth,
 audio, display/touch, cameras, and all standard IIO devices; the accelerometer,
 gyro, and magnetometer matrices and compass scale matched expected values.
-The display's visual rotation immediately after this resume is being checked
-separately.
+After resume, the user confirmed the display remained correctly oriented while physically inverted.
 
 A targeted LUID `0205` probe found `data-field-custom-usage=0x0205` and
 `data-field-custom-value_27` with logical range `0..5`; Windows defines the
