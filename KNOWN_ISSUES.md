@@ -419,3 +419,21 @@ documentation](https://docs.kernel.org/sound/soc/codec-to-codec.html) confirms
 these links need a valid DAPM endpoint to activate. Do not treat this source
 change as audible-output verification until AIF2/TFA streams and DSP init are
 seen active on device.
+
+On 2026-10-04, a complete Clang 21 build succeeded and produced the machine
+module with the running kernel's exact `6.14.0-mipad2-cachyos` vermagic and
+`CONFIG_MODVERSIONS` CRCs. The module was swapped live (no reboot or `/boot`
+change), retaining the stock TFA989X driver. During bounded 1 kHz playback,
+`Ext Spk`, both codec-to-codec DAPM links, both TFA AIF inputs and both TFA
+output widgets changed to `On`; the RT5659 AIF1 playback stream was active.
+This validates DAPM power-path activation, not the analog signal or acoustic
+output. The TFA `HiFi Playback` and RT5659 `AIF2 Capture` stream flags still
+reported inactive, so end-to-end sample transfer remains unverified.
+
+A post-fix 440 Hz loopback test again detected the tone in PipeWire's sink
+monitor (peak about 5,000 PCM counts), but the tablet microphone capture was
+all-zero PCM. Independent Windows mic capture also failed: DirectShow had no
+usable capture pin and OpenAL/WASAPI returned `0x80070032`. Therefore no
+acoustic output claim is justified yet. The live module remains loaded only
+for this session; the stable boot entry and stock amplifier driver remain
+unchanged. Anti-idle/system health passed and the speaker volume was restored.
