@@ -785,3 +785,32 @@ so the candidate uses the root filesystem instead. The saved default remains
 6.14.0-mipad2-cachyos. No reboot occurred in this staging test. New-release
 boot, hardware/audio/orientation regression, suspend/resume and persistence
 remain required before selecting it as a normal default.
+
+### 2026-10-05: isolated r2 one-shot attempted; SSH boot not observed
+
+A candidate-only serial initramfs was generated with the normal hooks plus
+an early ACM service ordered before `sysroot.mount`, timeout 15 seconds.
+Its content, script syntax, GRUB-fstest byte comparison, and live already-bound
+no-rebind path passed. The initial custom `-D` mkinitcpio attempt correctly
+failed because `-D` replaces default hook directories; the corrected build
+explicitly retained the default hook paths and completed successfully.
+The malformed intermediate image was overwritten before any selection.
+These checks do not prove the cold initramfs service executed on hardware.
+
+The r2 menu entry was appended to `custom.cfg` after preserving its complete
+original content under the root-filesystem candidate backup. All other /boot
+file hashes stayed unchanged. The saved default remained `mipad2-bqdiag1`;
+only next_entry was selected for r2. The candidate was given the same lockup,
+panic and logging diagnostics as the known-running 6.14 command line, then
+one reboot was issued.
+
+A bounded 420-second SSH monitor, keyed to the previous actual boot_id
+`af9b1729-40df-4247-a8ac-ce863f41e34c`, ended without observing any new SSH
+boot. The USB capture also ended without enumerating the target serial
+VID/PID. A later user cable acknowledgement was followed by another host
+port check, still showing only Bluetooth serial ports. No r2 boot/console
+log is available to locate the failing phase. Do not infer successful boot
+from build/staging checks, or attribute this to Btrfs/GRUB/kernel/initramfs
+without new evidence. No repeated candidate reboot was issued or default
+promotion performed. Recovery to the preserved stable item and collection
+of GRUB environment, prior-boot journal and pstore are the next gates.
