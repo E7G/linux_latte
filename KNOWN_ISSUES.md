@@ -388,3 +388,15 @@ prevented a repeat of the earlier ASoC teardown hang, but routed playback and
 factory DSP initialization remain unverified. Keep the stock TFA989X driver
 selected until the trigger/DAI path is diagnosed and candidate DSP startup,
 playback, teardown, restoration and audible output all pass on-device.
+
+An acoustic-loopback attempt on 2026-10-04 captured the same two 440 Hz bursts
+from both the PipeWire sink monitor and the built-in microphone. The sink
+monitor showed a clear 440 Hz peak (~5,000 PCM counts), proving only that PCM
+reached PipeWire's speaker sink. The built-in-mic capture was entirely zero
+even while its Pulse source stream was open and `STO1 ADC Capture Switch` was
+on; therefore this is not evidence of physical speaker output or silence. A
+short PC-microphone fallback could not open the local DirectShow device. The
+probe briefly raised the speaker sink volume from 41% to 70% for two 1 kHz
+bursts, then restored it to 41%; system health and anti-idle checks passed.
+Acoustic output remains unverified until a working mic/loopback route is
+available. Keep the stock amp driver selected meanwhile.
