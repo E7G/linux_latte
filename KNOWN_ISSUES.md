@@ -226,7 +226,13 @@ The live front/rear images still need review on a known target under controlled
 lighting. Green cast / 3A calibration remains open. The Windows OEM camera INFs
 install sensor-specific CPF profiles (`OV5693_12P2BA535_{1,7}_CHT.cpf` and
 `t4ka3_F8D02B_{1,2}_CHT.cpf`); the Linux AtomISP kernel tree has no CPF/AIQB
-loader, so those profiles do not justify speculative sensor-register edits.
+loader. The Android OV5693 driver instead exposes parsed factory OTP to the
+camera stack through `g_priv_int_data`; this branch exposes the matching raw and
+320-byte calibrated data as read-only NVMEM (verified against the tablet OTP).
+The four Windows AIQB profiles contain four CMC matrices each: they are ISP
+color/3A tuning, not sensor register tables. So the remaining green-cast fix
+belongs in a compatible AtomISP userspace IQ/3A consumer, not guessed sensor
+register writes. See the [Android OV5693 implementation](https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/cm-13.0/drivers/external_drivers/camera/drivers/media/i2c/micam/ov5693.c#L1136-L1163).
 The rear lens exports standard `focus_absolute` (0..1023); live AF now passes,
 but target-based optical sharpness remains unverified.
 
