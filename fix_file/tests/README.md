@@ -2,6 +2,18 @@
 
 本目录用于当前 Mi Pad 2 内核的真机回归，不是通用 Linux 硬件诊断工具。
 
+## 辅助包源码与干净构建回归
+
+```bash
+python3 fix_file/tests/mipad2-package-source-test.py
+```
+
+无需平板或 makepkg。测试仅从各 PKGBUILD 声明的本地源文件构建临时
+`srcdir`，核验 SHA-256，再隔离执行 `package()` 检查实际文件安装；
+不执行被打包的辅助脚本，不安装包或改变服务。
+用于防止依赖仓库中预填充的 `src/`，导致 `makepkg -C` 清掉真实源文件。
+实际源码包生成和从源码包重新干净构建仍需 Arch/CachyOS 验证。
+
 ## 6.14 音频回调与原厂 DSP 回归
 
 以下离线测试不会访问硬件、修改音量或播放声音：

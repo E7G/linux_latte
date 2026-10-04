@@ -11,6 +11,21 @@ makepkg -si
 
 不要把包目录作为 `makepkg` 的最后一个参数；`makepkg` 应在包含 `PKGBUILD` 的目录中运行。
 
+本地源文件与 `PKGBUILD` 同目录，并在 `source`／`sha256sums` 中逐个声明。
+`src/` 是 makepkg 的临时工作目录，不再存放需要保留的仓库文件。
+可使用 `makepkg -C` 干净构建，或 `makepkg --source` 生成可重建的源码包；
+不要用 `--skipchecksums` 掩盖文件与 recipe 不匹配。
+
+维护者修改配置、脚本或固件后，应更新对应 `sha256sums`，再运行：
+
+```bash
+python3 fix_file/tests/mipad2-package-source-test.py
+```
+
+该离线测试检查来源、校验和和隔离的 `package()` 文件安装，不执行辅助脚本、
+不安装软件包、不启动或停止服务。实际 makepkg 干净构建／源码包往返测试
+仍应在 Arch/CachyOS 构建环境中完成。
+
 ## 当前包状态
 
 | 包 | 状态 | 用途 / 注意事项 |
@@ -55,7 +70,7 @@ replaces=(mipad2-usb-gadget)
 
 `mipad2-recovery` 假定特定的文件系统与 Timeshift 使用方式。当前 `mp2-recover` 明确把 `/dev/mmcblk0p2` 当作 snapshot/restore target，并在恢复 boot archive 时直接写入当前 `/boot` 挂载点。
 
-因此安装或运行前必须先阅读 `mipad2-recovery/src/README`，确认：
+因此安装或运行前必须先阅读 `mipad2-recovery/README`，确认：
 
 ```bash
 findmnt /

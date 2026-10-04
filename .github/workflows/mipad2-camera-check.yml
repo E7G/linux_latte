@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - cachyos-mipad2
+      - codex/mipad2-6.14-integrated
       - test/mipad2-camera-20260829
   pull_request:
     paths:
@@ -12,7 +13,8 @@ on:
       - 'drivers/media/i2c/ov5693.c'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
-      - 'fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle'
+      - 'fix_file/packages/**'
+      - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-test-no-idle-test.sh'
       - 'fix_file/tests/README.md'
       - 'drivers/iio/accel/hid-sensor-accel-3d.c'
@@ -60,7 +62,7 @@ jobs:
           test -s drivers/media/i2c/t4ka3.c
           test -s drivers/media/pci/intel/ipu-bridge.c
           test -s drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
-          test -s fix_file/packages/mipad2-camera-support/src/intel/ipu/shisp_2401a0_v21.bin
+          test -s fix_file/packages/mipad2-camera-support/shisp_2401a0_v21.bin
           grep -q 'shisp_2401a0_v21.bin' fix_file/packages/mipad2-camera-support/PKGBUILD
           grep -q 'config VIDEO_T4KA3' drivers/media/i2c/Kconfig
           grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Makefile
@@ -130,7 +132,7 @@ jobs:
 
       - name: Validate no-idle status preflight
         run: |
-          sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
+          sh -n fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle
           sh fix_file/tests/mipad2-test-no-idle-test.sh
 
       - name: Compile camera sensor and VCM drivers
@@ -163,19 +165,20 @@ jobs:
 
       - name: Validate local recovery and USB debug packages
         run: |
-          sh -n fix_file/packages/mipad2-recovery/src/mp2-backup
-          sh -n fix_file/packages/mipad2-recovery/src/mp2-recover
-          sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial
-          sh -n fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
+          python3 fix_file/tests/mipad2-package-source-test.py
+          sh -n fix_file/packages/mipad2-recovery/mp2-backup
+          sh -n fix_file/packages/mipad2-recovery/mp2-recover
+          sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial
+          sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial-sleep
           grep -q 'mipad2-usb-serial.service' \
-            fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial-sleep
-          sh -n fix_file/packages/mipad2-test-no-idle/src/mp2-test-no-idle
+            fix_file/packages/mipad2-usb-serial/mipad2-usb-serial-sleep
+          sh -n fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle
           sh -n fix_file/tests/mipad2-hardware-smoke.sh
           sh -n fix_file/tests/mipad2-kernel-config-audit.sh
           grep -q '^ExecStart=.*mipad2-hardware-smoke' \
             fix_file/tests/mipad2-hardware-audit.service
           grep -q 'serial-getty@ttyGS0.service' \
-            fix_file/packages/mipad2-usb-serial/src/mipad2-usb-serial.service
+            fix_file/packages/mipad2-usb-serial/mipad2-usb-serial.service
           ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \
             fix_file/packages/mipad2-usb-serial \
             fix_file/packages/mipad2-recovery \

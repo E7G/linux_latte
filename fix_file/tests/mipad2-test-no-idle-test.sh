@@ -4,7 +4,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-helper=${1:-"$script_dir/../packages/mipad2-test-no-idle/src/mp2-test-no-idle"}
+helper=${1:-"$script_dir/../packages/mipad2-test-no-idle/mp2-test-no-idle"}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 mkdir -p "$tmp/bin"

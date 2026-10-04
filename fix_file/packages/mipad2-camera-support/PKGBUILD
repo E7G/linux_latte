@@ -1,14 +1,25 @@
 pkgname=mipad2-camera-support
 pkgver=20260901
-pkgrel=3
+pkgrel=4
 pkgdesc="Mi Pad 2 AtomISP camera support and firmware"
 arch=(x86_64)
 license=(GPL2)
+source=(
+  'README'
+  'shisp_2401a0_v21.bin'
+  'mipad2-camera.conf'
+)
+sha256sums=(
+  'd588a808b1267c2bcdc250a5c0ae8064c690efb76d52fc53c38dcef5b80aa93b'
+  'e89359f4e4934c410c83d525e283f34c5fcce9cb5caa75ad8a32d66d3842d95c'
+  '24ec8d75a934dc6554891ca955b4eacd2b15321a820091f6ca2d9d8be25a3464'
+)
+
 package() {
   install -Dm644 "$srcdir/mipad2-camera.conf" \
     "$pkgdir/etc/modules-load.d/mipad2-camera.conf"
   install -Dm644 "$srcdir/README" \
     "$pkgdir/usr/share/doc/mipad2-camera-support/README"
-  install -Dm644 "$srcdir/intel/ipu/shisp_2401a0_v21.bin" \
+  install -Dm644 "$srcdir/shisp_2401a0_v21.bin" \
     "$pkgdir/usr/lib/firmware/intel/ipu/shisp_2401a0_v21.bin"
 }

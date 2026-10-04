@@ -1,11 +1,22 @@
 pkgname=mipad2-alsa-ucm
 pkgver=20260830
-pkgrel=5
+pkgrel=6
 pkgdesc="ALSA UCM profile for Xiaomi Mi Pad 2 RT5659 and dual TFA9890"
 arch=(x86_64)
 license=(GPL2)
+source=(
+  'HiFi.conf'
+  'cht-bsw-rt5659.conf'
+  'README'
+)
+sha256sums=(
+  '54fe98016ed1b542c4fca9c9ef5698f2772ae2cb8584af4f8e86e65c7bd37823'
+  '61df3e84a3f3d7f78a00ef082c34a078dce851bb89b09989fb53fccbbd8e8a81'
+  '2247c4e80987407769caceec35c81ee29e690a9ad6bfc92726ea2f8cba540ac5'
+)
+
 package() {
-  install -Dm644 "$srcdir/cht-bsw-rt5659/cht-bsw-rt5659.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/cht-bsw-rt5659.conf"
-  install -Dm644 "$srcdir/cht-bsw-rt5659/HiFi.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/HiFi.conf"
-  install -Dm644 "$srcdir/docs/README" "$pkgdir/usr/share/doc/mipad2-alsa-ucm/README"
+  install -Dm644 "$srcdir/cht-bsw-rt5659.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/cht-bsw-rt5659.conf"
+  install -Dm644 "$srcdir/HiFi.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/HiFi.conf"
+  install -Dm644 "$srcdir/README" "$pkgdir/usr/share/doc/mipad2-alsa-ucm/README"
 }

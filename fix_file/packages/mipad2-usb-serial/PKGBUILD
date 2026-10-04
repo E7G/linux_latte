@@ -1,12 +1,25 @@
 pkgname=mipad2-usb-serial
 pkgver=20260925
-pkgrel=1
+pkgrel=2
 pkgdesc="Persistent Mi Pad 2 USB ACM serial console"
 arch=(x86_64)
 license=(GPL2)
 depends=(systemd util-linux)
 conflicts=(mipad2-usb-gadget)
 replaces=(mipad2-usb-gadget)
+
+source=(
+  'README'
+  'mipad2-usb-serial'
+  'mipad2-usb-serial-sleep'
+  'mipad2-usb-serial.service'
+)
+sha256sums=(
+  'bb3055b517710e2078c19c26b89497be0ed9f70acfa69848c06cae106e70060a'
+  'ef39d57043034f7a36be98a245514c756c229f0ae9f92930388af50b3dbc8dca'
+  'd44ce8ae5de751e925e88db6bbbbcd340c4e1403b39a5f36356ac277894a18cd'
+  'fd90aed5475998f0da8420174d6718a9af5cdf41d6b849e93a74f99c6d5cb33f'
+)
 
 package() {
   install -Dm755 "$srcdir/mipad2-usb-serial" \

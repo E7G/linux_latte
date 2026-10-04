@@ -1,10 +1,21 @@
 pkgname=mipad2-recovery
 pkgver=20260904
-pkgrel=1
+pkgrel=2
 pkgdesc="Timeshift/BTRFS backup and one-command recovery tools for Mi Pad 2"
 arch=(x86_64)
 license=(GPL2)
 depends=(btrfs-progs timeshift zstd)
+
+source=(
+  'README'
+  'mp2-backup'
+  'mp2-recover'
+)
+sha256sums=(
+  'fb206b57b1a5e8d23587c02128c186cc5dbd3b54bf8fe8e549cabe4d028f7e24'
+  '8415496d93c9db581a7311c5161f4d4648aace9142dc196f745745a26322f70b'
+  '3cc1883b0394872fc8b18659f6aeb051ffb13bf8a93a02661695409d54a657b5'
+)
 
 package() {
   install -Dm755 "$srcdir/mp2-backup" "$pkgdir/usr/local/sbin/mp2-backup"

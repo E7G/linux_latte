@@ -1,10 +1,19 @@
 pkgname=mipad2-usb-gadget
 pkgver=20260830
-pkgrel=1
+pkgrel=2
 pkgdesc="Persistent Mi Pad 2 USB Ethernet configfs gadget"
 arch=(x86_64)
 license=(GPL2)
 depends=(iproute2)
+source=(
+  'mipad2-usb-gadget'
+  'mipad2-usb-gadget.service'
+)
+sha256sums=(
+  '1a12ac180fdf828f0817ac5f268cca099739f977701c8cba1545e797a0ffb608'
+  '6a945a9088947f32050cf563f82e9a651192be21809b039f118f26840b2d8338'
+)
+
 package() {
   install -Dm755 "$srcdir/mipad2-usb-gadget" "$pkgdir/usr/local/libexec/mipad2-usb-gadget"
   install -Dm644 "$srcdir/mipad2-usb-gadget.service" "$pkgdir/etc/systemd/system/mipad2-usb-gadget.service"

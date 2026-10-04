@@ -860,3 +860,42 @@ without the early USB hook or ttyGS0 console, was syntax/hash checked and
 prepared, not selected or rebooted. Stable/recovery/6.18 image contents
 and the saved default remain unchanged. The current r2 is still a test,
 not the validated default or a declaration of complete hardware support.
+
+### 2026-10-05: ordinary initramfs boot and clean helper packaging verified
+
+The normal-initramfs isolation entry booted the same r2 kernel successfully,
+without the early USB hook or ttyGS0 kernel console. Its actual boot_id is
+`1b1589b9-3b61-4438-b780-e81bc2501445`; SSH and USB ACM both reported r2.
+Systemd recorded a 6.026-second initrd and reached graphical.target after
+11.992 seconds of root userspace. The corrected hard-lockup boot option
+set the live hardlockup_panic sysctl to 1. Saved bqdiag1 and an empty
+next_entry were confirmed. Normal initramfs is therefore no longer an
+unproven boot path; the original early-hook/console combination still is.
+
+Post-boot smoke, all 26 loaded-module provenance checks, and the running
+config comparison passed again. Rear and front 1280x720 YU12 short capture
+each returned 4,153,344 bytes. Rear raw OTP checks, the Android-compatible
+544-byte calibration layout (CRC16/IBM 7e85), and front 320-byte calibrated
+OTP (CRC16/IBM 7bdf) passed on the actual r2 modules. Post-camera smoke
+passed without a reboot. Frame acquisition and calibration packing are
+verified; color/3A quality, physical rotation and new-release acoustic
+acceptance are not inferred from these results.
+
+Real Arch makepkg clean builds exposed another integration defect: helper
+recipes depended on tracked files under src/ and did not declare sources.
+In disposable user-owned directories, makepkg -C removed those files and
+the ALSA/camera recipes both failed with exit 4. All six helper packages
+now keep their 18 unchanged payload files beside PKGBUILD, explicitly
+declare source and SHA-256 arrays, and have incremented pkgrel. The source
+path changes were carried through CI and the no-idle regression script.
+
+The new offline source-staging regression passed for all six recipes.
+On the tablet, source integrity, native clean build, source-only archive,
+and a fresh clean rebuild from that archive passed for each package (24
+checks). Binary payload paths/hashes matched across source round trips;
+the source files remained unchanged. No test helper package was installed
+and no service was enabled/disabled by this packaging test. Build-only
+dependencies fakeroot/debugedit and their dependencies were installed
+with pacman -S --needed, without a database refresh or kernel upgrade.
+The optional legacy Ethernet package remains discouraged; building it
+does not mean it was activated alongside the recommended serial gadget.
