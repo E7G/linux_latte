@@ -376,7 +376,15 @@ that run did not verify the OEM HiFi route.
 The temporary live-test runner now quiesces PipeWire/WirePlumber and checks all
 `/dev/snd/*` references before unbind, starts the user audio stack to verify the
 OEM HiFi sink and uses bounded `paplay` bursts, then quiesces it again before
-cleanup. It passes shell syntax and the TFA source regression checks; the
-revised end-to-end test has not yet run on the integrated kernel. Keep the stock
-TFA989X driver selected until candidate DSP init, routed playback, teardown,
-restoration and audio are verified on-device.
+cleanup. On 2026-10-04, the revised end-to-end test ran on the one-shot 6.14
+image (`aab9eb8a...`): both candidate devices bound and loaded their three
+factory profiles; the OEM HiFi sink appeared and two bounded playback bursts
+completed. However, neither playback caused the expected `factory DSP init
+ret=0` log (nor an explicit DSP-init error), so the test correctly exited
+failure rather than claiming DSP startup. Its cleanup did complete: both amps
+returned to `tfa989x`, PipeWire restored the HiFi sink, no PCM handles or test
+processes remained, and the system/anti-idle gates passed. The test hardening
+prevented a repeat of the earlier ASoC teardown hang, but routed playback and
+factory DSP initialization remain unverified. Keep the stock TFA989X driver
+selected until the trigger/DAI path is diagnosed and candidate DSP startup,
+playback, teardown, restoration and audible output all pass on-device.
