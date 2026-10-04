@@ -814,3 +814,49 @@ from build/staging checks, or attribute this to Btrfs/GRUB/kernel/initramfs
 without new evidence. No repeated candidate reboot was issued or default
 promotion performed. Recovery to the preserved stable item and collection
 of GRUB environment, prior-boot journal and pstore are the next gates.
+
+### 2026-10-05: r2 direct-root boot and silent resume regression passed
+
+The tablet subsequently recovered to `6.14.0-mipad2-cachyos-navkeys-bqdiag1`,
+boot_id `d5c9820c-2115-45e5-bf00-2fd27aa2dc2b`. The saved default was still
+`mipad2-bqdiag1`, next_entry was consumed, anti-idle was active, and USB ACM
+enumerated as COM17. The newly archived pstore records were old-kernel
+`Shutdown#1` data, not an r2 panic. No intervening r2 journal was present.
+
+A separate, bounded isolation boot used the exact r2 image on Btrfs with
+the known direct-root `/dev/mmcblk0p2` path and existing early microcode,
+but no systemd initramfs, early USB hook or ttyGS0 kernel console. The host
+observed the new release over SSH after 212.2 seconds; USB serial also
+reported the actual release. The new boot_id was
+`394f9cee-617a-432a-8e2d-4bb91ca02397`. This proves the installed UEFI GRUB
+can load this r2 kernel from Btrfs and the kernel can reach the desktop
+userspace. It does not identify whether the previous missing boot was
+caused by normal initramfs, the additional hook, the console, or timing.
+Systemd reported firmware 12.578 s, loader 4.691 s, kernel 83.747 s and
+userspace 12.441 s. Verbose EFI framebuffer logging remains enabled;
+these diagnostic timings are not production boot performance results.
+
+The full read-only hardware smoke passed. All 26 loaded modules had the
+exact r2 vermagic and matching on-disk/runtime srcversions; the running
+embedded config matched the staged config byte-for-byte. Both amplifiers
+were bound to generic TFA989x, the optional factory DSP was not loaded,
+PipeWire had the HiFi speaker sink, and no systemd unit was failed. These
+are enumeration/provenance checks, not proof of all physical functions.
+
+A digital-zero PipeWire stream succeeded before and after one RTC
+10-second s2idle cycle. Kernel PM logs confirm suspend entry/exit and the
+same boot_id survived; post-resume hardware smoke and anti-idle checks
+passed. Process monotonic elapsed time excludes suspended wall time;
+use the PM log rather than the short subprocess elapsed field as evidence
+of the suspend interval. No acoustic test occurred in this regression.
+New-release sound and physical rotation verification remain open.
+
+The command line's `hardlockup_panic=1` was reported as unknown and did
+not enable the hard-lockup panic sysctl. Source inspection of watchdog.c
+confirmed the supported boot setting is `nmi_watchdog=panic,1`. Future
+r2 entries were corrected; no claim is made that the running direct-root
+boot had hard-lockup panic enabled. A separate normal-initramfs entry,
+without the early USB hook or ttyGS0 console, was syntax/hash checked and
+prepared, not selected or rebooted. Stable/recovery/6.18 image contents
+and the saved default remain unchanged. The current r2 is still a test,
+not the validated default or a declaration of complete hardware support.
