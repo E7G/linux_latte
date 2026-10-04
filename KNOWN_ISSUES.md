@@ -752,3 +752,36 @@ callback-to-init timings from bounded silent runs, not microphone latency,
 first-audible-sample timing, or proof that every short notification is intact.
 Cold DSP firmware load still has real cost. Acoustic, profile/volume,
 sustained, concurrency, suspend/resume and reboot gates remain open.
+
+### 2026-10-05: complete isolated 6.14 r2 kernel staged, not boot-tested
+
+A complete LLVM/ThinLTO `bzImage modules` build from source commit
+`b1f68fb71c0936ee5d8f2e59faf7aae903dddfbc` finished with exit zero, including
+the built-in generic TFA989x format fix, RT5659 cache-rebind fix, and machine
+audio changes. Its release is `6.14.0-mipad2-integrated-r2`; comparing the
+final config against the tablet's actual `/proc/config.gz` found only the
+LOCALVERSION change. The image header and embedded config matched; all 34
+installed compressed modules have the new exact vermagic. This build was
+not a zero-warning W=1 claim. The optional factory DSP remains unselected.
+
+The 20 MiB kernel/modules bundle SHA-256 is
+`3e73d7375b9ef4186085028b94a42302b705a904b48b5ad0d9adaacaeba3c977`.
+It includes a source/config and file-hash manifest but no device-specific
+initramfs. The unpublished integration commit has not been pushed to GitHub.
+The user's unrelated modified litmus test was preserved and not compiled.
+
+The tablet has an isolated `/usr/lib/modules/6.14.0-mipad2-integrated-r2`
+tree and `/var/lib/mipad2-kernel/6.14.0-mipad2-integrated-r2` kernel/initramfs.
+An explicit image-path mkinitcpio build with post hooks disabled succeeded;
+lsinitcpio reports the new release. User-space GRUB-fstest read both images
+through the Btrfs subvolume paths and compared them byte-for-byte. A preview
+GRUB entry passed syntax checking but was not installed or selected. This
+is not proof that the installed UEFI GRUB can boot the new images.
+
+All existing `/boot` file hashes were unchanged; no stable/recovery/6.18
+image was deleted to free space. `/boot` still has only about 15 MiB free,
+so the candidate uses the root filesystem instead. The saved default remains
+`mipad2-bqdiag1`, next_entry is empty, and the current kernel is still
+6.14.0-mipad2-cachyos. No reboot occurred in this staging test. New-release
+boot, hardware/audio/orientation regression, suspend/resume and persistence
+remain required before selecting it as a normal default.
