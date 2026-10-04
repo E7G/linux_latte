@@ -328,8 +328,11 @@ for sensor in als accel_3d gyro_3d magn_3d incli_3d dev_rotation; do
     fi
 done
 
-expected_matrix='-1,0,0;0,1,0;0,0,-1'
 for sensor in accel_3d gravity gyro_3d magn_3d; do
+    case "$sensor" in
+        accel_3d|gravity) expected_matrix='1,0,0;0,1,0;0,0,-1' ;;
+        *) expected_matrix='-1,0,0;0,1,0;0,0,-1' ;;
+    esac
     name_file=
     for path in /sys/bus/iio/devices/iio:device*/name; do
         [ -r "$path" ] || continue

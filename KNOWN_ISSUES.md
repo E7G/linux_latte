@@ -232,11 +232,22 @@ but target-based optical sharpness remains unverified.
 
 ## 11. IIO sensor orientation matrix
 
-The integrated branch now exports Android's Mi Pad 2 correction
-`diag(-1, 1, -1)` for accelerometer, gyro and magnetometer; the hardware smoke
-confirmed each sysfs matrix and the compass scale `0.000010000`. The matrix is
-DMI-scoped and source-regression tested. A live topology audit found the
-standard accel/gyro IIO devices under HID `8086:0001` hub `.0002`, and the
+The integrated branch uses separate DMI-scoped matrices: accelerometer and
+gravity `diag(1, 1, -1)`, gyro and magnetometer Android correction
+`diag(-1, 1, -1)`. This split follows a 2026-10-04 device check: with the old
+shared matrix, both physical landscape poses showed upside-down screen content
+while `iio-sensor-proxy` reported the matching `left-up` / `right-up` labels.
+Mutter maps those labels to opposite 90°/270° transforms
+([source](https://github.com/GNOME/mutter/blob/main/src/backends/meta-orientation-manager.c#L1377-L1407));
+flipping only accelerometer/gravity X swaps both landscape labels without
+changing portrait or gyro/magnetometer data. The rebuilt one-shot 6.14 kernel
+booted, the hardware smoke passed, and sysfs confirmed all three matrix values
+and compass scale `0.000010000`. In the new build, physical right-landscape
+reports `left-up` and physical left-landscape reports `right-up`; the user
+confirmed the display is upright in both poses. Portrait tests report
+`normal` (top edge up) and `bottom-up` (top edge down); the user confirmed the
+upside-down physical pose displays correctly too. A live topology audit found
+the standard accel/gyro IIO devices under HID `8086:0001` hub `.0002`, and the
 magnetometer, inclinometer and device-rotation collections under hub `.0003`.
 
 The tablet also exposes two `8086:0002` hubs (`.0004` and `.0005`), both bound
@@ -271,8 +282,8 @@ Thus PID `0002` is not absent on Linux, but its custom interface is not yet a
 standard IIO/orientation API. Do not claim orientation parity until the raw
 reports are mapped and four physical orientations are validated.
 
-The matrix is verified statically and its current sysfs values were checked on
-the tablet. A 45-second live capture on 2026-10-04 sampled the standard
+The standard IIO matrices are source-regression tested and checked on the
+tablet. A 45-second live capture on 2026-10-04 sampled the standard
 accelerometer and LUID `0205` while the tablet was rotated through four
 orientations. The standard accelerometer changed with movement; on the custom
 sensor, `event-sensor-event` changed from `5` to `1`, but

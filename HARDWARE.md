@@ -28,7 +28,7 @@ This page separates **code/configuration presence** from **runtime validation**.
 | Battery | Integrated target | Runtime-checked | Smoke test discovers a power-supply device with type `Battery`. |
 | BQ25890 charging path | Integrated target | Runtime-checked | Smoke test expects a `USB` or `Mains` charger power-supply node. |
 | Ambient light sensor | Integrated target | Runtime-checked | Smoke test expects IIO name `als`. |
-| Accelerometer | Integrated target | Runtime-checked | Smoke test expects IIO name `accel_3d`. |
+| Accelerometer | Integrated target | Runtime-checked | Smoke checks `accel_3d` and `diag(1,1,-1)`; both landscape and both portrait orientations confirmed on-device on 2026-10-04. |
 | Gyroscope | Integrated target | Runtime-checked | Smoke test expects IIO name `gyro_3d`. |
 | Magnetometer | Integrated target | Runtime-checked | Smoke test expects IIO name `magn_3d`. |
 | Inclination / orientation IIO | Integrated target | Runtime-checked | Smoke test expects `incli_3d` and `dev_rotation`. |

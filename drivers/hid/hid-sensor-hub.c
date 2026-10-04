@@ -19,13 +19,19 @@
 #define HID_SENSOR_HUB_ENUM_QUIRK	0x01
 
 /*
- * Android's latte sensor HAL applies ro.iio.*.x.opt_scale=-1 and
- * ro.iio.*.z.opt_scale=-1 to the accelerometer, gyroscope, and magnetometer.
- * Export the equivalent board orientation through the standard IIO
- * mount-matrix property for Linux consumers.
+ * The tablet's gyro and magnetometer use the Android HAL board correction.
+ * The accelerometer has a separate matrix: desktop orientation consumers
+ * rotate the native-portrait panel in the opposite landscape direction when
+ * X is negated. Keep the Android X correction for gyro/magnetometer data.
  */
 static const char * const xiaomi_mipad2_sensor_mount_matrix[] = {
 	"-1", "0", "0",
+	"0", "1", "0",
+	"0", "0", "-1",
+};
+
+static const char * const xiaomi_mipad2_accel_mount_matrix[] = {
+	"1", "0", "0",
 	"0", "1", "0",
 	"0", "0", "-1",
 };
@@ -36,12 +42,18 @@ static const struct property_entry xiaomi_mipad2_sensor_props[] = {
 	{ }
 };
 
+static const struct property_entry xiaomi_mipad2_accel_props[] = {
+	PROPERTY_ENTRY_STRING_ARRAY("mount-matrix",
+				    xiaomi_mipad2_accel_mount_matrix),
+	{ }
+};
+
 static const struct software_node xiaomi_mipad2_accel_swnode = {
-	.properties = xiaomi_mipad2_sensor_props,
+	.properties = xiaomi_mipad2_accel_props,
 };
 
 static const struct software_node xiaomi_mipad2_gravity_swnode = {
-	.properties = xiaomi_mipad2_sensor_props,
+	.properties = xiaomi_mipad2_accel_props,
 };
 
 static const struct software_node xiaomi_mipad2_gyro_swnode = {
