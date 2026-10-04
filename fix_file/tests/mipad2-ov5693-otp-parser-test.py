@@ -160,15 +160,19 @@ with tempfile.TemporaryDirectory(prefix="ov5693-otp-fixture-") as tmp:
     ], check=True)
     subprocess.run([str(binary)], cwd=tmpdir, check=True)
     smoke = kernel / "fix_file/tests/mipad2-ov5693-otp-test.sh"
+    # Windows checkouts with core.autocrlf=true expose CRLF to WSL's /bin/sh.
+    # Run a normalized temporary copy so the fixture also tests that checkout.
+    smoke_lf = tmpdir / smoke.name
+    smoke_lf.write_bytes(smoke.read_bytes().replace(b"\r\n", b"\n"))
     subprocess.run([
-        "/bin/sh", str(smoke), str(raw_fixture), str(cal_fixture),
+        "/bin/sh", str(smoke_lf), str(raw_fixture), str(cal_fixture),
     ], check=True)
 
     corrupted = bytearray(cal_fixture.read_bytes())
     corrupted[318] ^= 1
     bad_cal.write_bytes(corrupted)
     bad = subprocess.run([
-        "/bin/sh", str(smoke), str(raw_fixture), str(bad_cal),
+        "/bin/sh", str(smoke_lf), str(raw_fixture), str(bad_cal),
     ], capture_output=True, text=True)
     if bad.returncode == 0:
         raise SystemExit("host smoke test accepted a corrupted parsed OTP CRC")
@@ -177,7 +181,7 @@ with tempfile.TemporaryDirectory(prefix="ov5693-otp-fixture-") as tmp:
     unreadable_raw = tmpdir / "raw_read_error"
     unreadable_raw.mkdir()
     raw_error = subprocess.run([
-        "/bin/sh", str(smoke), str(unreadable_raw), str(cal_fixture),
+        "/bin/sh", str(smoke_lf), str(unreadable_raw), str(cal_fixture),
     ], capture_output=True, text=True)
     if raw_error.returncode == 0 or "MISS front-camera raw OTP read:" not in raw_error.stderr:
         raise SystemExit("host smoke test did not report a raw OTP read error")
@@ -186,7 +190,7 @@ with tempfile.TemporaryDirectory(prefix="ov5693-otp-fixture-") as tmp:
     unreadable_cal = tmpdir / "cal_read_error"
     unreadable_cal.mkdir()
     cal_error = subprocess.run([
-        "/bin/sh", str(smoke), str(raw_fixture), str(unreadable_cal),
+        "/bin/sh", str(smoke_lf), str(raw_fixture), str(unreadable_cal),
     ], capture_output=True, text=True)
     if cal_error.returncode == 0 or "MISS front-camera parsed OTP read:" not in cal_error.stderr:
         raise SystemExit("host smoke test did not report a parsed OTP read error")
