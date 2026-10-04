@@ -427,8 +427,12 @@ change), retaining the stock TFA989X driver. During bounded 1 kHz playback,
 `Ext Spk`, both codec-to-codec DAPM links, both TFA AIF inputs and both TFA
 output widgets changed to `On`; the RT5659 AIF1 playback stream was active.
 This validates DAPM power-path activation, not the analog signal or acoustic
-output. The TFA `HiFi Playback` and RT5659 `AIF2 Capture` stream flags still
-reported inactive, so end-to-end sample transfer remains unverified.
+output. A second route dump showed `IF2 ADC Mux` selecting `DAC_REF`, followed
+by active `IF2 ADC`, `AIF2TX`, `AIF2 Capture`, both C2C link widgets, TFA AIF
+inputs, and TFA outputs. The TFA `HiFi Playback` and RT5659 `AIF2 Capture`
+stream labels still read inactive; these labels do not indicate an active FE
+PCM on the static C2C route. Thus the DAPM graph reaches the TFA outputs, but
+acoustic output remains unverified.
 
 A post-fix 440 Hz loopback test again detected the tone in PipeWire's sink
 monitor (peak about 5,000 PCM counts), but the tablet microphone capture was
