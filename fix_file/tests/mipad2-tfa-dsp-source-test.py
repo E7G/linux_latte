@@ -46,10 +46,11 @@ def strip_c_comments(source: str) -> str:
 codec = strip_c_comments(codec)
 dsp = strip_c_comments(dsp)
 
-mute = function_body(codec, "tfa98xx_digital_mute")
+mute = function_body(codec, "tfa98xx_set_running")
 cancel = mute.index("cancel_delayed_work_sync")
 lock = mute.index("mutex_lock(&tfa98xx->dsp_init_lock)")
 assert cancel < lock, "monitor cancellation must happen outside dsp_init_lock"
+assert mute.index("WRITE_ONCE(tfa98xx->monitor_status, 0)") < cancel
 assert mute.index("cancel_work_sync(&tfa98xx->init_work)") < lock, \
     "init cancellation must also happen outside dsp_init_lock"
 worker = function_body(codec, "tfa98xx_dsp_init")
@@ -58,6 +59,10 @@ assert worker.index("if (!tfa98xx->desired_running)") < worker.index("tfa98xx_ds
 assert "tfa98xx_dsp_stop(tfa98xx)" in mute
 assert "tfa98xx->desired_running = false;" in mute
 assert "tfa98xx->desired_running = true;" in mute
+assert "WRITE_ONCE(tfa98xx->monitor_status, 1);" in mute
+assert "mod_delayed_work(tfa98xx->tfa98xx_wq, &tfa98xx->delay_work, 0);" in mute
+assert "return tfa98xx_set_running(tfa98xx, !mute);" in function_body(codec, "tfa98xx_digital_mute")
+assert "tfa98xx_set_running(tfa98xx, !requested);" in function_body(codec, "tfa98xx_set_stop_ctl")
 assert ".mute_stream\t= tfa98xx_mute_stream" in codec
 
 # Each physical amp must expose the machine driver's board-facing output pin;
@@ -194,5 +199,9 @@ assert 'python3 "$log_checker" "$log_raw" "$log_marker";' in live_test, \
     "require both amplifiers in this run, not a historical ret=0"
 assert 'dmesg | grep -F \'factory DSP init ret=0\'' not in live_test
 assert "MIPAD2_TFA_TEST_MODE={test_mode}" in live_runner
+assert "MIPAD2_TFA_TEST_STOP_CONTROL={test_stop_control}" in live_runner
+assert "test_stop_control not in (\"0\", \"1\")" in live_runner
+assert "amixer -c 0 cset name='left Stop' 1" in live_test
+assert "amixer -c 0 cset name='right Stop' 0" in live_test
 
 print("TFA DSP deadlock/error-path and live-test safety checks passed")

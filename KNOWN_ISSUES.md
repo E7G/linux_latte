@@ -714,3 +714,41 @@ The C2C path still schedules its initial monitor after one second; short-sound
 startup latency is not yet optimized or acoustically verified. Keep this and
 the outstanding factory-DSP acoustic/resume gates open rather than claiming
 full audio completion.
+
+### 2026-10-05: C2C startup latency and Stop control share a lifecycle
+
+The next actual-callback regression found that the ALSA Stop control still
+cancelled only monitor work, changed worker-owned state without its mutex, and
+could leave monitoring disabled when later C2C playback unmuted. Before the
+fix the extended executable harness failed the explicit-Stop assertion that
+both workers must be drained. This is a callback-logic reproduction, not a
+measured concurrent kernel race.
+
+Stop and C2C mute now share `tfa98xx_set_running()`: disable monitor rearming,
+drain both workers outside their mutex, then serialize state and DSP stop.
+Stopped DSP state becomes PENDING. Unmute restores the monitor flag and uses
+`mod_delayed_work(..., 0)` rather than delaying a short stream by HZ. Factory
+startup retains its power-on/AREF/PLL ordering; no pre-start PLL/AREF gate was
+added while the amplifier is in PWDN. The upstream
+[C2C DAPM implementation](https://github.com/torvalds/linux/blob/v6.14/sound/soc/soc-dapm.c)
+uses digital mute for this route, not the normal PCM trigger path; the
+[workqueue API](https://kernel.org/doc/html/v6.12/core-api/workqueue.html#c.mod_delayed_work)
+documents advancing pending work with zero delay.
+
+The exact-vermagic W=1/strict-modpost candidate SHA-256 is
+`b2c919735b4814aa7914d277bdb284ba99e2723559ef4a6aeec0f752838fdbe7`.
+One live temporary session passed two six-second digital-zero streams, normal
+desktop idle after each, and both Stop controls during the first RUNNING PCM.
+Stopping produced STATUS/SYS_CTRL 0x025d/0x8265 and monitor=0 on both amps;
+restarting produced 0xd05f/0x827c, DSP input and monitor=1. MTP stayed 0x0003.
+All current-run init returns were zero. Generic drivers, original levels,
+HiFi sink, and anti-idle inhibitor were restored.
+
+Current-run dmesg timestamps show the first C2C unmute-to-full-init completion
+about 299 ms (previous run about 1354 ms). First firmware loading occurred
+during WirePlumber route probing; the final warm restart after desktop idle
+completed about 17 ms after C2C unmute (previous run about 1150 ms). These are
+callback-to-init timings from bounded silent runs, not microphone latency,
+first-audible-sample timing, or proof that every short notification is intact.
+Cold DSP firmware load still has real cost. Acoustic, profile/volume,
+sustained, concurrency, suspend/resume and reboot gates remain open.

@@ -26,6 +26,12 @@ python3 fix_file/tests/mipad2-tfa-dsp-source-test.py
 7 秒，检查正常桌面 idle 下 PCM 关闭、功放断电，再恢复通用驱动。
 候选 `.ko` 必须与 remote 脚本固定 SHA-256 一致，且 vermagic 匹配。
 
+静音模式可另设 `MIPAD2_TFA_TEST_STOP_CONTROL=1`：第一段全零 PCM
+仍在 RUNNING 时分别设置 `left Stop` / `right Stop`，检查真实断电和
+monitor=0，再解除 Stop 检查两颗功放恢复 DSP 输入/时钟及 monitor=1。
+离线真实回调另检查显式 Stop 后的 C2C unmute 能重新启用监控。
+这不代替 profile/volume 控件与并发压力验证。
+
 需要听音时显式使用 `MIPAD2_TFA_TEST_MODE=audible`。先告知听音人员；
 脚本播放两次 2 秒短音，暂时将音量设为 80%，退出后恢复原值。
 只有人工确认实际声音，才能记录 acoustic PASS；不能用初始化日志代替。

@@ -29,6 +29,9 @@ if not log_checker.is_file():
 test_mode = os.environ.get("MIPAD2_TFA_TEST_MODE", "silent")
 if test_mode not in ("silent", "audible"):
     raise SystemExit("MIPAD2_TFA_TEST_MODE must be silent or audible")
+test_stop_control = os.environ.get("MIPAD2_TFA_TEST_STOP_CONTROL", "0")
+if test_stop_control not in ("0", "1") or (test_stop_control == "1" and test_mode != "silent"):
+    raise SystemExit("MIPAD2_TFA_TEST_STOP_CONTROL must be 0 or 1; 1 requires silent mode")
 
 match = re.search(r"(?m)^expected_sha=([0-9a-f]{64})$",
                   remote_script.read_text(encoding="utf-8"))
@@ -127,7 +130,8 @@ try:
         sftp.chmod(REMOTE_SCRIPT, 0o755)
 
     status, out, err = run(
-        f"sudo -S -p '' env MIPAD2_TFA_TEST_MODE={test_mode} bash {REMOTE_SCRIPT}",
+        f"sudo -S -p '' env MIPAD2_TFA_TEST_MODE={test_mode} "
+        f"MIPAD2_TFA_TEST_STOP_CONTROL={test_stop_control} bash {REMOTE_SCRIPT}",
         sudo=True, timeout=120
     )
     print("=== temporary TFA DSP/playback test ===")

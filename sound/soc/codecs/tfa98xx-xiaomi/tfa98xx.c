@@ -307,26 +307,23 @@ static int tfa98xx_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int tfa98xx_digital_mute(struct snd_soc_dai *dai, int mute)
+static int tfa98xx_set_running(struct tfa98xx *tfa98xx, bool running)
 {
-	struct snd_soc_component *component = dai->component;
-	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	int ret = 0;
-
-	pr_debug("state: %d\n", mute);
 
 	/*
 	 * Both workers take dsp_init_lock. Drain them before taking that mutex,
 	 * otherwise cancellation can wait forever for a worker blocked on it.
 	 */
-	if (mute) {
+	if (!running) {
+		WRITE_ONCE(tfa98xx->monitor_status, 0);
 		cancel_delayed_work_sync(&tfa98xx->delay_work);
 		cancel_work_sync(&tfa98xx->init_work);
 	}
 
 	mutex_lock(&tfa98xx->dsp_init_lock);
 
-	if (mute) {
+	if (!running) {
 		tfa98xx->desired_running = false;
 		/*
 		 * need to wait for amp to stop switching, to minimize
@@ -336,19 +333,31 @@ static int tfa98xx_digital_mute(struct snd_soc_dai *dai, int mute)
 		 * switching to stop.
 		 */
 		ret = tfa98xx_dsp_stop(tfa98xx);
+		tfa98xx->dsp_init = TFA98XX_DSP_INIT_PENDING;
 	} else if (!defer_dsp_start) {
 		tfa98xx->desired_running = true;
+		WRITE_ONCE(tfa98xx->monitor_status, 1);
 		/*
-		 * start monitor thread to check IC status bit 5secs, and
-		 * re-init IC to recover.
+		 * C2C playback has no PCM trigger callback. Kick its monitor now,
+		 * not one second into a short sound. Factory startup itself powers
+		 * the chip and waits for AREF/PLL before accessing CoolFlux;
+		 * checking those bits here while PWDN is set would deadlock.
+		 * mod_delayed_work also advances an already-pending idle monitor.
 		 */
-		queue_delayed_work(tfa98xx->tfa98xx_wq, &tfa98xx->delay_work,
-				   HZ);
+		mod_delayed_work(tfa98xx->tfa98xx_wq, &tfa98xx->delay_work, 0);
 	}
 
 	mutex_unlock(&tfa98xx->dsp_init_lock);
 
 	return ret;
+}
+
+static int tfa98xx_digital_mute(struct snd_soc_dai *dai, int mute)
+{
+	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(dai->component);
+
+	pr_debug("state: %d\n", mute);
+	return tfa98xx_set_running(tfa98xx, !mute);
 }
 
 static int tfa98xx_mute_stream(struct snd_soc_dai *dai, int mute, int stream)
@@ -625,37 +634,15 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
-	bool want_running = !ucontrol->value.integer.value[0];
+	long requested = ucontrol->value.integer.value[0];
 	int ret;
 
-	tfa98xx->desired_running = want_running;
+	if (requested < 0 || requested > 1)
+		return -EINVAL;
 
-	if (!want_running) {
-		WRITE_ONCE(tfa98xx->monitor_status, 0);
-		cancel_delayed_work_sync(&tfa98xx->delay_work);
-		if (!tfa98xx_is_pwdn(tfa98xx)) {
-			ret = tfa98xx_dsp_stop(tfa98xx);
-			if (ret)
-				return ret;
-		}
-		tfa98xx->dsp_init = TFA98XX_DSP_INIT_PENDING;
-	tfa98xx->desired_running = false;
-		return 1;
-	}
-
-	if (defer_dsp_start)
-		return 1;
-
-	/*
-	 * Do not start immediately.  The monitor waits until RT5659 AIF2
-	 * supplies valid BCLK/LRCK (PLLS + AREFS) and then starts the DSP.
-	 */
-	WRITE_ONCE(tfa98xx->monitor_status, 1);
-	if (tfa98xx->dsp_init != TFA98XX_DSP_INIT_DONE)
-		tfa98xx->dsp_init = TFA98XX_DSP_INIT_PENDING;
-	mod_delayed_work(tfa98xx->tfa98xx_wq, &tfa98xx->delay_work, 0);
-
-	return 1;
+	/* Controls must obey the same worker draining/locking as C2C mute. */
+	ret = tfa98xx_set_running(tfa98xx, !requested);
+	return ret ? ret : 1;
 }
 
 static char prof_name[MAX_CONTROL_NAME];

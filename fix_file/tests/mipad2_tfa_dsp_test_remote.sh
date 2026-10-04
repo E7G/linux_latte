@@ -7,7 +7,7 @@ modname=snd_soc_tfa98xx_xiaomi
 stock=/sys/bus/i2c/drivers/tfa989x
 candidate=/sys/bus/i2c/drivers/tfa98xx
 devices=(i2c-tfa9890:00 i2c-tfa9890:01)
-expected_sha=bc788ce6a43b7a7ca14ae2e8f288dd39ae8e631a96ec50b60ea2fc646843db03
+expected_sha=b2c919735b4814aa7914d277bdb284ba99e2723559ef4a6aeec0f752838fdbe7
 switched=0
 audio_stopped=0
 audio_was_active=()
@@ -21,6 +21,9 @@ saved_mono_volume=
 audio_levels_saved=0
 test_mode=${MIPAD2_TFA_TEST_MODE:-silent}
 case "$test_mode" in silent|audible) ;; *) echo 'Invalid test mode' >&2; exit 2;; esac
+test_stop_control=${MIPAD2_TFA_TEST_STOP_CONTROL:-0}
+case "$test_stop_control" in 0|1) ;; *) echo 'Invalid stop-control test flag' >&2; exit 2;; esac
+[[ "$test_stop_control" == 0 || "$test_mode" == silent ]] || { echo 'Stop-control testing requires silent mode' >&2; exit 2; }
 log_checker=/tmp/mipad2_tfa_dsp_log_check.py
 log_raw=$(mktemp /tmp/mipad2-tfa-dsp-log.XXXXXX)
 log_marker=MIPAD2_TFA_DSP_BEGIN_$$-$(date +%s%N)
@@ -174,6 +177,31 @@ capture_active_playback_state() {
 			*tfa*|*TFA*|*9890*) echo "--- $f"; sed -n '1,24p' "$f";;
 		esac
 	done
+}
+
+verify_tfa_registers() {
+	python3 - "$1" <<'PY'
+from pathlib import Path
+import sys
+state = sys.argv[1]
+assert state in ('active', 'idle')
+for dev in ('i2c-tfa9890:00', 'i2c-tfa9890:01'):
+    # The candidate uses REGCACHE_NONE: these are real hardware reads.
+    path = Path('/sys/kernel/debug/regmap') / dev / 'registers'
+    values = {int(k,16): int(v,16) for k,v in
+              (line.split(':',1) for line in path.read_text().splitlines())}
+    status, sysctrl = values[0], values[9]
+    if state == 'active':
+        assert status & 0xc002 == 0xc002, (dev, 'PLL/amp/reference', hex(status))
+        assert not status & 0x200, (dev, 'NOCLK', hex(status))
+        assert sysctrl & 0x1c == 0x1c and not sysctrl & 1, (dev, 'CFE/AMPE/DCA/PWDN', hex(sysctrl))
+        assert values[4] & 0xc0 == 0x80, (dev, 'amplifier input is not DSP')
+        assert values[0x80] & 3 == 3, (dev, 'factory calibration not completed')
+    else:
+        assert sysctrl & 1, (dev, 'PWDN not set after stop', hex(sysctrl))
+        assert not status & 0xc000, (dev, 'reference/amp still up after stop', hex(status))
+    print(f'PASS {state} {dev}: status={status:04x} sys={sysctrl:04x} MTP={values[0x80]:04x}')
+PY
 }
 
 restore() {
@@ -344,29 +372,34 @@ for ((burst=1; burst<=bursts; burst++)); do
 	echo "=== playback burst $burst ==="
 	capture_active_playback_state
 	if [[ "$test_mode" == silent ]]; then
-		# The C2C mute callback schedules the monitor after one second.
-		# Do not mistake a 250ms pre-init snapshot for the settled DSP state.
+		# Initial full firmware loading is slower than an owned warm restart.
+		# Keep the settled gate separate from the early diagnostic snapshot.
 		sleep 2
 		echo "=== settled factory DSP state (PCM remains active) ==="
 		grep -q 'state: RUNNING' /proc/asound/chtbswrt5659/pcm0p/sub0/status
 		capture_active_playback_state
-		python3 - <<'PY'
-from pathlib import Path
-for dev in ('i2c-tfa9890:00', 'i2c-tfa9890:01'):
-    # The candidate uses REGCACHE_NONE, so these are real hardware reads.
-    path = Path('/sys/kernel/debug/regmap') / dev / 'registers'
-    values = {}
-    for line in path.read_text().splitlines():
-        reg, value = line.split(':', 1)
-        values[int(reg, 16)] = int(value, 16)
-    status, sysctrl = values[0], values[9]
-    assert status & 0xc002 == 0xc002, (dev, 'PLL/amp/reference', hex(status))
-    assert not status & 0x200, (dev, 'NOCLK', hex(status))
-    assert sysctrl & 0x1c == 0x1c and not sysctrl & 1, (dev, 'CFE/AMPE/DCA/PWDN', hex(sysctrl))
-    assert values[4] & 0xc0 == 0x80, (dev, 'amplifier input is not DSP')
-    assert values[0x80] & 3 == 3, (dev, 'factory calibration not completed')
-    print(f'PASS settled {dev}: status={status:04x} sys={sysctrl:04x} MTP={values[0x80]:04x}')
-PY
+		verify_tfa_registers active
+		if [[ "$test_stop_control" == 1 && "$burst" == 1 ]]; then
+			echo '=== stop controls during active digital-zero PCM ==='
+			amixer -c 0 cset name='left Stop' 1
+			amixer -c 0 cset name='right Stop' 1
+			sleep 0.2
+			grep -q 'state: RUNNING' /proc/asound/chtbswrt5659/pcm0p/sub0/status
+			verify_tfa_registers idle
+			for dev in "${devices[@]}"; do
+				[[ "$(cat "/sys/bus/i2c/devices/$dev/monitor")" == 0 ]]
+				 echo "PASS stopped monitor $dev=0"
+			done
+			amixer -c 0 cset name='left Stop' 0
+			amixer -c 0 cset name='right Stop' 0
+			sleep 0.5
+			grep -q 'state: RUNNING' /proc/asound/chtbswrt5659/pcm0p/sub0/status
+			verify_tfa_registers active
+			for dev in "${devices[@]}"; do
+				[[ "$(cat "/sys/bus/i2c/devices/$dev/monitor")" == 1 ]]
+				echo "PASS restarted monitor $dev=1"
+			done
+		fi
 	fi
 	wait "$playback_pid"
 	if [[ "$test_mode" == silent ]]; then
@@ -374,16 +407,7 @@ PY
 		# A mute must not leave queued init able to repower the now-idle amp.
 		sleep 7
 		grep -q closed /proc/asound/chtbswrt5659/pcm0p/sub0/status
-		python3 - <<'PY'
-from pathlib import Path
-for dev in ('i2c-tfa9890:00', 'i2c-tfa9890:01'):
-    path = Path('/sys/kernel/debug/regmap') / dev / 'registers'
-    values = {int(k,16): int(v,16) for k,v in
-              (line.split(':',1) for line in path.read_text().splitlines())}
-    assert values[9] & 1, (dev, 'PWDN not set after idle', hex(values[9]))
-    assert not values[0] & 0xc000, (dev, 'reference/amp still up after idle', hex(values[0]))
-    print(f'PASS idle {dev}: status={values[0]:04x} sys={values[9]:04x}')
-PY
+		verify_tfa_registers idle
 	elif [[ "$burst" != "$bursts" ]]; then
 		sleep 1
 	fi
