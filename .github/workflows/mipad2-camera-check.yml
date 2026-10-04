@@ -16,6 +16,11 @@ on:
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
+      - 'fix_file/tests/mipad2-atomic-wrap-test.py'
+      - 'arch/x86/include/asm/atomic.h'
+      - 'arch/x86/include/asm/atomic64_64.h'
+      - 'include/linux/atomic/atomic-arch-fallback.h'
+      - 'scripts/atomic/**'
       - 'fix_file/tests/mipad2-test-no-idle-test.sh'
       - 'fix_file/tests/README.md'
       - 'drivers/iio/accel/hid-sensor-accel-3d.c'
@@ -168,6 +173,7 @@ jobs:
         run: |
           python3 fix_file/tests/mipad2-package-source-test.py
           python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
+          python3 fix_file/tests/mipad2-atomic-wrap-test.py --cc gcc
           sh -n fix_file/packages/mipad2-recovery/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/mp2-recover
           sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial

@@ -4,6 +4,7 @@
 
 #include <linux/compiler.h>
 #include <linux/types.h>
+#include <linux/overflow.h>
 #include <asm/alternative.h>
 #include <asm/cmpxchg.h>
 #include <asm/rmwcc.h>
@@ -82,7 +83,7 @@ static __always_inline bool arch_atomic_add_negative(int i, atomic_t *v)
 
 static __always_inline int arch_atomic_add_return(int i, atomic_t *v)
 {
-	return i + xadd(&v->counter, i);
+	return wrapping_add(int, i, xadd(&v->counter, i));
 }
 #define arch_atomic_add_return arch_atomic_add_return
 
