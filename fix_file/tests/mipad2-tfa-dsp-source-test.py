@@ -51,6 +51,18 @@ assert "tfa98xx->desired_running = false;" in mute
 assert "tfa98xx->desired_running = true;" in mute
 assert ".mute_stream\t= tfa98xx_mute_stream" in codec
 
+monitor = function_body(codec, "tfa98xx_monitor")
+assert monitor.count("READ_ONCE(tfa98xx->monitor_status)") == 2, \
+    "monitor stop flag must be read atomically before and after work"
+
+remove = function_body(codec, "tfa98xx_i2c_remove")
+disable_monitor = remove.index("WRITE_ONCE(tfa98xx->monitor_status, 0)")
+cancel_monitor = remove.index("cancel_delayed_work_sync(&tfa98xx->delay_work)")
+cancel_init = remove.index("cancel_work_sync(&tfa98xx->init_work)")
+destroy_queue = remove.index("destroy_workqueue(tfa98xx->tfa98xx_wq)")
+assert disable_monitor < cancel_monitor < cancel_init < destroy_queue, \
+    "remove must stop and drain self-rearming work before destroying its queue"
+
 startup = function_body(dsp, "tfa98xx_startup")
 for operation in (
     "tfa98xx_init",

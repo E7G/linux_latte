@@ -132,7 +132,7 @@ static void tfa98xx_monitor(struct work_struct *work)
 	u16 ready = TFA98XX_STATUSREG_PLLS_MSK |
 		    TFA98XX_STATUSREG_AREFS_MSK;
 
-	if (!tfa98xx->monitor_status)
+	if (!READ_ONCE(tfa98xx->monitor_status))
 		return;
 
 	mutex_lock(&tfa98xx->dsp_init_lock);
@@ -174,7 +174,7 @@ static void tfa98xx_monitor(struct work_struct *work)
 
 	mutex_unlock(&tfa98xx->dsp_init_lock);
 
-	if (tfa98xx->monitor_status)
+	if (READ_ONCE(tfa98xx->monitor_status))
 		queue_delayed_work(tfa98xx->tfa98xx_wq,
 				   &tfa98xx->delay_work, next_delay);
 }
@@ -624,7 +624,7 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	tfa98xx->desired_running = want_running;
 
 	if (!want_running) {
-		tfa98xx->monitor_status = 0;
+		WRITE_ONCE(tfa98xx->monitor_status, 0);
 		cancel_delayed_work_sync(&tfa98xx->delay_work);
 		if (!tfa98xx_is_pwdn(tfa98xx)) {
 			ret = tfa98xx_dsp_stop(tfa98xx);
@@ -643,7 +643,7 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	 * Do not start immediately.  The monitor waits until RT5659 AIF2
 	 * supplies valid BCLK/LRCK (PLLS + AREFS) and then starts the DSP.
 	 */
-	tfa98xx->monitor_status = 1;
+	WRITE_ONCE(tfa98xx->monitor_status, 1);
 	if (tfa98xx->dsp_init != TFA98XX_DSP_INIT_DONE)
 		tfa98xx->dsp_init = TFA98XX_DSP_INIT_PENDING;
 	mod_delayed_work(tfa98xx->tfa98xx_wq, &tfa98xx->delay_work, 0);
@@ -958,12 +958,13 @@ static ssize_t tfa98xx_monitor_status_store(struct device *dev,
 		return -EINVAL;
 	}
 	if (val) {
-		tfa98xx->monitor_status = 1;
+		WRITE_ONCE(tfa98xx->monitor_status, 1);
 	} else {
-		tfa98xx->monitor_status = 0;
+		WRITE_ONCE(tfa98xx->monitor_status, 0);
 	}
 
-	pr_debug("monitor_status = %d\n", tfa98xx->monitor_status);
+	pr_debug("monitor_status = %d\n",
+		 READ_ONCE(tfa98xx->monitor_status));
 
 	return size;
 }
@@ -974,7 +975,8 @@ static ssize_t tfa98xx_monitor_status_show(struct device *dev,
 	struct tfa98xx *tfa98xx = dev_get_drvdata(dev);
 	ssize_t status = 0;
 
-	status += sprintf(&buf[status], "%d\n", tfa98xx->monitor_status);
+	status += sprintf(&buf[status], "%d\n",
+			  READ_ONCE(tfa98xx->monitor_status));
 
 	return status;
 }
@@ -1048,7 +1050,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c)
 
 
 #endif
-	tfa98xx->monitor_status = defer_dsp_start ? 0 : 1;
+	WRITE_ONCE(tfa98xx->monitor_status, defer_dsp_start ? 0 : 1);
 
 	/* register component */
 	dai_drv = devm_kzalloc(&i2c->dev, sizeof(struct snd_soc_dai_driver),
@@ -1101,7 +1103,11 @@ static void tfa98xx_i2c_remove(struct i2c_client *client)
 	device_remove_bin_file(&client->dev, &dev_attr_rw);
 	device_remove_file(&client->dev, &dev_attr_dspmsg_retries);
 #endif
-		destroy_workqueue(tfa98xx->tfa98xx_wq);
+	/* Stop the self-rearming monitor before draining its workqueue. */
+	WRITE_ONCE(tfa98xx->monitor_status, 0);
+	cancel_delayed_work_sync(&tfa98xx->delay_work);
+	cancel_work_sync(&tfa98xx->init_work);
+	destroy_workqueue(tfa98xx->tfa98xx_wq);
 }
 
 static const struct i2c_device_id tfa98xx_i2c_id[] = {
