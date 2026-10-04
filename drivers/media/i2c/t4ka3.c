@@ -203,7 +203,7 @@ static bool t4ka3_has_mipad2_otp(struct t4ka3_data *sensor)
 
 static u8 t4ka3_mipad2_otp_checksum(const u8 *data, size_t len)
 {
-	u16 sum = 0;
+	u32 sum = 0;
 	size_t i;
 
 	for (i = 0; i < len; i++)
