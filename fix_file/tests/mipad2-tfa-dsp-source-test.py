@@ -67,6 +67,15 @@ for operation in (
 assert "if (!(status & TFA98XX_STATUSREG_AREFS_MSK))\n\t\treturn -ETIMEDOUT;" in startup
 assert "if (ret)\n\t\t\treturn ret;" in startup
 
+init = function_body(dsp, "tfa98xx_init")
+rev_91 = re.search(r"case\s+0x91\s*:(.*?)(?=case\s+0x97\s*:)", init, re.S)
+assert rev_91 and re.search(r"\bret\s*=\s*0\s*;", rev_91.group(1)), \
+    "TFA9890B init path must return deterministic success"
+mode = function_body(dsp, "tfa98xx_select_mode")
+assert "temp_value == -1" not in mode
+assert "temp_value > 0xffff" in mode and "bat_volt > 0xffff" in mode, \
+    "unsigned register-read errors must be caught before narrowing"
+
 calibrate = function_body(dsp, "tfaRunSetCalibrateOnce")
 assert "goto lock_mtp;" in calibrate
 assert "lock_err = snd_soc_component_write(component, 0x0b, 0x0);" in calibrate
@@ -99,7 +108,10 @@ volume_ctl = function_body(codec, "tfa98xx_set_vol_ctl")
 assert "requested < 0 || requested >= prof->vsteps" in volume_ctl
 
 assert "devm_kmemdup(component->dev" in container_source
-assert "data->size != size - 14" in container_source
+assert re.search(
+    r"data->size\s*!=\s*size\s*-\s*14\s*&&\s*data->size\s*!=\s*size",
+    container_source,
+), "accept both post-CRC and stock total-file-size container conventions"
 assert "invalid container size/index table" in container_source
 assert "tfa_container_device_valid(base, size" in container_source
 assert "tfa_container_file_valid(base, total" in container_source

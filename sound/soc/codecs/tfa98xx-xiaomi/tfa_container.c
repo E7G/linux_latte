@@ -229,8 +229,8 @@ int tfa98xx_cnt_loadfile(struct tfa98xx *tfa98xx, int index)
 	pr_debug("loaded %s - size: %d\n", filename, size);
 
 	data = (struct nxpTfaContainer *)tfa98xx->fw.base;
-	/* The container size covers data after the CRC field (offset 14). */
-	if (data->size != size - 14 ||
+	/* Stock PM1.00 blobs use total file size; other blobs use post-CRC size. */
+	if ((data->size != size - 14 && data->size != size) ||
 	    data->ndev > (size - sizeof(*data)) / sizeof(data->index[0])) {
 		dev_err(component->dev, "invalid container size/index table\n");
 		return -EINVAL;

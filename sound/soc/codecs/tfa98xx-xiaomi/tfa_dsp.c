@@ -765,6 +765,8 @@ static int tfa98xx_init(struct tfa98xx *tfa98xx)
 		ret = tfa9890_specific(tfa98xx);
 		break;
 	case 0x91:
+		/* TFA9890B has no additional chip-specific register sequence. */
+		ret = 0;
 		break;
 	case 0x97:
 		ret = tfa9897_specific(tfa98xx);
@@ -2019,8 +2021,7 @@ static int tfa98xx_aec_output(struct tfa98xx *tfa98xx, int enable)
 int tfa98xx_select_mode(struct tfa98xx *tfa98xx, enum Tfa98xx_Mode mode)
 {
 	struct snd_soc_component *component = tfa98xx->component;
-	u16 i2s_value, sysctrl_value, temp_value;
-	u16 bat_volt;
+	unsigned int i2s_value, sysctrl_value, temp_value, bat_volt;
 	int ret = 0;
 	int timeoutloop = 100;
 
@@ -2031,6 +2032,8 @@ int tfa98xx_select_mode(struct tfa98xx *tfa98xx, enum Tfa98xx_Mode mode)
 
 	i2s_value = snd_soc_component_read(component, TFA98XX_I2SREG);
 	sysctrl_value = snd_soc_component_read(component, TFA98XX_SYS_CTRL);
+	if (i2s_value > 0xffff || sysctrl_value > 0xffff)
+		return -EIO;
 
 	switch (mode) {
 	case Tfa98xx_Mode_Normal:
@@ -2049,8 +2052,10 @@ int tfa98xx_select_mode(struct tfa98xx *tfa98xx, enum Tfa98xx_Mode mode)
 		do {
 			temp_value = snd_soc_component_read(component,
 						  TFA98XX_TEMPERATURE);
-			if (temp_value == -1)
+			if (temp_value > 0xffff) {
 				ret = -EIO;
+				break;
+			}
 			/* wait until th ADC's are up, 0x100 means not
 			  ready yet */
 		} while ((--timeoutloop) && (temp_value >= 0x100) &&
@@ -2064,7 +2069,9 @@ int tfa98xx_select_mode(struct tfa98xx *tfa98xx, enum Tfa98xx_Mode mode)
 		if (ret == 0) {
 			bat_volt = snd_soc_component_read(component,
 						TFA98XX_BATTERYVOLTAGE);
-			if (bat_volt < 838) {
+			if (bat_volt > 0xffff) {
+				ret = -EIO;
+			} else if (bat_volt < 838) {
 				i2s_value |= TFA98XX_AUDIOREG_RCV_MSK;
 				sysctrl_value &= ~TFA98XX_SYS_CTRL_DCA_MSK;
 
