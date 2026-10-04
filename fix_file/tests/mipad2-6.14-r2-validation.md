@@ -68,3 +68,42 @@ backed up, tested on the live already-bound path and deployed for this boot.
 References: [kernel console semantics](https://www.kernel.org/doc/html/latest/admin-guide/serial-console.html),
 [kernel atomic wrapping contract](https://www.kernel.org/doc/html/latest/core-api/wrappers/atomic_t.html),
 [Clang signed-overflow checks](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html).
+
+## Subsequent source and real-primitive validation
+
+The earlier no-source-change statement above describes the first diagnostic
+pass. Later commits `46975b902` and `ce83e0f34` use the existing
+`wrapping_add()/wrapping_sub()` helpers for exact atomic arithmetic expressions
+and unsigned subtraction for the IPv4 identifier expression. They do not add
+`no_sanitize`, change atomic/CAS ordering, or disable global sanitizer flags.
+The fallback header was regenerated from its modified templates.
+
+Clang21 first reproduced signed-wrap reports from the original ten extracted
+atomic functions. After the atomic change, a new boundary case independently
+exposed the IPv4 final subtraction. The final Clang21 tests have no diagnostics
+in boundary/concurrent/IPv4 tests, but still diagnose an unrelated signed
+overflow and bounds violation. GCC16 retains the bounds control; its kernel
+`-fno-strict-overflow` flags omit signed-wrap diagnostics by design.
+
+The optional `atomic-wrap-module/` was compiled with the real r2 kernel headers
+containing the source fix, with signed-overflow and array-bounds sanitizer flags
+confirmed in the actual compiler command. It was signed with the existing r2
+build key and temporarily loaded on boot
+`66ccb8d8-c1a7-46d8-93d7-866de18805a5`. Real 32/64-bit private-counter boundary
+and guard tests passed 1000 rounds with no new UBSAN report. The module was
+immediately unloaded, and no kernel driver or boot image was replaced. The
+expected out-of-tree module taint changed 1088 to 5184. This is not acceptance
+of a new full kernel: r2 core call sites and earlier logs remain unchanged.
+
+A separate r3 full build is required before boot acceptance. Its configuration
+retains all r2 settings, including UBSAN, changing only LOCALVERSION. The first
+owned build was deliberately stopped after reproducing the IPv4 subtraction
+case, then resumed with both fixes; this was not a compiler failure or timeout.
+Old r2 image/config/vmlinux/Module.symvers/System.map hashes are protected.
+
+The expression-level approach follows the upstream reviewers' preference for
+limiting wrapping handling to the arithmetic rather than a whole-function
+annotation: [x86 review](https://lists.openwall.net/linux-kernel/2024/01/23/1784),
+[generic fallback proposal](https://lists.openwall.net/netdev/2024/04/24/351).
+These references are review/proposal history, not a claim that the complete
+series was merged upstream.
