@@ -14,6 +14,16 @@ python3 fix_file/tests/mipad2-package-source-test.py
 用于防止依赖仓库中预填充的 `src/`，导致 `makepkg -C` 清掉真实源文件。
 实际源码包生成和从源码包重新干净构建仍需 Arch/CachyOS 验证。
 
+USB 串口交接 guard 的离线回归：
+
+```bash
+python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
+```
+
+抽取实际 helper 的只读绑定检查函数，在临时普通文件上验证 ACM／UDC／
+VID/PID 与链接，防止 switch_root 或重复启动时无故 rebind。
+模拟“无主机”文件只验证 guard 不依赖连接状态，不能代替真机拔线启动测试。
+
 ## 6.14 音频回调与原厂 DSP 回归
 
 以下离线测试不会访问硬件、修改音量或播放声音：

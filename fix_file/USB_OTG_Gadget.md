@@ -24,7 +24,18 @@ dmesg | grep -Ei 'dwc3|udc|gadget|usb'
 
 ## 当前推荐：USB CDC ACM 串口
 
-仓库提供 `mipad2-usb-serial`。它会创建一个 CDC ACM gadget，平板侧使用 `/dev/ttyGS0`；当前内核启用了 `CONFIG_U_SERIAL_CONSOLE`，因此 gadget 激活后还可以注册为内核 console，并重放 USB 枚举前积累的 printk ring buffer。
+仓库提供 `mipad2-usb-serial`。它会创建一个 CDC ACM gadget，平板侧使用 `/dev/ttyGS0`；当前内核启用了 `CONFIG_U_SERIAL_CONSOLE`，可将 gadget 用作内核日志 console。
+
+要取得 printk，启动参数使用：
+
+```text
+console=ttyGS0,115200n8 console=tty0
+```
+
+**保留 `tty0` 在最后**，让用户空间 `/dev/console` 仍对应屏幕，不依赖 USB 主机是否连接。控制台顺序语义见 [内核串口控制台文档](https://www.kernel.org/doc/html/latest/admin-guide/serial-console.html)。
+只看到 ConfigFS `console=1` 不表示输出已启用；应检查 `/proc/consoles` 中的 `ttyGS0`。重放会受 gadget FIFO 容量限制，不保证 USB 枚举前的全部日志都能收到。
+
+若 initramfs 已绑定相同 VID/PID、ACM function 和 UDC，root helper 会保留连接，避免 switch_root 时无故断开；显式 stop／休眠时的 detach 行为不变。该普通辅助包仍不是 initramfs hook。
 
 Arch / `makepkg` 环境：
 

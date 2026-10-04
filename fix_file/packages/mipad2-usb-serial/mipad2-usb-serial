@@ -8,6 +8,18 @@ set -eu
 
 G=/sys/kernel/config/usb_gadget/mipad2
 
+# The initramfs may already own this exact ACM gadget. Preserve its USB
+# connection and printk console across switch_root instead of disconnecting it.
+serial_gadget_is_bound() {
+    [ -r "$1/UDC" ] && [ -r "$1/idVendor" ] && [ -r "$1/idProduct" ] || return 1
+    [ -d "$1/functions/acm.usb0" ] && [ -L "$1/configs/c.1/acm.usb0" ] || return 1
+    serial_bound_udc=
+    read -r serial_bound_udc < "$1/UDC" || true
+    [ "$serial_bound_udc" = "$2" ] || return 1
+    [ "$(cat "$1/idVendor")" = 0x1d6b ] && [ "$(cat "$1/idProduct")" = 0x0104 ] || return 1
+    [ "$(readlink -f "$1/configs/c.1/acm.usb0")" = "$(readlink -f "$1/functions/acm.usb0")" ]
+}
+
 if [ "${1:-}" = stop ]; then
     if [ -f "$G/UDC" ]; then
         printf '\n' > "$G/UDC" 2>/dev/null || true
@@ -18,17 +30,22 @@ if [ "${1:-}" = stop ]; then
     exit 0
 fi
 
-# The old kernel may autostart the built-in legacy g_ether gadget. It must be
-# detached before the configfs ACM function can claim the single UDC.
-if [ -e /sys/bus/gadget/drivers/g_ether/gadget.0 ]; then
-    echo gadget.0 > /sys/bus/gadget/drivers/g_ether/unbind
-fi
-
 UDC=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n1)
 [ -n "$UDC" ] || {
     echo "no USB device controller found" >&2
     exit 1
 }
+
+if serial_gadget_is_bound "$G" "$UDC"; then
+    echo "Mi Pad 2 ACM already bound to $UDC; preserving serial connection"
+    exit 0
+fi
+
+# The old kernel may autostart the built-in legacy g_ether gadget. It must be
+# detached before the configfs ACM function can claim the single UDC.
+if [ -e /sys/bus/gadget/drivers/g_ether/gadget.0 ]; then
+    echo gadget.0 > /sys/bus/gadget/drivers/g_ether/unbind
+fi
 
 mkdir -p /sys/kernel/config/usb_gadget "$G"
 [ -f "$G/UDC" ] && printf '\n' > "$G/UDC" 2>/dev/null || true
@@ -48,9 +65,9 @@ printf '250' > "$G/configs/c.1/MaxPower"
 [ -L "$G/configs/c.1/acm.usb0" ] || \
     ln -s "$G/functions/acm.usb0" "$G/configs/c.1/acm.usb0"
 
-# CONFIG_U_SERIAL_CONSOLE makes this a real kernel console and replays the
-# printk ring buffer when the function is enabled. This captures early boot
-# failures which happened before USB enumeration.
+# CONFIG_U_SERIAL_CONSOLE exposes this attribute. Kernel output also requires
+# console=ttyGS0,115200n8 on the command line; keep console=tty0 last so USB
+# cannot become the blocking userspace /dev/console. Replay is FIFO-bounded.
 if [ -f "$G/functions/acm.usb0/console" ]; then
     printf '1' > "$G/functions/acm.usb0/console"
 fi

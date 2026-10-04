@@ -15,6 +15,7 @@ on:
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
+      - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
       - 'fix_file/tests/mipad2-test-no-idle-test.sh'
       - 'fix_file/tests/README.md'
       - 'drivers/iio/accel/hid-sensor-accel-3d.c'
@@ -166,6 +167,7 @@ jobs:
       - name: Validate local recovery and USB debug packages
         run: |
           python3 fix_file/tests/mipad2-package-source-test.py
+          python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
           sh -n fix_file/packages/mipad2-recovery/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/mp2-recover
           sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial
