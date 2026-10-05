@@ -981,3 +981,31 @@ notes that image quality needs a 3A userspace library. Windows CPF/AIQB color
 matrices cannot safely be translated into guessed sensor register writes.
 An upstream [libcamera AtomISP pipeline proposal](https://lists.libcamera.org/pipermail/libcamera-devel/2025-May/050239.html)
 is a reference for userspace integration, not evidence that tuning is done.
+
+## 2026-10-05 integrated 6.14 r7 OV5693 exposure regression
+
+On a clean r6 boot the OV5693 exposure control began at
+`max=2070 default=2070 value=2070`. Selecting 1280x720 set all three to
+1030; a subsequent `v4l2-compliance` format probe left
+`max=1030 default=12 value=12`, producing near-black direct V4L2 front
+frames. The camera application could still preview normally after writing
+exposure/gain itself. A user-assisted white-paper sweep confirmed the sensor
+responds monotonically to exposure; this was not a failed lens or sensor.
+
+r7 updates both OV5693 exposure-range paths so an untouched default follows
+the current frame limit after temporary format shrink/growth. Explicit manual
+exposure values remain unchanged if they fit the new range. A full isolated
+LLVM21/ThinLTO build and 34 CMS-signed module checks passed. The r7 one-shot
+boot reached systemd/SSH/USB serial with the saved `mipad2-bqdiag1` default
+unchanged. After the same compliance probe, exposure stayed at
+`max=1030 default=1030 value=1030`; manual 320 survived compatible
+1280x720 → 1600x1200 → 1280x720 changes. Both cameras captured three
+frames, 10 s RTC s2idle recovered, silent electrical checks found both
+amplifiers ready during playback and powered down afterwards, and no new
+kernel fault line was found. A post-resume smoke harness initially called
+the wrong path (`/tmp` versus `/var/tmp`); re-running that check passed.
+
+This fixes the persistent dark-default regression, not automatic 3A/white
+balance or all AtomISP V4L2 ABI failures. `v4l2-compliance` remains 64/72.
+No r7 audible-listening or four-pose physical-rotation retest was done;
+those results remain from earlier candidates.
