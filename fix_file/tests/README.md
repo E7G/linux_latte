@@ -251,6 +251,24 @@ sudo python3 fix_file/tests/mipad2-t4ka3-otp-calibrated-test.py
 
 ## TFA9890 factory DSP live test
 
+### RT5659 cold-initialization DAPM regression
+
+```bash
+CC=clang python3 fix_file/tests/mipad2-dapm-init-test.py
+```
+
+This extracts the actual machine-driver late-probe callback. Its ordering
+model checks reset-default route sampling, control creation, DAC_REF selection,
+warm registration and allocation/control/widget errors. A raw codec register
+write in link init can leave the DAPM graph on IF_ADC2 even when the mixer and
+hardware report DAC_REF. The test models that failure; it does not establish
+speaker sound or replace a cold boot and post-resume listening check.
+
+On hardware, a running PCM alone is insufficient: the active IF2 ADC Mux path
+must include DAC_REF, the two TFA amplifiers must leave PWDN, and the physical
+speakers must be heard. Do not use `amixer ... 0` then `... 2` before a cold-boot
+acceptance check: that temporary repair would hide a broken initialization.
+
 This test temporarily switches both speaker amplifiers from the stock `tfa989x` driver to the optional factory-DSP candidate. It only runs on the integrated 6.14 image and requires SSH/sudo access plus a candidate module matching the pinned SHA-256. Set `MIPAD2_HOST`, `MIPAD2_USER`, and `MIPAD2_PASSWORD`, then run:
 
 ```bash

@@ -899,3 +899,58 @@ dependencies fakeroot/debugedit and their dependencies were installed
 with pacman -S --needed, without a database refresh or kernel upgrade.
 The optional legacy Ethernet package remains discouraged; building it
 does not mean it was activated alongside the recommended serial gadget.
+
+
+### 2026-10-05: r3 boot passed; cold speaker-route defect reproduced
+
+The full LLVM21/ThinLTO r3 build (production source ce83e0f34) booted via
+the validated serial initramfs. Boot ID was 12e20872-604d-45c5-b12b-cf4aa5b0ce97.
+Systemd reported firmware 12.638 s, loader 3.831 s, kernel 5.575 s, initrd
+5.413 s and userspace 10.942 s. Verbose initcall logging was removed, so this
+is not a controlled performance comparison with previous diagnostic boots.
+All 26 loaded modules and the embedded config matched the original bundle;
+hardware smoke, front/rear capture, both Android OTP layouts and six camera
+switch cycles passed. A 10-second RTC s2idle cycle recovered the same boot,
+SSH, ACM and silent playback. CLOCK_BOOTTIME/wall elapsed was 11.184 s;
+process monotonic elapsed was 2.137 s and excludes suspended time. No new
+UBSAN/BUG/WARNING was observed in these checks. W=1 build warnings remain.
+
+The initial GRUB-fstest comparison used stale CLEAN raw-device page-cache
+data (zero bytes/missing paths), despite filesystem sync. After advising
+POSIX_FADV_DONTNEED on the read-only block-device FD, all three images
+matched Linux reads byte-for-byte. No filesystem rewrite, global cache
+drop, block-device write or BLKFLSBUF was used. This host-side test artifact
+is not evidence that the UEFI bootloader reads stale data.
+
+The user then reported no sound from two successful PipeWire tone streams
+after resume. A signed, temporary read-only probe found RT5659 hardware/cache
+coherence intact: AIF2=0000 and PLL_CTRL_1=0f03. Nevertheless IF2 ADC Mux's
+active DAPM route was IF_ADC2 while the hardware/control reported DAC_REF=2;
+both amps remained PWDN (SYS_CTRL=8201, STATUS=0a5d) during a running PCM.
+Refreshing the mux through ALSA (0 then 2) connected DAC_REF and produced
+STATUS=d85f/SYS_CTRL=8208 in both amps. This is a separate graph-state bug,
+not recurrence of the earlier regcache reset/rebind defect. The probe was
+unloaded; expected out-of-tree taint changed 1088 to 5184.
+
+The board now removes the raw mux write from link init. Late probe creates
+the DAPM controls after routes are registered, then selects DAC_REF through
+the normal DAPM enum callback. Hardware, kcontrol cache and graph stay
+consistent. This follows the routing/control model described in the
+[kernel DAPM documentation](https://docs.kernel.org/sound/soc/dapm.html).
+No always-on amp, forced hardware register patch, global sanitizer change
+or userspace startup-toggle workaround was added.
+
+The real callback's offline ordering/fault model and a signed r3 machine
+module W=1 build passed (one pre-existing unused GPIO-table warning).
+On hardware, seeding reset-default IF_ADC2 before a card rebind reproduced
+the stock mismatch; two equivalent seeded candidate rebinds selected the
+DAC_REF graph correctly without a post-bind toggle. Restoring ALSA/PipeWire
+preserved the graph and both amps became ready during a digital-zero stream.
+This reset-default-seeded rebind is not a substitute for an actual cold
+boot of the final module, post-resume acoustic output or prolonged playback.
+The original r3 archive lacks this later fix and must not be advertised as
+the final validated audio build. A temporary candidate machine is live;
+the separate installation record, if present, is authoritative for disk
+persistence. Saved GRUB default remains bqdiag1; 6.18/recovery images remain
+unchanged. Listening confirmation after the new route and final cold-boot
+persistence remain separate gates.

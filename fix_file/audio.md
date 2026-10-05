@@ -107,3 +107,14 @@ sudo sh fix_file/tests/mipad2-hardware-smoke.sh
 ```
 
 该 smoke test 会检查系统是否仍然枚举出 ALSA 声卡，但它不会代替实际扬声器、耳机和麦克风试听/录音测试。
+
+
+## Cold-boot DAPM route initialization
+
+The board selects AIF2's DAC_REF source through the DAPM enum control in
+late probe, not by a raw codec register write after component routes have
+sampled reset defaults. A cache/hardware match alone does not prove the
+speaker path: check the IF2 ADC Mux graph, active TFA power/status, and sound.
+The corresponding offline callback test is
+`CC=clang python3 fix_file/tests/mipad2-dapm-init-test.py`.
+See KNOWN_ISSUES.md for the actual r3 failure and seeded-rebind evidence.

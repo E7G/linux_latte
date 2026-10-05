@@ -10,6 +10,7 @@
 
 #include <linux/gpio/consumer.h>
 #include <linux/input.h>
+#include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -301,22 +302,6 @@ static int cht_audio_init(struct snd_soc_pcm_runtime *runtime)
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(runtime->card);
 	int ret;
 	struct snd_soc_card *card = runtime->card;
-	unsigned int if2_adc_in = 2 << RT5659_IF2_ADC_IN_SFT;
-
-	/*
-	 * Android's Mi Pad 2 RT5659 init writes DIG_INF23_DATA = 0x2801.
-	 * Select DAC_REF for AIF2's transmit input (IF2 ADC IN). Leave the
-	 * separate IF2 DAC channel-swap selector to DAPM; it is the receive
-	 * path and is not the source sent to the TFA9890 amplifiers.
-	 */
-	ret = snd_soc_component_update_bits(component, RT5659_DIG_INF23_DATA,
-					    RT5659_IF2_ADC_IN_MASK, if2_adc_in);
-	if (ret < 0) {
-		dev_err(runtime->dev, "failed to select RT5659 AIF2 transmit source: %d\n",
-			ret);
-		return ret;
-	}
-
 	if (ctx->use_ssp0) {
 		ret = snd_soc_dapm_add_routes(&runtime->card->dapm,
 						  cht_audio_ssp0_map,
@@ -655,6 +640,39 @@ static int cht_resume_post(struct snd_soc_card *card)
 #define CARD_NAME "cht-bsw-rt5659"
 #define DRIVER_NAME NULL /* card name will be used for driver name */
 
+static int cht_late_probe(struct snd_soc_card *card)
+{
+	struct snd_ctl_elem_value *value;
+	struct snd_kcontrol *kcontrol;
+	int ret;
+
+	/*
+	 * Component routes have already sampled the codec's reset defaults.
+	 * A raw DIG_INF23_DATA write in link init changes the register but not
+	 * the DAPM mux paths, leaving DAC_REF disconnected on a cold boot.
+	 * Materialize the controls, then select Android's DAC_REF transmit
+	 * source through DAPM so hardware, control cache and paths agree.
+	 */
+	ret = snd_soc_dapm_new_widgets(card);
+	if (ret < 0)
+		return ret;
+
+	kcontrol = snd_soc_card_get_kcontrol(card, "IF2 ADC Mux");
+	if (!kcontrol)
+		return -ENODEV;
+
+	value = kzalloc(sizeof(*value), GFP_KERNEL);
+	if (!value)
+		return -ENOMEM;
+	value->value.enumerated.item[0] = 2; /* DAC_REF */
+	ret = snd_soc_dapm_put_enum_double(kcontrol, value);
+	kfree(value);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
 /* SoC card */
 static struct snd_soc_card snd_soc_card_cht = {
 	.owner = THIS_MODULE,
@@ -668,6 +686,7 @@ static struct snd_soc_card snd_soc_card_cht = {
 	.num_controls = ARRAY_SIZE(cht_mc_controls),
 	.suspend_pre = cht_suspend_pre,
 	.resume_post = cht_resume_post,
+	.late_probe = cht_late_probe,
 };
 
 #define RT5659_I2C_DEFAULT	"i2c-10EC5659:00"

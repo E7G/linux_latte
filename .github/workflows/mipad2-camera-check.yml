@@ -17,6 +17,10 @@ on:
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
       - 'fix_file/tests/mipad2-atomic-wrap-test.py'
+      - 'fix_file/tests/mipad2-dapm-init-test.py'
+      - 'fix_file/tests/mipad2-rt5659-rebind-test.py'
+      - 'sound/soc/intel/boards/cht_bsw_rt5659.c'
+      - 'sound/soc/codecs/rt5659.c'
       - 'arch/x86/include/asm/atomic.h'
       - 'arch/x86/include/asm/atomic64_64.h'
       - 'include/linux/atomic/atomic-arch-fallback.h'
@@ -176,6 +180,8 @@ jobs:
           python3 fix_file/tests/mipad2-package-source-test.py
           python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
           python3 fix_file/tests/mipad2-atomic-wrap-test.py --cc gcc
+          CC=gcc python3 fix_file/tests/mipad2-dapm-init-test.py
+          CC=gcc python3 fix_file/tests/mipad2-rt5659-rebind-test.py
           sh -n fix_file/packages/mipad2-recovery/mp2-backup
           sh -n fix_file/packages/mipad2-recovery/mp2-recover
           sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial
@@ -193,3 +199,6 @@ jobs:
             fix_file/packages/mipad2-usb-serial \
             fix_file/packages/mipad2-recovery \
             fix_file/packages/mipad2-test-no-idle
+
+      - name: Compile Mi Pad 2 speaker machine driver
+        run: make -j"$(nproc)" W=1 sound/soc/intel/boards/cht_bsw_rt5659.o
