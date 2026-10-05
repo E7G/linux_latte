@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Read-only V4L2 ABI regression: both sensors and invalid frame format. */
+/* Read-only V4L2 ABI regression: enumeration and unknown ioctl. */
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/videodev2.h>
@@ -52,8 +52,14 @@ int main(int argc, char **argv)
 		perror("VIDIOC_ENUM_FRAMESIZES YUV420");
 		return 1;
 	}
+	errno = 0;
+	if (ioctl(fd, _IO('V', 250), NULL) == 0 || errno != ENOTTY) {
+		fprintf(stderr, "FAIL unknown ioctl was not rejected with ENOTTY\n");
+		failures++;
+	}
 	if (!failures)
-		printf("PASS: reserved zero; invalid format EINVAL; YUV420 %ux%u\n",
+		printf("PASS: reserved zero; invalid format EINVAL; "
+		       "unknown ioctl ENOTTY; YUV420 %ux%u\n",
 		       size.discrete.width, size.discrete.height);
 	close(fd);
 	return failures ? 1 : 0;

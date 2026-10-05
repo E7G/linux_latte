@@ -1606,7 +1606,7 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 		err = atomisp_set_array_res(asd, arg);
 		break;
 	default:
-		err = -EINVAL;
+		err = -ENOTTY;
 		break;
 	}
 
