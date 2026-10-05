@@ -898,6 +898,24 @@ static int ov5693_test_pattern_configure(struct ov5693_device *ov5693, u32 idx)
 	return ret;
 }
 
+/* Keep an untouched default exposure at the current frame limit.
+ * Format probes may temporarily shrink the range to just a few lines;
+ * leaving that clipped value as the new default makes later frames dark.
+ * A manually selected exposure remains unchanged if it still fits.
+ */
+static void ov5693_update_exposure_range(struct ov5693_device *ov5693,
+					 int exposure_max)
+{
+	struct v4l2_ctrl *exposure = ov5693->ctrls.exposure;
+	bool follow_default = exposure->val == exposure->default_value;
+
+	__v4l2_ctrl_modify_range(exposure, exposure->minimum, exposure_max,
+				 exposure->step, exposure_max);
+
+	if (follow_default && exposure->val != exposure_max)
+		__v4l2_ctrl_s_ctrl(exposure, exposure_max);
+}
+
 static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct ov5693_device *ov5693 =
@@ -910,12 +928,7 @@ static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 
 		exposure_max = ov5693->mode.format.height + ctrl->val -
 			       OV5693_INTEGRATION_TIME_MARGIN;
-		__v4l2_ctrl_modify_range(ov5693->ctrls.exposure,
-					 ov5693->ctrls.exposure->minimum,
-					 exposure_max,
-					 ov5693->ctrls.exposure->step,
-					 min(ov5693->ctrls.exposure->val,
-					     exposure_max));
+		ov5693_update_exposure_range(ov5693, exposure_max);
 	}
 
 	/* Only apply changes to the controls if the device is powered up */
@@ -1300,11 +1313,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 				 hblank);
 
 	exposure_max = ov5693->mode.vts - OV5693_INTEGRATION_TIME_MARGIN;
-	__v4l2_ctrl_modify_range(ov5693->ctrls.exposure,
-				 ov5693->ctrls.exposure->minimum, exposure_max,
-				 ov5693->ctrls.exposure->step,
-				 min(ov5693->ctrls.exposure->val,
-				     exposure_max));
+	ov5693_update_exposure_range(ov5693, exposure_max);
 
 	mutex_unlock(&ov5693->lock);
 	return 0;
