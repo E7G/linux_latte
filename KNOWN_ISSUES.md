@@ -955,25 +955,26 @@ persistence. Saved GRUB default remains bqdiag1; 6.18/recovery images remain
 unchanged. Listening confirmation after the new route and final cold-boot
 persistence remain separate gates.
 
-## 2026-10-05 integrated 6.14 r4 cold-boot and camera ABI audit
+## 2026-10-05 integrated 6.14 r4-r6 cold-boot and camera ABI audit
 
-The in-tree 6.14.0-mipad2-integrated-r4 build (source e37f7faa6) booted
-one-shot with GRUB's saved bqdiag1 default unchanged. All 26 loaded modules
-match the running tree, and no out-of-tree module taint remains. Both cameras
-captured three frames each, the RT5659/TFA route survived cold boot and 10s
-s2idle without a manual DAPM toggle, and the user heard two short tones.
-Guided user-held portrait-up, landscape-left, landscape-right and
-portrait-down orientations all had matching proxy state and normal display.
+The integrated r4, r5 and r6 builds each booted one-shot with GRUB's saved
+`mipad2-bqdiag1` default unchanged. r6 source is `e389fddcd`; all 26 loaded
+modules match the running tree and no out-of-tree module taint remains. On r6,
+both cameras captured three frames each, the RT5659/TFA route survived cold
+boot and 10 s s2idle without a manual DAPM toggle, and the user heard two
+short tones. Guided user-held four-way rotation passed on r4; r6 has not been
+physically retested in all four poses.
 
-`v4l2-compliance 1.32.0 -d /dev/video0` on this r4 boot found 8 failing
-groups. A narrower, read-only C ioctl regression independently reproduced
-two concrete ABI violations: `VIDIOC_ENUMINPUT` exposed the ISP port in the
-reserved field for input 1, and `VIDIOC_ENUM_FRAMESIZES` accepted an unknown
-pixel format. The V4L2 contract requires reserved input fields to be zero,
-and enumeration must reject unsupported formats. The local follow-up changes
-only these two paths; other six compliance failures, including AtomISP's
-private capturemode and multi-open/buffer behavior, remain open. Do not claim
-full V4L2 compliance until the entire suite passes on the new kernel.
+`v4l2-compliance 1.32.0 -d /dev/video0` found r5 63/72 passed and r6 64/72
+passed. r5 fixed two ABI defects: `VIDIOC_ENUMINPUT` no longer leaks the ISP
+port into a reserved field, and `VIDIOC_ENUM_FRAMESIZES` rejects an unknown
+pixel format. r6 additionally returns `ENOTTY` for an unknown ioctl instead
+of `EINVAL`; a static C regression failed on r5 and passed on r6. Eight
+failing compliance groups remain: two multi-open failures, `G/S_PARM`,
+scaling, and `REQBUFS/CREATE_BUFS/QUERYBUF` for each of two inputs. The
+private capturemode and multi-open/buffer semantics need careful ABI work;
+do not claim full V4L2 compliance or change legacy mode interpretation just
+to satisfy a checker.
 
 The [AtomISP staging TODO](drivers/staging/media/atomisp/TODO) explicitly
 notes that image quality needs a 3A userspace library. Windows CPF/AIQB color

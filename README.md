@@ -6,6 +6,8 @@ The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. The `cachyos-mi
 
 For the Mi Pad 2 system, `E7G/linux_latte:cachyos-mipad2` is the device-kernel branch and `E7G/xiaomi-latte-flash_tools:arch_linux` is the image-build branch; the image builder pins the resolved kernel commit. `main` can diverge and is not an automatic source of truth for the installed tablet kernel.
 
+The in-progress 6.14 integration is published as `codex/mipad2-6.14-integrated` (r6 source `e389fddcd`). On the test tablet it is a one-shot GRUB candidate; the saved stable default remains `mipad2-bqdiag1`. Passing a smoke test does not promote a candidate to the default.
+
 > This is a device enablement/development kernel, not a generic distribution or fully hardened kernel. The Mi Pad 2 defconfig enables the kernel CPU mitigation framework by default; performance comparisons may opt out with `mitigations=off` at boot. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for remaining limitations.
 
 ## Current status
@@ -20,7 +22,7 @@ The table below describes what is present in the current source/configuration. â
 | Capacitive bezel keys | Integrated | Mi Pad 2-specific HID handling is in the kernel tree. The old udev hwdb mapping in `fix_file/README.md` is now only a fallback. |
 | Wi-Fi | Available, firmware required | BCM4356 support is built as modules (`cfg80211` / `brcmfmac`). Device NVRAM is kept under `fix_file/`. |
 | Bluetooth | Available, firmware required | Broadcom HCI UART support is modular. `BCM4356A2.hcd` is provided under `fix_file/`. |
-| Audio | Speaker output confirmed on 6.14 | On 2026-10-05 the user heard the generic dual-TFA9890 path after restoring RT5659 hardware/cache coherence. The installed reset/rebind fix passed live rebind and RTC-resume clock/amp-ready checks. Factory-DSP, reboot persistence, and subsequent acoustic regressions remain separate gates. Uses the `mipad2-alsa-ucm` profile. |
+| Audio | Speaker output confirmed on 6.14 | On 2026-10-05 the user heard the generic dual-TFA9890 path after restoring RT5659 hardware/cache coherence. The installed reset/rebind fix passed live rebind and RTC-resume clock/amp-ready checks. r4-r6 one-shot cold boots and 10 s s2idle recovery passed silent electrical checks without manual DAPM repair; the user heard r4-r6 short tones. Factory DSP and long-duration audio soak remain separate gates. Uses the `mipad2-alsa-ucm` profile. |
 | USB host / device mode | Available | DWC3 PCI dual-role support is enabled. Gadget mode may still require the firmware/BIOS OTG setting described in `fix_file/USB_OTG_Gadget.md`. |
 | USB serial debug | Available | `mipad2-usb-serial` exposes CDC ACM `/dev/ttyGS0`; with the current kernel config it can also act as a kernel console and replay the printk ring buffer after USB enumeration. |
 | Battery / charger | Integrated and live-validated | BQ25890 uses the Xiaomi 4.400 V VREG / 256 mA termination profile; BQ27520 reports the 6190 mAh design capacity and the former Full@83% issue is resolved. |
