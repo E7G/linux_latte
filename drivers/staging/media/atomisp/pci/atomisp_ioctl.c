@@ -395,7 +395,6 @@ static int atomisp_enum_input(struct file *file, void *fh,
 
 	input->type = V4L2_INPUT_TYPE_CAMERA;
 	input->index = index;
-	input->reserved[1] = isp->inputs[index].port;
 
 	return 0;
 }
@@ -538,6 +537,13 @@ static int atomisp_enum_framesizes(struct file *file, void *priv,
 	};
 	struct v4l2_subdev_state *act_sd_state;
 	int ret;
+
+	/* ENUM_FRAMESIZES must reject formats not advertised by ENUM_FMT. */
+	const struct atomisp_format_bridge *format =
+		atomisp_get_format_bridge(fsize->pixel_format);
+
+	if (!format || format->sh_fmt == IA_CSS_FRAME_FORMAT_RAW)
+		return -EINVAL;
 
 	if (!input->camera)
 		return -EINVAL;

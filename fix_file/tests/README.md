@@ -276,3 +276,17 @@ python3 fix_file/tests/mipad2_tfa_dsp_test.py /path/to/snd_soc_tfa98xx_xiaomi.ko
 ```
 
 The runner refuses the stable fallback kernel. It stops PipeWire/WirePlumber, checks every `/dev/snd/*` handle before unbinding, uses bounded playback through the OEM HiFi route, and restores the original audio services and stock drivers. Do not remove these handle gates: ASoC waits synchronously for ALSA files to close when a card component is unbound.
+
+## AtomISP V4L2 ABI 双摄枚举回归
+
+```bash
+cc -O2 -Wall -Wextra -Werror -static \
+  fix_file/tests/mipad2-atomisp-v4l2-enum-test.c -o /tmp/mipad2-atomisp-v4l2-enum-test
+/tmp/mipad2-atomisp-v4l2-enum-test /dev/video0
+```
+
+只发出只读 `VIDIOC_ENUMINPUT` 和 `VIDIOC_ENUM_FRAMESIZES` 查询：
+两路输入的三个 `reserved` 均须为 0；不存在的像素格式须返回
+`EINVAL`；已公布的 `YU12` 尺寸须仍可枚举。默认不流摄像头、不改设置。
+6.14 r4 真机基线明确失败：第二路 `reserved[1]=1`，无效格式被接受；
+修复后必须重跑并确认双摄采流未退化。
