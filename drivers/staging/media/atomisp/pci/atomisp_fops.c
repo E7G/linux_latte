@@ -492,14 +492,9 @@ static int atomisp_open(struct file *file)
 		goto error;
 	}
 
-	/*
-	 * atomisp does not allow multiple open
-	 */
-	if (pipe->users) {
-		dev_dbg(isp->dev, "video node already opened\n");
-		ret = -EBUSY;
-		goto error;
-	}
+	/* Only the first file handle powers and initializes the shared ISP. */
+	if (pipe->users)
+		goto out;
 
 	/* runtime power management, turn on ISP */
 	ret = pm_runtime_resume_and_get(vdev->v4l2_dev->dev);
@@ -511,6 +506,7 @@ static int atomisp_open(struct file *file)
 	atomisp_dev_init_struct(isp);
 	atomisp_subdev_init_struct(asd);
 
+out:
 	pipe->users++;
 	mutex_unlock(&isp->mutex);
 	return 0;
@@ -527,9 +523,6 @@ static int atomisp_release(struct file *file)
 	struct atomisp_device *isp = video_get_drvdata(vdev);
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(vdev);
 	struct atomisp_sub_device *asd = pipe->asd;
-	struct v4l2_subdev_fh fh;
-
-	v4l2_fh_init(&fh.vfh, vdev);
 
 	dev_dbg(isp->dev, "release device %s\n", vdev->name);
 
@@ -538,7 +531,13 @@ static int atomisp_release(struct file *file)
 
 	mutex_lock(&isp->mutex);
 
-	pipe->users--;
+	/*
+	 * vb2_fop_release() stops/releases only the closing queue owner (or an
+	 * unowned queue). Keep shared sensor/CSS state and the runtime-PM
+	 * reference alive while other file handles can still use this node.
+	 */
+	if (--pipe->users)
+		goto out;
 
 	atomisp_css_free_stat_buffers(asd);
 	atomisp_free_internal_buffers(asd);
@@ -550,6 +549,7 @@ static int atomisp_release(struct file *file)
 	if (pm_runtime_put_sync(vdev->v4l2_dev->dev) < 0)
 		dev_err(isp->dev, "Failed to power off device\n");
 
+out:
 	mutex_unlock(&isp->mutex);
 	return 0;
 }
