@@ -17,7 +17,9 @@
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/gpio/consumer.h>
+#include <linux/gcd.h>
 #include <linux/i2c.h>
+#include <linux/math64.h>
 #include <linux/mod_devicetable.h>
 #include <linux/mutex.h>
 #include <linux/nvmem-provider.h>
@@ -1178,22 +1180,50 @@ static int t4ka3_get_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_frame_interval *interval)
 {
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
-	struct v4l2_mbus_framefmt *fmt;
 	unsigned int frame_size;
-	unsigned int fps;
+	unsigned int divisor;
 
-	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE)
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
 		return -EINVAL;
 
-	fmt = v4l2_subdev_state_get_format(sd_state, interval->pad);
 	frame_size = T4KA3_PIXELS_PER_LINE *
-		(fmt->height + sensor->ctrls.vblank->val);
-	fps = DIV_ROUND_CLOSEST(T4KA3_PIXEL_RATE, frame_size);
-
-	interval->interval.numerator = 1;
-	interval->interval.denominator = fps;
+		(v4l2_subdev_state_get_format(sd_state, 0)->height + sensor->ctrls.vblank->val);
+	divisor = gcd(frame_size, T4KA3_PIXEL_RATE);
+	interval->interval.numerator = frame_size / divisor;
+	interval->interval.denominator = T4KA3_PIXEL_RATE / divisor;
 
 	return 0;
+}
+
+static int t4ka3_set_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
+	struct v4l2_ctrl *vblank = sensor->ctrls.vblank;
+	u64 numerator, denominator, lines;
+	unsigned int height;
+	int ret;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
+		return -EINVAL;
+
+	height = v4l2_subdev_state_get_format(sd_state, 0)->height;
+	if (!interval->interval.numerator || !interval->interval.denominator) {
+		lines = height + vblank->default_value;
+	} else {
+		numerator = (u64)T4KA3_PIXEL_RATE * interval->interval.numerator;
+		denominator = (u64)T4KA3_PIXELS_PER_LINE * interval->interval.denominator;
+		lines = div64_u64(numerator + denominator / 2, denominator);
+		lines = clamp_t(u64, lines, height + vblank->minimum,
+				height + vblank->maximum);
+	}
+
+	ret = __v4l2_ctrl_s_ctrl(vblank, lines - height);
+	if (ret)
+		return ret;
+
+	return t4ka3_get_frame_interval(sd, sd_state, interval);
 }
 
 static const struct v4l2_ctrl_ops t4ka3_ctrl_ops = {
@@ -1212,6 +1242,7 @@ static const struct v4l2_subdev_pad_ops t4ka3_pad_ops = {
 	.get_selection = t4ka3_get_selection,
 	.set_selection = t4ka3_set_selection,
 	.get_frame_interval = t4ka3_get_frame_interval,
+	.set_frame_interval = t4ka3_set_frame_interval,
 	.enable_streams = t4ka3_enable_stream,
 	.disable_streams = t4ka3_disable_stream,
 };

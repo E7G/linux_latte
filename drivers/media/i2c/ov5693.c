@@ -18,7 +18,9 @@
 #include <linux/dmi.h>
 #include <linux/device.h>
 #include <linux/err.h>
+#include <linux/gcd.h>
 #include <linux/i2c.h>
+#include <linux/math64.h>
 #include <linux/module.h>
 #include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
@@ -1448,21 +1450,54 @@ static int ov5693_get_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_frame_interval *interval)
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
-	unsigned int framesize = OV5693_FIXED_PPL * (ov5693->mode.format.height +
-				 ov5693->ctrls.vblank->val);
-	unsigned int fps = DIV_ROUND_CLOSEST(OV5693_PIXEL_RATE, framesize);
+	unsigned int frame_size;
+	unsigned int divisor;
 
-	/*
-	 * FIXME: Implement support for V4L2_SUBDEV_FORMAT_TRY, using the V4L2
-	 * subdev active state API.
-	 */
-	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE)
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
 		return -EINVAL;
 
-	interval->interval.numerator = 1;
-	interval->interval.denominator = fps;
+	mutex_lock(&ov5693->lock);
+	frame_size = OV5693_FIXED_PPL *
+		(ov5693->mode.format.height + ov5693->ctrls.vblank->val);
+	divisor = gcd(frame_size, OV5693_PIXEL_RATE);
+	interval->interval.numerator = frame_size / divisor;
+	interval->interval.denominator = OV5693_PIXEL_RATE / divisor;
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
+}
+
+static int ov5693_set_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+	struct v4l2_ctrl *vblank = ov5693->ctrls.vblank;
+	u64 numerator, denominator, lines;
+	unsigned int height;
+	int ret;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	height = ov5693->mode.format.height;
+	if (!interval->interval.numerator || !interval->interval.denominator) {
+		lines = height + vblank->default_value;
+	} else {
+		numerator = (u64)OV5693_PIXEL_RATE * interval->interval.numerator;
+		denominator = (u64)OV5693_FIXED_PPL * interval->interval.denominator;
+		lines = div64_u64(numerator + denominator / 2, denominator);
+		lines = clamp_t(u64, lines, height + vblank->minimum,
+				height + vblank->maximum);
+	}
+
+	ret = __v4l2_ctrl_s_ctrl(vblank, lines - height);
+	mutex_unlock(&ov5693->lock);
+	if (ret)
+		return ret;
+
+	return ov5693_get_frame_interval(sd, sd_state, interval);
 }
 
 static int ov5693_enum_mbus_code(struct v4l2_subdev *sd,
@@ -1511,6 +1546,7 @@ static const struct v4l2_subdev_pad_ops ov5693_pad_ops = {
 	.get_selection = ov5693_get_selection,
 	.set_selection = ov5693_set_selection,
 	.get_frame_interval = ov5693_get_frame_interval,
+	.set_frame_interval = ov5693_set_frame_interval,
 };
 
 static const struct v4l2_subdev_ops ov5693_ops = {

@@ -1345,7 +1345,9 @@ static int atomisp_s_ext_ctrls(struct file *file, void *fh,
 }
 
 /*
- * vidioc_g/s_param are used to switch isp running mode
+ * Stream parameters use the standard V4L2 ABI. Keep accepting the legacy
+ * Intel CI_MODE_* requests in S_PARM, but do not expose internal run-mode
+ * control values as capturemode flags in G_PARM.
  */
 static int atomisp_g_parm(struct file *file, void *fh,
 			  struct v4l2_streamparm *parm)
@@ -1353,13 +1355,29 @@ static int atomisp_g_parm(struct file *file, void *fh,
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
 	struct atomisp_device *isp = video_get_drvdata(vdev);
+	struct v4l2_subdev *sensor = isp->inputs[asd->input_curr].camera;
+	struct v4l2_subdev_frame_interval fi = {
+		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
+	};
+	int ret;
 
-	if (parm->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
-		dev_err(isp->dev, "unsupported v4l2 buf type\n");
+	if (parm->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
-	}
 
-	parm->parm.capture.capturemode = asd->run_mode->val;
+	memset(&parm->parm, 0, sizeof(parm->parm));
+	if (vdev->device_caps & V4L2_CAP_READWRITE)
+		parm->parm.capture.readbuffers = 2;
+
+	if (!v4l2_subdev_has_op(sensor, pad, get_frame_interval))
+		return 0;
+
+	ret = v4l2_subdev_call_state_active(sensor, pad, get_frame_interval, &fi);
+	if (ret)
+		return ret;
+
+	parm->parm.capture.timeperframe = fi.interval;
+	if (v4l2_subdev_has_op(sensor, pad, set_frame_interval))
+		parm->parm.capture.capability = V4L2_CAP_TIMEPERFRAME;
 
 	return 0;
 }
@@ -1370,35 +1388,18 @@ static int atomisp_s_parm(struct file *file, void *fh,
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_device *isp = video_get_drvdata(vdev);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct v4l2_subdev *sensor = isp->inputs[asd->input_curr].camera;
+	struct v4l2_subdev_frame_interval fi = {
+		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
+		.interval = parm->parm.capture.timeperframe,
+	};
 	int mode;
-	int rval;
-	int fps;
+	int ret;
 
-	if (parm->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
-		dev_err(isp->dev, "unsupported v4l2 buf type\n");
+	if (parm->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
-	}
 
-	asd->high_speed_mode = false;
 	switch (parm->parm.capture.capturemode) {
-	case CI_MODE_NONE: {
-		struct v4l2_subdev_frame_interval fi = {0};
-
-		fi.interval = parm->parm.capture.timeperframe;
-
-		rval = v4l2_subdev_call_state_active(isp->inputs[asd->input_curr].camera,
-						     pad, set_frame_interval, &fi);
-		if (!rval)
-			parm->parm.capture.timeperframe = fi.interval;
-
-		if (fi.interval.numerator != 0) {
-			fps = fi.interval.denominator / fi.interval.numerator;
-			if (fps > 30)
-				asd->high_speed_mode = true;
-		}
-
-		return rval == -ENOIOCTLCMD ? 0 : rval;
-	}
 	case CI_MODE_VIDEO:
 		mode = ATOMISP_RUN_MODE_VIDEO;
 		break;
@@ -1409,12 +1410,27 @@ static int atomisp_s_parm(struct file *file, void *fh,
 		mode = ATOMISP_RUN_MODE_PREVIEW;
 		break;
 	default:
-		return -EINVAL;
+		/* Unsupported standard capture flags are returned cleared. */
+		if (v4l2_subdev_has_op(sensor, pad, set_frame_interval)) {
+			ret = v4l2_subdev_call_state_active(sensor, pad,
+							  set_frame_interval, &fi);
+			if (ret)
+				return ret;
+		}
+		ret = atomisp_g_parm(file, fh, parm);
+		if (!ret)
+			asd->high_speed_mode =
+				(u64)parm->parm.capture.timeperframe.denominator >
+				30ULL * parm->parm.capture.timeperframe.numerator;
+		return ret;
 	}
 
-	rval = v4l2_ctrl_s_ctrl(asd->run_mode, mode);
+	ret = v4l2_ctrl_s_ctrl(asd->run_mode, mode);
+	if (ret && ret != -ENOIOCTLCMD)
+		return ret;
 
-	return rval == -ENOIOCTLCMD ? 0 : rval;
+	asd->high_speed_mode = false;
+	return atomisp_g_parm(file, fh, parm);
 }
 
 static long atomisp_vidioc_default(struct file *file, void *fh,
