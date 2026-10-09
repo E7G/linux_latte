@@ -6,7 +6,7 @@ The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. The `cachyos-mi
 
 For the Mi Pad 2 system, `E7G/linux_latte:cachyos-mipad2` is the device-kernel branch and `E7G/xiaomi-latte-flash_tools:arch_linux` is the image-build branch; the image builder pins the resolved kernel commit. `main` can diverge and is not an automatic source of truth for the installed tablet kernel.
 
-The in-progress 6.14 integration is published as `codex/mipad2-6.14-integrated` (r7 source `2c4c8d0ac`). On the test tablet it is a one-shot GRUB candidate; the saved stable default remains `mipad2-bqdiag1`. Passing a smoke test does not promote a candidate to the default.
+The in-progress 6.14 integration is published as `codex/mipad2-6.14-integrated`. r8 source `1693101f2` adds standard stream parameters and adjustable sensor frame periods; it has passed the full build and host-model tests but is not device-validated. The latest device-validated kernel remains r7 source `2c4c8d0ac`. On the test tablet it is a one-shot GRUB candidate; the saved stable default remains `mipad2-bqdiag1`. Passing a smoke test does not promote a candidate to the default.
 
 > This is a device enablement/development kernel, not a generic distribution or fully hardened kernel. The Mi Pad 2 defconfig enables the kernel CPU mitigation framework by default; performance comparisons may opt out with `mitigations=off` at boot. See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for remaining limitations.
 
@@ -29,7 +29,7 @@ The table below describes what is present in the current source/configuration. â
 | TXE / MEI | Integrated and live-validated | Intel Trusted Execution Engine 8086:2298 binds to `mei_txe` and exposes `/dev/mei0`. |
 | IIO sensors | Standard orientation live-validated | ALS, accelerometer, gyro, magnetometer, inclination and device-rotation nodes enumerate. The Mi Pad 2 matrices and four physical display orientations were verified; proprietary Windows ISS sensor payloads remain unmapped. |
 | Indicator / touch-key LEDs | Integrated, verify on device | The regression script checks `mipad2:rgb:indicator` and `mipad2:white:touch-buttons-backlight`. |
-| Front camera | Experimental | OV5693 uses the in-tree driver through AtomISP. r7 restores default exposure after transient format probes; direct-capture 3A/white-balance tuning remains open. |
+| Front camera | Experimental | OV5693 uses the in-tree driver through AtomISP. r7 restores default exposure after transient format probes. The unbooted r8 candidate adds accurate/adjustable frame periods for OV5693 and T4KA3, with standard G/S_PARM responses and legacy CI_MODE requests retained. Direct-capture 3A/white-balance tuning remains open. |
 | Rear camera | Experimental | T4KA3 support is integrated in this kernel tree; DW9761 focus is handled through the compatible `dw9719` driver. |
 | Video decode | Userspace-verified | `libva 2.24.0` with Intel i965 driver 2.4.5 has been verified on CherryView; see `fix_file/README.md`. |
 | Suspend / resume | Baseline validated; keep regression testing | An 8 s s2idle test spent about 7.43 s in S0I3 (~93%); Wi-Fi/SSH, USB gadget, audio and camera recovered successfully. Re-run after power/ACPI/media changes. |
