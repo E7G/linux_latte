@@ -116,10 +116,18 @@ static int atomisp_queue_setup(struct vb2_queue *vq,
 			goto out;
 	}
 
-	atomisp_alloc_css_stat_bufs(pipe->asd, ATOMISP_INPUT_STREAM_GENERAL);
+	if (*nplanes) {
+		/* CREATE_BUFS supplies plane count/sizes; never shrink them. */
+		if (*nplanes != 1 || sizes[0] < pipe->pix.sizeimage) {
+			ret = -EINVAL;
+			goto out;
+		}
+	} else {
+		*nplanes = 1;
+		sizes[0] = PAGE_ALIGN(pipe->pix.sizeimage);
+	}
 
-	*nplanes = 1;
-	sizes[0] = PAGE_ALIGN(pipe->pix.sizeimage);
+	ret = atomisp_alloc_css_stat_bufs(pipe->asd, ATOMISP_INPUT_STREAM_GENERAL);
 
 out:
 	mutex_unlock(&pipe->asd->isp->mutex);

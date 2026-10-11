@@ -862,6 +862,31 @@ static void atomisp_dma_burst_len_cfg(struct atomisp_sub_device *asd)
 		atomisp_css2_hw_store_32(DMA_BURST_SIZE_REG, 0x00);
 }
 
+static int atomisp_validate_frame_info(struct atomisp_video_pipe *pipe)
+{
+	const struct ia_css_frame_info *allocated = &pipe->frame_info;
+	struct ia_css_frame_info current = { };
+	int ret;
+
+	lockdep_assert_held(&pipe->asd->isp->mutex);
+	ret = atomisp_get_css_frame_info(pipe->asd, &current);
+	if (ret)
+		return ret;
+
+	/* Existing MMAP allocations must match the recreated CSS output. */
+	if (allocated->res.width != current.res.width ||
+	    allocated->res.height != current.res.height ||
+	    allocated->padded_width != current.padded_width ||
+	    allocated->format != current.format ||
+	    allocated->raw_bit_depth != current.raw_bit_depth ||
+	    allocated->raw_bayer_order != current.raw_bayer_order ||
+	    allocated->crop_info.start_column != current.crop_info.start_column ||
+	    allocated->crop_info.start_line != current.crop_info.start_line)
+		return -EINVAL;
+
+	return 0;
+}
+
 int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 {
 	struct atomisp_video_pipe *pipe = vq_to_pipe(vq);
@@ -876,6 +901,12 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	mutex_lock(&isp->mutex);
 
 	ret = atomisp_pipe_check(pipe, false);
+	if (ret) {
+		atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_QUEUED, true);
+		goto out_unlock;
+	}
+
+	ret = atomisp_validate_frame_info(pipe);
 	if (ret) {
 		atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_QUEUED, true);
 		goto out_unlock;
@@ -916,6 +947,7 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	ret = atomisp_css_start(asd);
 	if (ret) {
 		atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_QUEUED, true);
+		media_pipeline_stop(&asd->video_out.vdev.entity.pads[0]);
 		goto out_unlock;
 	}
 
@@ -1007,7 +1039,8 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	atomisp_clear_css_buffer_counters(asd);
 	atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
 
-	atomisp_css_stop(asd, false);
+	/* Retain format configs, but still release all per-stream parameters. */
+	atomisp_css_stop_preserve_config(asd);
 
 	atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_ERROR, true);
 

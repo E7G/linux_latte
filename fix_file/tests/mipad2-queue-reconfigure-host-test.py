@@ -50,7 +50,7 @@ static struct v4l2_ctrl_handler handler;
 static struct v4l2_subdev sensor;
 static struct v4l2_fract actual;
 static struct v4l2_pix_format requested;
-static int getter_error,setter_error,format_error,exposure_error,css_retry_error;
+static int getter_error,setter_error,format_error,exposure_error,css_retry_error,stats_error;
 static unsigned int get_calls,set_calls,format_calls,exposure_calls,css_calls,stats_calls;
 static bool css_ready;
 static char events[100];
@@ -82,8 +82,8 @@ static int atomisp_get_css_frame_info(struct atomisp_sub_device *a,struct ia_css
     assert(a==&asd && f==&pipe_.frame_info);event('c');css_calls++;
     return css_ready ? css_retry_error : -EINVAL;
 }
-static void atomisp_alloc_css_stat_bufs(struct atomisp_sub_device *a,unsigned int stream) {
-    assert(a==&asd && stream==ATOMISP_INPUT_STREAM_GENERAL);event('a');stats_calls++;
+static int atomisp_alloc_css_stat_bufs(struct atomisp_sub_device *a,unsigned int stream) {
+    assert(a==&asd && stream==ATOMISP_INPUT_STREAM_GENERAL);event('a');stats_calls++;return stats_error;
 }
 '''
 tests=r'''
@@ -95,7 +95,7 @@ static void reset(void) {
     isp.inputs[1].camera=&sensor;actual=(struct v4l2_fract){1,15};
     pipe_.pix=(struct v4l2_pix_format){.width=1280,.height=720,.pixelformat=V4L2_PIX_FMT_YUV420,.sizeimage=1280*720*3/2};
     get_calls=set_calls=format_calls=exposure_calls=css_calls=stats_calls=0;css_ready=false;
-    getter_error=setter_error=format_error=exposure_error=css_retry_error=0;
+    getter_error=setter_error=format_error=exposure_error=css_retry_error=stats_error=0;
 }
 static int setup(void) {
     unsigned int count=8,planes=0,size=0;
@@ -125,6 +125,7 @@ int main(void) {
         reset();css_retry_error=-EINVAL;assert(setup()==-EINVAL);assert(exposure.val==300 && actual.denominator==15 && !stats_calls);count++;
         reset();sensor.ctrl_handler=NULL;assert(!setup());assert(!exposure_calls && actual.denominator==15);count++;
         reset();handler.exposure=NULL;assert(!setup());assert(!exposure_calls && actual.denominator==15);count++;
+        reset();stats_error=-ENOMEM;assert(setup()==-ENOMEM);assert(stats_calls==1 && !isp.mutex.depth);count++;
     }
     printf("PASS %u queue-reconfiguration cases; real source, CSS/sensor/control/lock stubs\n",count);
 }
