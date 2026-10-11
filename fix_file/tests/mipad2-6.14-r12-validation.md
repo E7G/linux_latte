@@ -1,8 +1,9 @@
-# Mi Pad 2 r12 queue/restart candidate — NOT hardware validated
+# Mi Pad 2 r12: measured restart and CREATE_BUFS fixes, remaining gaps
 
 Prepared 2026-10-11. Driver/test source commit `67306a5e196828b8290dbfa77e09f5634d77bb3a`.
-Tablet remains r11, stable saved boot default bqdiag1. Build source commit
-will be pinned independently in its state/manifest; no r12 hardware PASS.
+Measured 2026-10-12 on r12, built source `37f8d9498a20e83f287db2a81223cfa7c483a955`.
+Stable saved boot default remains bqdiag1; r12 is a one-shot candidate.
+Only the scoped hardware evidence below is claimed, not complete support.
 
 ## Changes and rationale
 
@@ -69,3 +70,57 @@ macro definition in the source-extracted host test. Preserve failed log/state.
 Resume the same isolated build directory with a separately pinned corrected
 commit; no configuration change or full rebuild from scratch is required.
 This is a compile fix, not a hardware-validation result.
+
+## Hardware follow-up, 2026-10-12
+
+Corrected full LLVM21 ThinLTO W=1 build exit0, all34 module CMS signatures
+verified. The targeted real kernel-header ioctl object compiled before full
+link. Seven corrected host suites passed; reintroducing the old current local
+name into an in-memory fixture now fails compilation as expected. Attempt1
+failure preserved, not hidden. Existing kernel build warnings remain.
+
+Kernel SHA256 `9f0851cc364afb9291c5d1fbbd0f272c5a3feb3a8fc84e8926606a054db78d9d`.
+Bundle SHA256 `31a957f8df1e21d2ea0b2c52e64adf0d3c70747fe08d8a91a8efc1c18a0aa65b`.
+Serial initrd SHA256 `841004bba494b5fc2963b65b098d7852e6830def79dba445a54a7eb5a50872ee`.
+One-shot boot ID `92ee1633-5c07-402e-b336-2ff8e1cf757a`; SSH and USB serial
+returned. Protected stable kernel/module trees unchanged during staging;
+only appended GRUB custom entry changed. saved_entry=bqdiag1, next consumed.
+Normal initrd before/after serial generation hash persisted and matched;
+initrd systemd verify passed, raw Btrfs byte comparisons passed.
+
+- Both sensors: original18-frame plus separate960-frame strict multiopen,
+  owner isolation, observer close, surviving-fd takeover and streamparm ABI.
+- Ordinary restart: four sensor/rate cases,240 frames each, four60-frame
+  phases. STREAMOFF/requeue/STREAMON uses existing MMAP buffers, no additional
+  REQBUFS/S_FMT. All four cases now pass instead of r11 timeout. All measured
+  phases within1% at30/15fps; exposure unchanged front1482/2970, rear1864/3733.
+  This reuses an outer-selected format, not pristine unconfigured fallback.
+- CREATE_BUFS size contract: zero/half/one-byte-short EINVAL; exact1384448,
+  one-byte-extra1384449 and larger2433024 allocations retain requested size.
+  Nonowner mutation EBUSY passes. Both sensors restored exactly.
+- Oversized MMAP/DMA: four additional240-frame cases, each buffer1MiB beyond
+  image payload filled0xa5 and checked after every dequeued frame. Valid
+  payload/sequence, four-phase cadence, ordinary restart and takeover pass.
+- Total3,876 strict/cadence/oversized capture frames. Sensor crop, format and
+  sampled controls restored with readback after every gate.
+- Full no-stream v4l2-compliance remains NONZERO:72/74,2 failures,2 warnings
+  per run across both inputs (previous70/74). CREATE_BUFS tests now pass.
+  Both Scaling tests still fail and missing interval enumeration warns.
+  This is not full streaming compliance or complete ISP support.
+
+Silent PCM cold-boot/post-resume hardware checks pass without mux/cache
+repair. First10-second RTC test functionally resumed but S0I3 delta was0;
+do not call that low-power entry. Subsequent15-second diagnostic suspend
+entered S0I3 +15,124,480us; another10-second test with original debug flags
+entered +9,850,912us. Same boot throughout, debug flags restored. Initial
+zero-residency event remains unexplained, not a proven kernel regression
+or a repaired cause. No BUG/WARNING/UBSAN/Call Trace in the electrical audit.
+
+Snapshot r6 four new native-MMAP/continuing-AE sessions each actually exited
+MainPID0, Resultsuccess, ExecMainStatus0 after GDBus quit. Default r6 launcher
+reopened afterward and continues AE. User visual confirmation and r12 audible
+confirmation pending; r11 confirmations are not reused as r12 proof.
+
+Remaining: extreme-size negotiation/scaling, interval enumeration, full
+streaming compliance, calibrated AWB/3A, recording/window-X stability and
+broader hardware/end-to-end validation. Goal remains incomplete.

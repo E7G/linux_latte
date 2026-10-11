@@ -1,4 +1,4 @@
-/* r9/r10 destructive queue test: caller must ensure no active camera client.
+/* r9/r10/r11/r12 destructive queue test: caller must ensure no active camera client.
  * Caller must snapshot/restore selected sensor controls around this test.
  * Does not change input. Restores the saved video format on exit.
  */
@@ -86,8 +86,10 @@ int main(int argc, char **argv)
 {
     struct utsname uts;
     if (argc != 2 || uname(&uts) || (strcmp(uts.release, "6.14.0-mipad2-integrated-r9") &&
-        strcmp(uts.release, "6.14.0-mipad2-integrated-r10"))) {
-        fprintf(stderr, "Usage: on r9/r10 with camera idle, %s /dev/videoN\n", argv[0]);
+        strcmp(uts.release, "6.14.0-mipad2-integrated-r10") &&
+        strcmp(uts.release, "6.14.0-mipad2-integrated-r11") &&
+        strcmp(uts.release, "6.14.0-mipad2-integrated-r12"))) {
+        fprintf(stderr, "Usage: on r9/r10/r11/r12 with camera idle, %s /dev/videoN\n", argv[0]);
         return 2;
     }
     struct capture a = {.fd = -1}, b = {.fd = -1};

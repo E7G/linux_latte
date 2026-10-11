@@ -1,0 +1,298 @@
+{
+  "built_source": "37f8d9498a20e83f287db2a81223cfa7c483a955",
+  "kernel": "6.14.0-mipad2-integrated-r12",
+  "boot_id": "92ee1633-5c07-402e-b336-2ff8e1cf757a",
+  "strict_capture_frames": 3876,
+  "camera_gates": [
+    {
+      "gate": "strict-queue-tests",
+      "cases": [
+        {
+          "input": 0,
+          "sensor": "/dev/v4l-subdev5",
+          "restoration_exact": true,
+          "diagnostic": {
+            "exit_code": 0,
+            "frames": 18,
+            "important_lines": [
+              "PASS real nonowner isolation and surviving-fd stream takeover"
+            ]
+          },
+          "long_strict": {
+            "exit_code": 0,
+            "frames": 960,
+            "important_lines": [
+              "PASS real nonowner isolation and surviving-fd stream takeover"
+            ]
+          },
+          "streamparm": {
+            "exit_code": 0,
+            "frames": 0,
+            "important_lines": [
+              "PASS streamparm ABI, private CI flags masked, unchanged format; controls restored"
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "sensor": "/dev/v4l-subdev4",
+          "restoration_exact": true,
+          "diagnostic": {
+            "exit_code": 0,
+            "frames": 18,
+            "important_lines": [
+              "PASS real nonowner isolation and surviving-fd stream takeover"
+            ]
+          },
+          "long_strict": {
+            "exit_code": 0,
+            "frames": 960,
+            "important_lines": [
+              "PASS real nonowner isolation and surviving-fd stream takeover"
+            ]
+          },
+          "streamparm": {
+            "exit_code": 0,
+            "frames": 0,
+            "important_lines": [
+              "PASS streamparm ABI, private CI flags masked, unchanged format; controls restored"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "gate": "cadence-no-sfmt-restart",
+      "cases": [
+        {
+          "input": 0,
+          "sensor": "/dev/v4l-subdev5",
+          "restoration_exact": true,
+          "cadence": [
+            {
+              "requested_fps": 30,
+              "measured_fps": {
+                "before-observer-close": 30.009302883894126,
+                "after-observer-close": 30.004541365328897,
+                "ordinary-restart": 29.99882038536781,
+                "remaining-fd-takeover": 30.00243579097343
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 1482 range 1..1976",
+                "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 1482 -> 1482",
+                "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720",
+                "PASS owner isolation/takeover with increasing frame sequence"
+              ]
+            },
+            {
+              "requested_fps": 15,
+              "measured_fps": {
+                "before-observer-close": 15.001076772205684,
+                "after-observer-close": 15.001088214534834,
+                "ordinary-restart": 14.998948802486508,
+                "remaining-fd-takeover": 14.999513151395194
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 2970 range 1..3960",
+                "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 2970 -> 2970",
+                "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720",
+                "PASS owner isolation/takeover with increasing frame sequence"
+              ]
+            }
+          ]
+        },
+        {
+          "input": 1,
+          "sensor": "/dev/v4l-subdev4",
+          "restoration_exact": true,
+          "cadence": [
+            {
+              "requested_fps": 30,
+              "measured_fps": {
+                "before-observer-close": 30.00886024314313,
+                "after-observer-close": 30.008387089883303,
+                "ordinary-restart": 30.00902813982189,
+                "remaining-fd-takeover": 30.009486049403627
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 1864 range 0..2486",
+                "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 1864 -> 1864",
+                "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720",
+                "PASS owner isolation/takeover with increasing frame sequence"
+              ]
+            },
+            {
+              "requested_fps": 15,
+              "measured_fps": {
+                "before-observer-close": 15.004433937384675,
+                "after-observer-close": 15.004422489950839,
+                "ordinary-restart": 15.004586571505381,
+                "remaining-fd-takeover": 15.004674337530915
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 3733 range 0..4978",
+                "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 3733 -> 3733",
+                "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720",
+                "PASS owner isolation/takeover with increasing frame sequence"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gate": "createbufs-size-contract",
+      "cases": [
+        {
+          "input": 0,
+          "sensor": "/dev/v4l-subdev5",
+          "restoration_exact": true,
+          "createbufs": {
+            "exit_code": 0,
+            "frames": 0,
+            "important_lines": [
+              "FORMAT 1280x720 sizeimage=1384448",
+              "CASE zero requested=0 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE half requested=692224 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE one-byte-short requested=1384447 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE exact requested=1384448 ret=0 errno=0 expected_errno=0 count=1 actual_length=1384448 PASS",
+              "CASE one-byte-extra requested=1384449 ret=0 errno=0 expected_errno=0 count=1 actual_length=1384449 PASS",
+              "CASE large requested=2433024 ret=0 errno=0 expected_errno=0 count=1 actual_length=2433024 PASS",
+              "PASS CREATE_BUFS contract"
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "sensor": "/dev/v4l-subdev4",
+          "restoration_exact": true,
+          "createbufs": {
+            "exit_code": 0,
+            "frames": 0,
+            "important_lines": [
+              "FORMAT 1280x720 sizeimage=1384448",
+              "CASE zero requested=0 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE half requested=692224 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE one-byte-short requested=1384447 ret=-1 errno=22 expected_errno=22 count=1 actual_length=0 PASS",
+              "CASE exact requested=1384448 ret=0 errno=0 expected_errno=0 count=1 actual_length=1384448 PASS",
+              "CASE one-byte-extra requested=1384449 ret=0 errno=0 expected_errno=0 count=1 actual_length=1384449 PASS",
+              "CASE large requested=2433024 ret=0 errno=0 expected_errno=0 count=1 actual_length=2433024 PASS",
+              "PASS CREATE_BUFS contract"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "gate": "createbufs-stream",
+      "cases": [
+        {
+          "input": 0,
+          "sensor": "/dev/v4l-subdev5",
+          "restoration_exact": true,
+          "cadence": [
+            {
+              "requested_fps": 30,
+              "measured_fps": {
+                "before-observer-close": 29.99787472684152,
+                "after-observer-close": 30.000605096950437,
+                "ordinary-restart": 29.996990132515283,
+                "remaining-fd-takeover": 30.001200048001895
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 1482 range 1..1976",
+                "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 1482 -> 1482",
+                "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720",
+                "PASS oversized CREATE_BUFS DMA/payload/tail, ordinary restart and owner takeover"
+              ]
+            },
+            {
+              "requested_fps": 15,
+              "measured_fps": {
+                "before-observer-close": 15.00003177972836,
+                "after-observer-close": 15.000416960742655,
+                "ordinary-restart": 15.000687743395677,
+                "remaining-fd-takeover": 14.999844916857583
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 2970 range 1..3960",
+                "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 2970 -> 2970",
+                "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720",
+                "PASS oversized CREATE_BUFS DMA/payload/tail, ordinary restart and owner takeover"
+              ]
+            }
+          ]
+        },
+        {
+          "input": 1,
+          "sensor": "/dev/v4l-subdev4",
+          "restoration_exact": true,
+          "cadence": [
+            {
+              "requested_fps": 30,
+              "measured_fps": {
+                "before-observer-close": 30.011852138217705,
+                "after-observer-close": 30.01119570198974,
+                "ordinary-restart": 30.012432268553525,
+                "remaining-fd-takeover": 30.00896708626651
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 1864 range 0..2486",
+                "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 1864 -> 1864",
+                "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720",
+                "PASS oversized CREATE_BUFS DMA/payload/tail, ordinary restart and owner takeover"
+              ]
+            },
+            {
+              "requested_fps": 15,
+              "measured_fps": {
+                "before-observer-close": 15.006147433618116,
+                "after-observer-close": 15.005777224231258,
+                "ordinary-restart": 15.00670087346628,
+                "remaining-fd-takeover": 15.006448957852959
+              },
+              "frames": 240,
+              "important_lines": [
+                "HIGH_EXPOSURE 3733 range 0..4978",
+                "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720",
+                "RESTART_PRESERVE exposure 3733 -> 3733",
+                "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720",
+                "PASS oversized CREATE_BUFS DMA/payload/tail, ordinary restart and owner takeover"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "compliance_total": 74,
+  "compliance_passed": 72,
+  "compliance_failed": 2,
+  "compliance_warnings": 2,
+  "remaining_compliance_failures": "Scaling on both inputs; missing ENUM_FRAMEINTERVALS warnings",
+  "silent_audio_electrical": true,
+  "user_heard_r12": null,
+  "app_clean_closures": 4,
+  "user_visual_r12": null,
+  "first_rtc_s0i3_delta_us": 0,
+  "later_rtc_s0i3_deltas_us": [
+    15124480,
+    9850912
+  ],
+  "saved_default": "mipad2-bqdiag1",
+  "complete_kernel_support": false
+}
