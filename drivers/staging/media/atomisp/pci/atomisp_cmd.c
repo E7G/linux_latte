@@ -584,7 +584,8 @@ void atomisp_buffer_done(struct ia_css_frame *frame, enum vb2_buffer_state state
 
 	frame->vb.vb2_buf.timestamp = ktime_get_ns();
 	frame->vb.field = pipe->pix.field;
-	frame->vb.sequence = atomic_read(&pipe->asd->sequence);
+	frame->vb.sequence = pipe->use_sof_sequence ?
+		atomic_read(&pipe->asd->sequence) : pipe->sequence;
 	list_del(&frame->queue);
 	if (state == VB2_BUF_STATE_DONE)
 		vb2_set_plane_payload(&frame->vb.vb2_buf, 0, pipe->pix.sizeimage);
@@ -843,6 +844,17 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 	if (frame) {
 		spin_lock_irqsave(&pipe->irq_lock, irqflags);
 		atomisp_buffer_done(frame, error ? VB2_BUF_STATE_ERROR : VB2_BUF_STATE_DONE);
+		/*
+		 * Buffered-sensor CSS disables receiver SOF interrupts. Count
+		 * frames actually returned by the ISP, including invalid frames,
+		 * rather than leaving every buffer at sequence 0. Flushes and
+		 * failed STREAMON returns must not advance this counter.
+		 * CSS exposure IDs wrap at 250 and explicitly do not account for
+		 * sensor-side drops (ia_css_event_public.h); they are not a V4L2
+		 * sequence. This fallback cannot expose losses inside the ISP.
+		 */
+		if (!pipe->use_sof_sequence)
+			pipe->sequence++;
 		spin_unlock_irqrestore(&pipe->irq_lock, irqflags);
 	}
 

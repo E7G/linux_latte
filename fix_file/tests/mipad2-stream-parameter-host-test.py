@@ -58,6 +58,14 @@ header = (repo / 'drivers/staging/media/atomisp/include/linux/atomisp.h').read_t
 for name in ['CI_MODE_VIDEO', 'CI_MODE_STILL_CAPTURE', 'CI_MODE_PREVIEW',
              'ATOMISP_RUN_MODE_VIDEO', 'ATOMISP_RUN_MODE_STILL_CAPTURE', 'ATOMISP_RUN_MODE_PREVIEW']:
     prelude += re.search(r'^#define ' + name + r'[ \t]+[^\n]+', header, re.M).group(0) + '\n'
+# Include the actual video_ioctl2 S_PARM wrapper: direct driver calls alone
+# cannot establish how private CI_MODE flags reach the userspace API.
+core = (repo / 'drivers/media/v4l2-core/v4l2-ioctl.c').read_text()
+core = core[core.index('static int v4l_s_parm('):core.index('\nstatic int v4l_queryctrl(')]
+functions += r'''
+struct v4l2_ioctl_ops { int (*vidioc_s_parm)(struct file *, void *, struct v4l2_streamparm *); };
+static int check_fmt(struct file *f, unsigned int type) { (void)f; return type==V4L2_BUF_TYPE_VIDEO_CAPTURE ? 0 : -EINVAL; }
+''' + core
 tests = r'''
 static void clean(struct v4l2_streamparm *p, bool timed) {
     assert(p->type==V4L2_BUF_TYPE_VIDEO_CAPTURE);
@@ -109,6 +117,17 @@ int main(void) {
                 count++;
             }
         }
+    }
+    struct v4l2_ioctl_ops ops={.vidioc_s_parm=atomisp_s_parm};
+    unsigned int flags[]={CI_MODE_VIDEO,CI_MODE_STILL_CAPTURE,CI_MODE_PREVIEW,UINT32_MAX};
+    for(unsigned int i=0;i<4;i++) {
+        struct v4l2_streamparm user={.type=V4L2_BUF_TYPE_VIDEO_CAPTURE};
+        user.parm.capture.capturemode=flags[i];
+        user.parm.capture.timeperframe=(struct v4l2_fract){1,15};
+        int saved=mode.val,calls=set_calls;
+        assert(!v4l_s_parm(&ops,&file,NULL,&user)); clean(&user,true);
+        assert(mode.val==saved && set_calls==calls+1);
+        assert(user.parm.capture.timeperframe.denominator==15); count++;
     }
     struct v4l2_streamparm p={.type=V4L2_BUF_TYPE_VIDEO_OUTPUT};
     assert(atomisp_g_parm(&file,NULL,&p)==-EINVAL);

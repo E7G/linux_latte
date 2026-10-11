@@ -919,6 +919,11 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 		goto out_unlock;
 	}
 
+	spin_lock_irqsave(&pipe->irq_lock, irqflags);
+	pipe->use_sof_sequence = atomisp_css_valid_sof(isp);
+	pipe->sequence = 0;
+	spin_unlock_irqrestore(&pipe->irq_lock, irqflags);
+
 	spin_lock_irqsave(&isp->lock, irqflags);
 	asd->streaming = true;
 	spin_unlock_irqrestore(&isp->lock, irqflags);
@@ -937,7 +942,7 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	atomisp_qbuffers_to_css(asd);
 
 	atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF,
-			       atomisp_css_valid_sof(isp));
+			       pipe->use_sof_sequence);
 	atomisp_csi2_configure(asd);
 
 	if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_AUTO, false) < 0)

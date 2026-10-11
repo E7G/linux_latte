@@ -42,17 +42,18 @@ int main(int argc, char **argv)
 	struct v4l2_streamparm original, p;
 	struct v4l2_format before = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE }, after;
 	unsigned int modes[] = { 0x4000, 0x2000, 0x8000 };
-	int internal_modes[] = { 1, 2, 3 };
+
 	unsigned int rates[][2] = { {1, 30}, {1, 15}, {0, 0}, {0, 1}, {1, 0} };
-	int fd = -1, sensor = -1, mode = 0, exposure = 0, vblank = 0;
+	int fd = -1, sensor = -1, isp = -1, mode = 0, exposure = 0, vblank = 0;
 	int failed = 0, saved = 0;
-	if (argc != 3) {
-		fprintf(stderr, "usage: %s /dev/video0 /dev/v4l-subdevN\n", argv[0]);
+	if (argc != 4) {
+		fprintf(stderr, "usage: %s /dev/video0 /dev/v4l-subdevN /dev/ISP-subdev\n", argv[0]);
 		return 2;
 	}
 	fd = open(argv[1], O_RDWR | O_CLOEXEC);
 	sensor = open(argv[2], O_RDWR | O_CLOEXEC);
-	if (fd < 0 || sensor < 0)
+	isp = open(argv[3], O_RDWR | O_CLOEXEC);
+	if (fd < 0 || sensor < 0 || isp < 0)
 		goto error;
 	unsigned int input;
 	struct v4l2_input input_info = {0};
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
 	original.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	if (ioctl(fd, VIDIOC_G_PARM, &original) < 0 || !valid(&original) ||
 	    ioctl(fd, VIDIOC_G_FMT, &before) < 0 ||
-	    control(fd, RUN_MODE_ID, &mode, 0) ||
+	    control(isp, RUN_MODE_ID, &mode, 0) ||
 	    control(sensor, V4L2_CID_VBLANK, &vblank, 0) ||
 	    control(sensor, V4L2_CID_EXPOSURE, &exposure, 0))
 		goto error;
@@ -112,8 +113,12 @@ int main(int argc, char **argv)
 		int observed = 0;
 		memset(&p, 0xff, sizeof(p)); p.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		p.parm.capture.capturemode = modes[i];
+		p.parm.capture.timeperframe = original.parm.capture.timeperframe;
+		/* video_ioctl2 clears private CI flags before calling the driver.
+		 * Run-mode controls belong to the ISP subdev, not video0.
+		 */
 		if (ioctl(fd, VIDIOC_S_PARM, &p) < 0 || !valid(&p) ||
-		    control(fd, RUN_MODE_ID, &observed, 0) || observed != internal_modes[i])
+		    control(isp, RUN_MODE_ID, &observed, 0) || observed != mode)
 			goto error;
 	}
 	p.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
@@ -126,20 +131,21 @@ error:
 	failed = 1;
 restore:
 	if (saved) {
-		int restore_failed = control(fd, RUN_MODE_ID, &mode, 1) != 0;
+		int restore_failed = control(isp, RUN_MODE_ID, &mode, 1) != 0;
 		restore_failed |= ioctl(fd, VIDIOC_S_PARM, &original) < 0;
 		restore_failed |= control(sensor, V4L2_CID_VBLANK, &vblank, 1) != 0;
 		restore_failed |= control(sensor, V4L2_CID_EXPOSURE, &exposure, 1) != 0;
 		int observed = 0;
-		restore_failed |= control(fd, RUN_MODE_ID, &observed, 0) != 0 || observed != mode;
+		restore_failed |= control(isp, RUN_MODE_ID, &observed, 0) != 0 || observed != mode;
 		restore_failed |= control(sensor, V4L2_CID_VBLANK, &observed, 0) != 0 || observed != vblank;
 		restore_failed |= control(sensor, V4L2_CID_EXPOSURE, &observed, 0) != 0 || observed != exposure;
 		if (restore_failed) {
 			fprintf(stderr, "FAIL restoring original controls\n"); failed = 1;
 		}
 	}
+	if (isp >= 0) close(isp);
 	if (sensor >= 0) close(sensor);
 	if (fd >= 0) close(fd);
-	if (!failed) puts("PASS streamparm ABI, legacy CI modes, unchanged format; controls restored");
+	if (!failed) puts("PASS streamparm ABI, private CI flags masked, unchanged format; controls restored");
 	return failed;
 }
