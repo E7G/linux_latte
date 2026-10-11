@@ -1418,7 +1418,10 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 			return ret;
 
 		mutex_lock(&ov5693->lock);
-		ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
+		/* A format change may happen while runtime power stays on. */
+		ret = ov5693_mode_configure(ov5693);
+		if (!ret)
+			ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
 		if (ret) {
 			mutex_unlock(&ov5693->lock);
 			goto err_power_down;
@@ -1443,7 +1446,7 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 
 	return 0;
 err_power_down:
-	pm_runtime_put_noidle(ov5693->dev);
+	pm_runtime_put(ov5693->dev);
 	return ret;
 }
 
