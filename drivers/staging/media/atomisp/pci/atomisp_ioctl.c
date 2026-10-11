@@ -446,81 +446,47 @@ static int atomisp_s_input(struct file *file, void *fh, unsigned int input)
 	return ret;
 }
 
-/*
- * With crop any framesize <= sensor-size can be made, give
- * userspace a list of sizes to choice from.
- */
-static int atomisp_enum_framesizes_crop_inner(struct atomisp_device *isp,
-					      struct v4l2_frmsizeenum *fsize,
-					      const struct v4l2_rect *active,
-					      const struct v4l2_rect *native,
-					      int *valid_sizes)
-{
-	static const struct v4l2_frmsize_discrete frame_sizes[] = {
-		{ 1920, 1440 },
-		{ 1920, 1200 },
-		{ 1920, 1080 },
-		{ 1600, 1200 },
-		{ 1600, 1080 },
-		{ 1600,  900 },
-		{ 1440, 1080 },
-		{ 1280,  960 },
-		{ 1280,  720 },
-		{  800,  600 },
-		{  640,  480 },
-	};
-	u32 padding_w, padding_h;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(frame_sizes); i++) {
-		atomisp_get_padding(isp, frame_sizes[i].width, frame_sizes[i].height,
-				    &padding_w, &padding_h);
-
-		if ((frame_sizes[i].width + padding_w) > native->width ||
-		    (frame_sizes[i].height + padding_h) > native->height)
-			continue;
-
-		/*
-		 * Skip sizes where width and height are less then 5/8th of the
-		 * sensor size to avoid sizes with a too small field of view.
-		 */
-		if (frame_sizes[i].width < (active->width * 5 / 8) &&
-		    frame_sizes[i].height < (active->height * 5 / 8))
-			continue;
-
-		if (*valid_sizes == fsize->index) {
-			fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
-			fsize->discrete = frame_sizes[i];
-			return 0;
-		}
-
-		(*valid_sizes)++;
-	}
-
-	return -EINVAL;
-}
-
+/* Cropping supports step-aligned sizes, not just a list of preferred modes. */
 static int atomisp_enum_framesizes_crop(struct atomisp_device *isp,
 					struct v4l2_frmsizeenum *fsize)
 {
 	struct atomisp_input_subdev *input = &isp->inputs[isp->asd.input_curr];
-	struct v4l2_rect active = input->active_rect;
-	struct v4l2_rect native = input->native_rect;
-	int ret, valid_sizes = 0;
+	struct v4l2_pix_format min_fmt = {
+		.width = ATOM_ISP_MIN_WIDTH,
+		.height = ATOM_ISP_MIN_HEIGHT,
+		.pixelformat = fsize->pixel_format,
+	};
+	struct v4l2_pix_format max_fmt = {
+		.width = input->native_rect.width,
+		.height = input->native_rect.height,
+		.pixelformat = fsize->pixel_format,
+	};
+	int ret;
 
-	ret = atomisp_enum_framesizes_crop_inner(isp, fsize, &active, &native, &valid_sizes);
-	if (ret == 0)
-		return 0;
-
-	if (!input->binning_support)
+	if (fsize->index || input->native_rect.width <= 0 ||
+	    input->native_rect.height <= 0)
 		return -EINVAL;
 
-	active.width /= 2;
-	active.height /= 2;
-	native.width /= 2;
-	native.height /= 2;
+	/* Use TRY state only; enumeration must not change the active sensor. */
+	ret = atomisp_try_fmt(isp, &min_fmt, NULL, NULL);
+	if (ret)
+		return ret;
+	ret = atomisp_try_fmt(isp, &max_fmt, NULL, NULL);
+	if (ret)
+		return ret;
 
-	return atomisp_enum_framesizes_crop_inner(isp, fsize, &active, &native, &valid_sizes);
+	if (min_fmt.width > max_fmt.width || min_fmt.height > max_fmt.height)
+		return -EINVAL;
+
+	fsize->type = V4L2_FRMSIZE_TYPE_STEPWISE;
+	fsize->stepwise.min_width = min_fmt.width;
+	fsize->stepwise.max_width = max_fmt.width;
+	fsize->stepwise.step_width = ATOM_ISP_STEP_WIDTH;
+	fsize->stepwise.min_height = min_fmt.height;
+	fsize->stepwise.max_height = max_fmt.height;
+	fsize->stepwise.step_height = ATOM_ISP_STEP_HEIGHT;
+
+	return 0;
 }
 
 static int atomisp_enum_framesizes(struct file *file, void *priv,

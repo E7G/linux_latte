@@ -1,0 +1,319 @@
+[
+  {
+    "input": 0,
+    "restore_exact": true,
+    "formats": [
+      {
+        "request": [
+          1,
+          1
+        ],
+        "try": [
+          4,
+          4
+        ],
+        "set_exit": 0,
+        "selected": [
+          4,
+          4
+        ],
+        "capture_exit": 1,
+        "frames": 0,
+        "fps": {},
+        "error": "multiopen regression: Connection timed out\n"
+      },
+      {
+        "request": [
+          16384,
+          16384
+        ],
+        "try": [
+          1920,
+          1944
+        ],
+        "set_exit": 255,
+        "selected": null,
+        "capture_exit": null,
+        "frames": 0,
+        "fps": null,
+        "error": ""
+      },
+      {
+        "request": [
+          1920,
+          1440
+        ],
+        "try": [
+          1920,
+          1440
+        ],
+        "set_exit": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.004800768119463,
+          "after-observer-close": 29.979041924323973,
+          "ordinary-restart": 30.010367217767257,
+          "remaining-fd-takeover": 30.003818667829492
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          1920,
+          1200
+        ],
+        "try": [
+          1920,
+          1200
+        ],
+        "set_exit": 0,
+        "selected": [
+          1920,
+          1200
+        ],
+        "capture_exit": 1,
+        "frames": 1,
+        "fps": {},
+        "error": "multiopen regression: Connection timed out\n"
+      },
+      {
+        "request": [
+          1280,
+          960
+        ],
+        "try": [
+          1280,
+          960
+        ],
+        "set_exit": 0,
+        "selected": [
+          1280,
+          960
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.01405203345315,
+          "after-observer-close": 29.999809092123822,
+          "ordinary-restart": 30.017573925099512,
+          "remaining-fd-takeover": 30.00291846571592
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          1280,
+          720
+        ],
+        "try": [
+          1280,
+          720
+        ],
+        "set_exit": 0,
+        "selected": [
+          1280,
+          720
+        ],
+        "capture_exit": 1,
+        "frames": 1,
+        "fps": {},
+        "error": "multiopen regression: Connection timed out\n"
+      },
+      {
+        "request": [
+          720,
+          1280
+        ],
+        "try": [
+          720,
+          1280
+        ],
+        "set_exit": 0,
+        "selected": [
+          720,
+          1280
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.965893365008245,
+          "after-observer-close": 29.99187492843907,
+          "ordinary-restart": 30.015362408212205,
+          "remaining-fd-takeover": 29.98345458461046
+        },
+        "error": ""
+      }
+    ]
+  },
+  {
+    "input": 1,
+    "restore_exact": true,
+    "formats": [
+      {
+        "request": [
+          1,
+          1
+        ],
+        "try": [
+          4,
+          4
+        ],
+        "set_exit": 0,
+        "selected": [
+          4,
+          4
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.007501875467913,
+          "after-observer-close": 30.012168570162295,
+          "ordinary-restart": 30.01765583939982,
+          "remaining-fd-takeover": 30.00954849270541
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          16384,
+          16384
+        ],
+        "try": [
+          1920,
+          2460
+        ],
+        "set_exit": 255,
+        "selected": null,
+        "capture_exit": null,
+        "frames": 0,
+        "fps": null,
+        "error": ""
+      },
+      {
+        "request": [
+          1920,
+          1440
+        ],
+        "try": [
+          1920,
+          1440
+        ],
+        "set_exit": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.008156762608323,
+          "after-observer-close": 30.051114213358222,
+          "ordinary-restart": 30.029866066786482,
+          "remaining-fd-takeover": 30.022817341186233
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          1920,
+          1200
+        ],
+        "try": [
+          1920,
+          1200
+        ],
+        "set_exit": 0,
+        "selected": [
+          1920,
+          1200
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.011022229982114,
+          "after-observer-close": 30.034293702642977,
+          "ordinary-restart": 29.99449192057857,
+          "remaining-fd-takeover": 30.01274177310265
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          1280,
+          960
+        ],
+        "try": [
+          1280,
+          960
+        ],
+        "set_exit": 0,
+        "selected": [
+          1280,
+          960
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.028226532952882,
+          "after-observer-close": 30.010121595548753,
+          "ordinary-restart": 29.9791236284607,
+          "remaining-fd-takeover": 30.014952903799802
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          1280,
+          720
+        ],
+        "try": [
+          1280,
+          720
+        ],
+        "set_exit": 0,
+        "selected": [
+          1280,
+          720
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.026833069922233,
+          "after-observer-close": 30.013478780482387,
+          "ordinary-restart": 30.04996489618105,
+          "remaining-fd-takeover": 30.01544431044302
+        },
+        "error": ""
+      },
+      {
+        "request": [
+          720,
+          1280
+        ],
+        "try": [
+          720,
+          1280
+        ],
+        "set_exit": 0,
+        "selected": [
+          720,
+          1280
+        ],
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.029456166548318,
+          "after-observer-close": 30.027160931939175,
+          "ordinary-restart": 29.999481827132765,
+          "remaining-fd-takeover": 29.99490086686489
+        },
+        "error": ""
+      }
+    ]
+  }
+]
