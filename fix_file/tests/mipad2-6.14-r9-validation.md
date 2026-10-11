@@ -21,7 +21,7 @@ helpers and format/input busy checks remain in force.
   opens/closes across eight threads. PM/CSS/queue-stop operations are stubs.
 - Actual r8 sensor interval/stream-parameter host regressions rerun passed.
 - Device C regression compiled with -Wall -Wextra -Werror. Its wrong-kernel
-  guard was checked on the host. It has NOT run on the tablet.
+  guard was checked on the host. It subsequently ran on the tablet; see the hardware follow-up below.
 
 No real kernel lockdep/TSan, sensor power, firmware, DMA/buffer or suspend
 behavior is established by these host tests. No new compliance score claimed.
@@ -50,3 +50,19 @@ Validate selected camera/subdev identity in the outer test runner.
 Latest measured compliance is still r7 64/72. Tiny-format Scaling and complete
 3A remain separate open work. The experimental libcamera gain-bound fix and
 Snapshot 320/8 preset are not proof of full auto exposure or white balance.
+
+## Hardware follow-up (2026-10-11)
+
+r9 booted as a protected one-shot candidate. Original strict multiopen test
+failed because all returned buffers had sequence zero. Diagnostic-only runs
+exercised observer closure and surviving-fd takeover, but were not strict
+passes. CSS exposure IDs wrapped at 250 and cannot represent V4L2 drops.
+Corrected cadence tests placed S_PARM after S_FMT: front 30/15 requests gave
+28.63/14.31 fps, rear 30/15 gave 30.01/15.01 fps. Surviving-fd REQBUFS reset
+the selected period (front ~57.33 fps, rear ~30.01 fps). Earlier wrong-node
+RUN_MODE and pre-S_FMT cadence harness failures were retained, not promoted
+to driver evidence. Standard ioctl handling masks private CI_MODE bits.
+
+10-second s2idle recovery, hardware smoke and three focused native Snapshot
+r5 reopens passed. User confirmed preview. r10 fixes sequence accounting;
+it does not fix the cadence/takeover period issues. See r10 evidence.
