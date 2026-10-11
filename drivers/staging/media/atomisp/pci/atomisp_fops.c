@@ -31,6 +31,66 @@
 /*
  * Videobuf2 ops
  */
+/* Rebuild CSS after STREAMOFF without resetting userspace sensor timing. */
+static int atomisp_queue_reconfigure(struct atomisp_video_pipe *pipe)
+{
+	struct atomisp_sub_device *asd = pipe->asd;
+	struct v4l2_subdev *sensor = asd->isp->inputs[asd->input_curr].camera;
+	struct v4l2_subdev_frame_interval interval = {
+		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
+	};
+	struct v4l2_format f = {
+		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+		.fmt.pix = pipe->pix,
+	};
+	struct v4l2_ctrl *exposure = NULL;
+	int exposure_value = 0;
+	bool have_interval = false;
+	int ret, restore_ret;
+
+	lockdep_assert_held(&asd->isp->mutex);
+
+	/* Use defaults only before any valid video format has been selected. */
+	if (!f.fmt.pix.width || !f.fmt.pix.height || !f.fmt.pix.pixelformat) {
+		f.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+		f.fmt.pix.width = ATOMISP_DEFAULT_WIDTH;
+		f.fmt.pix.height = ATOMISP_DEFAULT_HEIGHT;
+	}
+
+	if (v4l2_subdev_has_op(sensor, pad, get_frame_interval) &&
+	    v4l2_subdev_has_op(sensor, pad, set_frame_interval)) {
+		ret = v4l2_subdev_call_state_active(sensor, pad,
+						    get_frame_interval, &interval);
+		if (ret && ret != -ENOIOCTLCMD && ret != -EOPNOTSUPP)
+			return ret;
+		have_interval = !ret && interval.interval.numerator &&
+				interval.interval.denominator;
+	}
+
+	/* S_FMT's default VBLANK may clamp exposure before timing is restored. */
+	if (have_interval && sensor->ctrl_handler) {
+		exposure = v4l2_ctrl_find(sensor->ctrl_handler, V4L2_CID_EXPOSURE);
+		if (exposure)
+			exposure_value = v4l2_ctrl_g_ctrl(exposure);
+	}
+
+	ret = atomisp_set_fmt(&pipe->vdev, &f);
+	if (have_interval) {
+		restore_ret = v4l2_subdev_call_state_active(sensor, pad,
+							    set_frame_interval, &interval);
+		if (!ret)
+			ret = restore_ret;
+		if (!restore_ret && exposure) {
+			restore_ret = v4l2_ctrl_s_ctrl(exposure, exposure_value);
+			if (!ret)
+				ret = restore_ret;
+		}
+	}
+
+	/* Never silently allocate buffers with a failed timing restoration. */
+	return ret;
+}
+
 static int atomisp_queue_setup(struct vb2_queue *vq,
 			       unsigned int *nbuffers, unsigned int *nplanes,
 			       unsigned int sizes[], struct device *alloc_devs[])
@@ -41,18 +101,13 @@ static int atomisp_queue_setup(struct vb2_queue *vq,
 	mutex_lock(&pipe->asd->isp->mutex); /* for get_css_frame_info() / set_fmt() */
 
 	/*
-	 * When VIDIOC_S_FMT has not been called before VIDIOC_REQBUFS, then
-	 * this will fail. Call atomisp_set_fmt() ourselves and try again.
+	 * When S_FMT has not been called, or STREAMOFF cleared CSS configs,
+	 * rebuild the pipeline and retry. Preserve the selected output format
+	 * and timing instead of silently reverting to defaults on takeover.
 	 */
 	ret = atomisp_get_css_frame_info(pipe->asd, &pipe->frame_info);
 	if (ret) {
-		struct v4l2_format f = {
-			.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420,
-			.fmt.pix.width = ATOMISP_DEFAULT_WIDTH,
-			.fmt.pix.height = ATOMISP_DEFAULT_HEIGHT,
-		};
-
-		ret = atomisp_set_fmt(&pipe->vdev, &f);
+		ret = atomisp_queue_reconfigure(pipe);
 		if (ret)
 			goto out;
 
