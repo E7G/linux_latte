@@ -21,7 +21,7 @@ def functions(name):
     return s[start:end]
 
 macros = []
-for filename, names in [('ov5693', ['OV5693_FIXED_PPL', 'OV5693_PIXEL_RATE']),
+for filename, names in [('ov5693', ['OV5693_FIXED_PPL', 'OV5693_PIXEL_RATE', 'OV5693_MIPAD2_PIXEL_RATE']),
                         ('t4ka3', ['T4KA3_PIXELS_PER_LINE', 'T4KA3_LINES_PER_FRAME_30FPS', 'T4KA3_FPS', 'T4KA3_PIXEL_RATE'])]:
     s = (ROOT / f'drivers/media/i2c/{filename}.c').read_text()
     for name in names:
@@ -61,7 +61,7 @@ static int __v4l2_ctrl_s_ctrl(struct v4l2_ctrl *c, int val) {
 struct format { unsigned int height; };
 struct v4l2_subdev_state { struct format format; };
 struct v4l2_subdev { void *private; };
-struct ov5693_device { struct mutex lock; struct { struct format format; } mode;
+struct ov5693_device { unsigned int pixel_rate; struct mutex lock; struct { struct format format; } mode;
     struct { struct v4l2_ctrl *vblank; } ctrls; };
 struct t4ka3_data { struct mutex lock; struct { struct v4l2_ctrl *vblank; } ctrls; };
 static struct ov5693_device *to_ov5693_sensor(struct v4l2_subdev *sd) { return sd->private; }
@@ -122,12 +122,14 @@ static void exercise(interval_op set, interval_op get, struct v4l2_subdev *sd,
 }
 int main(void) {
     unsigned int heights[]={2,720,1230,2460};
+    unsigned int rates[]={OV5693_PIXEL_RATE,OV5693_MIPAD2_PIXEL_RATE};
+    for (unsigned int r=0;r<2;r++)
     for (unsigned int i=0;i<4;i++) {
         struct v4l2_ctrl blank={.minimum=4,.maximum=65535-heights[i],.default_value=2492-heights[i]};
         struct v4l2_subdev_state state={.format={heights[i]}};
-        struct ov5693_device ov={.mode={.format={heights[i]}},.ctrls={&blank}};
+        struct ov5693_device ov={.pixel_rate=rates[r],.mode={.format={heights[i]}},.ctrls={&blank}};
         struct v4l2_subdev sd={&ov};
-        exercise(ov5693_set_frame_interval,ov5693_get_frame_interval,&sd,&state,&blank,heights[i],OV5693_PIXEL_RATE,OV5693_FIXED_PPL);
+        exercise(ov5693_set_frame_interval,ov5693_get_frame_interval,&sd,&state,&blank,heights[i],rates[r],OV5693_FIXED_PPL);
         assert(ov.lock.depth==0);
         struct t4ka3_data t4={.ctrls={&blank}};
         sd.private=&t4;

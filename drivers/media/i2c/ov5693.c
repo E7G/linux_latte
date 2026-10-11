@@ -145,6 +145,7 @@
 #define OV5693_XVCLK_FREQ			19200000
 #define OV5693_LINK_FREQ_419_2MHZ		419200000
 #define OV5693_PIXEL_RATE			167680000
+#define OV5693_MIPAD2_PIXEL_RATE			160000000
 
 #define to_ov5693_sensor(x) container_of(x, struct ov5693_device, sd)
 
@@ -176,6 +177,7 @@ struct ov5693_device {
 	bool otp_cached;
 	bool otp_cal_cached;
 	bool streaming;
+	unsigned int pixel_rate;
 
 	struct ov5693_mode {
 		struct v4l2_rect crop;
@@ -1194,7 +1196,7 @@ static int ov5693_detect(struct ov5693_device *ov5693)
 
 /* V4L2 Framework callbacks */
 
-static unsigned int __ov5693_calc_vts(u32 height)
+static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
 {
 	/*
 	 * We need to set a sensible default VTS for whatever format height we
@@ -1204,9 +1206,9 @@ static unsigned int __ov5693_calc_vts(u32 height)
 
 	unsigned int tgt_fps;
 
-	tgt_fps = rounddown(OV5693_PIXEL_RATE / OV5693_FIXED_PPL / height, 30);
+	tgt_fps = rounddown(ov5693->pixel_rate / OV5693_FIXED_PPL / height, 30);
 
-	return ALIGN_DOWN(OV5693_PIXEL_RATE / OV5693_FIXED_PPL / tgt_fps, 2);
+	return ALIGN_DOWN(ov5693->pixel_rate / OV5693_FIXED_PPL / tgt_fps, 2);
 }
 
 static struct v4l2_mbus_framefmt *
@@ -1301,7 +1303,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	ov5693->mode.binning_y = vratio > 1;
 	ov5693->mode.inc_y_odd = vratio > 1 ? 3 : 1;
 
-	ov5693->mode.vts = __ov5693_calc_vts(fmt->height);
+	ov5693->mode.vts = __ov5693_calc_vts(ov5693, fmt->height);
 
 	__v4l2_ctrl_modify_range(ov5693->ctrls.vblank,
 				 OV5693_TIMING_MIN_VTS,
@@ -1459,9 +1461,9 @@ static int ov5693_get_frame_interval(struct v4l2_subdev *sd,
 	mutex_lock(&ov5693->lock);
 	frame_size = OV5693_FIXED_PPL *
 		(ov5693->mode.format.height + ov5693->ctrls.vblank->val);
-	divisor = gcd(frame_size, OV5693_PIXEL_RATE);
+	divisor = gcd(frame_size, ov5693->pixel_rate);
 	interval->interval.numerator = frame_size / divisor;
-	interval->interval.denominator = OV5693_PIXEL_RATE / divisor;
+	interval->interval.denominator = ov5693->pixel_rate / divisor;
 	mutex_unlock(&ov5693->lock);
 
 	return 0;
@@ -1485,7 +1487,7 @@ static int ov5693_set_frame_interval(struct v4l2_subdev *sd,
 	if (!interval->interval.numerator || !interval->interval.denominator) {
 		lines = height + vblank->default_value;
 	} else {
-		numerator = (u64)OV5693_PIXEL_RATE * interval->interval.numerator;
+		numerator = (u64)ov5693->pixel_rate * interval->interval.numerator;
 		denominator = (u64)OV5693_FIXED_PPL * interval->interval.denominator;
 		lines = div64_u64(numerator + denominator / 2, denominator);
 		lines = clamp_t(u64, lines, height + vblank->minimum,
@@ -1580,8 +1582,8 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 	/* pixel rate */
 	ctrls->pixel_rate = v4l2_ctrl_new_std(&ctrls->handler, NULL,
 					      V4L2_CID_PIXEL_RATE, 0,
-					      OV5693_PIXEL_RATE, 1,
-					      OV5693_PIXEL_RATE);
+					      ov5693->pixel_rate, 1,
+					      ov5693->pixel_rate);
 
 	/* Exposure */
 	exposure_max = ov5693->mode.vts - OV5693_INTEGRATION_TIME_MARGIN;
@@ -1761,6 +1763,16 @@ static int ov5693_probe(struct i2c_client *client)
 
 	ov5693->dev = &client->dev;
 
+	/*
+	 * Mi Pad 2 Android modes use a 160 MHz timing pixel clock. PLL3
+	 * timing registers are unchanged here; the 419.2 MHz MIPI link
+	 * belongs to the separate PLL1 transport path. Deriving frame
+	 * periods from transport bandwidth overstates cadence by 4.8%.
+	 * Keep other boards' historical rate and all PLL/link settings.
+	 */
+	ov5693->pixel_rate = ov5693_has_mipad2_otp(ov5693) ?
+		OV5693_MIPAD2_PIXEL_RATE : OV5693_PIXEL_RATE;
+
 	ov5693->regmap = devm_cci_regmap_init_i2c(client, 16);
 	if (IS_ERR(ov5693->regmap))
 		return PTR_ERR(ov5693->regmap);
@@ -1811,7 +1823,7 @@ static int ov5693_probe(struct i2c_client *client)
 
 	ov5693->mode.crop = ov5693_default_crop;
 	ov5693->mode.format = ov5693_default_fmt;
-	ov5693->mode.vts = __ov5693_calc_vts(ov5693->mode.format.height);
+	ov5693->mode.vts = __ov5693_calc_vts(ov5693, ov5693->mode.format.height);
 
 	ret = ov5693_init_controls(ov5693);
 	if (ret)
