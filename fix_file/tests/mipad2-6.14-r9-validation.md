@@ -66,3 +66,11 @@ to driver evidence. Standard ioctl handling masks private CI_MODE bits.
 10-second s2idle recovery, hardware smoke and three focused native Snapshot
 r5 reopens passed. User confirmed preview. r10 fixes sequence accounting;
 it does not fix the cadence/takeover period issues. See r10 evidence.
+
+## Exit-status correction (2026-10-11)
+
+Earlier Snapshot r5 reopen checks proved preview readiness, not clean
+process closure. They waited for pgrep disappearance without checking
+systemd Result/ExecMainStatus. r10 later retained a GstGL/Mesa close-time
+SIGSEGV. Do not interpret those earlier preview gates as crash-free exits.
+See r11's separate Snapshot r6 four-closure status checks and limitations.
