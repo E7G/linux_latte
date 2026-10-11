@@ -865,23 +865,23 @@ static void atomisp_dma_burst_len_cfg(struct atomisp_sub_device *asd)
 static int atomisp_validate_frame_info(struct atomisp_video_pipe *pipe)
 {
 	const struct ia_css_frame_info *allocated = &pipe->frame_info;
-	struct ia_css_frame_info current = { };
+	struct ia_css_frame_info css_info = { };
 	int ret;
 
 	lockdep_assert_held(&pipe->asd->isp->mutex);
-	ret = atomisp_get_css_frame_info(pipe->asd, &current);
+	ret = atomisp_get_css_frame_info(pipe->asd, &css_info);
 	if (ret)
 		return ret;
 
 	/* Existing MMAP allocations must match the recreated CSS output. */
-	if (allocated->res.width != current.res.width ||
-	    allocated->res.height != current.res.height ||
-	    allocated->padded_width != current.padded_width ||
-	    allocated->format != current.format ||
-	    allocated->raw_bit_depth != current.raw_bit_depth ||
-	    allocated->raw_bayer_order != current.raw_bayer_order ||
-	    allocated->crop_info.start_column != current.crop_info.start_column ||
-	    allocated->crop_info.start_line != current.crop_info.start_line)
+	if (allocated->res.width != css_info.res.width ||
+	    allocated->res.height != css_info.res.height ||
+	    allocated->padded_width != css_info.padded_width ||
+	    allocated->format != css_info.format ||
+	    allocated->raw_bit_depth != css_info.raw_bit_depth ||
+	    allocated->raw_bayer_order != css_info.raw_bayer_order ||
+	    allocated->crop_info.start_column != css_info.crop_info.start_column ||
+	    allocated->crop_info.start_line != css_info.crop_info.start_line)
 		return -EINVAL;
 
 	return 0;

@@ -12,6 +12,7 @@ ioctl=(repo/'drivers/staging/media/atomisp/pci/atomisp_ioctl.c').read_text()
 validate=ioctl[ioctl.index('static int atomisp_validate_frame_info('):ioctl.index('\nint atomisp_start_streaming(')]
 start=ioctl.index('\tret = atomisp_validate_frame_info(pipe);',ioctl.index('int atomisp_start_streaming('))
 guard=ioctl[start:ioctl.index('\n\t/*',start)]
+current_macro=next(l for l in (repo/'arch/x86/include/asm/current.h').read_text().splitlines() if l.startswith('#define current '))+'\n'
 prelude=r"""
 #include <assert.h>
 #include <stdbool.h>
@@ -131,6 +132,6 @@ int main(void) {
 }
 """
 with tempfile.TemporaryDirectory(prefix='mipad2-css-restart-') as d:
- p=Path(d);(p/'test.c').write_text(prelude+css+validate+wrapper+cases)
+ p=Path(d);(p/'test.c').write_text(current_macro+prelude+css+validate+wrapper+cases)
  subprocess.run(['gcc','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-sanitize-recover=all',str(p/'test.c'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)

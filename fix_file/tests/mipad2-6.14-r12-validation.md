@@ -58,3 +58,14 @@ Pristine no-S_FMT fallback, recording, full AWB/3A and broad support remain.
 Primary references:
 - [Videobuf2 queue/size and failure-return contracts](https://www.kernel.org/doc/html/latest/driver-api/media/v4l2-videobuf2.html)
 - [Upstream AtomISP start/stop and CSS-start cleanup](https://raw.githubusercontent.com/torvalds/linux/master/drivers/staging/media/atomisp/pci/atomisp_ioctl.c)
+
+## Full-build attempt 1, compile failure — no device deployment
+
+Pinned source 242f4530501f2f2740f0f71b82b83c51547c9789 failed in
+atomisp_ioctl.c because a local variable named current expands to the x86
+get_current() macro. Offline stubs had omitted this macro and therefore did
+not catch the build failure. Rename to css_info and include the real current
+macro definition in the source-extracted host test. Preserve failed log/state.
+Resume the same isolated build directory with a separately pinned corrected
+commit; no configuration change or full rebuild from scratch is required.
+This is a compile fix, not a hardware-validation result.
