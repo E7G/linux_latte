@@ -533,6 +533,21 @@ static void atomisp_subdev_init_struct(struct atomisp_sub_device *asd)
 /*
  * file operation functions
  */
+static int atomisp_fh_open(struct file *file)
+{
+	struct atomisp_fh *fh;
+
+	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
+	if (!fh)
+		return -ENOMEM;
+
+	spin_lock_init(&fh->metadata_lock);
+	v4l2_fh_init(&fh->fh, video_devdata(file));
+	file->private_data = &fh->fh;
+	v4l2_fh_add(&fh->fh);
+	return 0;
+}
+
 static int atomisp_open(struct file *file)
 {
 	struct video_device *vdev = video_devdata(file);
@@ -543,7 +558,7 @@ static int atomisp_open(struct file *file)
 
 	dev_dbg(isp->dev, "open device %s\n", vdev->name);
 
-	ret = v4l2_fh_open(file);
+	ret = atomisp_fh_open(file);
 	if (ret)
 		return ret;
 

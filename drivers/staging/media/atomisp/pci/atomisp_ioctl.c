@@ -752,43 +752,54 @@ error:
 }
 
 /*
- * FIXME the abuse of buf->reserved2 in the qbuf and dqbuf wrappers comes from
- * the original atomisp buffer handling and should be replaced with proper V4L2
- * per frame parameters use.
- *
- * Once this is fixed these wrappers can be removed, replacing them with direct
- * calls to vb2_ioctl_[d]qbuf().
+ * Standard handles leave VB2's reserved fields intact. Legacy clients may
+ * explicitly select the old raw exp_id layout, or Android's exp_id << 16
+ * layout, before allocating buffers. Modern 3A clients use the typed query.
  */
 static int atomisp_qbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer *buf)
 {
 	struct video_device *vdev = video_devdata(file);
-	struct atomisp_device *isp = video_get_drvdata(vdev);
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(vdev);
+	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	unsigned long flags;
+	u32 old_config;
+	int ret;
 
-	if (buf->index >= vb2_get_num_buffers(vdev->queue))
+	if (vdev->queue->owner && vdev->queue->owner != fh)
+		return -EBUSY;
+	if (buf->index >= vb2_get_num_buffers(vdev->queue) ||
+	    buf->index >= VIDEO_MAX_FRAME)
 		return -EINVAL;
 
-	if (buf->reserved2 & ATOMISP_BUFFER_HAS_PER_FRAME_SETTING) {
-		/* this buffer will have a per-frame parameter */
+	old_config = pipe->frame_request_config_id[buf->index];
+	if (afh->metadata_mode != ATOMISP_BUFFER_METADATA_STANDARD &&
+	    (buf->reserved2 & ATOMISP_BUFFER_HAS_PER_FRAME_SETTING))
 		pipe->frame_request_config_id[buf->index] = buf->reserved2 &
 			~ATOMISP_BUFFER_HAS_PER_FRAME_SETTING;
-		dev_dbg(isp->dev,
-			"This buffer requires per_frame setting which has isp_config_id %d\n",
-			pipe->frame_request_config_id[buf->index]);
-	} else {
+	else
 		pipe->frame_request_config_id[buf->index] = 0;
+
+	ret = vb2_ioctl_qbuf(file, fh, buf);
+	if (ret) {
+		pipe->frame_request_config_id[buf->index] = old_config;
+		return ret;
 	}
 
-	return vb2_ioctl_qbuf(file, fh, buf);
+	spin_lock_irqsave(&afh->metadata_lock, flags);
+	afh->metadata[buf->index].valid = false;
+	spin_unlock_irqrestore(&afh->metadata_lock, flags);
+	return 0;
 }
 
 static int atomisp_dqbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer *buf)
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(vdev);
-	struct atomisp_device *isp = video_get_drvdata(vdev);
+	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_frame_metadata metadata = { };
 	struct ia_css_frame *frame;
 	struct vb2_buffer *vb;
+	unsigned long flags;
 	int ret;
 
 	ret = vb2_ioctl_dqbuf(file, fh, buf);
@@ -797,17 +808,69 @@ static int atomisp_dqbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer
 
 	vb = vb2_get_buffer(&pipe->vb_queue, buf->index);
 	frame = vb_to_frame(vb);
+	metadata.index = buf->index;
+	metadata.sequence = buf->sequence;
+	metadata.timestamp_us = buf->timestamp.tv_sec * 1000000ULL +
+				buf->timestamp.tv_usec;
+	metadata.flags = buf->flags & V4L2_BUF_FLAG_ERROR;
+	metadata.exp_id = metadata.flags ? 0 : frame->exp_id;
+	metadata.isp_config_id = pipe->frame_config_id[buf->index];
 
-	/* reserved bit[31:16] is used for exp_id */
-	buf->reserved = 0;
-	if (!(buf->flags & V4L2_BUF_FLAG_ERROR))
-		buf->reserved |= frame->exp_id;
-	buf->reserved2 = pipe->frame_config_id[buf->index];
+	spin_lock_irqsave(&afh->metadata_lock, flags);
+	afh->metadata[buf->index].frame = metadata;
+	afh->metadata[buf->index].valid = true;
+	spin_unlock_irqrestore(&afh->metadata_lock, flags);
 
-	dev_dbg(isp->dev,
-		"dqbuf buffer %d (%s) with exp_id %d, isp_config_id %d\n",
-		buf->index, vdev->name, buf->reserved >> 16, buf->reserved2);
+	if (afh->metadata_mode != ATOMISP_BUFFER_METADATA_STANDARD) {
+		buf->reserved = metadata.exp_id;
+		if (afh->metadata_mode == ATOMISP_BUFFER_METADATA_ANDROID)
+			buf->reserved <<= 16;
+		buf->reserved2 = metadata.isp_config_id;
+	}
+
 	return 0;
+}
+
+static int atomisp_set_buffer_metadata_mode(struct file *file, void *fh, u32 mode)
+{
+	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(video_devdata(file));
+	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	int ret = 0;
+
+	if (mode > ATOMISP_BUFFER_METADATA_ANDROID)
+		return -EINVAL;
+
+	/* The default ioctl already holds isp->mutex; never invert queue locks. */
+	if (!mutex_trylock(&pipe->vb_queue_mutex))
+		return -EBUSY;
+	if (vb2_is_busy(&pipe->vb_queue))
+		ret = -EBUSY;
+	else
+		afh->metadata_mode = mode;
+	mutex_unlock(&pipe->vb_queue_mutex);
+	return ret;
+}
+
+static int atomisp_get_frame_metadata(void *fh, struct atomisp_frame_metadata *metadata)
+{
+	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_metadata_record *record;
+	unsigned long flags;
+	int ret = 0;
+
+	if (metadata->index >= VIDEO_MAX_FRAME)
+		return -EINVAL;
+
+	/* A per-handle snapshot needs no queue/ISP lock or live buffer pointer. */
+	spin_lock_irqsave(&afh->metadata_lock, flags);
+	record = &afh->metadata[metadata->index];
+	if (!record->valid || record->frame.sequence != metadata->sequence ||
+	    record->frame.timestamp_us != metadata->timestamp_us)
+		ret = -EAGAIN;
+	else
+		*metadata = record->frame;
+	spin_unlock_irqrestore(&afh->metadata_lock, flags);
+	return ret;
 }
 
 /* Input system HW workaround */
@@ -1445,6 +1508,12 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 	int err;
 
 	switch (cmd) {
+	case ATOMISP_IOC_S_BUFFER_METADATA_MODE:
+		if (!valid_prio)
+			return -EBUSY;
+		return atomisp_set_buffer_metadata_mode(file, fh, *(u32 *)arg);
+	case ATOMISP_IOC_G_FRAME_METADATA:
+		return atomisp_get_frame_metadata(fh, arg);
 	case ATOMISP_IOC_G_XNR:
 		err = atomisp_xnr(asd, 0, arg);
 		break;
