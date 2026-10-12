@@ -26,6 +26,15 @@ code = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/videodev2.h>
+#include <stddef.h>
+#include <stdint.h>
+typedef uint32_t u32;
+typedef int spinlock_t;
+struct v4l2_fh { int state; };
+#define GFP_KERNEL 0
+#define spin_lock_init(p) (*(p)=0)
+#define container_of(p,t,m) ((t *)((char *)(p)-offsetof(t,m)))
 struct mutex { pthread_mutex_t lock; };
 static void mutex_lock(struct mutex *m) { assert(!pthread_mutex_lock(&m->lock)); }
 static void mutex_unlock(struct mutex *m) { assert(!pthread_mutex_unlock(&m->lock)); }
@@ -55,16 +64,17 @@ static struct atomisp_device *video_get_drvdata(struct video_device *v) { return
 static struct atomisp_video_pipe *atomisp_to_video_pipe(struct video_device *v) { return v->pipe; }
 #define dev_dbg(...) do {} while (0)
 #define dev_err(...) do {} while (0)
-static int v4l2_fh_open(struct file *f) {
-    if (injected_fh_error) return injected_fh_error;
-    f->private_data = malloc(1); assert(f->private_data);
-    __atomic_add_fetch(&fh_allocated, 1, __ATOMIC_SEQ_CST); return 0;
+static void *kzalloc(size_t size,int flags) {
+    (void)flags; return injected_fh_error ? NULL : calloc(1,size);
+}
+static void v4l2_fh_add(struct v4l2_fh *fh) {
+    (void)fh; __atomic_add_fetch(&fh_allocated,1,__ATOMIC_SEQ_CST);
 }
 static int v4l2_fh_release(struct file *f) {
     assert(f->private_data); free(f->private_data); f->private_data = NULL;
     __atomic_sub_fetch(&fh_allocated, 1, __ATOMIC_SEQ_CST); return 0;
 }
-static void v4l2_fh_init(int *fh, struct video_device *v) { (void)fh; (void)v; }
+static void v4l2_fh_init(struct v4l2_fh *fh, struct video_device *v) { (void)fh; (void)v; }
 static int pm_runtime_resume_and_get(void *dev) {
     (void)dev; if (injected_pm_error) return injected_pm_error;
     ++pm_gets; assert(++pm_refs == 1); return 0;
@@ -86,6 +96,11 @@ static void vb2_queue_release(struct vb2_queue *q) {
 '''
 code += function(vb2, 'int _vb2_fop_release(') + '\n'
 code += function(vb2, 'int vb2_fop_release(') + '\n'
+header = (root / 'drivers/staging/media/atomisp/include/linux/atomisp.h').read_text()
+fh_header = (root / 'drivers/staging/media/atomisp/pci/atomisp_fops.h').read_text()
+code += header[header.index('/* Buffer metadata layout'):header.index('/* Custom format for RAW capture')]
+code += fh_header[fh_header.index('struct atomisp_metadata_record'):fh_header.index('/*\n * Memory help')]
+code += function(fops, 'static int atomisp_fh_open(') + '\n'
 code += function(fops, 'static int atomisp_open(') + '\n'
 code += function(fops, 'static int atomisp_release(') + '\n'
 code += r'''
@@ -119,6 +134,8 @@ int main(void) {
     injected_pm_error = -EIO;
     assert(atomisp_open(&a) == -EIO); injected_pm_error = 0; check_quiescent();
     assert(!atomisp_open(&a));
+    assert(atomisp_to_fh(a.private_data)->metadata_mode==0);
+    atomisp_to_fh(a.private_data)->metadata_mode=2;
     int result = atomisp_open(&b);
     if (result) {
         atomisp_release(&a);
@@ -126,6 +143,7 @@ int main(void) {
         return 1;
     }
     assert(pipe_.users == 2 && pm_refs == 1 && init_dev == 1);
+    assert(atomisp_to_fh(b.private_data)->metadata_mode==0 && atomisp_to_fh(a.private_data)->metadata_mode==2);
     // Observer close must not touch a queue owned by another live handle.
     own_queue(&a, true); asd.state = 123;
     int stats = free_stats, released = queue_releases, stops = stream_stops;
