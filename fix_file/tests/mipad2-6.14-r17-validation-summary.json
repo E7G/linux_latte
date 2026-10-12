@@ -1,0 +1,132 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r17",
+  "boot_id": "727d5d87-69d5-472d-8a33-86a9fb4fcd72",
+  "built_source_commit": "9b3361d4ba6bf4e471e9df709366d4e286c3db1a",
+  "build_exit_code": 0,
+  "all_modules_signature_verified": true,
+  "kernel_sha256": "2032b0298fab730a08a3b4ad4e947f506ad0d71acc26065e3984638175516019",
+  "bundle_sha256": "cb24252d7e1408fea2aabd692d3822d5b50617f93e50ce0ab354d49fefb26c3e",
+  "preserved_r16_artifacts": true,
+  "stable_saved_entry": "mipad2-bqdiag1",
+  "candidate_one_shot": true,
+  "hardware_batch_scripts": 15,
+  "hardware_batch_successful_scripts": 14,
+  "failed_scripts": [
+    "run_r17_sensor_compliance_remote.py"
+  ],
+  "geometry_guard": {
+    "cases": 6,
+    "frames": 1440,
+    "guard_phases": 24,
+    "active_busy_unchanged": true,
+    "effective_try_per_fd_isolation": true,
+    "all_short_30fps_1pct_passed": true
+  },
+  "idle_both_crop_extremes": {
+    "cases": 10,
+    "sampled_restoration_passed": true
+  },
+  "default_bounds": {
+    "cases": 39,
+    "frames": 9360,
+    "default_cases": 26,
+    "front_minimum_cases": 13,
+    "default_30fps_1pct_passed": true
+  },
+  "video_compliance": {
+    "starting_inputs": [
+      0,
+      1
+    ],
+    "unmodified_streaming_60": true,
+    "passed": true
+  },
+  "direct_sensor_compliance": {
+    "passed": false,
+    "totals_per_sensor": "45/46",
+    "failure": "control event subscription for User Controls",
+    "pad_geometry_tests_not_present_in_this_tool_output": true,
+    "cause_source_missing_has_events_flag": true
+  },
+  "silent_audio_electrical_passed": true,
+  "acoustic_verified": false,
+  "initial_s0i3_delta_us": 9759520,
+  "final_resume": {
+    "functional_passed": true,
+    "s0i3_delta_us": 0,
+    "s0i3_entered": false,
+    "debug_restored": true
+  },
+  "gui": {
+    "initial_automated_gate": false,
+    "user_front_normal": true,
+    "user_rear_black": true,
+    "rear_error": "Atomisp sensor S_FMT EINVAL at 1920x1440 during application switching",
+    "source_hypothesis": "T4 read-only HBLANK is wired to hardware s_ctrl, whose powered default case rejects it; suspended format reset succeeded and repaired value/range. Powered controlled reproduction remains needed.",
+    "close_old_window_clean": true,
+    "recovery_new_window_open": true,
+    "recovery_user_result_pending": false,
+    "native_capture_log_not_seen": true,
+    "photos_or_recordings_not_tested": true,
+    "recovery_user_rear_normal": true,
+    "recovery": "Cleanly quit first window; sensor PM suspended/usage0; idle 1920x1440 S_FMT and30fps succeeded; fixed HBLANK value1504 matches range; reopened launcher; user confirmed rear normal",
+    "powered_root_cause_not_hardware_reproduced_yet": true,
+    "failure_not_classified_as_r17_introduced_regression": true
+  },
+  "harness_defect": {
+    "pattern_controls_missing_from_sampled_restoration": true,
+    "observed_after_tests": {
+      "ov5693": 3,
+      "t4ka3": 4
+    },
+    "patterns_disabled_after_detection": true,
+    "exposure_reduced_on_synthetic_pattern": true,
+    "limitation": "Timing/queue proofs are not pixel/real-scene/AE/AWB proofs. Test pattern and flips must be added to future snapshots."
+  },
+  "remaining": [
+    "rear GUI hot-format S_FMT failure",
+    "control event subscriptions",
+    "final RTC failed S0I3 residency entry despite functional wake",
+    "full geometry/control/I2C/PM error transactions",
+    "physical high-rate and early cadence cause/full interval enumeration",
+    "full 3A/AWB/image quality/photos/recordings",
+    "compat32/Media Requests",
+    "broader hardware",
+    "full flash image build and boot"
+  ],
+  "raw_json_sha256": {
+    "mipad2-r17-boot-entry-install.json": "1e5d367b3ff532fe65580b89289aeb62ac87660adc1a41f607f06eecbb939fe6",
+    "mipad2-r17-both-crop-edges.json": "b39e567b01579604be6119fc4b2371621eccc64ec807e536fe1ca33d63ad7cae",
+    "mipad2-r17-build-state.json": "bff687cd8bc54c32ee1352600226dbdce7a6bfb48fba084400a206b1000aab20",
+    "mipad2-r17-bundle-manifest.json": "74dba9495377c11f4d4864752f638070079349c57e2c66bd785a6772b3ed1997",
+    "mipad2-r17-cadence-no-sfmt-restart.json": "271d910f0dffd3a3699b355349e555d75da487558117348146f49204236b9106",
+    "mipad2-r17-createbufs-size-contract.json": "098a0c2424d15fa452e63e8e5a203859de717923514eeed1b48ab01ef1597d47",
+    "mipad2-r17-createbufs-stream.json": "76978c055217802341ba1e88ac57423dc81f2ec23af6af2b6e3b116f0765f128",
+    "mipad2-r17-default-bounds.json": "c02342cfd27b2055cee1fefff01ed6b94c2d13cf38631d4d299a622156f22e4f",
+    "mipad2-r17-device-stage.json": "e6e186585ae17ffc54cf764f4cd28601886bd184b77f689c88c035df14d28829",
+    "mipad2-r17-even-size-matrix-v2.json": "37408104b66cc32005e825f1d6d79d81e183486764d7c5e4042367a5c66a012f",
+    "mipad2-r17-fresh-audio-audit.json": "fdb09362fd1aab2904a095e918dabe9edc92fe309018104f24d984e64d1d152b",
+    "mipad2-r17-geometry-before-source.json": "5030e164f6c6f7714848d7d6f39e7ab05b572c636b52e1f9d3f1aca78823e0a2",
+    "mipad2-r17-geometry-device-prepared.json": "b605c40660e15779173ff780c5dd347f398aa5c5f894a92b8b59fd80248f7d73",
+    "mipad2-r17-hardware-runner.json": "52cdacb5f9172bd76bb3f2d30b62f556815671ac85410cde0b836cd0245266bb",
+    "mipad2-r17-header-final-preflight.json": "8af1ca5226567f3bf5260d927c4e1a9451159807fecae7ac39ed309bbe8ff805",
+    "mipad2-r17-header-preflight-before-style.json": "f3ab6aa47c1f77bd98b1961b23fb18e4e5e15eeb62c1979b2e8853c05ce4912c",
+    "mipad2-r17-header-preflight.json": "f3ab6aa47c1f77bd98b1961b23fb18e4e5e15eeb62c1979b2e8853c05ce4912c",
+    "mipad2-r17-host-tests-before-style.json": "5182834620fb64922b36194f9afc650aa0a60626d2d12aec905c63e96e450e36",
+    "mipad2-r17-host-tests.json": "aa7e6b1668b8699343bdd0beb04f8ca04a23c61c04586842ce61bcc461bbd4be",
+    "mipad2-r17-metadata-modes-long.json": "d7e1e44692986a1e973592a49946913706069d1dc938a9928926b5ca2cbe5821",
+    "mipad2-r17-ov5693-warm-modes.json": "a282d125417eb4728dd0a5817774c73ea6d7ed35424c82af6e82e1c1371c6dbc",
+    "mipad2-r17-resume-residency-normal.json": "d5fe1e5e37c0f21ceda88df03f55813ea549ffac09447d5a9384900915019885",
+    "mipad2-r17-runtime-binaries.json": "2e6e581ff18235046d12365f42552025a79a3e65a2a65d304c65e984dad8c0ab",
+    "mipad2-r17-scaling-matrix-v2.json": "3401cda875f510060c46b55c3fa211e24995c0d3edc06b1d4fc6d11a5320ec64",
+    "mipad2-r17-sensor-compliance.json": "f14583376d5158a259b7b6453cd407b71c9ef8234eaf7ebd3c22cda5972a2a12",
+    "mipad2-r17-sensor-geometry.json": "94bb9134a1beb8129af174e52bcfeddaee1d8e9df8a7fedeafdc12dc9bdcd78a",
+    "mipad2-r17-snapshot-r6-clean-reopens.json": "07f1977c6d60680b602bcf392b084b089976ef69da1d63bdf036b18d9b204f06",
+    "mipad2-r17-source-publication.json": "4b0762796217b499864054644ab6a26f025ca5f1f514582e05099285118b0f0d",
+    "mipad2-r17-stage-runner.json": "f9e020cd2cbf2e73703c805ac7a3f5097344c9435e9146a269f30da17f7aa10d",
+    "mipad2-r17-storage-duplicates.json": "7af0f26bf252362191cf8134847341543ce50ed1103f4341d61f07cb4254ce57",
+    "mipad2-r17-strict-queue-tests.json": "807664e9f21fae75ff1eb41fb8180e4348a026f865d3c8330ae2c0a20c806436",
+    "mipad2-r17-whole-compliance.json": "4c024e7d42368b158f73f9ac1e8e7abdac213420c0c604adde0035cf12a2b198"
+  },
+  "full_objective_complete": false
+}
