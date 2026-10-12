@@ -1204,11 +1204,17 @@ static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
 	 * an even multiple of 30fps.
 	 */
 
-	unsigned int tgt_fps;
+	unsigned int tgt_fps, vts, min_vts;
 
 	tgt_fps = rounddown(ov5693->pixel_rate / OV5693_FIXED_PPL / height, 30);
+	tgt_fps = max(tgt_fps, 30U);
+	vts = ALIGN_DOWN(ov5693->pixel_rate / OV5693_FIXED_PPL / tgt_fps, 2);
 
-	return ALIGN_DOWN(ov5693->pixel_rate / OV5693_FIXED_PPL / tgt_fps, 2);
+	/* Tiny crops must still have valid VBLANK and exposure defaults. */
+	min_vts = max_t(u32, height + OV5693_TIMING_MIN_VTS,
+			OV5693_INTEGRATION_TIME_MARGIN + OV5693_EXPOSURE_MIN);
+
+	return max(vts, ALIGN(min_vts, 2));
 }
 
 static struct v4l2_mbus_framefmt *
