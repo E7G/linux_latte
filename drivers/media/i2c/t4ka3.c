@@ -1323,7 +1323,8 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 					  min, max, 1, def);
 
 	def = T4KA3_PIXELS_PER_LINE - T4KA3_ACTIVE_WIDTH;
-	ctrls->hblank = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HBLANK,
+	/* Fixed line length: HBLANK is metadata, not a hardware control. */
+	ctrls->hblank = v4l2_ctrl_new_std(hdl, NULL, V4L2_CID_HBLANK,
 					  def, def, 1, def);
 
 	max = T4KA3_LINES_PER_FRAME_30FPS -
@@ -1487,7 +1488,8 @@ static int t4ka3_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_enable(&client->dev);
 
-	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+			    V4L2_SUBDEV_FL_HAS_EVENTS;
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 

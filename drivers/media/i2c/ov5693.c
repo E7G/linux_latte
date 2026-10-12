@@ -1918,7 +1918,8 @@ static int ov5693_probe(struct i2c_client *client)
 		return dev_err_probe(&client->dev, ret,
 				     "Error fetching regulators\n");
 
-	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+			    V4L2_SUBDEV_FL_HAS_EVENTS;
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
 	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 

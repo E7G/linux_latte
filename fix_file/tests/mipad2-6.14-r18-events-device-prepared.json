@@ -1,0 +1,9 @@
+{
+  "source": "mipad2-r18-control-events-device-test.c",
+  "source_sha256": "319a7574091e09dca832eb684aa1aa667a028de1316ad2ccabfb1fd9ecfa5f7b",
+  "binary_sha256": "d5eadee2a5e118953f96baece4bff28533c20f4e387be71b1920bd1064d25b5a",
+  "compiled": true,
+  "run": false,
+  "required_kernel": "6.14.0-mipad2-integrated-r18",
+  "scope": "Three sensor fds, initial/change events, poll wake, monotonic per-fd sequence/time, no unchanged-value event, unsubscribe isolation, exposure restored; no video or hardware effect proof"
+}

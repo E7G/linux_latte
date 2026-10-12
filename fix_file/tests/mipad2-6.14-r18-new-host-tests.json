@@ -1,0 +1,46 @@
+{
+  "new_suites": [
+    {
+      "test": "mipad2-sensor-events-host-test.py",
+      "exit_code": 0,
+      "stdout": "PASS 18 actual sensor-flag/core-event-dispatch wiring checks; helper stubs, no real event queue/I2C/3A proof",
+      "log": "mipad2-r18-mipad2-sensor-events-host-test.py.log"
+    },
+    {
+      "test": "mipad2-t4ka3-metadata-control-host-test.py",
+      "exit_code": 0,
+      "stdout": "PASS 3286 actual HBLANK-registration/core-call_op/T4-callback cases; PM/CCI stubs, genuine exposure errors retained, no hardware/full rollback proof",
+      "log": "mipad2-r18-mipad2-t4ka3-metadata-control-host-test.py.log"
+    }
+  ],
+  "negative_fixtures": [
+    {
+      "test": "mipad2-sensor-events-host-test.py",
+      "variant": "ov5693",
+      "exit_code": 1,
+      "compiled_then_asserted": true,
+      "log": "mipad2-r18-MIPAD2_SENSOR_EVENTS_NEGATIVE-ov5693-negative.log"
+    },
+    {
+      "test": "mipad2-sensor-events-host-test.py",
+      "variant": "t4ka3",
+      "exit_code": 1,
+      "compiled_then_asserted": true,
+      "log": "mipad2-r18-MIPAD2_SENSOR_EVENTS_NEGATIVE-t4ka3-negative.log"
+    },
+    {
+      "test": "mipad2-t4ka3-metadata-control-host-test.py",
+      "variant": "1",
+      "exit_code": 1,
+      "compiled_then_asserted": true,
+      "log": "mipad2-r18-MIPAD2_METADATA_CONTROL_NEGATIVE-1-negative.log"
+    }
+  ],
+  "checkpatch_exit": 0,
+  "source_sha256": {
+    "drivers/media/i2c/ov5693.c": "d29ead4c8cb9fe9cc3dd9639f47bb1f537d370619a9aa7b5441b747e4ba592b6",
+    "drivers/media/i2c/t4ka3.c": "74313d7dc062976dcb5cca81b3adee13d26a9b5248b732e1173fe67f7c2c3e19"
+  },
+  "hardware_tested": false,
+  "scope": "Actual registration/core call_op/driver callback wiring; PM/CCI and event helper stubs, no hardware or full transaction proof"
+}
