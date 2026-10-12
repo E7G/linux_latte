@@ -1276,10 +1276,10 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	 * Align to two to simplify the binning calculations below, and clamp
 	 * the requested format at the crop rectangle
 	 */
-	width = clamp_t(unsigned int, ALIGN(format->format.width, 2),
-			OV5693_MIN_CROP_WIDTH, crop->width);
-	height = clamp_t(unsigned int, ALIGN(format->format.height, 2),
-			 OV5693_MIN_CROP_HEIGHT, crop->height);
+	width = ALIGN(clamp_t(unsigned int, format->format.width,
+			      OV5693_MIN_CROP_WIDTH, crop->width), 2);
+	height = ALIGN(clamp_t(unsigned int, format->format.height,
+			       OV5693_MIN_CROP_HEIGHT, crop->height), 2);
 
 	/*
 	 * We can only support setting either the dimensions of the crop rect
@@ -1379,14 +1379,17 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 	 * pixel array. Align to multiples of 2 to ensure Bayer pattern isn't
 	 * disrupted.
 	 */
-	rect.left = clamp(ALIGN(sel->r.left, 2), OV5693_NATIVE_START_LEFT,
-			  OV5693_NATIVE_WIDTH);
-	rect.top = clamp(ALIGN(sel->r.top, 2), OV5693_NATIVE_START_TOP,
-			 OV5693_NATIVE_HEIGHT);
-	rect.width = clamp_t(unsigned int, ALIGN(sel->r.width, 2),
+	/* Bound before ALIGN, and leave room for a non-empty rectangle. */
+	rect.left = ALIGN(clamp(sel->r.left, OV5693_NATIVE_START_LEFT,
+				OV5693_NATIVE_WIDTH - OV5693_MIN_CROP_WIDTH), 2);
+	rect.top = ALIGN(clamp(sel->r.top, OV5693_NATIVE_START_TOP,
+			       OV5693_NATIVE_HEIGHT - OV5693_MIN_CROP_HEIGHT), 2);
+	rect.width = clamp_t(unsigned int, sel->r.width,
 			     OV5693_MIN_CROP_WIDTH, OV5693_NATIVE_WIDTH);
-	rect.height = clamp_t(unsigned int, ALIGN(sel->r.height, 2),
+	rect.height = clamp_t(unsigned int, sel->r.height,
 			      OV5693_MIN_CROP_HEIGHT, OV5693_NATIVE_HEIGHT);
+	rect.width = ALIGN(rect.width, 2);
+	rect.height = ALIGN(rect.height, 2);
 
 	/* Make sure the crop rectangle isn't outside the bounds of the array */
 	rect.width = min_t(unsigned int, rect.width,
