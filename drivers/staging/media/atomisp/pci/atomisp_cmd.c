@@ -6,6 +6,7 @@
  *
  * Copyright (c) 2010 Silicon Hive www.siliconhive.com.
  */
+#include <linux/dmi.h>
 #include <linux/errno.h>
 #include <linux/firmware.h>
 #include <linux/pci.h>
@@ -3581,6 +3582,8 @@ void atomisp_get_padding(struct atomisp_device *isp, u32 width, u32 height,
 	u32 min_pad_w = ISP2400_MIN_PAD_W;
 	u32 min_pad_h = ISP2400_MIN_PAD_H;
 	struct v4l2_mbus_framefmt *sink;
+	u32 requested_width = width;
+	u64 input_width;
 
 	if (!input->crop_support) {
 		*padding_w = pad_w;
@@ -3599,6 +3602,23 @@ void atomisp_get_padding(struct atomisp_device *isp, u32 width, u32 height,
 
 	*padding_w = min_t(u32, (native_rect.width - width) & ~1, pad_w);
 	*padding_h = min_t(u32, (native_rect.height - height) & ~1, pad_h);
+
+	/*
+	 * Mi Pad 2 OV5693 capture needs an input width of at least 36, aligned
+	 * to four. Keep the requested output size and add the extra input pixels
+	 * to the padding. Do not apply this measured constraint to other boards
+	 * or sensors. Retain the original width: the active-array clamp above
+	 * must not change the alignment of requests near the native-array edge.
+	 */
+	if (IS_ISP2401 && input->camera &&
+	    dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	    dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	    !strncmp(input->camera->name, "ov5693 ", 7)) {
+		input_width = (u64)requested_width + *padding_w;
+		input_width = ALIGN(max_t(u64, input_width, 36), 4);
+		if (input_width <= (u32)native_rect.width)
+			*padding_w = input_width - requested_width;
+	}
 
 	/* The below minimum padding requirements are for BYT / ISP2400 only */
 	if (IS_ISP2401)
@@ -3784,6 +3804,7 @@ int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *f,
 {
 	const struct atomisp_format_bridge *fmt, *snr_fmt;
 	struct atomisp_sub_device *asd = &isp->asd;
+	struct atomisp_input_subdev *input = &isp->inputs[asd->input_curr];
 	struct v4l2_mbus_framefmt ffmt = { };
 	u32 padding_w, padding_h;
 	int ret;
@@ -3805,6 +3826,13 @@ int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *f,
 	if (asd->run_mode->val == ATOMISP_RUN_MODE_PREVIEW) {
 		f->width = min(f->width, 1920U);
 		f->height = min(f->height, 1440U);
+	}
+
+	/* Bound crop requests before adding padding or aligning sensor sizes. */
+	if (input->crop_support && input->native_rect.width > 0 &&
+	    input->native_rect.height > 0) {
+		f->width = min_t(u32, f->width, input->native_rect.width);
+		f->height = min_t(u32, f->height, input->native_rect.height);
 	}
 
 	/*
