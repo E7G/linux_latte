@@ -46,7 +46,7 @@ struct mutex { int held; };
 static void mutex_lock(struct mutex *m) { assert(!m->held);m->held=1; }
 static void mutex_unlock(struct mutex *m) { assert(m->held);m->held=0; }
 struct control { int minimum,maximum,default_value,val; };
-struct ov5693_device { unsigned pixel_rate; bool mipad2; struct mutex lock;
+struct ov5693_device { unsigned pixel_rate; bool mipad2,streaming; struct mutex lock;
  struct { struct v4l2_rect crop; struct v4l2_mbus_framefmt format; bool binning_x,binning_y; unsigned inc_x_odd,inc_y_odd,vts; } mode;
  struct { struct control *vblank,*hblank; } ctrls; unsigned exposure_max; };
 struct v4l2_subdev { struct ov5693_device *sensor; };

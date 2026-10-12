@@ -1,0 +1,140 @@
+{
+  "scope": "actual callbacks with pthread/state/control/PM stubs, no DMA/I2C/IRQ or full transaction proof",
+  "suites": [
+    {
+      "test": "mipad2-sensor-geometry-lock-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 3624 actual geometry/TRY/busy/edge/window cases and150000 concurrent callback operations; pthread/control/state stubs, no DMA/I2C/full rollback proof"
+      ]
+    },
+    {
+      "test": "mipad2-sensor-format-error-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 40000 actual sensor/crop/CSI helper fault-return cases; sensor errno retained, locks balanced, CSI suppressed after sensor error; stubs not hardware/rollback proof"
+      ]
+    },
+    {
+      "test": "mipad2-ov5693-timing-policy-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 7824 actual OV default/guard policy cases including generic parity, board scoping, mixed binning; arithmetic only, no physical FPS claim"
+      ]
+    },
+    {
+      "test": "mipad2-ov5693-crop-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 11700 actual OV crop/format/VTS edge cases, bounded before ALIGN and non-empty; control/state stubs"
+      ]
+    },
+    {
+      "test": "mipad2-buffer-metadata-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 1506 source-extracted per-FH metadata/legacy/owner/rollback/error cases, ABI32bytes; stub VB2/locks"
+      ]
+    },
+    {
+      "test": "mipad2-input-geometry-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 24270 extracted padding/TRY_FMT/range/VTS cases; stubs, not real capture proof"
+      ]
+    },
+    {
+      "test": "mipad2-preview-warm-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 36864 real OV5693 mode/control/stream/PM-reference cases; stubbed CCI and PM",
+        "PASS 102054 real preview/range negotiation cases; sensor/format/padding stubs, not firmware proof"
+      ]
+    },
+    {
+      "test": "mipad2-queue-reconfigure-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 160000 queue-reconfiguration cases; real source, CSS/sensor/control/lock stubs"
+      ]
+    },
+    {
+      "test": "mipad2-create-bufs-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 160000 queue-reconfiguration cases; real source, CSS/sensor/control/lock stubs",
+        "PASS 2700000 CREATE_BUFS plane/size production cases; real function, stubs; NOT hardware proof"
+      ]
+    },
+    {
+      "test": "mipad2-css-restart-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 420000 actual CSS-stop/layout/error-gate cases; firmware/list/IRQ stubs, NOT hardware restart"
+      ]
+    },
+    {
+      "test": "mipad2-frame-interval-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 320240 interval cases; real pad-op source, stubbed controls/locks"
+      ]
+    },
+    {
+      "test": "mipad2-frame-sequence-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS actual frame completion, error/flush, STREAMON reset, u32 wrap and legacy SOF code; IRQ/vb2/CSS stubs"
+      ]
+    },
+    {
+      "test": "mipad2-multiopen-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS injected failures, queue-owner takeover, 2000 closure cycles, 16000 concurrent opens/closes"
+      ]
+    },
+    {
+      "test": "mipad2-stream-parameter-host-test.py",
+      "exit": 0,
+      "pass_lines": [
+        "PASS 51 stream-parameter cases; actual AtomISP functions, stubbed subdevices/controls"
+      ]
+    }
+  ],
+  "negative_fixtures": [
+    {
+      "fixture": "ov_busy",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "t4_busy",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "try_getter",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "t4_bounds",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "t4_window",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "ov_lock",
+      "compiled_then_assert_failed": true
+    },
+    {
+      "fixture": "t4_doublelock",
+      "compiled_then_assert_failed": true
+    }
+  ],
+  "checkpatch_exit": 0,
+  "source_sha256": {
+    "drivers/media/i2c/ov5693.c": "cfd32b6e46302d6f19f50664b23e2472c45b84633f6db00ddbb8267517372c05",
+    "drivers/media/i2c/t4ka3.c": "51708da1f970c7a6e8ed92b7dd184623c63532e7032c95c27a46e30582a0c071"
+  }
+}

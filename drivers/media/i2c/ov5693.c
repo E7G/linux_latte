@@ -1278,7 +1278,16 @@ static int ov5693_get_fmt(struct v4l2_subdev *sd,
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 
-	format->format = ov5693->mode.format;
+	if (format->pad ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (format->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	format->format = *__ov5693_get_pad_format(ov5693, state,
+					       format->pad, format->which);
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
 }
@@ -1294,6 +1303,18 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	unsigned int width, height;
 	unsigned int hblank;
 	int exposure_max;
+
+	if (format->pad ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (format->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE && ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return -EBUSY;
+	}
 
 	crop = __ov5693_get_pad_crop(ov5693, state, format->pad, format->which);
 
@@ -1325,9 +1346,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	format->format = *fmt;
 
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
-		return 0;
-
-	mutex_lock(&ov5693->lock);
+		goto out_unlock;
 
 	ov5693->mode.binning_x = hratio > 1;
 	ov5693->mode.inc_x_odd = hratio > 1 ? 3 : 1;
@@ -1350,6 +1369,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	exposure_max = ov5693->mode.vts - OV5693_INTEGRATION_TIME_MARGIN;
 	ov5693_update_exposure_range(ov5693, exposure_max);
 
+out_unlock:
 	mutex_unlock(&ov5693->lock);
 	return 0;
 }
@@ -1359,6 +1379,12 @@ static int ov5693_get_selection(struct v4l2_subdev *sd,
 				struct v4l2_subdev_selection *sel)
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+
+	if (sel->pad ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (sel->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
 
 	switch (sel->target) {
 	case V4L2_SEL_TGT_CROP:
@@ -1396,8 +1422,17 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 	struct v4l2_rect *__crop;
 	struct v4l2_rect rect;
 
-	if (sel->target != V4L2_SEL_TGT_CROP)
+	if (sel->target != V4L2_SEL_TGT_CROP || sel->pad ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (sel->which == V4L2_SUBDEV_FORMAT_TRY && !state))
 		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE && ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return -EBUSY;
+	}
 
 	/*
 	 * Clamp the boundaries of the crop rectangle to the size of the sensor
@@ -1438,6 +1473,7 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 	*__crop = rect;
 	sel->r = rect;
 
+	mutex_unlock(&ov5693->lock);
 	return 0;
 }
 
@@ -1558,17 +1594,25 @@ static int ov5693_enum_frame_size(struct v4l2_subdev *sd,
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 	struct v4l2_rect *__crop;
 
-	if (fse->index > 1 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10)
+	if (fse->index > 1 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10 ||
+	    fse->pad ||
+	    (fse->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     fse->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (fse->which == V4L2_SUBDEV_FORMAT_TRY && !state))
 		return -EINVAL;
 
+	mutex_lock(&ov5693->lock);
 	__crop = __ov5693_get_pad_crop(ov5693, state, fse->pad, fse->which);
-	if (!__crop)
+	if (!__crop) {
+		mutex_unlock(&ov5693->lock);
 		return -EINVAL;
+	}
 
 	fse->min_width = __crop->width / (fse->index + 1);
 	fse->min_height = __crop->height / (fse->index + 1);
 	fse->max_width = fse->min_width;
 	fse->max_height = fse->min_height;
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
 }
@@ -1586,6 +1630,24 @@ static const struct v4l2_subdev_pad_ops ov5693_pad_ops = {
 	.set_selection = ov5693_set_selection,
 	.get_frame_interval = ov5693_get_frame_interval,
 	.set_frame_interval = ov5693_set_frame_interval,
+};
+
+/* Legacy ACTIVE state stays private; each TRY state starts from a snapshot. */
+static int ov5693_init_state(struct v4l2_subdev *sd,
+			     struct v4l2_subdev_state *state)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+
+	mutex_lock(&ov5693->lock);
+	*v4l2_subdev_state_get_crop(state, 0) = ov5693->mode.crop;
+	*v4l2_subdev_state_get_format(state, 0) = ov5693->mode.format;
+	mutex_unlock(&ov5693->lock);
+
+	return 0;
+}
+
+static const struct v4l2_subdev_internal_ops ov5693_internal_ops = {
+	.init_state = ov5693_init_state,
 };
 
 static const struct v4l2_subdev_ops ov5693_ops = {
@@ -1822,6 +1884,7 @@ static int ov5693_probe(struct i2c_client *client)
 	mutex_init(&ov5693->lock);
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
+	ov5693->sd.internal_ops = &ov5693_internal_ops;
 
 	ov5693->xvclk = devm_clk_get_optional(&client->dev, "xvclk");
 	if (IS_ERR(ov5693->xvclk))

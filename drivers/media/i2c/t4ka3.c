@@ -712,20 +712,28 @@ static int t4ka3_set_pad_format(struct v4l2_subdev *sd,
 {
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
 	struct v4l2_mbus_framefmt *fmt = &format->format;
-	struct v4l2_rect *crop =
-		v4l2_subdev_state_get_crop(sd_state, format->pad);
+	struct v4l2_rect *crop;
 	unsigned int width, height;
 	int min, max, def, ret = 0;
 
-	/* Limit set_fmt max size to crop width / height */
-	width = clamp_val(ALIGN(format->format.width, 2),
-			  T4KA3_MIN_CROP_WIDTH, crop->width);
-	height = clamp_val(ALIGN(format->format.height, 2),
-			   T4KA3_MIN_CROP_HEIGHT, crop->height);
-	t4ka3_fill_format(sensor, &format->format, width, height);
+	if (format->pad || !sd_state ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY))
+		return -EINVAL;
 
+	/* The core holds the shared state/control lock; do not lock it twice. */
+	lockdep_assert_held(sensor->sd.state_lock);
 	if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE && sensor->streaming)
 		return -EBUSY;
+
+	crop = v4l2_subdev_state_get_crop(sd_state, format->pad);
+
+	/* Limit set_fmt max size to crop width / height */
+	width = ALIGN(clamp_val(format->format.width, T4KA3_MIN_CROP_WIDTH,
+				crop->width), 2);
+	height = ALIGN(clamp_val(format->format.height, T4KA3_MIN_CROP_HEIGHT,
+				 crop->height), 2);
+	t4ka3_fill_format(sensor, &format->format, width, height);
 
 	*v4l2_subdev_state_get_format(sd_state, 0) = format->format;
 
@@ -1033,22 +1041,28 @@ static int t4ka3_set_selection(struct v4l2_subdev *sd,
 	struct v4l2_rect *crop;
 	struct v4l2_rect rect;
 
-	if (sel->target != V4L2_SEL_TGT_CROP)
+	if (sel->target != V4L2_SEL_TGT_CROP || sel->pad || !state ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY))
 		return -EINVAL;
+
+	lockdep_assert_held(sensor->sd.state_lock);
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE && sensor->streaming)
+		return -EBUSY;
 
 	/*
 	 * Clamp the boundaries of the crop rectangle to the size of the sensor
 	 * pixel array. Align to multiples of 2 to ensure Bayer pattern isn't
 	 * disrupted.
 	 */
-	rect.left = clamp_val(ALIGN(sel->r.left, 2),
-			      T4KA3_NATIVE_START_LEFT, T4KA3_NATIVE_WIDTH);
-	rect.top = clamp_val(ALIGN(sel->r.top, 2),
-			     T4KA3_NATIVE_START_TOP, T4KA3_NATIVE_HEIGHT);
-	rect.width = clamp_val(ALIGN(sel->r.width, 2), T4KA3_MIN_CROP_WIDTH,
-			       T4KA3_NATIVE_WIDTH - rect.left);
-	rect.height = clamp_val(ALIGN(sel->r.height, 2), T4KA3_MIN_CROP_HEIGHT,
-				T4KA3_NATIVE_HEIGHT - rect.top);
+	rect.left = ALIGN(clamp_val(sel->r.left, T4KA3_NATIVE_START_LEFT,
+				    T4KA3_NATIVE_WIDTH - T4KA3_MIN_CROP_WIDTH), 2);
+	rect.top = ALIGN(clamp_val(sel->r.top, T4KA3_NATIVE_START_TOP,
+				   T4KA3_NATIVE_HEIGHT - T4KA3_MIN_CROP_HEIGHT), 2);
+	rect.width = ALIGN(clamp_val(sel->r.width, T4KA3_MIN_CROP_WIDTH,
+				     T4KA3_NATIVE_WIDTH - rect.left), 2);
+	rect.height = ALIGN(clamp_val(sel->r.height, T4KA3_MIN_CROP_HEIGHT,
+				      T4KA3_NATIVE_HEIGHT - rect.top), 2);
 
 	crop = v4l2_subdev_state_get_crop(state, sel->pad);
 
@@ -1060,11 +1074,14 @@ static int t4ka3_set_selection(struct v4l2_subdev *sd,
 		format = v4l2_subdev_state_get_format(state, sel->pad);
 		format->width = rect.width;
 		format->height = rect.height;
-		if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE)
-			t4ka3_calc_mode(sensor, format, crop);
 	}
 
-	sel->r = *crop = rect;
+	/* Position-only changes also require a new window, using the NEW crop. */
+	*crop = rect;
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE)
+		t4ka3_calc_mode(sensor,
+				v4l2_subdev_state_get_format(state, sel->pad), crop);
+	sel->r = rect;
 
 	return 0;
 }
