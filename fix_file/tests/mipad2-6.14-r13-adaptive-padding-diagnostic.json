@@ -1,0 +1,256 @@
+{
+  "module_parameter_restored": true,
+  "source_unchanged": true,
+  "rows": [
+    {
+      "padding_w": 18,
+      "request": [
+        18,
+        32
+      ],
+      "selected": [
+        18,
+        32
+      ],
+      "sensor_shape": {
+        "width": 36,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          930,
+          72,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 16,
+      "request": [
+        20,
+        32
+      ],
+      "selected": [
+        20,
+        32
+      ],
+      "sensor_shape": {
+        "width": 36,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          930,
+          72,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        22,
+        32
+      ],
+      "selected": [
+        22,
+        32
+      ],
+      "sensor_shape": {
+        "width": 40,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1272,
+          930,
+          80,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 16,
+      "request": [
+        24,
+        32
+      ],
+      "selected": [
+        24,
+        32
+      ],
+      "sensor_shape": {
+        "width": 40,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1272,
+          930,
+          80,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        26,
+        32
+      ],
+      "selected": [
+        26,
+        32
+      ],
+      "sensor_shape": {
+        "width": 44,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1268,
+          930,
+          88,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        30,
+        32
+      ],
+      "selected": [
+        30,
+        32
+      ],
+      "sensor_shape": {
+        "width": 48,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1264,
+          930,
+          96,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        1282,
+        32
+      ],
+      "selected": [
+        1282,
+        32
+      ],
+      "sensor_shape": {
+        "width": 1300,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          12,
+          930,
+          2600,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        1294,
+        32
+      ],
+      "selected": [
+        1294,
+        32
+      ],
+      "sensor_shape": {
+        "width": 1312,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          0,
+          930,
+          2624,
+          96
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        1298,
+        32
+      ],
+      "selected": [
+        1298,
+        32
+      ],
+      "sensor_shape": {
+        "width": 1316,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          654,
+          954,
+          1316,
+          48
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    },
+    {
+      "padding_w": 18,
+      "request": [
+        1302,
+        32
+      ],
+      "selected": [
+        1302,
+        32
+      ],
+      "sensor_shape": {
+        "width": 1320,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          652,
+          954,
+          1320,
+          48
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "live_enum_passes": 4
+    }
+  ]
+}

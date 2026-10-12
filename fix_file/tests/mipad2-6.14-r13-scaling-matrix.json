@@ -1,0 +1,305 @@
+[
+  {
+    "input": 0,
+    "request": [
+      1,
+      1
+    ],
+    "selected": [
+      4,
+      4
+    ],
+    "set_exit": 0,
+    "capture_exit": 1,
+    "frames": 0,
+    "enum_preservation_passes": 1,
+    "fps": {},
+    "stderr": "multiopen regression: Connection timed out\n"
+  },
+  {
+    "input": 0,
+    "request": [
+      16384,
+      16384
+    ],
+    "selected": [
+      1920,
+      1440
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.019621916508278,
+      "after-observer-close": 29.994573708937242,
+      "ordinary-restart": 29.977326240517122,
+      "remaining-fd-takeover": 29.994573708939566
+    },
+    "stderr": ""
+  },
+  {
+    "input": 0,
+    "request": [
+      1920,
+      1440
+    ],
+    "selected": [
+      1920,
+      1440
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.01282366101837,
+      "after-observer-close": 30.00701072887058,
+      "ordinary-restart": 30.01265988562447,
+      "remaining-fd-takeover": 29.985170969992655
+    },
+    "stderr": ""
+  },
+  {
+    "input": 0,
+    "request": [
+      1920,
+      1200
+    ],
+    "selected": [
+      1920,
+      1200
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 29.978878517409772,
+      "after-observer-close": 29.98893135806182,
+      "ordinary-restart": 30.000627285843372,
+      "remaining-fd-takeover": 30.025767567803133
+    },
+    "stderr": ""
+  },
+  {
+    "input": 0,
+    "request": [
+      1280,
+      960
+    ],
+    "selected": [
+      1280,
+      960
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 29.994982657446812,
+      "after-observer-close": 30.021834061135475,
+      "ordinary-restart": 30.01708244873947,
+      "remaining-fd-takeover": 30.002918465706614
+    },
+    "stderr": ""
+  },
+  {
+    "input": 0,
+    "request": [
+      1280,
+      720
+    ],
+    "selected": [
+      1280,
+      720
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 29.98312767633501,
+      "after-observer-close": 29.98623359275896,
+      "ordinary-restart": 30.000872752663724,
+      "remaining-fd-takeover": 29.983454584608136
+    },
+    "stderr": ""
+  },
+  {
+    "input": 0,
+    "request": [
+      720,
+      1280
+    ],
+    "selected": [
+      720,
+      1280
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 29.99694576552217,
+      "after-observer-close": 30.01356067241294,
+      "ordinary-restart": 30.02183406113315,
+      "remaining-fd-takeover": 30.025521693439533
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      1,
+      1
+    ],
+    "selected": [
+      4,
+      4
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.018065417549266,
+      "after-observer-close": 29.986805805445755,
+      "ordinary-restart": 30.01397013882959,
+      "remaining-fd-takeover": 30.031341800351033
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      16384,
+      16384
+    ],
+    "selected": [
+      1920,
+      1440
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.009630363199026,
+      "after-observer-close": 30.0096303631967,
+      "ordinary-restart": 30.03535980995666,
+      "remaining-fd-takeover": 30.02625932861342
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      1920,
+      1440
+    ],
+    "selected": [
+      1920,
+      1440
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.026669141591665,
+      "after-observer-close": 30.019621916505947,
+      "ordinary-restart": 30.015280506439993,
+      "remaining-fd-takeover": 30.03962499624684
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      1920,
+      1200
+    ],
+    "selected": [
+      1920,
+      1200
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.007420016585172,
+      "after-observer-close": 29.99506444848642,
+      "ordinary-restart": 30.015116704231804,
+      "remaining-fd-takeover": 29.987541539561
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      1280,
+      960
+    ],
+    "selected": [
+      1280,
+      960
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.01380635092084,
+      "after-observer-close": 30.010530968140436,
+      "ordinary-restart": 30.015690019784714,
+      "remaining-fd-takeover": 30.02011347602873
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      1280,
+      720
+    ],
+    "selected": [
+      1280,
+      720
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.024784094506746,
+      "after-observer-close": 30.04462993209762,
+      "ordinary-restart": 29.993919414519475,
+      "remaining-fd-takeover": 30.029128254407098
+    },
+    "stderr": ""
+  },
+  {
+    "input": 1,
+    "request": [
+      720,
+      1280
+    ],
+    "selected": [
+      720,
+      1280
+    ],
+    "set_exit": 0,
+    "capture_exit": 0,
+    "frames": 48,
+    "enum_preservation_passes": 4,
+    "fps": {
+      "before-observer-close": 30.03913279754514,
+      "after-observer-close": 30.023390950950798,
+      "ordinary-restart": 30.006355891747592,
+      "remaining-fd-takeover": 30.02511191177958
+    },
+    "stderr": ""
+  }
+]

@@ -1,8 +1,8 @@
-# Mi Pad 2 r13 preview/warm-mode candidate — NOT device validated
+# Mi Pad 2 r13: measured warm-mode/max-size fixes; tiny front capture still fails
 
-Prepared 2026-10-12. Tablet remains r12, stable saved default bqdiag1.
-Source-pinned build/manifest will identify the final candidate commit. These
-source changes have not been booted; no r13 camera/compliance/audio PASS.
+Measured 2026-10-12. Built source `0be81e7c6da1fe7c1e00be5c92dcdd2db15908b2`, current r13
+boot `d5b11c82-7a51-40d3-acd0-1c67bd1ca9c6`. Saved default bqdiag1 remains unchanged.
+Only the following scoped evidence is claimed; full support remains incomplete.
 
 ## Production changes
 
@@ -72,3 +72,66 @@ and12-frame-per-phase format probes compile with Wall/Wextra/Werror, UNRUN.
 Full AWB/3A, interval enumeration, complete streaming compliance, exhaustive
 power/app/hardware validation remain open. R12 user declined listening for
 now; no r12/r13 tones have been played and no acoustic success is claimed.
+
+## Hardware follow-up
+
+Full LLVM21 ThinLTO W=1 build exit0, source/HEAD and protected r12 artifacts
+unchanged.34 CMS module signatures verified. Isolated stage, normal-initrd
+hash persistence/unchanged check, earlyserial unit verify and GRUB raw Btrfs
+byte comparisons passed. App r12 after-scaling window had not passed preview
+gate; it was gracefully quit (MainPID0/Resultsuccess/ExecMainStatus0), not
+counted as a streaming preview closure. One-shot r13 reached SSH/COM17;
+saved_entry=bqdiag1, next_entry consumed. Initial hardware smoke passed.
+
+-3,876 original strict/cadence/oversized capture frames passed. Both sensors
+  owner isolation, surviving-fd takeover, ordinary STREAMOFF/ON, streamparm,
+  30/15fps within1%, CREATE_BUFS size contract and full1MiB sentinel tails.
+  New cadence gate additionally queries enum during streaming and verifies
+  video/sensor ACTIVE FORMAT and exposure/VBLANK/gain/R/B preservation.
+  This does not separately prove crop-left/top preservation inside every
+  query; outer crop/format/controls restored exactly. Do not overstate scope.
+- Front forced-powered warm-mode reproduction now reports/physically outputs
+  1296x976 then1296x736,48frames each. The r12 stale976-row failure is fixed
+  in this run; temporary power policy restored, read-only register sampling.
+- Seven-format matrix on both sensors:13/14 cases pass48frames/four phases
+  within1% at30fps (624 positive frames). Extreme16384x16384 now negotiates
+  1920x1440 and captures on both; front1920x1200 and1280x720 rapid switches
+  also pass. Full matrix still FAILS: front1x1->4x4 produces no frame then
+  timeout. Rear4x4 passes. Do not omit or redefine this failed gate.
+- Real non-stream v4l2-compliance improves72/74 to74/74, exit0 on both runs
+  across both inputs. TWO missing ENUM_FRAMEINTERVALS warnings remain.
+  This green metadata test does NOT prove the advertised tiny front sizes
+  stream, or full streaming compliance. Real capture contradicts that claim.
+
+## Retained additional tiny-input evidence, not a production repair
+
+Front tiny-size sweep:4/8/16 square and4/8/16-wide x32 fail without frames;
+24/32/64 square and32-wide x4/8/16 pass48frames. Thus width, not merely tiny
+height, is implicated; no absolute hardware minimum is asserted from this.
+
+Using existing writable pad_w module parameter temporarily, preserve logical
+4x4 output while changing sensor input width. Widths20/28/32/34 and38 fail;
+36/40/44/52 pass48frames. All tests restore pad_w16 plus sensor state. This
+suggests a small-input/alignment constraint, but does not distinguish sensor
+ROI/bin origin, packed RAW transport and ISP constraints as the causal layer.
+
+A further temporary policy (input at least36 and aligned4, without changing
+logical output) passes ten18..1302-wide x32 cases,48frames each, including
+two-pixel steps and binning-boundary neighbors. Cropped output remains exactly
+requested. This is480 diagnostic frames, NOT a permanent r13 kernel fix.
+Next source should preserve full logical range by correcting input geometry,
+not just hide the4x4 failure by arbitrarily raising the output minimum.
+Untested breadth/quality/crop-phase/pixel integrity still needs verification.
+
+## Resume/audio/user checks
+
+Cold/post-resume silent hardware DAC_REF/RT5659/TFA active-idle checks pass,
+no mixer/cache repair. Two10-second RTC runs return same boot; first PMC
+S0I3 after9428224us, second independently measured delta9203456us with normal
+debug settings, restored. No BUG/WARNING/UBSAN/CallTrace in electrical audit;
+expected diagnostic CSS timeout/queued-buffer warnings retained separately.
+
+User earlier declined listening (temporarily inconvenient): NO r13 audible
+tones played, acoustic confirmation null. R13 desktop app preview, photos,
+recording/GUI close not yet confirmed; r11/r12 checks not reused as proof.
+Full interval enumeration/AWB/3A/streaming/other hardware support stays open.
