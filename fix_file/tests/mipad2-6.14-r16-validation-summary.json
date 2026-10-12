@@ -1,0 +1,231 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r16",
+  "boot_id": "bb66609d-07c0-466c-bce1-9067b13617c9",
+  "built_source": "214a29ba23ac45397abbbc51348407e74264c5ee",
+  "goal_complete": false,
+  "full_build_observed_exit": 0,
+  "r15_artifacts_unchanged": true,
+  "module_signatures_verified": 34,
+  "kernel_sha256": "bbf610ecedd82037c05c8f41bf48b469020b71325716bb9cb1ba87433e4c1da8",
+  "bundle_sha256": "8c0af7c646360501c07b748e02fce894199a01f7fe841ade1e9d290061aabfe5",
+  "serial_initramfs_sha256": "f276bd21174e206b7e36d601d8d117333a15861de96705a6796e8a336b420985",
+  "default_promotion": false,
+  "hardware_runner_all_zero": false,
+  "short_metadata_cadence_failed": true,
+  "short_metadata_all_frame_abi_checks_passed": true,
+  "long_metadata_frames": 1440,
+  "long_metadata_1percent30fps_passed": true,
+  "default_no_sparm_cases": 26,
+  "default_no_sparm_frames": 6240,
+  "default_1percent30fps_passed": true,
+  "front_actual_minimum_cases": 13,
+  "front_actual_minimum_frames": 3120,
+  "front_minimum_no_freeze_passed": true,
+  "minimum_below_floor_results": [
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        8,
+        8
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        16,
+        16
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        22,
+        32
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        1296,
+        720
+      ],
+      "minimum": 16,
+      "below_request_errno": 0,
+      "actual": 16
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "minimum": 24,
+      "below_request_errno": 0,
+      "actual": 24
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "minimum": 24,
+      "below_request_errno": 0,
+      "actual": 24
+    },
+    {
+      "requested": [
+        1920,
+        720
+      ],
+      "minimum": 24,
+      "below_request_errno": 0,
+      "actual": 24
+    },
+    {
+      "requested": [
+        720,
+        1280
+      ],
+      "minimum": 24,
+      "below_request_errno": 0,
+      "actual": 24
+    },
+    {
+      "requested": [
+        1298,
+        32
+      ],
+      "minimum": 24,
+      "below_request_errno": 0,
+      "actual": 24
+    }
+  ],
+  "known_fast_120fps_cases": [
+    {
+      "size": [
+        4,
+        4
+      ],
+      "frames": 240,
+      "fps": {
+        "before-observer-close": 120.01749407541709,
+        "after-observer-close": 120.0529046698579,
+        "ordinary-restart": 120.05485896606157,
+        "remaining-fd-takeover": 120.03727259039165
+      }
+    },
+    {
+      "size": [
+        1298,
+        32
+      ],
+      "frames": 240,
+      "fps": {
+        "before-observer-close": 120.01724993697795,
+        "after-observer-close": 120.07782671344555,
+        "ordinary-restart": 120.03336520659697,
+        "remaining-fd-takeover": 120.0035797677646
+      }
+    }
+  ],
+  "whole_compliance": [
+    {
+      "starting_input": 0,
+      "tests": 83,
+      "succeeded": 83,
+      "warnings": 2,
+      "whole_sampled_state_restored": true
+    },
+    {
+      "starting_input": 1,
+      "tests": 83,
+      "succeeded": 83,
+      "warnings": 2,
+      "whole_sampled_state_restored": true
+    }
+  ],
+  "compliance_scope": "unmodified --streaming60 MMAP starting each input; not allformats/intervals, DMABUF or image/3A quality",
+  "original_core_frames": 3876,
+  "warm_geometry_frames": 96,
+  "explicit30_matrices_frames": 1680,
+  "final_recovery_frames": 960,
+  "cold_and_post_rtc_silent_audio_electrical_passed": true,
+  "acoustic_verified": false,
+  "gui_photo_recording_verified": false,
+  "s0i3_delta_us": 9817760,
+  "clock_readonly_first_mono_raw_ratio": 1.000324946699188,
+  "clock_later_sidecar_mono_raw_ratio": 1.0000961722773423,
+  "early_short_cadence_cause": "unproven; later clock/long measurements are NOT simultaneous evidence for the earlier failure",
+  "flash_support_files_staged": 22,
+  "full_flash_image_built": false,
+  "remaining": [
+    "early short cadence cause",
+    "source/delivered high-rate disagreement",
+    "truthful full interval enumeration",
+    "mixed-binning/direct-subdev/ACTIVE-mutation locks and transactions",
+    "real I2C/PM rollback faults",
+    "full3A/AWB/pixelquality",
+    "GUI/photos/recording",
+    "compat32/MediaRequests",
+    "broaderhardware",
+    "fullflash-image build/boot"
+  ],
+  "evidence_sha256": {
+    "mipad2-r16-build-state.json": "bff9296cbc62b73f257338dd235748660c7e53235c097c604dd124a5306f4053",
+    "mipad2-r16-bundle-manifest.json": "ea5982e3f42c5c081ce1f6d04aadf70f893b0fd76e6ca461ef485ca097846ad9",
+    "mipad2-r16-device-stage.json": "7318275ef36621a069c46b66dc14c37514ff7f0361f44c348f63e3a1ad2991de",
+    "mipad2-r16-boot-entry-install.json": "29c84d6af18ed48fc724fe67e6e6ea8188fcd29b8c0796711e35e49ad8b44322",
+    "mipad2-r16-hardware-runner.json": "bbbc0d9e04d0060f059bbb766d77b95ca46222e3d15b3fae84597e3d3429a319",
+    "mipad2-r16-default-bounds.json": "63eee0d78338569d02ba86d8bfe4297555751bddd4a4c6515ae87da09d55e4c5",
+    "mipad2-r16-whole-compliance.json": "3eed06c3ed558059f49d83c613b89628597ebeadada57d3eb26c3607d7cec7a2",
+    "mipad2-r16-metadata-modes.json": "b6778eca6141e4438cad656067927b19353400885d0b9858e4e8912828bd2104",
+    "mipad2-r16-metadata-modes-long.json": "01bc682afa653dc9d5d2da2629537c42c15d46f8a7bd1d0fd9a4d82f406af6e4",
+    "mipad2-r16-known-fast.json": "351dd83cf2d7b521f501c057f60216d10723a994e08652f62b56d34a87821e72",
+    "mipad2-r16-final-recovery.json": "1e1a1b223c43fa9560bb6a50aa51830591b0a97db3c984cf061708cf7f60358a",
+    "mipad2-r16-fresh-audio-audit.json": "2274ac995cb53f5f8907f753649e5f6d662a9ab8eec49279fa759b1a4c4c9c1d",
+    "mipad2-r16-resume-residency-normal.json": "e177021945515785aa8116ef3e348f7bd4fbf47d845440ab5267bdeff623f56d",
+    "mipad2-r16-clock-readonly.json": "625ab6c46b1f6ebf3298687ac5c0ae8b92cccf0f8bc8ea8c1dbea77b44fac4af",
+    "mipad2-r16-clock-sidecar.json": "fea5434a337648fa56beb385c2dadb694b7cb0198f95a8e7ce5c5320ed43efd2",
+    "mipad2-flash-r16-staging-validation.json": "25aaef90c4a451c4ef8e7a6070e6e03e1be4ca8cf23a0006d7f960c519a2ea7d"
+  }
+}
