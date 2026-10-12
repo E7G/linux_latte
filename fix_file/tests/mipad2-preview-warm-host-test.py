@@ -124,7 +124,7 @@ typedef uint32_t u32;
 #define dev_err(...) ((void)0)
 struct control { int val; };
 struct atomisp_sub_device { struct control *run_mode; unsigned input_curr; };
-struct atomisp_input_subdev { struct v4l2_rect native_rect; };
+struct atomisp_input_subdev { struct v4l2_rect native_rect; bool crop_support; };
 struct atomisp_device { struct atomisp_sub_device asd; struct atomisp_input_subdev inputs[1]; unsigned native_w,native_h; int sensor_error; };
 struct atomisp_format_bridge { unsigned pixelformat,sh_fmt,mbus_code; };
 static const struct atomisp_format_bridge out={V4L2_PIX_FMT_YUV420,1,0x3007},raw={0xdeadbeef,IA_CSS_FRAME_FORMAT_RAW,0x3007};
