@@ -1,0 +1,256 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "original": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "shape": {
+        "width": 2624,
+        "height": 1956,
+        "code": "0x3007",
+        "crop": [
+          0,
+          0,
+          2624,
+          1956
+        ]
+      },
+      "controls": {
+        "10356993": 40,
+        "9963790": 1650,
+        "9963791": 1633,
+        "9963793": 1976,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 8,
+        "10422531": 0,
+        "10422533": 1024
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "shape": {
+        "width": 3280,
+        "height": 2464,
+        "code": "0x300a",
+        "crop": [
+          0,
+          0,
+          3280,
+          2464
+        ]
+      },
+      "controls": {
+        "10356993": 32,
+        "9963790": 1585,
+        "9963791": 1570,
+        "9963793": 2486,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 128,
+        "10422531": 0
+      }
+    }
+  ],
+  "initial_video": {
+    "code": 0,
+    "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "starting_input": 0,
+      "set_input": {
+        "code": 0,
+        "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+        "stderr": ""
+      },
+      "set_fmt": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "set_parm": {
+        "code": 0,
+        "stdout": "Frame rate set to 30.002 fps\n",
+        "stderr": ""
+      },
+      "compliance": {
+        "code": 0,
+        "stdout": "v4l2-compliance 1.32.0, 64 bits, 64-bit time_t\n\nCompliance test for atomisp device /dev/video0:\n\nDriver Info:\n\tDriver name      : atomisp\n\tCard type        : ATOM ISP\n\tBus info         : PCI:0000:00:03.0\n\tDriver version   : 6.14.0\n\tCapabilities     : 0x84200001\n\t\tVideo Capture\n\t\tStreaming\n\t\tExtended Pix Format\n\t\tDevice Capabilities\n\tDevice Caps      : 0x04200001\n\t\tVideo Capture\n\t\tStreaming\n\t\tExtended Pix Format\nMedia Driver Info:\n\tDriver name      : atomisp-isp2\n\tModel            : Intel Atom ISP\n\tSerial           : \n\tBus info         : PCI:0000:00:03.0\n\tMedia version    : 6.14.0\n\tHardware revision: 0x00002010 (8208)\n\tDriver version   : 6.14.0\nInterface Info:\n\tID               : 0x0300001f\n\tType             : V4L Video\nEntity Info:\n\tID               : 0x0000001d (29)\n\tName             : ATOMISP video output\n\tFunction         : V4L2 I/O\n\tPad 0x0100001e   : 0: Sink\n\t  Link 0x02000021: from remote pad 0x100000c of entity 'Atom ISP' (Image Signal Processor): Data, Enabled, Immutable\n\nRequired ioctls:\n\ttest MC information (see 'Media Driver Info' above): OK\n\ttest VIDIOC_QUERYCAP: OK\n\ttest invalid ioctls: OK\n\nAllow for multiple opens:\n\ttest second /dev/video0 open: OK\n\ttest VIDIOC_QUERYCAP: OK\n\ttest VIDIOC_G/S_PRIORITY: OK\n\ttest for unlimited opens: OK\n\nDebug ioctls:\n\ttest VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)\n\ttest VIDIOC_LOG_STATUS: OK (Not Supported)\n\nInput ioctls:\n\ttest VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDIO: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMINPUT: OK\n\ttest VIDIOC_G/S_AUDIO: OK (Not Supported)\n\tInputs: 2 Audio Inputs: 0 Tuners: 0\n\nOutput ioctls:\n\ttest VIDIOC_G/S_MODULATOR: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDOUT: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDOUT: OK (Not Supported)\n\tOutputs: 0 Audio Outputs: 0 Modulators: 0\n\nInput/Output configuration ioctls:\n\ttest VIDIOC_ENUM/G/S/QUERY_STD: OK (Not Supported)\n\ttest VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)\n\ttest VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)\n\ttest VIDIOC_G/S_EDID: OK (Not Supported)\n\nControl ioctls (Input 0):\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 0 Private Controls: 0\n\nFormat ioctls (Input 0):\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK\n\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS\n\ttest VIDIOC_G/S_PARM: OK\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK\n\ttest VIDIOC_TRY_FMT: OK\n\ttest VIDIOC_S_FMT: OK\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK\n\nCodec ioctls (Input 0):\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls (Input 0):\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK\n\nControl ioctls (Input 1):\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 0 Private Controls: 0\n\nFormat ioctls (Input 1):\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK\n\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS\n\ttest VIDIOC_G/S_PARM: OK\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK\n\ttest VIDIOC_TRY_FMT: OK\n\ttest VIDIOC_S_FMT: OK\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK\n\nCodec ioctls (Input 1):\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls (Input 1):\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK\n\nTest input 0:\n\nStreaming ioctls:\n\ttest read/write: OK (Not Supported)\n\ttest MMAP (no poll, REQBUFS): OK\n\ttest MMAP (select, REQBUFS): OK\n\ttest MMAP (epoll, REQBUFS): OK\n\ttest MMAP (no poll, CREATE_BUFS): OK\n\ttest MMAP (select, CREATE_BUFS): OK\n\ttest MMAP (epoll, CREATE_BUFS): OK\n\ttest USERPTR (no poll): OK (Not Supported)\n\ttest USERPTR (select): OK (Not Supported)\n\ttest DMABUF: Cannot test, specify --expbuf-device\n\nTotal for atomisp device /dev/video0: 83, Succeeded: 83, Failed: 0, Warnings: 2\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 14.157152776999965,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "starting_input": 1,
+      "set_input": {
+        "code": 0,
+        "stdout": "Video input set to 1 (t4ka3 6-0037: Camera, ok)\n",
+        "stderr": ""
+      },
+      "set_fmt": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "set_parm": {
+        "code": 0,
+        "stdout": "Frame rate set to 30.000 fps\n",
+        "stderr": ""
+      },
+      "compliance": {
+        "code": 0,
+        "stdout": "v4l2-compliance 1.32.0, 64 bits, 64-bit time_t\n\nCompliance test for atomisp device /dev/video0:\n\nDriver Info:\n\tDriver name      : atomisp\n\tCard type        : ATOM ISP\n\tBus info         : PCI:0000:00:03.0\n\tDriver version   : 6.14.0\n\tCapabilities     : 0x84200001\n\t\tVideo Capture\n\t\tStreaming\n\t\tExtended Pix Format\n\t\tDevice Capabilities\n\tDevice Caps      : 0x04200001\n\t\tVideo Capture\n\t\tStreaming\n\t\tExtended Pix Format\nMedia Driver Info:\n\tDriver name      : atomisp-isp2\n\tModel            : Intel Atom ISP\n\tSerial           : \n\tBus info         : PCI:0000:00:03.0\n\tMedia version    : 6.14.0\n\tHardware revision: 0x00002010 (8208)\n\tDriver version   : 6.14.0\nInterface Info:\n\tID               : 0x0300001f\n\tType             : V4L Video\nEntity Info:\n\tID               : 0x0000001d (29)\n\tName             : ATOMISP video output\n\tFunction         : V4L2 I/O\n\tPad 0x0100001e   : 0: Sink\n\t  Link 0x02000021: from remote pad 0x100000c of entity 'Atom ISP' (Image Signal Processor): Data, Enabled, Immutable\n\nRequired ioctls:\n\ttest MC information (see 'Media Driver Info' above): OK\n\ttest VIDIOC_QUERYCAP: OK\n\ttest invalid ioctls: OK\n\nAllow for multiple opens:\n\ttest second /dev/video0 open: OK\n\ttest VIDIOC_QUERYCAP: OK\n\ttest VIDIOC_G/S_PRIORITY: OK\n\ttest for unlimited opens: OK\n\nDebug ioctls:\n\ttest VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)\n\ttest VIDIOC_LOG_STATUS: OK (Not Supported)\n\nInput ioctls:\n\ttest VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDIO: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMINPUT: OK\n\ttest VIDIOC_G/S_AUDIO: OK (Not Supported)\n\tInputs: 2 Audio Inputs: 0 Tuners: 0\n\nOutput ioctls:\n\ttest VIDIOC_G/S_MODULATOR: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDOUT: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDOUT: OK (Not Supported)\n\tOutputs: 0 Audio Outputs: 0 Modulators: 0\n\nInput/Output configuration ioctls:\n\ttest VIDIOC_ENUM/G/S/QUERY_STD: OK (Not Supported)\n\ttest VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)\n\ttest VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)\n\ttest VIDIOC_G/S_EDID: OK (Not Supported)\n\nControl ioctls (Input 0):\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 0 Private Controls: 0\n\nFormat ioctls (Input 0):\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK\n\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS\n\ttest VIDIOC_G/S_PARM: OK\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK\n\ttest VIDIOC_TRY_FMT: OK\n\ttest VIDIOC_S_FMT: OK\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK\n\nCodec ioctls (Input 0):\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls (Input 0):\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK\n\nControl ioctls (Input 1):\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK (Not Supported)\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 0 Private Controls: 0\n\nFormat ioctls (Input 1):\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK\n\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS\n\ttest VIDIOC_G/S_PARM: OK\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK\n\ttest VIDIOC_TRY_FMT: OK\n\ttest VIDIOC_S_FMT: OK\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK\n\nCodec ioctls (Input 1):\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls (Input 1):\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK\n\nTest input 1:\n\nStreaming ioctls:\n\ttest read/write: OK (Not Supported)\n\ttest MMAP (no poll, REQBUFS): OK\n\ttest MMAP (select, REQBUFS): OK\n\ttest MMAP (epoll, REQBUFS): OK\n\ttest MMAP (no poll, CREATE_BUFS): OK\n\ttest MMAP (select, CREATE_BUFS): OK\n\ttest MMAP (epoll, CREATE_BUFS): OK\n\ttest USERPTR (no poll): OK (Not Supported)\n\ttest USERPTR (select): OK (Not Supported)\n\ttest DMABUF: Cannot test, specify --expbuf-device\n\nTotal for atomisp device /dev/video0: 83, Succeeded: 83, Failed: 0, Warnings: 2\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 17.161747332000004,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    }
+  ],
+  "scope": "unmodified v4l2-compliance --streaming60, starting inputs0 and1; BOTH sensors and video sampled before entire tool and restored per case; no all-format/interval/DMABUF/color/3A claim",
+  "new_dmesg": ""
+}

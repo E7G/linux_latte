@@ -22,8 +22,9 @@ static int call(int fd, unsigned long op, void *arg)
 static int empty(int fd)
 {
     struct v4l2_event ev = {0};
+    /* Linux 6.14 v4l2_event_dequeue(nonblocking) uses ENOENT, not EAGAIN. */
     errno = 0;
-    if (call(fd, VIDIOC_DQEVENT, &ev) != -1 || errno != EAGAIN)
+    if (call(fd, VIDIOC_DQEVENT, &ev) != -1 || errno != ENOENT)
         return -1;
     struct pollfd p = {.fd=fd, .events=POLLPRI};
     if (poll(&p, 1, 0) != 0)

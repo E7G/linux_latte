@@ -1,0 +1,227 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "original": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "shape": {
+        "width": 2624,
+        "height": 1956,
+        "code": "0x3007",
+        "crop": [
+          0,
+          0,
+          2624,
+          1956
+        ]
+      },
+      "controls": {
+        "10356993": 40,
+        "9963790": 1650,
+        "9963791": 1633,
+        "9963793": 1976,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 8,
+        "10422531": 0,
+        "10422533": 1024
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "shape": {
+        "width": 3280,
+        "height": 2464,
+        "code": "0x300a",
+        "crop": [
+          0,
+          0,
+          3280,
+          2464
+        ]
+      },
+      "controls": {
+        "10356993": 32,
+        "9963790": 1585,
+        "9963791": 1570,
+        "9963793": 2486,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 128,
+        "10422531": 0
+      }
+    }
+  ],
+  "initial_video": {
+    "code": 0,
+    "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "probe": {
+        "code": 1,
+        "stdout": "EVENT fd=4 sequence=0 exposure=1976 timestamp=396.852886349\n",
+        "stderr": "FAIL line 85: event(a,original.value,&ea,true)==0 && event(b,original.value,&eb,true)==0 (errno=2)\n"
+      },
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "probe": {
+        "code": 1,
+        "stdout": "EVENT fd=4 sequence=0 exposure=2486 timestamp=397.194123268\n",
+        "stderr": "FAIL line 85: event(a,original.value,&ea,true)==0 && event(b,original.value,&eb,true)==0 (errno=2)\n"
+      },
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    }
+  ],
+  "scope": "Real per-fd sensor exposure events, initial/change/poll/time/sequence/unsubscribe; BOTH sensors/video and all mutable scalar values restored. No stream/AE/image quality claim.",
+  "binary_sha256": "d5eadee2a5e118953f96baece4bff28533c20f4e387be71b1920bd1064d25b5a",
+  "new_dmesg": ""
+}

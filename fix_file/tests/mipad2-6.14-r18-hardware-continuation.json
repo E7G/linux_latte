@@ -1,0 +1,127 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "started_at": 1791818074.302367,
+  "original_failed_batch_retained": true,
+  "recovery_matched": true,
+  "scope": "Corrected loop variable + captured restore dimensions; no kernel/source rebuild/reboot/retry from observation timeout",
+  "tests": [
+    {
+      "script": "run_r18_powered_format_v2_remote.py",
+      "started_at": 1791818076.125714,
+      "exit_code": 0,
+      "finished_at": 1791818078.0131946,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_events_remote.py",
+      "started_at": 1791818079.6179793,
+      "exit_code": 1,
+      "finished_at": 1791818081.4821467,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_geometry_remote.py",
+      "started_at": 1791818083.1432831,
+      "exit_code": 0,
+      "finished_at": 1791818141.055426,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_both_crop_edges_remote.py",
+      "started_at": 1791818142.7687676,
+      "exit_code": 0,
+      "finished_at": 1791818145.650949,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_sensor_compliance_remote.py",
+      "started_at": 1791818147.2716794,
+      "exit_code": 0,
+      "finished_at": 1791818149.2117217,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_whole_compliance_remote.py",
+      "started_at": 1791818150.90248,
+      "exit_code": 0,
+      "finished_at": 1791818184.277764,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_strict_queues_remote.py",
+      "started_at": 1791818185.901381,
+      "exit_code": 0,
+      "finished_at": 1791818255.1703277,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_restart_enum_remote.py",
+      "started_at": 1791818256.8462973,
+      "exit_code": 0,
+      "finished_at": 1791818311.010455,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_createbufs_contract_remote.py",
+      "started_at": 1791818312.7440124,
+      "exit_code": 0,
+      "finished_at": 1791818314.2309012,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_createbufs_stream_remote.py",
+      "started_at": 1791818315.916782,
+      "exit_code": 0,
+      "finished_at": 1791818370.078132,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_ov5693_warm_modes_remote.py",
+      "started_at": 1791818371.770513,
+      "exit_code": 0,
+      "finished_at": 1791818378.020252,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_scaling_matrix_v2_remote.py",
+      "started_at": 1791818379.7455227,
+      "exit_code": 0,
+      "finished_at": 1791818420.8770268,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_even_size_v2_remote.py",
+      "started_at": 1791818422.5380526,
+      "exit_code": 0,
+      "finished_at": 1791818477.3618102,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_metadata_modes_long_remote.py",
+      "started_at": 1791818479.1759012,
+      "exit_code": 0,
+      "finished_at": 1791818536.234518,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "run_r18_default_bounds_remote.py",
+      "started_at": 1791818537.9171402,
+      "exit_code": 0,
+      "finished_at": 1791818829.9750056,
+      "report_fetch_exit": 0
+    },
+    {
+      "script": "r18_resume_residency_normal_remote.py",
+      "started_at": 1791818831.747968,
+      "exit_code": 0,
+      "finished_at": 1791818846.3761268,
+      "report_fetch_exit": 0
+    }
+  ],
+  "acoustic_test_performed": false,
+  "finished_at": 1791818847.3846803,
+  "all_continued_exits_zero": false,
+  "final_s0i3_entered": true,
+  "final_s0i3_delta_us": 9409088
+}
