@@ -97,3 +97,11 @@ Primary references:
 - https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/buffer.html
 - https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/drivers/external_drivers/camera/drivers/media/pci/atomisp2/atomisp_driver/atomisp_ioctl.c
 - https://raw.githubusercontent.com/gjasny/v4l-utils/v4l-utils-1.32.0/utils/v4l2-compliance/v4l2-test-buffers.cpp
+
+## Follow-up: front timing isolation
+
+Getter/live-register tracing now proves actual blocked input0/OV5693, despite
+the tool's last stdout input1 heading. At1280x720, VBLANK4/VTS740 produces
+zero frames with2 or8 buffers; VBLANK16/64 or explicit30fps restores48-frame
+checks in both pools. No kernel timing patch yet; no physical minimum or
+global FPS ceiling inferred. See [scoped evidence](mipad2-6.14-r15-front-timing.md).
