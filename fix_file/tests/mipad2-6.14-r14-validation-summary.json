@@ -1,0 +1,3812 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r14",
+  "source_commit": "76483e24741279e881b1970b0bbd17707e2ad35f",
+  "boot_id": "f36debd9-068e-47a3-b257-de80142a1432",
+  "kernel_sha256": "e2ad1ea45fdc2ddbf0dcb8c38fe2f117e7e574f9042ac9c5451457a9c6ee94c7",
+  "serial_initrd_sha256": "6ae7bdbd42dfe189d728258783f0be20f42829b57ec2b2de5539c54ce8f9c3d6",
+  "bundle_sha256": "6f3c1ecef5b49498154b9b734745a9b19fd2bb8f360ad5fcee512e30fc79c46d",
+  "full_build_passed": true,
+  "module_signatures_verified": 34,
+  "r13_artifacts_unchanged": true,
+  "original_gate_frames": 3876,
+  "original_gates_passed": true,
+  "warm_modes": [
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "reported_sensor": {
+        "width": 1296,
+        "height": 976,
+        "code": "0x3007",
+        "crop": [
+          16,
+          2,
+          2592,
+          1952
+        ]
+      },
+      "live_registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 1984
+      },
+      "frames": 48,
+      "hardware_shape_matches": true
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "reported_sensor": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "live_registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 1984
+      },
+      "frames": 48,
+      "hardware_shape_matches": true
+    }
+  ],
+  "matrices_30fps": {
+    "scaling-matrix-v2": {
+      "passed": true,
+      "cases": 14,
+      "frames": 672,
+      "rows": [
+        {
+          "input": 0,
+          "requested": [
+            1,
+            1
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            4,
+            4
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.98443535219594,
+            "after-observer-close": 29.98893135806182,
+            "ordinary-restart": 29.98852257454239,
+            "remaining-fd-takeover": 29.982964224868144
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65515,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 20,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              958,
+              72,
+              40
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            16384,
+            16384
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1440
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.965730101395415,
+            "after-observer-close": 29.98149324189849,
+            "ordinary-restart": 30.01388824465293,
+            "remaining-fd-takeover": 29.976999465866054
+          },
+          "error": "",
+          "vblank_before_capture": 528,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64079,
+            "default": 528,
+            "value": 528
+          },
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1456,
+            "code": "0x3007",
+            "crop": [
+              344,
+              250,
+              1936,
+              1456
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1920,
+            1440
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1440
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.9905666035909,
+            "after-observer-close": 29.972588705232912,
+            "ordinary-restart": 29.97218036712724,
+            "remaining-fd-takeover": 29.977898113299517
+          },
+          "error": "",
+          "vblank_before_capture": 528,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64079,
+            "default": 528,
+            "value": 528
+          },
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1456,
+            "code": "0x3007",
+            "crop": [
+              344,
+              250,
+              1936,
+              1456
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1920,
+            1200
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1200
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.96801595387846,
+            "after-observer-close": 29.9655668395616,
+            "ordinary-restart": 29.999809092123822,
+            "remaining-fd-takeover": 29.975284015812775
+          },
+          "error": "",
+          "vblank_before_capture": 768,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64319,
+            "default": 768,
+            "value": 768
+          },
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1216,
+            "code": "0x3007",
+            "crop": [
+              344,
+              370,
+              1936,
+              1216
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1280,
+            960
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1280,
+            960
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.01421582404101,
+            "after-observer-close": 29.985170969992655,
+            "ordinary-restart": 29.978470007910673,
+            "remaining-fd-takeover": 29.999890909487256
+          },
+          "error": "",
+          "vblank_before_capture": 16,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64559,
+            "default": 16,
+            "value": 16
+          },
+          "reported_sensor_before_capture": {
+            "width": 1296,
+            "height": 976,
+            "code": "0x3007",
+            "crop": [
+              16,
+              2,
+              2592,
+              1952
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1280,
+            720
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.990811905811018,
+            "after-observer-close": 29.980512666768703,
+            "ordinary-restart": 29.98149324189849,
+            "remaining-fd-takeover": 29.98729629084762
+          },
+          "error": "",
+          "vblank_before_capture": 256,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64799,
+            "default": 256,
+            "value": 256
+          },
+          "reported_sensor_before_capture": {
+            "width": 1296,
+            "height": 736,
+            "code": "0x3007",
+            "crop": [
+              16,
+              242,
+              2592,
+              1472
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            720,
+            1280
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            720,
+            1280
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.96785266713581,
+            "after-observer-close": 29.997027567265917,
+            "ordinary-restart": 29.973487088240486,
+            "remaining-fd-takeover": 30.00504630323785
+          },
+          "error": "",
+          "vblank_before_capture": 688,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64239,
+            "default": 688,
+            "value": 688
+          },
+          "reported_sensor_before_capture": {
+            "width": 736,
+            "height": 1296,
+            "code": "0x3007",
+            "crop": [
+              944,
+              330,
+              736,
+              1296
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            1,
+            1
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            4,
+            4
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.032161715002232,
+            "after-observer-close": 29.997272975181037,
+            "ordinary-restart": 29.989830721034483,
+            "remaining-fd-takeover": 30.00267296541158
+          },
+          "error": "",
+          "vblank_before_capture": 2472,
+          "reported_sensor_before_capture": {
+            "width": 20,
+            "height": 20,
+            "code": "0x300a",
+            "crop": [
+              1620,
+              1212,
+              40,
+              40
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            16384,
+            16384
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1440
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.001036399436018,
+            "after-observer-close": 29.985007496251917,
+            "ordinary-restart": 30.002263807181144,
+            "remaining-fd-takeover": 29.96132265621157
+          },
+          "error": "",
+          "vblank_before_capture": 1036,
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1456,
+            "code": "0x300a",
+            "crop": [
+              672,
+              504,
+              1936,
+              1456
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            1920,
+            1440
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1440
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.00111822349398,
+            "after-observer-close": 30.00177283203519,
+            "ordinary-restart": 30.044383748718804,
+            "remaining-fd-takeover": 29.96964891918715
+          },
+          "error": "",
+          "vblank_before_capture": 1036,
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1456,
+            "code": "0x300a",
+            "crop": [
+              672,
+              504,
+              1936,
+              1456
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            1920,
+            1200
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1920,
+            1200
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.968750766241122,
+            "after-observer-close": 30.00897541173211,
+            "ordinary-restart": 29.997927415928604,
+            "remaining-fd-takeover": 30.00062728585035
+          },
+          "error": "",
+          "vblank_before_capture": 1276,
+          "reported_sensor_before_capture": {
+            "width": 1936,
+            "height": 1216,
+            "code": "0x300a",
+            "crop": [
+              672,
+              624,
+              1936,
+              1216
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            1280,
+            960
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1280,
+            960
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.983863229973714,
+            "after-observer-close": 30.005373689646806,
+            "ordinary-restart": 29.996945765529148,
+            "remaining-fd-takeover": 29.993592278010293
+          },
+          "error": "",
+          "vblank_before_capture": 1516,
+          "reported_sensor_before_capture": {
+            "width": 1296,
+            "height": 976,
+            "code": "0x300a",
+            "crop": [
+              344,
+              256,
+              2592,
+              1952
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1280,
+            720
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.998909130579204,
+            "after-observer-close": 29.983618041409816,
+            "ordinary-restart": 29.998009223028696,
+            "remaining-fd-takeover": 29.998009223019395
+          },
+          "error": "",
+          "vblank_before_capture": 1756,
+          "reported_sensor_before_capture": {
+            "width": 1296,
+            "height": 736,
+            "code": "0x300a",
+            "crop": [
+              344,
+              496,
+              2592,
+              1472
+            ]
+          }
+        },
+        {
+          "input": 1,
+          "requested": [
+            720,
+            1280
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            720,
+            1280
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.963607836298998,
+            "after-observer-close": 29.989830721034483,
+            "ordinary-restart": 29.998254647006142,
+            "remaining-fd-takeover": 30.00177283202589
+          },
+          "error": "",
+          "vblank_before_capture": 1196,
+          "reported_sensor_before_capture": {
+            "width": 736,
+            "height": 1296,
+            "code": "0x300a",
+            "crop": [
+              1272,
+              584,
+              736,
+              1296
+            ]
+          }
+        }
+      ]
+    },
+    "even-size-matrix-v2": {
+      "passed": true,
+      "cases": 21,
+      "frames": 1008,
+      "rows": [
+        {
+          "input": 0,
+          "requested": [
+            4,
+            4
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            4,
+            4
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.99310158664257,
+            "after-observer-close": 30.00889354481903,
+            "ordinary-restart": 29.996127772596484,
+            "remaining-fd-takeover": 29.994246558164814
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65515,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 20,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              958,
+              72,
+              40
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            8,
+            8
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            8,
+            8
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.98647882409019,
+            "after-observer-close": 29.993101586633273,
+            "ordinary-restart": 30.001200048007572,
+            "remaining-fd-takeover": 29.992202027473326
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65511,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 24,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              954,
+              72,
+              48
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            16,
+            16
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            16,
+            16
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.003245805683104,
+            "after-observer-close": 29.998745507008618,
+            "ordinary-restart": 29.991384293241932,
+            "remaining-fd-takeover": 29.97822490754302
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65503,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 32,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              946,
+              72,
+              64
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            4,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            4,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.981166376394917,
+            "after-observer-close": 29.99768199729614,
+            "ordinary-restart": 30.004227868470384,
+            "remaining-fd-takeover": 29.989667196481694
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              930,
+              72,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            8,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            8,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.0052099955493,
+            "after-observer-close": 29.97683608121207,
+            "ordinary-restart": 29.959608999865722,
+            "remaining-fd-takeover": 30.016345264371118
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              930,
+              72,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            16,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            16,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.959608999865722,
+            "after-observer-close": 29.975774124371537,
+            "ordinary-restart": 29.984517085724292,
+            "remaining-fd-takeover": 29.960261798212443
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              930,
+              72,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            18,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            18,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.962710045407754,
+            "after-observer-close": 30.01429772000531,
+            "ordinary-restart": 29.949657348689456,
+            "remaining-fd-takeover": 29.96344459758971
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              930,
+              72,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            20,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            20,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.968587471500136,
+            "after-observer-close": 30.00922101517937,
+            "ordinary-restart": 29.99097544284758,
+            "remaining-fd-takeover": 30.057272767012442
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 36,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1276,
+              930,
+              72,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            22,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            22,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.995064448488744,
+            "after-observer-close": 30.007338158149043,
+            "ordinary-restart": 30.027734707697494,
+            "remaining-fd-takeover": 29.982882499814608
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 40,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1272,
+              930,
+              80,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            24,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            24,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.010203469181054,
+            "after-observer-close": 30.01626335724205,
+            "ordinary-restart": 30.02339095094614,
+            "remaining-fd-takeover": 30.01773775412857
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 40,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1272,
+              930,
+              80,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            26,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            26,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.991547836511625,
+            "after-observer-close": 30.042906733164468,
+            "ordinary-restart": 30.02584952681919,
+            "remaining-fd-takeover": 30.015362408212205
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 44,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1268,
+              930,
+              88,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            30,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            30,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.986969298790704,
+            "after-observer-close": 30.013478780473076,
+            "ordinary-restart": 30.03142378980572,
+            "remaining-fd-takeover": 30.0319157359074
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 48,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              1264,
+              930,
+              96,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            32,
+            4
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            32,
+            4
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.030603915441336,
+            "after-observer-close": 30.038476557695184,
+            "ordinary-restart": 30.02929220958253,
+            "remaining-fd-takeover": 30.023063171251284
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65515,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 48,
+            "height": 20,
+            "code": "0x3007",
+            "crop": [
+              1264,
+              958,
+              96,
+              40
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            32,
+            8
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            32,
+            8
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.01790158494592,
+            "after-observer-close": 30.01429772000531,
+            "ordinary-restart": 30.011759152902062,
+            "remaining-fd-takeover": 30.02363679041419
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65511,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 48,
+            "height": 24,
+            "code": "0x3007",
+            "crop": [
+              1264,
+              954,
+              96,
+              48
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            32,
+            16
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            32,
+            16
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.01454341057974,
+            "after-observer-close": 30.009630363201353,
+            "ordinary-restart": 30.01110410851941,
+            "remaining-fd-takeover": 30.01986769425159
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65503,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 48,
+            "height": 32,
+            "code": "0x3007",
+            "crop": [
+              1264,
+              946,
+              96,
+              64
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1282,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1282,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.050129078966805,
+            "after-observer-close": 30.01044909273047,
+            "ordinary-restart": 30.01831116981327,
+            "remaining-fd-takeover": 30.016263357232738
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 1300,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              12,
+              930,
+              2600,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1294,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1294,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.984271886475998,
+            "after-observer-close": 29.9663831665211,
+            "ordinary-restart": 30.00005454555296,
+            "remaining-fd-takeover": 29.98337285686516
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 1312,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              0,
+              930,
+              2624,
+              96
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1298,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1298,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.96083302010253,
+            "after-observer-close": 30.042988785764937,
+            "ordinary-restart": 29.97087375996296,
+            "remaining-fd-takeover": 30.00627403911942
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 1316,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              654,
+              954,
+              1316,
+              48
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1302,
+            32
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1302,
+            32
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.968179242400527,
+            "after-observer-close": 30.024538236252038,
+            "ordinary-restart": 29.970465468574215,
+            "remaining-fd-takeover": 30.008320488869106
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 65487,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 1320,
+            "height": 48,
+            "code": "0x3007",
+            "crop": [
+              652,
+              954,
+              1320,
+              48
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1282,
+            970
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1282,
+            970
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 30.023882633908272,
+            "after-observer-close": 29.979940694229953,
+            "ordinary-restart": 29.99064837055794,
+            "remaining-fd-takeover": 30.006928872667455
+          },
+          "error": "",
+          "vblank_before_capture": 14,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64557,
+            "default": 14,
+            "value": 14
+          },
+          "reported_sensor_before_capture": {
+            "width": 1300,
+            "height": 978,
+            "code": "0x3007",
+            "crop": [
+              12,
+              0,
+              2600,
+              1956
+            ]
+          }
+        },
+        {
+          "input": 0,
+          "requested": [
+            1282,
+            974
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "selected": [
+            1282,
+            974
+          ],
+          "live_enum_passes": 4,
+          "live_crop_preservation_passes": 4,
+          "measured_fps": {
+            "before-observer-close": 29.987541539563324,
+            "after-observer-close": 30.02150631543417,
+            "ordinary-restart": 29.983618041409816,
+            "remaining-fd-takeover": 29.986887551902353
+          },
+          "error": "",
+          "vblank_before_capture": 4,
+          "vblank_range_before_capture": {
+            "min": 4,
+            "max": 64545,
+            "default": 4,
+            "value": 4
+          },
+          "reported_sensor_before_capture": {
+            "width": 1300,
+            "height": 990,
+            "code": "0x3007",
+            "crop": [
+              662,
+              482,
+              1300,
+              990
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "default_interval_matrix_passed": false,
+  "default_interval_rows": [
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "reported_default_period": [
+        63,
+        156250
+      ],
+      "reported_default_fps": 2480.15873015873
+    },
+    {
+      "input": 0,
+      "requested": [
+        8,
+        8
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        8,
+        8
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65511,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 24,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          954,
+          72,
+          48
+        ]
+      },
+      "reported_default_period": [
+        147,
+        312500
+      ],
+      "reported_default_fps": 2125.8503401360545
+    },
+    {
+      "input": 0,
+      "requested": [
+        16,
+        16
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        16,
+        16
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65503,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 32,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          946,
+          72,
+          64
+        ]
+      },
+      "reported_default_period": [
+        189,
+        312500
+      ],
+      "reported_default_fps": 1653.4391534391534
+    },
+    {
+      "input": 0,
+      "requested": [
+        22,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        22,
+        32
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65487,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 40,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          1272,
+          930,
+          80,
+          96
+        ]
+      },
+      "reported_default_period": [
+        273,
+        312500
+      ],
+      "reported_default_fps": 1144.6886446886447
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "reported_default_period": [
+        21,
+        2500
+      ],
+      "reported_default_fps": 119.04761904761905
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        960
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        960
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.03580316989184,
+        "after-observer-close": 59.93439907591768,
+        "ordinary-restart": 60.099437250713855,
+        "remaining-fd-takeover": 60.07613284468827
+      },
+      "error": "",
+      "vblank_before_capture": 16,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64559,
+        "default": 16,
+        "value": 16
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 976,
+        "code": "0x3007",
+        "crop": [
+          16,
+          2,
+          2592,
+          1952
+        ]
+      },
+      "reported_default_period": [
+        1302,
+        78125
+      ],
+      "reported_default_fps": 60.00384024577573
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 59.90176111174494,
+        "after-observer-close": 59.964457430682074,
+        "ordinary-restart": 60.08171112713027,
+        "remaining-fd-takeover": 59.92754215355529
+      },
+      "error": "",
+      "vblank_before_capture": 256,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 256
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "reported_default_period": [
+        1302,
+        78125
+      ],
+      "reported_default_fps": 60.00384024577573
+    }
+  ],
+  "default_positive_frames": 96,
+  "post_negative_recovery_frames": 960,
+  "post_negative_recovery_passed": true,
+  "final_post_timing_recovery_frames": 960,
+  "final_post_timing_recovery_passed": true,
+  "requested_rate_diagnostic_rows": [
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.052518657184905,
+        "after-observer-close": 60.05022382356381,
+        "ordinary-restart": 59.911548767981316,
+        "remaining-fd-takeover": 59.94550408716256
+      },
+      "error": "",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1302,
+        78125
+      ],
+      "returned_fps": 60.00384024577573,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 120.48588672113847,
+        "after-observer-close": 119.77482333192215,
+        "ordinary-restart": 120.26589696481136,
+        "remaining-fd-takeover": 119.6692776329253
+      },
+      "error": "",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        651,
+        78125
+      ],
+      "returned_fps": 120.00768049155145,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 59.90632828667282,
+        "after-observer-close": 60.00207279889064,
+        "ordinary-restart": 59.8636197898888,
+        "remaining-fd-takeover": 60.02040693839934
+      },
+      "error": "",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1302,
+        78125
+      ],
+      "returned_fps": 60.00384024577573,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        21,
+        2500
+      ],
+      "returned_fps": 119.04761904761905,
+      "measured_rate_matches_returned_within_1pct": false
+    },
+    {
+      "input": 0,
+      "requested": [
+        1298,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1298,
+        32
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.07121169089928,
+        "after-observer-close": 60.01844203041459,
+        "ordinary-restart": 59.841800041353764,
+        "remaining-fd-takeover": 60.04006309663881
+      },
+      "error": "",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65487,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 1316,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          654,
+          954,
+          1316,
+          48
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1302,
+        78125
+      ],
+      "returned_fps": 60.00384024577573,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        1298,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1298,
+        32
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 120.30009405289879,
+        "after-observer-close": 120.04277888135141,
+        "ordinary-restart": 120.03622911644194,
+        "remaining-fd-takeover": 120.05457025918012
+      },
+      "error": "",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65487,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 1316,
+        "height": 48,
+        "code": "0x3007",
+        "crop": [
+          654,
+          954,
+          1316,
+          48
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        651,
+        78125
+      ],
+      "returned_fps": 120.00768049155145,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.014512600300435,
+        "after-observer-close": 60.00894678846227,
+        "ordinary-restart": 59.90502330857125,
+        "remaining-fd-takeover": 60.10896115318362
+      },
+      "error": "",
+      "vblank_before_capture": 256,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 256
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1302,
+        78125
+      ],
+      "returned_fps": 60.00384024577573,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 256,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 256
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        777,
+        62500
+      ],
+      "returned_fps": 80.43758043758044,
+      "measured_rate_matches_returned_within_1pct": false
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 528,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 528
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1533,
+        62500
+      ],
+      "returned_fps": 40.769732550554465,
+      "measured_rate_matches_returned_within_1pct": false
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 528,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 528
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        1533,
+        62500
+      ],
+      "returned_fps": 40.769732550554465,
+      "measured_rate_matches_returned_within_1pct": false
+    },
+    {
+      "input": 1,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.070555598055215,
+        "after-observer-close": 59.96903417150433,
+        "ordinary-restart": 60.048584764080054,
+        "remaining-fd-takeover": 60.0112384683584
+      },
+      "error": "",
+      "vblank_before_capture": 2472,
+      "reported_sensor_before_capture": {
+        "width": 20,
+        "height": 20,
+        "code": "0x300a",
+        "crop": [
+          1620,
+          1212,
+          40,
+          40
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1,
+        60
+      ],
+      "returned_fps": 60.0,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 120.28036259061855,
+        "after-observer-close": 120.26984179051473,
+        "ordinary-restart": 120.13717481072108,
+        "remaining-fd-takeover": 120.29877842053814
+      },
+      "error": "",
+      "vblank_before_capture": 2472,
+      "reported_sensor_before_capture": {
+        "width": 20,
+        "height": 20,
+        "code": "0x300a",
+        "crop": [
+          1620,
+          1212,
+          40,
+          40
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        1,
+        120
+      ],
+      "returned_fps": 120.0,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 60.05219081310399,
+        "after-observer-close": 59.97164976561709,
+        "ordinary-restart": 59.93048064246179,
+        "remaining-fd-takeover": 60.09221423425216
+      },
+      "error": "",
+      "vblank_before_capture": 1996,
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x300a",
+        "crop": [
+          984,
+          736,
+          1312,
+          992
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1,
+        60
+      ],
+      "returned_fps": 60.0,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 74.96609487979518,
+        "after-observer-close": 75.14020479121828,
+        "ordinary-restart": 75.11249803679132,
+        "remaining-fd-takeover": 75.22190461871645
+      },
+      "error": "",
+      "vblank_before_capture": 1996,
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x300a",
+        "crop": [
+          984,
+          736,
+          1312,
+          992
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        83,
+        6230
+      ],
+      "returned_fps": 75.06024096385542,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        1298,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1298,
+        32
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 59.91220139212067,
+        "after-observer-close": 60.097467164961536,
+        "ordinary-restart": 59.96184246388876,
+        "remaining-fd-takeover": 59.87404677799804
+      },
+      "error": "",
+      "vblank_before_capture": 2444,
+      "reported_sensor_before_capture": {
+        "width": 1314,
+        "height": 48,
+        "code": "0x300a",
+        "crop": [
+          326,
+          1184,
+          2628,
+          96
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        1,
+        60
+      ],
+      "returned_fps": 60.0,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        1298,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1298,
+        32
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 120.27115679002446,
+        "after-observer-close": 119.78134459995756,
+        "ordinary-restart": 119.65626019791479,
+        "remaining-fd-takeover": 120.09126936489399
+      },
+      "error": "",
+      "vblank_before_capture": 2444,
+      "reported_sensor_before_capture": {
+        "width": 1314,
+        "height": 48,
+        "code": "0x300a",
+        "crop": [
+          326,
+          1184,
+          2628,
+          96
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        1,
+        120
+      ],
+      "returned_fps": 120.0,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 50.676531698158236,
+        "after-observer-close": 50.67536440195571,
+        "ordinary-restart": 50.65296273785932,
+        "remaining-fd-takeover": 50.616835159353364
+      },
+      "error": "",
+      "vblank_before_capture": 1756,
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x300a",
+        "crop": [
+          344,
+          496,
+          2592,
+          1472
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        123,
+        6230
+      ],
+      "returned_fps": 50.65040650406504,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 50.661127716729524,
+        "after-observer-close": 50.672796539505754,
+        "ordinary-restart": 50.66999553183183,
+        "remaining-fd-takeover": 50.6298817562119
+      },
+      "error": "",
+      "vblank_before_capture": 1756,
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x300a",
+        "crop": [
+          344,
+          496,
+          2592,
+          1472
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        123,
+        6230
+      ],
+      "returned_fps": 50.65040650406504,
+      "measured_rate_matches_returned_within_1pct": true
+    },
+    {
+      "input": 1,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 32.197069481268166,
+        "after-observer-close": 32.203102036991005,
+        "ordinary-restart": 32.16665838130936,
+        "remaining-fd-takeover": 31.30237812704793
+      },
+      "error": "",
+      "vblank_before_capture": 1036,
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x300a",
+        "crop": [
+          672,
+          504,
+          1936,
+          1456
+        ]
+      },
+      "requested_fps": 60,
+      "returned_period": [
+        73,
+        3738
+      ],
+      "returned_fps": 51.205479452054796,
+      "measured_rate_matches_returned_within_1pct": false
+    },
+    {
+      "input": 1,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 31.308703819667528,
+        "after-observer-close": 31.299438886411416,
+        "ordinary-restart": 31.323860238638808,
+        "remaining-fd-takeover": 32.183786978433425
+      },
+      "error": "",
+      "vblank_before_capture": 1036,
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x300a",
+        "crop": [
+          672,
+          504,
+          1936,
+          1456
+        ]
+      },
+      "requested_fps": 120,
+      "returned_period": [
+        73,
+        3738
+      ],
+      "returned_fps": 51.205479452054796,
+      "measured_rate_matches_returned_within_1pct": false
+    }
+  ],
+  "rate_diagnostic_is_not_blanket_support_claim": true,
+  "rate_diagnostic_exit_code": 1,
+  "rate_diagnostic_1pct_gate_failed": true,
+  "vblank_diagnostic_rows": [
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 4,
+      "reported_period": [
+        63,
+        156250
+      ],
+      "reported_fps": 2480.15873015873
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 8,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 8
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 8,
+      "reported_period": [
+        147,
+        312500
+      ],
+      "reported_fps": 2125.8503401360545
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 665.2152878532826,
+        "after-observer-close": 641.6613194877776,
+        "ordinary-restart": 627.7822166383863,
+        "remaining-fd-takeover": 637.2009500018772
+      },
+      "error": "",
+      "vblank_before_capture": 12,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 12
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 12,
+      "reported_period": [
+        42,
+        78125
+      ],
+      "reported_fps": 1860.1190476190477
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 643.5382905308603,
+        "after-observer-close": 630.1919220879919,
+        "ordinary-restart": 633.0206594879118,
+        "remaining-fd-takeover": 650.3872760537322
+      },
+      "error": "",
+      "vblank_before_capture": 16,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 16
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 16,
+      "reported_period": [
+        189,
+        312500
+      ],
+      "reported_fps": 1653.4391534391534
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 644.9343339620758,
+        "after-observer-close": 641.1750990864502,
+        "ordinary-restart": 630.5170239573491,
+        "remaining-fd-takeover": 650.4257332053612
+      },
+      "error": "",
+      "vblank_before_capture": 32,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 32
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 32,
+      "reported_period": [
+        273,
+        312500
+      ],
+      "reported_fps": 1144.6886446886447
+    },
+    {
+      "input": 0,
+      "requested": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        4,
+        4
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 639.2747137756141,
+        "after-observer-close": 630.1919220879919,
+        "ordinary-restart": 636.205899363695,
+        "remaining-fd-takeover": 635.2873231366221
+      },
+      "error": "",
+      "vblank_before_capture": 64,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65515,
+        "default": 4,
+        "value": 64
+      },
+      "reported_sensor_before_capture": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "requested_vblank": 64,
+      "reported_period": [
+        441,
+        312500
+      ],
+      "reported_fps": 708.6167800453514
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 4,
+      "reported_period": [
+        21,
+        2500
+      ],
+      "reported_fps": 119.04761904761905
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 8,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 8
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 8,
+      "reported_period": [
+        1323,
+        156250
+      ],
+      "reported_fps": 118.10279667422525
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 117.26953870429705,
+        "after-observer-close": 117.06237296069463,
+        "ordinary-restart": 117.2245489517543,
+        "remaining-fd-takeover": 117.2045645849414
+      },
+      "error": "",
+      "vblank_before_capture": 12,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 12
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 12,
+      "reported_period": [
+        2667,
+        312500
+      ],
+      "reported_fps": 117.17285339332584
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 116.06068918958988,
+        "after-observer-close": 116.34179102881458,
+        "ordinary-restart": 116.14892403877529,
+        "remaining-fd-takeover": 116.92674008266168
+      },
+      "error": "",
+      "vblank_before_capture": 16,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 16
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 16,
+      "reported_period": [
+        672,
+        78125
+      ],
+      "reported_fps": 116.25744047619048
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 112.93866403814606,
+        "after-observer-close": 112.86450103609543,
+        "ordinary-restart": 112.80662892766208,
+        "remaining-fd-takeover": 112.81241346780831
+      },
+      "error": "",
+      "vblank_before_capture": 32,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 32
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 32,
+      "reported_period": [
+        693,
+        78125
+      ],
+      "reported_fps": 112.73448773448773
+    },
+    {
+      "input": 0,
+      "requested": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        640,
+        480
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 106.31922831567321,
+        "after-observer-close": 106.29354411656351,
+        "ordinary-restart": 106.24016071243454,
+        "remaining-fd-takeover": 106.55817107436252
+      },
+      "error": "",
+      "vblank_before_capture": 64,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 65039,
+        "default": 4,
+        "value": 64
+      },
+      "reported_sensor_before_capture": {
+        "width": 656,
+        "height": 496,
+        "code": "0x3007",
+        "crop": [
+          656,
+          482,
+          1312,
+          992
+        ]
+      },
+      "requested_vblank": 64,
+      "reported_period": [
+        147,
+        15625
+      ],
+      "reported_fps": 106.29251700680273
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 4,
+      "reported_period": [
+        777,
+        62500
+      ],
+      "reported_fps": 80.43758043758044
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 8,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 8
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 8,
+      "reported_period": [
+        1953,
+        156250
+      ],
+      "reported_fps": 80.00512032770098
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 12,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 12
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 12,
+      "reported_period": [
+        3927,
+        312500
+      ],
+      "reported_fps": 79.5772854596384
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 79.24786571086221,
+        "after-observer-close": 79.21704750867448,
+        "ordinary-restart": 79.09515146718488,
+        "remaining-fd-takeover": 79.11221708385038
+      },
+      "error": "",
+      "vblank_before_capture": 16,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 16
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 16,
+      "reported_period": [
+        987,
+        78125
+      ],
+      "reported_fps": 79.15400202634245
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 77.52812156403,
+        "after-observer-close": 77.50790932988696,
+        "ordinary-restart": 77.52976085592192,
+        "remaining-fd-takeover": 77.39883620290573
+      },
+      "error": "",
+      "vblank_before_capture": 32,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 32
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 32,
+      "reported_period": [
+        1008,
+        78125
+      ],
+      "reported_fps": 77.50496031746032
+    },
+    {
+      "input": 0,
+      "requested": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1280,
+        720
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 74.2771482977525,
+        "after-observer-close": 74.15747001685358,
+        "ordinary-restart": 74.48335635544827,
+        "remaining-fd-takeover": 74.50504941049805
+      },
+      "error": "",
+      "vblank_before_capture": 64,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64799,
+        "default": 256,
+        "value": 64
+      },
+      "reported_sensor_before_capture": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x3007",
+        "crop": [
+          16,
+          242,
+          2592,
+          1472
+        ]
+      },
+      "requested_vblank": 64,
+      "reported_period": [
+        42,
+        3125
+      ],
+      "reported_fps": 74.4047619047619
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 4,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 4
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 4,
+      "reported_period": [
+        1533,
+        62500
+      ],
+      "reported_fps": 40.769732550554465
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 8,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 8
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 8,
+      "reported_period": [
+        3843,
+        156250
+      ],
+      "reported_fps": 40.65833983866771
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 12,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 12
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 12,
+      "reported_period": [
+        7707,
+        312500
+      ],
+      "reported_fps": 40.547554171532376
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 1,
+      "live_crop_preservation_passes": 1,
+      "measured_fps": {},
+      "error": "multiopen regression: Connection timed out",
+      "vblank_before_capture": 16,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 16
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 16,
+      "reported_period": [
+        1932,
+        78125
+      ],
+      "reported_fps": 40.43737060041408
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 27.22051337889311,
+        "after-observer-close": 27.201463933336985,
+        "ordinary-restart": 27.214452358622566,
+        "remaining-fd-takeover": 27.212634578855077
+      },
+      "error": "",
+      "vblank_before_capture": 32,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 32
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 32,
+      "reported_period": [
+        1953,
+        78125
+      ],
+      "reported_fps": 40.00256016385049
+    },
+    {
+      "input": 0,
+      "requested": [
+        1920,
+        1440
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "selected": [
+        1920,
+        1440
+      ],
+      "live_enum_passes": 4,
+      "live_crop_preservation_passes": 4,
+      "measured_fps": {
+        "before-observer-close": 26.672098075721525,
+        "after-observer-close": 26.679925781291836,
+        "ordinary-restart": 26.695724558366514,
+        "remaining-fd-takeover": 26.69663161319155
+      },
+      "error": "",
+      "vblank_before_capture": 64,
+      "vblank_range_before_capture": {
+        "min": 4,
+        "max": 64079,
+        "default": 528,
+        "value": 64
+      },
+      "reported_sensor_before_capture": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x3007",
+        "crop": [
+          344,
+          250,
+          1936,
+          1456
+        ]
+      },
+      "requested_vblank": 64,
+      "reported_period": [
+        399,
+        15625
+      ],
+      "reported_fps": 39.16040100250627
+    }
+  ],
+  "vblank_diagnostic_is_not_blanket_rate_support": true,
+  "vblank_diagnostic_positive_frames": 624,
+  "compliance_no_stream": [
+    {
+      "input": 0,
+      "exit_code": 0,
+      "summary": [
+        "Total for atomisp device /dev/video0: 74, Succeeded: 74, Failed: 0, Warnings: 2"
+      ],
+      "fail_warnings": [
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS",
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS"
+      ]
+    },
+    {
+      "input": 1,
+      "exit_code": 0,
+      "summary": [
+        "Total for atomisp device /dev/video0: 74, Succeeded: 74, Failed: 0, Warnings: 2"
+      ],
+      "fail_warnings": [
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS",
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS"
+      ]
+    }
+  ],
+  "compliance_streaming_passed": false,
+  "compliance_streaming": [
+    {
+      "input": 0,
+      "exit_code": 124,
+      "timed_out": true,
+      "summary": [],
+      "failure_lines": []
+    },
+    {
+      "input": 1,
+      "exit_code": 1,
+      "timed_out": false,
+      "summary": [
+        "Total for atomisp device /dev/video0: 83, Succeeded: 77, Failed: 6, Warnings: 2"
+      ],
+      "failure_lines": [
+        "fail: v4l2-test-buffers.cpp(354): g_request_fd()",
+        "fail: v4l2-test-buffers.cpp(1280): buf.check(q, last_seq)",
+        "fail: v4l2-test-buffers.cpp(1735): captureBufs(node, node_m2m_cap, q, m2m_q, frame_count, pollmode, capture_count)",
+        "test MMAP (no poll, REQBUFS): FAIL",
+        "fail: v4l2-test-buffers.cpp(1577): can_stream",
+        "test MMAP (select, REQBUFS): FAIL",
+        "fail: v4l2-test-buffers.cpp(1577): can_stream",
+        "test MMAP (epoll, REQBUFS): FAIL",
+        "fail: v4l2-test-buffers.cpp(1577): can_stream",
+        "test MMAP (no poll, CREATE_BUFS): FAIL",
+        "fail: v4l2-test-buffers.cpp(1577): can_stream",
+        "test MMAP (select, CREATE_BUFS): FAIL",
+        "fail: v4l2-test-buffers.cpp(1577): can_stream",
+        "test MMAP (epoll, CREATE_BUFS): FAIL"
+      ]
+    }
+  ],
+  "parser_aborts_retained_and_corrected_in_v2": true,
+  "s0i3_independent_delta_us": 9129792,
+  "audio_electrical_passed": true,
+  "acoustic_test_performed": false,
+  "acoustic_verified": false,
+  "desktop_or_photo_tests_performed": false,
+  "fatal_kernel_lines_in_collected_deltas": {},
+  "goal_complete": false,
+  "original_plus_warm_matrix_default_recovery_frames": 6708,
+  "extra_rate_diagnostic_positive_frames": 768,
+  "all_captured_frames_including_partial_rate_diagnostics": 9060,
+  "stable_saved_default": "mipad2-bqdiag1",
+  "candidate_default_promoted": false
+}
