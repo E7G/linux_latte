@@ -30,6 +30,7 @@ def macros(src, names):
 defs = macros(internal, ['ATOM_ISP_MIN_WIDTH','ATOM_ISP_MIN_HEIGHT','ATOM_ISP_MAX_WIDTH',
     'ATOM_ISP_MAX_HEIGHT','ATOM_ISP_STEP_WIDTH','ATOM_ISP_STEP_HEIGHT'])
 defs += macros(ov, ['OV5693_FIXED_PPL','OV5693_TIMING_MIN_VTS','OV5693_TIMING_MAX_VTS',
+    'OV5693_MIPAD2_DEFAULT_FPS','OV5693_MIPAD2_VBLANK_BINNED','OV5693_MIPAD2_VBLANK_UNBINNED',
     'OV5693_INTEGRATION_TIME_MARGIN','OV5693_EXPOSURE_MIN','OV5693_PIXEL_RATE',
     'OV5693_MIPAD2_PIXEL_RATE','OV5693_NATIVE_HEIGHT'])
 base = r'''
@@ -111,7 +112,7 @@ static int atomisp_set_sensor_crop_and_fmt(struct atomisp_device *d,struct v4l2_
  return 0;
 }
 static void atomisp_fill_pix_format(struct v4l2_pix_format *f,unsigned w,unsigned h,const struct atomisp_format_bridge *fmt) { f->width=w;f->height=h;f->pixelformat=fmt->pixelformat; }
-struct ov5693_device { unsigned pixel_rate; };
+struct ov5693_device { unsigned pixel_rate; bool mipad2; struct { bool binning_x,binning_y; } mode; };
 '''
 # Use the real v4l2_rect; signed kernel geometry is checked by real kernel build.
 base = base.replace('struct rect { u32 width,height; };','')
@@ -189,21 +190,22 @@ int main(void) {
  assert(fs.type==V4L2_FRMSIZE_TYPE_STEPWISE && fs.stepwise.min_width==4 && fs.stepwise.min_height==4);
  assert(fs.stepwise.max_width==1920 && fs.stepwise.max_height==1440 && fs.stepwise.step_width==2 && fs.stepwise.step_height==2);count++;
  for(unsigned i=0;i<2;i++) {
-  struct ov5693_device s={.pixel_rate=i?OV5693_PIXEL_RATE:OV5693_MIPAD2_PIXEL_RATE};
+  struct ov5693_device s={.pixel_rate=i?OV5693_PIXEL_RATE:OV5693_MIPAD2_PIXEL_RATE,.mipad2=!i};
   for(unsigned h=2;h<=OV5693_NATIVE_HEIGHT;h+=2) {
    unsigned vts=__ov5693_calc_vts(&s,h);
-   assert(!(vts&1) && vts>=h+OV5693_TIMING_MIN_VTS && vts<=OV5693_TIMING_MAX_VTS);
+   assert(!(vts&1) && vts>=h+ov5693_min_vblank(&s) && vts<=OV5693_TIMING_MAX_VTS);
    assert(vts>=OV5693_INTEGRATION_TIME_MARGIN+OV5693_EXPOSURE_MIN);
    unsigned fps=rounddown(s.pixel_rate/OV5693_FIXED_PPL/h,30);
    unsigned old=ALIGN_DOWN(s.pixel_rate/OV5693_FIXED_PPL/max(fps,30U),2);
-   if(old>=h+4 && old>=9)assert(vts==old);count++;
+   if(i && old>=h+4 && old>=9)assert(vts==old);
+   if(!i)assert(vts==1984);count++;
   }
  }
  printf("PASS %u extracted padding/TRY_FMT/range/VTS cases; stubs, not real capture proof\n",count);
 }
 '''
 production = ''.join([function(cmd,'atomisp_get_padding'),function(cmd,'atomisp_try_fmt'),
-    function(ioctl,'atomisp_enum_framesizes_crop'),function(ov,'__ov5693_calc_vts')])
+    function(ioctl,'atomisp_enum_framesizes_crop'),function(ov,'ov5693_min_vblank'),function(ov,'__ov5693_calc_vts')])
 negative = os.environ.get('MIPAD2_GEOMETRY_NEGATIVE')
 if negative == 'padding':
     a = production.index('\tif (IS_ISP2401 && input->camera')

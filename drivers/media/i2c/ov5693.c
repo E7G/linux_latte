@@ -146,6 +146,9 @@
 #define OV5693_LINK_FREQ_419_2MHZ		419200000
 #define OV5693_PIXEL_RATE			167680000
 #define OV5693_MIPAD2_PIXEL_RATE			160000000
+#define OV5693_MIPAD2_DEFAULT_FPS		30
+#define OV5693_MIPAD2_VBLANK_BINNED		16
+#define OV5693_MIPAD2_VBLANK_UNBINNED		24
 
 #define to_ov5693_sensor(x) container_of(x, struct ov5693_device, sd)
 
@@ -178,6 +181,7 @@ struct ov5693_device {
 	bool otp_cal_cached;
 	bool streaming;
 	unsigned int pixel_rate;
+	bool mipad2;
 
 	struct ov5693_mode {
 		struct v4l2_rect crop;
@@ -1196,6 +1200,22 @@ static int ov5693_detect(struct ov5693_device *ov5693)
 
 /* V4L2 Framework callbacks */
 
+static unsigned int ov5693_min_vblank(struct ov5693_device *ov5693)
+{
+	if (!ov5693->mipad2)
+		return OV5693_TIMING_MIN_VTS;
+
+	/*
+	 * Mi Pad 2 guard bands, not exact silicon limits. Live crop/timing
+	 * tests expose no-frame boundaries below these values. Allow fast
+	 * intervals above this floor; do not impose a global FPS ceiling.
+	 */
+	if (ov5693->mode.binning_x && ov5693->mode.binning_y)
+		return OV5693_MIPAD2_VBLANK_BINNED;
+
+	return OV5693_MIPAD2_VBLANK_UNBINNED;
+}
+
 static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
 {
 	/*
@@ -1206,12 +1226,17 @@ static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
 
 	unsigned int tgt_fps, vts, min_vts;
 
-	tgt_fps = rounddown(ov5693->pixel_rate / OV5693_FIXED_PPL / height, 30);
+	/* Android's tested 30fps baseline; faster modes remain selectable. */
+	if (ov5693->mipad2)
+		tgt_fps = OV5693_MIPAD2_DEFAULT_FPS;
+	else
+		tgt_fps = rounddown(ov5693->pixel_rate / OV5693_FIXED_PPL / height,
+				    30);
 	tgt_fps = max(tgt_fps, 30U);
 	vts = ALIGN_DOWN(ov5693->pixel_rate / OV5693_FIXED_PPL / tgt_fps, 2);
 
 	/* Tiny crops must still have valid VBLANK and exposure defaults. */
-	min_vts = max_t(u32, height + OV5693_TIMING_MIN_VTS,
+	min_vts = max_t(u32, height + ov5693_min_vblank(ov5693),
 			OV5693_INTEGRATION_TIME_MARGIN + OV5693_EXPOSURE_MIN);
 
 	return max(vts, ALIGN(min_vts, 2));
@@ -1312,7 +1337,7 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	ov5693->mode.vts = __ov5693_calc_vts(ov5693, fmt->height);
 
 	__v4l2_ctrl_modify_range(ov5693->ctrls.vblank,
-				 OV5693_TIMING_MIN_VTS,
+				 ov5693_min_vblank(ov5693),
 				 OV5693_TIMING_MAX_VTS - fmt->height,
 				 1, ov5693->mode.vts - fmt->height);
 	__v4l2_ctrl_s_ctrl(ov5693->ctrls.vblank,
@@ -1649,7 +1674,7 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 	vblank_def = ov5693->mode.vts - ov5693->mode.format.height;
 	ctrls->vblank = v4l2_ctrl_new_std(&ctrls->handler, ops,
 					  V4L2_CID_VBLANK,
-					  OV5693_TIMING_MIN_VTS,
+					  ov5693_min_vblank(ov5693),
 					  vblank_max, 1, vblank_def);
 
 	ctrls->test_pattern = v4l2_ctrl_new_std_menu_items(
@@ -1782,7 +1807,8 @@ static int ov5693_probe(struct i2c_client *client)
 	 * periods from transport bandwidth overstates cadence by 4.8%.
 	 * Keep other boards' historical rate and all PLL/link settings.
 	 */
-	ov5693->pixel_rate = ov5693_has_mipad2_otp(ov5693) ?
+	ov5693->mipad2 = ov5693_has_mipad2_otp(ov5693);
+	ov5693->pixel_rate = ov5693->mipad2 ?
 		OV5693_MIPAD2_PIXEL_RATE : OV5693_PIXEL_RATE;
 
 	ov5693->regmap = devm_cci_regmap_init_i2c(client, 16);

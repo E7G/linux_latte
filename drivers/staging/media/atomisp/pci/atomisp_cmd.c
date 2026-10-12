@@ -3786,6 +3786,10 @@ set_fmt:
 	if (sd_state)
 		v4l2_subdev_unlock_state(sd_state);
 
+	/* Do not hide sensor errors behind a successful CSI set_fmt call. */
+	if (ret)
+		return ret;
+
 	/* Propagate new fmt to CSI port */
 	if (which == V4L2_SUBDEV_FORMAT_ACTIVE) {
 		ret = v4l2_subdev_call(input->csi_port, pad, set_fmt, NULL, &format);

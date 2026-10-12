@@ -16,7 +16,11 @@ def function(name):
 
 names=['OV5693_NATIVE_START_LEFT','OV5693_NATIVE_START_TOP','OV5693_NATIVE_WIDTH','OV5693_NATIVE_HEIGHT',
     'OV5693_MIN_CROP_WIDTH','OV5693_MIN_CROP_HEIGHT','OV5693_FIXED_PPL','OV5693_TIMING_MIN_VTS',
+    'OV5693_MIPAD2_DEFAULT_FPS','OV5693_MIPAD2_VBLANK_BINNED','OV5693_MIPAD2_VBLANK_UNBINNED',
     'OV5693_TIMING_MAX_VTS','OV5693_INTEGRATION_TIME_MARGIN','OV5693_EXPOSURE_MIN','OV5693_MIPAD2_PIXEL_RATE']
+if os.environ.get('MIPAD2_CROP_NEGATIVE'):
+    names=[n for n in names if n not in ['OV5693_MIPAD2_DEFAULT_FPS','OV5693_MIPAD2_VBLANK_BINNED','OV5693_MIPAD2_VBLANK_UNBINNED']]
+
 macros='\n'.join(re.search(r'^#define '+n+r'\s+[^\n]+',s,re.M)[0] for n in names)+'\n'
 base=r'''
 #include <assert.h>
@@ -42,7 +46,7 @@ struct mutex { int held; };
 static void mutex_lock(struct mutex *m) { assert(!m->held);m->held=1; }
 static void mutex_unlock(struct mutex *m) { assert(m->held);m->held=0; }
 struct control { int minimum,maximum,default_value,val; };
-struct ov5693_device { unsigned pixel_rate; struct mutex lock;
+struct ov5693_device { unsigned pixel_rate; bool mipad2; struct mutex lock;
  struct { struct v4l2_rect crop; struct v4l2_mbus_framefmt format; bool binning_x,binning_y; unsigned inc_x_odd,inc_y_odd,vts; } mode;
  struct { struct control *vblank,*hblank; } ctrls; unsigned exposure_max; };
 struct v4l2_subdev { struct ov5693_device *sensor; };
@@ -62,11 +66,12 @@ int main(void) {
  unsigned count=0;
  int positions[]={INT_MIN,-3,-1,0,1,16,1953,1954,1955,1956,2621,2622,2623,2624,INT_MAX};
  unsigned sizes[]={0,1,2,3,4,17,1955,1956,2623,2624,65535,UINT_MAX-1,UINT_MAX};
+ for(unsigned board=0;board<2;board++)
  for(unsigned which=0;which<2;which++)
   for(unsigned x=0;x<sizeof(positions)/sizeof(*positions);x++)
    for(unsigned y=0;y<sizeof(positions)/sizeof(*positions);y++)
     for(unsigned z=0;z<sizeof(sizes)/sizeof(*sizes);z++) {
-     struct control vb={0},hb={0};struct ov5693_device d={.pixel_rate=OV5693_MIPAD2_PIXEL_RATE,.ctrls={&vb,&hb}};
+     struct control vb={0},hb={0};struct ov5693_device d={.pixel_rate=OV5693_MIPAD2_PIXEL_RATE,.mipad2=board,.ctrls={&vb,&hb}};
      d.mode.crop=(struct v4l2_rect){.width=OV5693_NATIVE_WIDTH,.height=OV5693_NATIVE_HEIGHT};
      d.mode.format=(struct v4l2_mbus_framefmt){.width=OV5693_NATIVE_WIDTH,.height=OV5693_NATIVE_HEIGHT};
      struct v4l2_subdev sd={&d};struct v4l2_subdev_state state={.crop=d.mode.crop,.format=d.mode.format};
@@ -90,7 +95,9 @@ int main(void) {
  printf("PASS %u actual OV crop/format/VTS edge cases, bounded before ALIGN and non-empty; control/state stubs\n",count);
 }
 '''
-functions=''.join(function(n) for n in ['__ov5693_calc_vts','__ov5693_get_pad_format','__ov5693_get_pad_crop','ov5693_set_fmt','ov5693_set_selection'])
+function_names=['__ov5693_calc_vts','__ov5693_get_pad_format','__ov5693_get_pad_crop','ov5693_set_fmt','ov5693_set_selection']
+if not os.environ.get('MIPAD2_CROP_NEGATIVE'):function_names.insert(0,'ov5693_min_vblank')
+functions=''.join(function(n) for n in function_names)
 with tempfile.TemporaryDirectory(prefix='mipad2-crop-') as temp:
     p=Path(temp);c=p/'test.c';c.write_text(base+macros+functions+cases)
     subprocess.run(['gcc','-O1','-g','-Wall','-Wextra','-Werror','-Wno-sign-compare','-fsanitize=address,undefined',
