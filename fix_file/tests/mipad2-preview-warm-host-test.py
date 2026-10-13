@@ -49,7 +49,7 @@ struct device { struct ov5693_device *sensor; int users; bool powered; };
 struct regmap { struct ov5693_device *sensor; unsigned regs[0x4000],calls; };
 struct handler { struct ov5693_device *sensor; unsigned calls; };
 struct ov5693_device { struct device *dev; struct regmap *regmap; struct mutex lock;
- struct ov5693_mode mode; struct { struct handler handler; } ctrls; bool streaming;
+ struct ov5693_mode mode; struct { struct handler handler; } ctrls; bool streaming,needs_reinit;
  unsigned vts; int get_error,setup_error,fail_write; unsigned puts,noidle_puts; };
 struct v4l2_subdev { struct ov5693_device *sensor; };
 static struct ov5693_device *to_ov5693_sensor(struct v4l2_subdev *sd) { return sd->sensor; }
@@ -58,6 +58,13 @@ static int pm_runtime_resume_and_get(struct device *d) {
  d->users++; d->powered=true;return 0;
 }
 static void pm_runtime_put(struct device *d) { assert(d->users>0);d->users--;d->sensor->puts++;if(!d->users)d->powered=false; }
+static int pm_runtime_put_sync_suspend(struct device *d) {
+ assert(!d->sensor->lock.held);pm_runtime_put(d);return d->users?-EBUSY:0;
+}
+static int ov5693_sensor_init(struct ov5693_device *s) {
+ (void)s;assert(!"Reinit is not part of this warm happy-path fixture");return -EIO;
+}
+#define dev_warn(...) ((void)0)
 static void __attribute__((unused)) pm_runtime_put_noidle(struct device *d) { assert(d->users>0);d->users--;d->sensor->noidle_puts++; }
 static void cci_write(struct regmap *m,unsigned reg,unsigned val,int *err) {
  assert(m->sensor->lock.held && m->sensor->dev->powered); assert(reg<0x4000);

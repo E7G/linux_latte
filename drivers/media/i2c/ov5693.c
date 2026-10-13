@@ -180,6 +180,7 @@ struct ov5693_device {
 	bool otp_cached;
 	bool otp_cal_cached;
 	bool streaming;
+	bool needs_reinit;
 	unsigned int pixel_rate;
 	bool mipad2;
 
@@ -258,7 +259,7 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 
 	if (ov5693->otp_cached)
 		return 0;
-	if (ov5693->streaming)
+	if (ov5693->streaming || ov5693->needs_reinit)
 		return -EBUSY;
 
 	/*
@@ -940,6 +941,10 @@ static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 	}
 
 	/* Only apply changes to the controls if the device is powered up */
+	/* Cache controls until an unknown hardware state is reinitialized. */
+	if (ov5693->needs_reinit)
+		return 0;
+
 	if (!pm_runtime_get_if_in_use(ov5693->dev))
 		return 0;
 
@@ -1173,6 +1178,7 @@ static int __maybe_unused ov5693_sensor_resume(struct device *dev)
 		goto err_power;
 	}
 
+	ov5693->needs_reinit = false;
 	goto out_unlock;
 
 err_power:
@@ -1488,8 +1494,14 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 			return ret;
 
 		mutex_lock(&ov5693->lock);
-		/* A format change may happen while runtime power stays on. */
-		ret = ov5693_mode_configure(ov5693);
+		/* An interrupted stop may leave power on for another PM user. */
+		if (ov5693->needs_reinit) {
+			ret = ov5693_sensor_init(ov5693);
+			if (!ret)
+				ov5693->needs_reinit = false;
+		} else {
+			ret = ov5693_mode_configure(ov5693);
+		}
 		if (!ret)
 			ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
 		if (ret) {
@@ -1501,20 +1513,33 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 		if (!ret)
 			ov5693->streaming = true;
 		mutex_unlock(&ov5693->lock);
-	} else {
-		mutex_lock(&ov5693->lock);
-		ret = ov5693_enable_streaming(ov5693, false);
-		if (!ret)
-			ov5693->streaming = false;
-		mutex_unlock(&ov5693->lock);
+		if (ret)
+			goto err_power_down;
+		return 0;
 	}
-	if (ret)
-		goto err_power_down;
 
-	if (!enable)
+	mutex_lock(&ov5693->lock);
+	if (!ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return 0;
+	}
+	ret = ov5693_enable_streaming(ov5693, false);
+	ov5693->streaming = false;
+	ov5693->needs_reinit = !!ret;
+	mutex_unlock(&ov5693->lock);
+
+	/* The s_stream wrapper completes stop even on error: release our ref. */
+	if (ret) {
+		dev_warn(ov5693->dev, "stop failed: %d; requesting powerdown\n", ret);
+		/* Runtime resume takes lock, so synchronous PM must run unlocked. */
+		ret = pm_runtime_put_sync_suspend(ov5693->dev);
+		if (ret && ret != -EBUSY)
+			dev_warn(ov5693->dev, "stop powerdown failed: %d\n", ret);
+	} else {
 		pm_runtime_put(ov5693->dev);
-
+	}
 	return 0;
+
 err_power_down:
 	pm_runtime_put(ov5693->dev);
 	return ret;

@@ -1020,11 +1020,38 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	ret = v4l2_subdev_call(isp->inputs[asd->input_curr].camera,
 			       video, s_stream, 1);
 	if (ret) {
+		int cleanup_ret;
+
 		dev_err(isp->dev, "Starting sensor stream failed: %d\n", ret);
 		spin_lock_irqsave(&isp->lock, irqflags);
 		asd->streaming = false;
 		spin_unlock_irqrestore(&isp->lock, irqflags);
-		ret = -EINVAL;
+
+		/* vb2 will not call stop_streaming after a failed start. */
+		atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
+		atomisp_clear_css_buffer_counters(asd);
+		atomisp_css_stop_preserve_config(asd);
+		atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_QUEUED, true);
+		atomisp_subdev_cleanup_pending_events(asd);
+
+		if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
+						    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+			pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
+					      isp->saved_regs.csi_control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY);
+		if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, false))
+			dev_warn(isp->dev, "DFS failed after sensor start error\n");
+
+		pci_write_config_dword(pdev, PCI_I_CONTROL,
+				       isp->saved_regs.i_control | MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK);
+		cleanup_ret = atomisp_reset(isp);
+		if (!cleanup_ret)
+			cleanup_ret = atomisp_create_pipes_stream(asd);
+		if (cleanup_ret) {
+			isp->isp_fatal_error = true;
+			dev_err(isp->dev, "Stream-start rollback failed: %d\n", cleanup_ret);
+		}
+		media_pipeline_stop(&asd->video_out.vdev.entity.pads[0]);
+		/* Preserve the sensor errno, not a generic EINVAL/cleanup error. */
 		goto out_unlock;
 	}
 

@@ -946,8 +946,10 @@ static int t4ka3_enable_stream(struct v4l2_subdev *sd,
 		dev_err(sensor->dev, "power-up err.\n");
 		goto error_powerdown;
 	}
-	/* pm_runtime_get_sync() may return a positive usage count. */
-	ret = 0;
+	/* A previous stop may have failed while another PM user held power. */
+	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
+	if (ret)
+		goto error_powerdown;
 
 	cci_multi_reg_write(sensor->regmap, t4ka3_init_config,
 			    ARRAY_SIZE(t4ka3_init_config), &ret);
@@ -995,15 +997,21 @@ static int t4ka3_disable_stream(struct v4l2_subdev *sd,
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
 	int ret;
 
+	if (!sensor->streaming)
+		return 0;
+
 	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
-	pm_runtime_put(sensor->sd.dev);
 	sensor->streaming = 0;
+	if (ret) {
+		dev_warn(sensor->dev, "stop failed: %d; requesting powerdown\n", ret);
+		ret = pm_runtime_put_sync_suspend(sensor->sd.dev);
+		if (ret && ret != -EBUSY)
+			dev_warn(sensor->dev, "stop powerdown failed: %d\n", ret);
+	} else {
+		pm_runtime_put(sensor->sd.dev);
+	}
 
-	if (ret)
-		dev_err(sensor->dev,
-			"failed to disable stream with return value: %d\n",
-			ret);
-
+	/* Complete pad bookkeeping as well as the legacy s_stream wrapper. */
 	return 0;
 }
 
