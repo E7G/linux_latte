@@ -1,0 +1,72 @@
+{
+  "kernel_source_commit": "8830471c0ce1f11994399c54ebf66eaef718e2f3",
+  "source_sha256": "c368de2ac3dc2074dcc079403d7a2da7c9f83722240594e5222cc2b95d097ef7",
+  "function_sha256": "0d72abd404632e4a72ae26bd8e76cf0b1f28f3d76986a9f107bc984b7854aa79",
+  "scope": "Exact asynchronous recovery callback with explicit C hardware/CSS/VB2 stubs: success and four injected return errors. NOT physical bus faults, DMA quiescence, locking races, or normal-stop ownership proof.",
+  "red_reproduced": true,
+  "cases": [
+    {
+      "fault": 0,
+      "reset": 1,
+      "create": 1,
+      "css_start": 1,
+      "sensor_start": 1,
+      "streaming": true,
+      "fatal": false,
+      "queue_errors": 0,
+      "sof_enabled": true,
+      "passed": true
+    },
+    {
+      "fault": 1,
+      "reset": 1,
+      "create": 1,
+      "css_start": 1,
+      "sensor_start": 1,
+      "streaming": true,
+      "fatal": false,
+      "queue_errors": 0,
+      "sof_enabled": true,
+      "passed": false
+    },
+    {
+      "fault": 2,
+      "reset": 1,
+      "create": 1,
+      "css_start": 1,
+      "sensor_start": 1,
+      "streaming": true,
+      "fatal": false,
+      "queue_errors": 0,
+      "sof_enabled": true,
+      "passed": false
+    },
+    {
+      "fault": 3,
+      "reset": 1,
+      "create": 1,
+      "css_start": 1,
+      "sensor_start": 1,
+      "streaming": false,
+      "fatal": false,
+      "queue_errors": 0,
+      "sof_enabled": true,
+      "passed": false
+    },
+    {
+      "fault": 4,
+      "reset": 1,
+      "create": 1,
+      "css_start": 1,
+      "sensor_start": 1,
+      "streaming": true,
+      "fatal": false,
+      "queue_errors": 0,
+      "sof_enabled": true,
+      "passed": false
+    }
+  ],
+  "production_source_changed": false,
+  "device_mutation": false,
+  "next": "Design fail-closed recovery without double MC pipeline stop, verify CSS/ISP DMA quiescence and full VB2 cleanup; do not assume simple host stubs prove hardware safety."
+}

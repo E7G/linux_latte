@@ -39,3 +39,5 @@ Source-pinned app evidence:
 - [Sanitized machine-readable results](https://github.com/E7G/snapshot/blob/2c5c1709c3c76e57db7a5494d101191f135db7dc/MIPAD2_PHOTO_AUTOMATED_EVIDENCE.json)
 
 Private images/video remain on the device; no media/credentials published.
+
+Later R15c measured AE chatter correction and newly reproduced kernel error-return RED cases: [AE/recovery follow-up](MIPAD2_R19_AE_FOLLOWUP.md). Prior failures and scope remain historical evidence.
