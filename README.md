@@ -148,3 +148,5 @@ Please describe whether the failure happens on cold boot, only after suspend/res
 ## Upstream Linux documentation
 
 This remains a normal Linux kernel source tree. General kernel build and development documentation is under `Documentation/` and at https://docs.kernel.org/.
+
+R19 source `8c57f2be2` is fully built and one-shot/hardware tested: [bounded results and remaining scope](fix_file/MIPAD2_R19_HARDWARE.md). No Android parity/default-promotion claim.
