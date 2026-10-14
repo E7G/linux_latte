@@ -1,0 +1,139 @@
+{
+  "source_sha256": {
+    "arch/x86/platform/intel/iosf_mbi.c": "95c0e9e265bd322bd0d8c3ca60ebd03233352c55561b27fcd920ef39f7cb0bc5",
+    "drivers/staging/media/atomisp/pci/atomisp_cmd.c": "98c038a04a99efe8eb865374a8b3860f454748648f08120a60ee5ba043eb0868",
+    "drivers/staging/media/atomisp/pci/atomisp_ioctl.c": "1ad6caedc929cb1e1d2f9ca84cb3c028dfd6cc7145a973ffe4cec82f17327633",
+    "drivers/staging/media/atomisp/pci/atomisp_fops.c": "95165b4369d3404be93b77d8d6fbf605b65de3dd6c6811527e69c1384434636e",
+    "drivers/staging/media/atomisp/pci/atomisp_v4l2.c": "01baaa3067aad88c680f630e558bec84f60ca67776a997dbe59e41953cc30097",
+    "drivers/staging/media/atomisp/pci/atomisp_compat_css20.c": "a4fa2941f620b278ec765e03888f6b9112671b70eaed5655190ef5b50e1f5e89"
+  },
+  "suites": [
+    {
+      "name": "mipad2-buffer-metadata-host-test.py",
+      "script_sha256": "5f15835a35c86a09b2c2cff23ce2c47c056f0d91bcb9685d34e47ac1b6acae7a",
+      "code": 0
+    },
+    {
+      "name": "mipad2-create-bufs-host-test.py",
+      "script_sha256": "ad2c7549a938a225e237f8f1917fc8a5c92ca42410acabaf659498c411707c2e",
+      "code": 0
+    },
+    {
+      "name": "mipad2-css-restart-host-test.py",
+      "script_sha256": "b06a97b9beedcdf879e087d24f302b84dd05b441526a6690bce10c7673a23d83",
+      "code": 0
+    },
+    {
+      "name": "mipad2-frame-interval-host-test.py",
+      "script_sha256": "018eed50c550da3d6837d7a5e297a525e60f4b2380244b8d8eef1ad28bf3aa94",
+      "code": 0
+    },
+    {
+      "name": "mipad2-frame-sequence-host-test.py",
+      "script_sha256": "a4b1e23f9c7b192e3ac6443ac22324c38d65985e9cc8c37d69b44535c8651adb",
+      "code": 0
+    },
+    {
+      "name": "mipad2-input-geometry-host-test.py",
+      "script_sha256": "e9da6d837e035cb26fb37394116b78a813875715be1507e281bdfb1cb8bff988",
+      "code": 0
+    },
+    {
+      "name": "mipad2-multiopen-host-test.py",
+      "script_sha256": "056195e0719f80b3364b216d9b2d688e5bdb25728fd275319b4812423717d170",
+      "code": 0
+    },
+    {
+      "name": "mipad2-ov5693-crop-host-test.py",
+      "script_sha256": "cc208c50ece0a22e752c652a10c1926b5abbf4df46b6f02bda5ed27b15b5fa7b",
+      "code": 0
+    },
+    {
+      "name": "mipad2-ov5693-timing-policy-host-test.py",
+      "script_sha256": "c1170e4db2e01432c7f6ae07f8fcc26bc953ece990f06e4fdf338a9b83062af3",
+      "code": 0
+    },
+    {
+      "name": "mipad2-preview-warm-host-test.py",
+      "script_sha256": "12cbd3f80679f6f5ebe9660fafa497e540746ee1f3db764bc9925eb670d30575",
+      "code": 0
+    },
+    {
+      "name": "mipad2-queue-reconfigure-host-test.py",
+      "script_sha256": "4d148a9d09e48b83eac90b8869e379e5c77e17bb3f17f8dc9c6bc96863cb12e1",
+      "code": 0
+    },
+    {
+      "name": "mipad2-sensor-events-host-test.py",
+      "script_sha256": "412fde196fc8293c5a9e48d62df32aa8a9225b0f9b6c5c8589036a7453b6685b",
+      "code": 0
+    },
+    {
+      "name": "mipad2-sensor-format-error-host-test.py",
+      "script_sha256": "110c115ec2f26196e87a9c720007153a8c04ee047aac0b2ae8fcac246d4cdc38",
+      "code": 0
+    },
+    {
+      "name": "mipad2-sensor-geometry-lock-host-test.py",
+      "script_sha256": "7c34e96639789afaad9b4988c4f1ac3b7159b037bf557137c23c27897f6e8b4d",
+      "code": 0
+    },
+    {
+      "name": "mipad2-stream-parameter-host-test.py",
+      "script_sha256": "dd4cc45034834852680562ce72a83d4ef6be3b42e1a677429bd8a42bced6bf78",
+      "code": 0
+    },
+    {
+      "name": "mipad2-stream-start-unwind-host-test.py",
+      "script_sha256": "fb4df2550b9bdbc2c9924a0a9a64aea92f4023458a0d0381ff6eb08791ee38d7",
+      "code": 0
+    },
+    {
+      "name": "mipad2-stream-stop-pm-host-test.py",
+      "script_sha256": "b04680192d5e7a09a42ca0e6294c26fb57789eb8428cd06c67dbd6c130a99aea",
+      "code": 0
+    },
+    {
+      "name": "mipad2-t4ka3-metadata-control-host-test.py",
+      "script_sha256": "b5ca453cb7525725c831bd56438bcd578e7e51d6aff06f4cfd9ba084b2ca57f3",
+      "code": 0
+    },
+    {
+      "name": "mipad2-t4ka3-start-host-test.py",
+      "script_sha256": "465bee965d9e3f783856be6eb56dc16ff45243995b4614f3088dd3fd8e4ea451",
+      "code": 0
+    },
+    {
+      "name": "mipad2-power-transport-host-test.py",
+      "script_sha256": "e32809b3a68c91a52f89061eaf618333ce88340f4b20a2dfbd0e88aa81baee3a",
+      "code": 0
+    },
+    {
+      "name": "mipad2-recovery-error-host-test.py",
+      "script_sha256": "be8f1d4b79003438825889bccd5862282113d7900daae9716dc73c4263f4f510",
+      "code": 0
+    },
+    {
+      "name": "mipad2-stop-irq-host-test.py",
+      "script_sha256": "88f9c1763463a318cc900719c440c8af6024d4def5fdc21a501a764fab8fe270",
+      "code": 0
+    },
+    {
+      "name": "mipad2-css-uninit-host-test.py",
+      "script_sha256": "40ba3b6bf114330d12b422b3c8fe4c4933fffd9b80d7561a0f18799f57a35410",
+      "code": 0
+    }
+  ],
+  "passed_suites": 23,
+  "new_explicit_stub_cases": {
+    "power_transport": 104,
+    "recovery": 40,
+    "stop_irq": 36,
+    "css_uninit": 8
+  },
+  "deployed": false,
+  "hardware_fault_injection": false,
+  "sp_dma_quiescence_proven": false,
+  "full_error_lifecycle_complete": false,
+  "full_objective_complete": false
+}

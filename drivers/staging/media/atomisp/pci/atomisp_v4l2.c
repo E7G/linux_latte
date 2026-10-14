@@ -525,6 +525,7 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	unsigned long timeout;
+	int ret;
 	u32 val = enable ? MRFLD_ISPSSPM0_IUNIT_POWER_ON :
 			   MRFLD_ISPSSPM0_IUNIT_POWER_OFF;
 
@@ -537,8 +538,12 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 	}
 
 	/* Write to ISPSSPM0 bit[1:0] to power on/off the IUNIT */
-	iosf_mbi_modify(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0,
-			val, MRFLD_ISPSSPM0_ISPSSC_MASK);
+	ret = iosf_mbi_modify(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0,
+			      val, MRFLD_ISPSSPM0_ISPSSC_MASK);
+	if (ret) {
+		dev_err(isp->dev, "IUNIT power request failed: %d\n", ret);
+		return ret;
+	}
 
 	/* WA:Enable DVFS */
 	if (IS_CHT && !enable && !isp->pm_only)
@@ -555,7 +560,12 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 		u32 tmp;
 
 		/* Wait until ISPSSPM0 bit[25:24] shows the right value */
-		iosf_mbi_read(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0, &tmp);
+		ret = iosf_mbi_read(BT_MBI_UNIT_PMC, MBI_REG_READ,
+				    MRFLD_ISPSSPM0, &tmp);
+		if (ret) {
+			dev_err(isp->dev, "IUNIT power status read failed: %d\n", ret);
+			return ret;
+		}
 		tmp = (tmp >> MRFLD_ISPSSPM0_ISPSSS_OFFSET) & MRFLD_ISPSSPM0_ISPSSC_MASK;
 		if (tmp == val) {
 			trace_ipu_cstate(enable);

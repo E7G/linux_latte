@@ -22,7 +22,7 @@ struct vb2_queue {struct atomisp_video_pipe *owner;};
 struct params {bool css_update_params_needed;struct {struct {int dz_config;} update_flag;int dz_config;} css_param;struct {void *dz_config;} config;void *dvs_6axis;bool dis_proj_data_valid;};
 struct atomisp_parameters {int dz_config;};
 struct atomisp_sub_device {struct atomisp_device *isp;struct atomisp_video_pipe video_out;struct params params;bool streaming;int sof_count,sequence,sequence_temp,input_curr,latest_preview_exp_id,postview_exp_id,preview_exp_id;};
-struct atomisp_device {void *dev;struct mutex mutex;int lock;struct {struct mutex graph_mutex;unsigned hw_revision;} media_dev;struct {unsigned csi_control,i_control;} saved_regs;struct {void *camera;} inputs[1];struct atomisp_sub_device asd;bool isp_fatal_error;};
+struct atomisp_device {int assert_recovery_work;void *dev;struct mutex mutex;int lock;struct {struct mutex graph_mutex;unsigned hw_revision;} media_dev;struct {unsigned csi_control,i_control;} saved_regs;struct {void *camera;} inputs[1];struct atomisp_sub_device asd;bool isp_fatal_error;};
 struct pci_dev {int unused;};static struct pci_dev pci;
 enum {VB2_BUF_STATE_QUEUED=1,VB2_BUF_STATE_ERROR=2,IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF=1,ATOMISP_DFS_MODE_AUTO=1,ATOMISP_DFS_MODE_LOW=2,ATOMISP_HW_REVISION_ISP2401=2,ATOMISP_HW_REVISION_SHIFT=4,ATOMISP_HW_STEPPING_B0=1,MRFLD_PCI_CSI_CONTROL=1,PCI_I_CONTROL=2,MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK=4,MRFLD_PCI_CSI_CONTROL_CSI_READY=1};
 static int pipe_error,frame_error,media_error,css_error,sensor_error,create_error,reset_error,mc_refs,css_owned,flushes,flush_state,sensor_calls,resets,recreates,css_stops,dfs_low;
@@ -62,6 +62,7 @@ static void atomisp_css_stop_preserve_config(struct atomisp_sub_device *a) {(voi
 static void atomisp_flush_video_pipe(struct atomisp_video_pipe *p,int state,bool wake) {(void)p;assert(wake);css_owned=0;flushes++;flush_state=state;}
 static void atomisp_subdev_cleanup_pending_events(struct atomisp_sub_device *a) {(void)a;}
 static int atomisp_reset(struct atomisp_device *d) {assert(d->mutex.locked);resets++;return reset_error;}
+static void cancel_work_sync(int *work) {(void)work;}
 static int atomisp_create_pipes_stream(struct atomisp_sub_device *a) {(void)a;recreates++;pipes_ready=!create_error;return create_error;}
 '''
 cases=r'''

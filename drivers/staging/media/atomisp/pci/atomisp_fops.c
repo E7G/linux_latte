@@ -581,6 +581,16 @@ static int atomisp_open(struct file *file)
 		goto error;
 	}
 
+	/* A failed last suspend may have left an active, quarantined ISP. */
+	if (isp->isp_fatal_error) {
+		ret = atomisp_reset(isp);
+		if (ret) {
+			if (pm_runtime_put_sync(vdev->v4l2_dev->dev) < 0)
+				dev_err(isp->dev, "Failed to power off quarantined ISP\n");
+			goto error;
+		}
+	}
+
 	atomisp_dev_init_struct(isp);
 	atomisp_subdev_init_struct(asd);
 
@@ -624,8 +634,10 @@ static int atomisp_release(struct file *file)
 
 	atomisp_destroy_pipes_stream(asd);
 
-	if (pm_runtime_put_sync(vdev->v4l2_dev->dev) < 0)
+	if (pm_runtime_put_sync(vdev->v4l2_dev->dev) < 0) {
+		isp->isp_fatal_error = true;
 		dev_err(isp->dev, "Failed to power off device\n");
+	}
 
 out:
 	mutex_unlock(&isp->mutex);

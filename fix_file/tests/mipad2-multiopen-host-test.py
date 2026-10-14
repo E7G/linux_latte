@@ -38,7 +38,7 @@ struct v4l2_fh { int state; };
 struct mutex { pthread_mutex_t lock; };
 static void mutex_lock(struct mutex *m) { assert(!pthread_mutex_lock(&m->lock)); }
 static void mutex_unlock(struct mutex *m) { assert(!pthread_mutex_unlock(&m->lock)); }
-struct atomisp_device { void *dev; struct mutex mutex; unsigned int input_cnt; };
+struct atomisp_device { void *dev; struct mutex mutex; unsigned int input_cnt; bool isp_fatal_error; };
 struct atomisp_sub_device { unsigned int input_curr; int state; };
 struct vb2_queue { struct mutex *lock; void *owner; bool streaming; unsigned int buffers; };
 struct v4l2_device { void *dev; };
@@ -58,6 +58,7 @@ static struct video_device vdev = {.isp = &isp, .pipe = &pipe_, .v4l2_dev = &v4l
 static int pm_refs, pm_gets, pm_puts, init_dev, init_subdev, free_stats, free_internal,
     sensor_off, destroy_streams, queue_releases, stream_stops;
 static int injected_pm_error, injected_fh_error;
+static int injected_reset_error, injected_put_error, reset_calls, failed_reset_gets;
 static int fh_allocated;
 static struct video_device *video_devdata(struct file *f) { return f->vdev; }
 static struct atomisp_device *video_get_drvdata(struct video_device *v) { return v->isp; }
@@ -79,8 +80,13 @@ static int pm_runtime_resume_and_get(void *dev) {
     (void)dev; if (injected_pm_error) return injected_pm_error;
     ++pm_gets; assert(++pm_refs == 1); return 0;
 }
-static int pm_runtime_put_sync(void *dev) { (void)dev; ++pm_puts; assert(--pm_refs == 0); return 0; }
-static void atomisp_dev_init_struct(struct atomisp_device *p) { (void)p; ++init_dev; }
+static int pm_runtime_put_sync(void *dev) { (void)dev; ++pm_puts; assert(--pm_refs == 0); return injected_put_error; }
+static int atomisp_reset(struct atomisp_device *p) {
+    ++reset_calls;
+    if (injected_reset_error) {++failed_reset_gets;p->isp_fatal_error=true;}
+    return injected_reset_error;
+}
+static void atomisp_dev_init_struct(struct atomisp_device *p) { p->isp_fatal_error=false; ++init_dev; }
 static void atomisp_subdev_init_struct(struct atomisp_sub_device *p) { ++init_subdev; p->state = 7; }
 static void atomisp_css_free_stat_buffers(struct atomisp_sub_device *p) { (void)p; ++free_stats; }
 static void atomisp_free_internal_buffers(struct atomisp_sub_device *p) { (void)p; ++free_internal; }
@@ -112,9 +118,9 @@ static void own_queue(struct file *f, bool streaming) {
 }
 static void check_quiescent(void) {
     assert(!pipe_.users && !pm_refs && !fh_allocated && !queue.owner && !queue.streaming);
-    assert(pm_gets == pm_puts && pm_gets == init_dev && init_dev == init_subdev);
-    assert(pm_puts == free_stats && free_stats == free_internal);
-    assert(pm_puts == sensor_off && sensor_off == destroy_streams);
+    assert(pm_gets == pm_puts && pm_gets == init_dev + failed_reset_gets && init_dev == init_subdev);
+    assert(pm_puts == free_stats + failed_reset_gets && free_stats == free_internal);
+    assert(pm_puts == sensor_off + failed_reset_gets && sensor_off == destroy_streams);
 }
 static void *worker(void *arg) {
     (void)arg;
@@ -174,7 +180,25 @@ int main(void) {
     for (int i = 0; i < 8; ++i) assert(!pthread_create(&threads[i], NULL, worker, NULL));
     for (int i = 0; i < 8; ++i) assert(!pthread_join(threads[i], NULL));
     check_quiescent();
-    printf("PASS injected failures, queue-owner takeover, 2000 closure cycles, 16000 concurrent opens/closes\n");
+    // A quarantined first-open must not clear fatal on PM-get success alone.
+    const int faults[] = {-EIO,-ENODEV,-EAGAIN,-ETIMEDOUT};
+    for (unsigned i=0;i<sizeof(faults)/sizeof(faults[0]);i++) {
+        isp.isp_fatal_error=true;injected_reset_error=faults[i];
+        int before_reset=reset_calls,before_init=init_dev;
+        assert(atomisp_open(&a)==faults[i]);
+        assert(isp.isp_fatal_error && reset_calls==before_reset+1 && init_dev==before_init);
+        check_quiescent();
+        injected_reset_error=0;
+        assert(!atomisp_open(&a) && !isp.isp_fatal_error);
+        assert(reset_calls==before_reset+2);assert(!atomisp_release(&a));check_quiescent();
+    }
+    // Last-suspend failure quarantines even when no stream recovery ran.
+    assert(!atomisp_open(&a));injected_put_error=-EBUSY;
+    assert(!atomisp_release(&a) && isp.isp_fatal_error);check_quiescent();
+    injected_put_error=0;int before_reset=reset_calls;
+    assert(!atomisp_open(&a) && !isp.isp_fatal_error && reset_calls==before_reset+1);
+    assert(!atomisp_release(&a));check_quiescent();
+    printf("PASS injected failures, quarantine reset/PM balance, queue-owner takeover, 2000 closure cycles, 16000 concurrent opens/closes\n");
 }
 '''
 with tempfile.TemporaryDirectory(prefix='mipad2-multiopen-host-') as temp:

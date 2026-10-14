@@ -1057,6 +1057,9 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 
 out_unlock:
 	mutex_unlock(&isp->mutex);
+	/* A failed start can also have queued a firmware-assert recovery. */
+	if (ret)
+		cancel_work_sync(&isp->assert_recovery_work);
 	return ret;
 }
 
@@ -1082,7 +1085,8 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	mutex_unlock(&isp->mutex);
 	/* wait max 1 second */
 	ret = wait_event_timeout(pipe->vb_queue.done_wq,
-				 atomisp_buffers_in_css(pipe) == 0, HZ);
+				 atomisp_buffers_in_css(pipe) == 0 ||
+				 READ_ONCE(isp->isp_fatal_error), HZ);
 	mutex_lock(&isp->mutex);
 	pipe->stopping = false;
 	if (ret == 0)
@@ -1124,15 +1128,23 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	 */
 	pci_write_config_dword(pdev, PCI_I_CONTROL,
 			       isp->saved_regs.i_control | MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK);
-	atomisp_reset(isp);
+	ret = atomisp_reset(isp);
 
-	/* Streams were destroyed by atomisp_css_stop(), recreate them. */
-	ret = atomisp_create_pipes_stream(&isp->asd);
-	if (ret)
-		dev_warn(isp->dev, "Recreating streams failed: %d\n", ret);
+	/* Do not create CSS contexts after a failed power-cycle. */
+	if (!ret)
+		ret = atomisp_create_pipes_stream(asd);
+	if (ret) {
+		isp->isp_fatal_error = true;
+		dev_err(isp->dev, "Stream-stop reset/recreate failed: %d\n", ret);
+	}
 
 	media_pipeline_stop(&asd->video_out.vdev.entity.pads[0]);
 	mutex_unlock(&isp->mutex);
+	/*
+	 * The VB2 queue lock still excludes a new STREAMON. Never wait for
+	 * this worker while holding the ISP mutex which the worker needs.
+	 */
+	cancel_work_sync(&isp->assert_recovery_work);
 }
 
 /*

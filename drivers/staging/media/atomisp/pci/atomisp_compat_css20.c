@@ -800,6 +800,9 @@ int atomisp_css_load_firmware(struct atomisp_device *isp)
 
 void atomisp_css_uninit(struct atomisp_device *isp)
 {
+	/* A failed power-off can be retried without a matching CSS init. */
+	if (!isp->css_initialized)
+		return;
 	isp->css_initialized = false;
 	ia_css_uninit();
 }

@@ -268,8 +268,11 @@ int atomisp_reset(struct atomisp_device *isp)
 	dev_dbg(isp->dev, "%s\n", __func__);
 
 	ret = atomisp_power_off(isp->dev);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(isp->dev, "atomisp_power_off failed, %d\n", ret);
+		isp->isp_fatal_error = true;
+		return ret;
+	}
 
 	ret = atomisp_power_on(isp->dev);
 	if (ret < 0) {
@@ -882,11 +885,12 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 						  assert_recovery_work);
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	unsigned long flags;
+	bool css_started = false;
 	int ret;
 
 	mutex_lock(&isp->mutex);
 
-	if (!isp->asd.streaming)
+	if (!isp->asd.streaming || isp->asd.video_out.stopping)
 		goto out_unlock;
 
 	atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
@@ -919,23 +923,28 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 			       isp->saved_regs.i_control | MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK);
 
 	/* reset ISP and restore its state */
-	atomisp_reset(isp);
+	ret = atomisp_reset(isp);
+	if (ret)
+		goto recovery_failed;
 
 	atomisp_css_input_set_mode(&isp->asd, IA_CSS_INPUT_MODE_BUFFERED_SENSOR);
 
 	/* Recreate streams destroyed by atomisp_css_stop() */
-	atomisp_create_pipes_stream(&isp->asd);
+	ret = atomisp_create_pipes_stream(&isp->asd);
+	if (ret)
+		goto recovery_failed;
 
 	/* Invalidate caches. FIXME: should flush only necessary buffers */
 	wbinvd();
 
-	if (atomisp_css_start(&isp->asd)) {
-		dev_warn(isp->dev, "start SP failed, so do not set streaming to be enable!\n");
-	} else {
-		spin_lock_irqsave(&isp->lock, flags);
-		isp->asd.streaming = true;
-		spin_unlock_irqrestore(&isp->lock, flags);
-	}
+	ret = atomisp_css_start(&isp->asd);
+	if (ret)
+		goto recovery_failed;
+	css_started = true;
+
+	spin_lock_irqsave(&isp->lock, flags);
+	isp->asd.streaming = true;
+	spin_unlock_irqrestore(&isp->lock, flags);
 
 	atomisp_csi2_configure(&isp->asd);
 
@@ -945,6 +954,12 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 	if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_AUTO, true) < 0)
 		dev_dbg(isp->dev, "DFS auto failed while recovering!\n");
 
+	/* Match initial STREAMON after power-cycle restores the CSI registers. */
+	if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
+					    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+		pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
+				      isp->saved_regs.csi_control | MRFLD_PCI_CSI_CONTROL_CSI_READY);
+
 	/* Dequeueing buffers is not needed, CSS will recycle buffers that it has */
 	atomisp_flush_video_pipe(&isp->asd.video_out, VB2_BUF_STATE_ERROR, false);
 
@@ -953,7 +968,31 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 
 	ret = v4l2_subdev_call(isp->inputs[isp->asd.input_curr].camera, video, s_stream, 1);
 	if (ret)
-		dev_err(isp->dev, "Starting sensor stream failed: %d\n", ret);
+		goto recovery_failed;
+	goto out_unlock;
+
+recovery_failed:
+	spin_lock_irqsave(&isp->lock, flags);
+	isp->asd.streaming = false;
+	spin_unlock_irqrestore(&isp->lock, flags);
+	isp->isp_fatal_error = true;
+	/* Reset failure may leave the ISP off: do not access its MMIO then. */
+	if (css_started) {
+		atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
+		if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
+						    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+			pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
+					      isp->saved_regs.csi_control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY);
+		if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, false))
+			dev_warn(isp->dev, "DFS failed after recovery error\n");
+	}
+	/*
+	 * Wake the owner, but retain buffers and the MC pipeline for its VB2
+	 * STREAMOFF/release callback. In particular a failed power-cycle is
+	 * not evidence that the old CSS buffers are safe to return here.
+	 */
+	vb2_queue_error(&isp->asd.video_out.vb_queue);
+	dev_err(isp->dev, "Stream recovery failed, queue stopped: %d\n", ret);
 
 out_unlock:
 	mutex_unlock(&isp->mutex);
@@ -998,7 +1037,9 @@ irqreturn_t atomisp_isr_thread(int irq, void *isp_ptr)
 	 * time, instead, dequue one and process one, then another
 	 */
 	mutex_lock(&isp->mutex);
-	atomisp_css_isr_thread(isp);
+	/* STREAMOFF may have completed while this IRQ thread waited. */
+	if (isp->asd.streaming)
+		atomisp_css_isr_thread(isp);
 	mutex_unlock(&isp->mutex);
 
 	return IRQ_HANDLED;
