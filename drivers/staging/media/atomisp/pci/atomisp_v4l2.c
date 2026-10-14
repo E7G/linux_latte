@@ -399,33 +399,66 @@ static int atomisp_save_iunit_reg(struct atomisp_device *isp)
 static int atomisp_restore_iunit_reg(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
+	int ret;
 
 	dev_dbg(isp->dev, "%s\n", __func__);
 
-	pci_write_config_word(pdev, PCI_COMMAND, isp->saved_regs.pcicmdsts);
-	pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, isp->saved_regs.ispmmadr);
-	pci_write_config_dword(pdev, PCI_MSI_CAPID, isp->saved_regs.msicap);
-	pci_write_config_dword(pdev, PCI_MSI_ADDR, isp->saved_regs.msi_addr);
-	pci_write_config_word(pdev, PCI_MSI_DATA, isp->saved_regs.msi_data);
-	pci_write_config_byte(pdev, PCI_INTERRUPT_LINE, isp->saved_regs.intr);
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, isp->saved_regs.interrupt_control);
-	pci_write_config_dword(pdev, PCI_I_CONTROL, isp->saved_regs.i_control);
+	ret = pci_write_config_word(pdev, PCI_COMMAND, isp->saved_regs.pcicmdsts);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, isp->saved_regs.ispmmadr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_MSI_CAPID, isp->saved_regs.msicap);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_MSI_ADDR, isp->saved_regs.msi_addr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_word(pdev, PCI_MSI_DATA, isp->saved_regs.msi_data);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_byte(pdev, PCI_INTERRUPT_LINE, isp->saved_regs.intr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, isp->saved_regs.interrupt_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_I_CONTROL, isp->saved_regs.i_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
 
-	pci_write_config_dword(pdev, MRFLD_PCI_PMCS, isp->saved_regs.pmcs);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL,
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_PMCS, isp->saved_regs.pmcs);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL,
 			       isp->saved_regs.csi_access_viol);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL,
 			       isp->saved_regs.csi_rcomp_config);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL,
 			       isp->saved_regs.csi_afe_dly);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
 			       isp->saved_regs.csi_control);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
 			       isp->saved_regs.csi_afe_rcomp_config);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL,
 			       isp->saved_regs.csi_afe_hs_control);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
 			       isp->saved_regs.csi_deadline_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
 
 	/*
 	 * for MRFLD, Software/firmware needs to write a 1 to bit0
@@ -632,8 +665,13 @@ int atomisp_power_on(struct device *dev)
 		return 0;
 
 	/*restore register values for iUnit and iUnitPHY registers*/
-	if (isp->saved_regs.pcicmdsts)
-		atomisp_restore_iunit_reg(isp);
+	if (isp->saved_regs.pcicmdsts) {
+		ret = atomisp_restore_iunit_reg(isp);
+		if (ret) {
+			dev_err(isp->dev, "Failed to restore IUNIT registers: %d\n", ret);
+			return ret;
+		}
+	}
 
 	atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, true);
 
