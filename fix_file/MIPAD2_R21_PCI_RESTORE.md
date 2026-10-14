@@ -58,3 +58,18 @@ References:
 R21 is an incremental research candidate. Passing stubs or compilation does
 not establish physical DMA quiescence, boot recovery, or Android/Windows
 camera parity. Do not promote R20/R21 on these results alone.
+
+## Completed bounded validation
+
+All24 retained/new exact-source host suites exit0, including the portable
+294-case PCI restore fixture. A separate R21-focused output directory
+completed olddefconfig, W=1 prepare/modules_prepare and atomisp_v4l2.o with
+Clang21. All phase exit codes0; source hashes/commit unchanged while built.
+R20 and R19 five-artifact manifests remain unchanged. No full R21 kernel or
+module set was built. See tests/mipad2-r21-host-validation-summary.json.
+
+Device-side extended testing still used R19, not this candidate: R15c app
+made four30s native1080p30 recordings, maximum packet gap34.334ms and all
+video/audio decodes passed. Rear decoded-frame repeats remain an explicit
+open finding, not reclassified as smooth Android-equivalent motion.
+https://github.com/E7G/snapshot/blob/55e4a4ba08b6b9008f62f99b2780885b370d4200/MIPAD2_RECORDING_R15C_SOAK.md
