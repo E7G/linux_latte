@@ -42,3 +42,5 @@ physical high rates/all intervals, compatibility/Requests, OEM DSP and other
 hardware, flash-image build/integration. Full objective remains active.
 
 See tests/mipad2-6.14-r19-validation-summary.json and MIPAD2_R19_LIFECYCLE.md.
+
+Later R19 app gates supersede only the earlier pending camera-runtime paragraph: [native photo/video/PM follow-up](MIPAD2_R19_CAMERA_FOLLOWUP.md). Candidate only, not full Android parity.
