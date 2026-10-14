@@ -14,7 +14,7 @@ build/private installation, verified on R19 without replacing the r6 launcher:
 - Every shot restoresISPmode3/VFPP0 and fresh native1080p30 frames, not a
   cachedG_FMT-only recovery claim.
 - Four post-photo10s video clips alternate rear/front/rear/front, actual
-  native1920x1080H264, approximately30fps each, maximumPTSgap34ms; no>100ms
+  native1920x1080H264, approximately30fps each, maximumPTSgap44.667ms (otherthree34ms); no>100ms
   gaps. Four video and four audio softwareNULL decodes pass, no playback.
 - Graceful app close0, no videoowner, both sensorsPMusage0/suspended.10sRTC
   resumes unchangedboot, S0I3 increases9,715,072us, PMdebug flags restored.
