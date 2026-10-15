@@ -42,3 +42,14 @@ old stablebqdiag1 kernel, not the priorR19 test runtime. User is unavailable
 for manually selectingR19; no remote-only reboot or new recording is done.
 Host or focused-object success does not qualify this research source for
 deployment. Do not mix its results with earlierR19 device evidence.
+
+## Completed offline gates, 2026-10-15
+
+All25 exact-source host suites exit0, including the new56-case nominal
+stop/order model and retained294 PCI restore cases. W=1/Clang21 prepare,
+modules_prepare, atomisp_v4l2.o, atomisp_ioctl.o and atomisp_compat_css20.o
+all exit0 in a separate R22-focused output directory. Source hashes/HEAD
+were unchanged during build. Five R19/R20 artifact hashes remain unchanged.
+No full R22 bzImage/modules build, installation, boot or device timing test.
+See tests/mipad2-r22-host-validation-summary.json for exact boundaries and
+the explicitly retained14 stuck-stop and16 failed-reset model cases.
