@@ -1075,22 +1075,8 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	dev_dbg(isp->dev, "Stop stream\n");
 
 	mutex_lock(&isp->mutex);
-	/*
-	 * There is no guarantee that the buffers queued to / owned by the ISP
-	 * will properly be returned to the queue when stopping. Set a flag to
-	 * avoid new buffers getting queued and then wait for all the current
-	 * buffers to finish.
-	 */
+	/* Keep a final queued frame available for the CSS stop handshake. */
 	pipe->stopping = true;
-	mutex_unlock(&isp->mutex);
-	/* wait max 1 second */
-	ret = wait_event_timeout(pipe->vb_queue.done_wq,
-				 atomisp_buffers_in_css(pipe) == 0 ||
-				 READ_ONCE(isp->isp_fatal_error), HZ);
-	mutex_lock(&isp->mutex);
-	pipe->stopping = false;
-	if (ret == 0)
-		dev_warn(isp->dev, "Warning timeout waiting for CSS to return buffers\n");
 
 	spin_lock_irqsave(&isp->lock, flags);
 	asd->streaming = false;
@@ -1101,8 +1087,6 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 
 	/* Retain format configs, but still release all per-stream parameters. */
 	atomisp_css_stop_preserve_config(asd);
-
-	atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_ERROR, true);
 
 	atomisp_subdev_cleanup_pending_events(asd);
 
@@ -1130,6 +1114,13 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 			       isp->saved_regs.i_control | MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK);
 	ret = atomisp_reset(isp);
 
+	/*
+	 * Return VB2 frames after the reset attempt, as in upstream 0193cce58b19.
+	 * A failed physical power fence remains an unresolved teardown case;
+	 * fatal/quarantine below must not be mistaken for DMA quiescence proof.
+	 */
+	atomisp_flush_video_pipe(pipe, VB2_BUF_STATE_ERROR, false);
+
 	/* Do not create CSS contexts after a failed power-cycle. */
 	if (!ret)
 		ret = atomisp_create_pipes_stream(asd);
@@ -1139,6 +1130,7 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	}
 
 	media_pipeline_stop(&asd->video_out.vdev.entity.pads[0]);
+	pipe->stopping = false;
 	mutex_unlock(&isp->mutex);
 	/*
 	 * The VB2 queue lock still excludes a new STREAMON. Never wait for

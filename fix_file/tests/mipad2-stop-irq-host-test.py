@@ -14,6 +14,7 @@ base=base.replace('struct vb2_queue {struct atomisp_video_pipe *owner;};','')
 base=base.replace('static void cancel_work_sync(int *work) {(void)work;}', 'static struct atomisp_device *current;static int cancellations,drain_queries;\nstatic void cancel_work_sync(int *work) {(void)work;assert(!current->mutex.locked);cancellations++;}')
 base=base.replace('assert(on==1);','assert(on==0);')
 base=base.replace('assert(css_started);css_started=false;', 'css_started=false;')
+base=base.replace('(void)p;assert(wake);', '(void)p;assert(!wake);')
 base+='''
 #define HZ 100
 #define READ_ONCE(x) (x)
@@ -28,7 +29,7 @@ int main(void){int cases=0;
   sensor_error=0;reset_error=reset?-EIO:0;create_error=create?-ENOMEM:0;mc_refs=1;css_owned=in_css?2:0;css_started=true;pipes_ready=true;irq_enabled=true;csi_enabled=ann;
   flushes=resets=recreates=css_stops=dfs_low=sensor_calls=cancellations=drain_queries=0;
   atomisp_stop_streaming(&p->vb_queue);
-  bool passed=!d.mutex.locked&&!d.asd.streaming&&!p->stopping&&mc_refs==0&&css_owned==0&&!css_started&&!irq_enabled&&!csi_enabled&&sensor_calls==1&&flushes==1&&flush_state==VB2_BUF_STATE_ERROR&&resets==1&&recreates==!reset&&d.isp_fatal_error==(bool)(fatal||reset||create)&&cancellations==1;
+  bool passed=!d.mutex.locked&&!d.asd.streaming&&!p->stopping&&mc_refs==0&&css_owned==0&&!css_started&&!irq_enabled&&!csi_enabled&&sensor_calls==1&&flushes==1&&flush_state==VB2_BUF_STATE_ERROR&&resets==1&&recreates==!reset&&d.isp_fatal_error==(bool)(fatal||reset||create)&&cancellations==1&&drain_queries==0;
   printf("{\"suite\":\"stop\",\"case\":%d,\"ann\":%d,\"prior_fatal\":%d,\"reset_error\":%d,\"create_error\":%d,\"in_css\":%d,\"passed\":%s}\n",cases++,ann,fatal,reset,create,in_css,passed?"true":"false");
  }return 0;
 }
