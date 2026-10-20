@@ -1,0 +1,362 @@
+{
+  "release": "6.14.0-mipad2-integrated-r24",
+  "built_source": "130c1b76c1aa7761ac570f0342d6c6f77ad8497a",
+  "kernel_archive_sha256": "66747643319bbe4183e884e42b207c6e29d4f8086fc199039b2bd6d8c292a329",
+  "stage_steps": [
+    {
+      "script": "stage_mp2_r24_remote.py",
+      "exit_code": 0
+    },
+    {
+      "script": "r24_install_verified_early_serial.py",
+      "exit_code": 0
+    },
+    {
+      "script": "r24_install_boot_entry.py",
+      "exit_code": 0
+    }
+  ],
+  "one_shot_boot_commands": 1,
+  "running_config_exact": true,
+  "loaded_modules_match": {
+    "atomisp": true,
+    "ov5693": true,
+    "t4ka3": true,
+    "snd_soc_sst_cht_bsw_rt5659": true,
+    "brcmfmac": true
+  },
+  "saved_default": "mipad2-bqdiag1",
+  "next_entry_consumed": true,
+  "early_usb_serial_boot_observed": true,
+  "first_camera_enumeration": {
+    "video_nodes": 0,
+    "media_video_ov5693_t4ka3_vcm_smoke_failed": true,
+    "rear_chip_id_i2c_errno": -121,
+    "failed_register": "0x0000",
+    "driver_not_bound": true
+  },
+  "first_normal_gate": {
+    "exit_code": 1,
+    "failure": "No sensor subdevices; StopIteration during discovery",
+    "native_capture_cases_started": 0
+  },
+  "later_manual_native_reprobe": {
+    "writes": 1,
+    "success": true,
+    "cameras_registered": 2,
+    "video_nodes_registered": 1,
+    "initial_failure_at_boot_seconds": 32.762922,
+    "later_reprobe_at_boot_seconds": 13745.292457,
+    "immediate_retry_proven": false,
+    "cold_boot_camera_passed": false
+  },
+  "post_reprobe": {
+    "steps": [
+      {
+        "script": "run_r24_strict_queues_after_reprobe_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "cases": [
+            {
+              "input": 0,
+              "diagnostic_code": 0,
+              "long_strict_code": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "restore_errors": 0
+            },
+            {
+              "input": 1,
+              "diagnostic_code": 0,
+              "long_strict_code": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "restore_errors": 0
+            }
+          ],
+          "debug_restored": true
+        }
+      },
+      {
+        "script": "run_r24_restart_enum_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "cases": [
+            {
+              "input": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "cadence": [
+                {
+                  "requested_fps": 30,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 30.00495336010145,
+                    "after-observer-close": 30.001795022668908,
+                    "ordinary-restart": 30.002161172629595,
+                    "remaining-fd-takeover": 30.001093260180106
+                  }
+                },
+                {
+                  "requested_fps": 15,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 15.00068011557913,
+                    "after-observer-close": 15.000561885452893,
+                    "ordinary-restart": 15.001484892741415,
+                    "remaining-fd-takeover": 15.000268225132135
+                  }
+                }
+              ]
+            },
+            {
+              "input": 1,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "cadence": [
+                {
+                  "requested_fps": 30,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 30.012478069269378,
+                    "after-observer-close": 30.012310134011145,
+                    "ordinary-restart": 30.012371201135082,
+                    "remaining-fd-takeover": 30.01553176584796
+                  }
+                },
+                {
+                  "requested_fps": 15,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 15.00594515200219,
+                    "after-observer-close": 15.005937518837728,
+                    "ordinary-restart": 15.006044383812144,
+                    "remaining-fd-takeover": 15.004063812535883
+                  }
+                }
+              ]
+            }
+          ],
+          "debug_restored": true
+        }
+      },
+      {
+        "script": "r24_fresh_audio_audit.py",
+        "exit_code": 0,
+        "summary": {
+          "fresh_boot_and_resume_electrical_passed": true,
+          "audible_test": false,
+          "acoustic_verified": false,
+          "taint": 1088,
+          "rtc_code": 0,
+          "smoke_code": 0,
+          "kernel_fault_lines": 0
+        }
+      },
+      {
+        "script": "r24_resume_residency_normal_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "s0i3_delta_us": 9058304,
+          "functional_resume_passed": true,
+          "s0i3_entered": true,
+          "debug_restored": true,
+          "boot_unchanged": true,
+          "rtc_code": 0
+        }
+      }
+    ],
+    "pm": {
+      "v4l-subdev4": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "v4l-subdev5": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "0000:00:03.0": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "selected_kernel_error_counts": {
+      "BUG:": 0,
+      "WARNING:": 0,
+      "Oops:": 0,
+      "GPU HANG": 0,
+      "general protection fault": 0,
+      "SP is not idle": 0,
+      "ISP is not idle": 0,
+      "stop stream timeout": 0,
+      "IUNIT power-.*timeout": 0
+    },
+    "tones_played": false,
+    "acoustic_verified": false,
+    "new_media_saved": false,
+    "raw_data_exported": false
+  },
+  "final_checkpoint": {
+    "protected_software_unchanged": true,
+    "controls": [
+      {
+        "input": 0,
+        "values": {
+          "exposure": 1976,
+          "analogue_gain": 8
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      },
+      {
+        "input": 1,
+        "values": {
+          "exposure": 2486,
+          "analogue_gain": 128
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      }
+    ],
+    "isp_pm": {
+      "runtime_usage": "0",
+      "runtime_status": "suspended"
+    },
+    "anti_idle": "active",
+    "thermal_guard": "active",
+    "thermal_dropins_unchanged": true,
+    "gpu": {
+      "gt_min_freq_mhz": "200",
+      "gt_max_freq_mhz": "600"
+    },
+    "trace_instances": [],
+    "free_root": 2724962304,
+    "cold_rear_i2c_121_count": 1
+  },
+  "log_preservation": {
+    "legacy_files_archived": 21,
+    "logical_bytes": 741737792,
+    "byte_identical": true,
+    "alias_mappings_rehydrated": 35,
+    "user_access_matches_original": true,
+    "user_readable_aliases": 29,
+    "original_root_only_aliases": 6,
+    "permissions_not_loosened": true,
+    "raw_data_exported": false
+  },
+  "fixture_failures_retained": [
+    {
+      "type": "Preflight only, no boot command",
+      "cause": "Six original root-owned0600 traces correctly denied user access; verifier now requires direct/alias access parity, not new access rights"
+    },
+    {
+      "type": "Runtime identity bookkeeping on same successful boot",
+      "cause": "modinfo /lib/modules path lexically differed from /usr/lib/modules; canonical resolution verified actual loaded files/config without another boot"
+    },
+    {
+      "type": "WSL host stdout succeeded with Python stderr-reader UnicodeDecodeError",
+      "cause": "Four compiler results/explicit source/binary hashes obtained; fixed later host wrapper byte capture, did not repeat or claim that warning was a kernel failure"
+    },
+    {
+      "type": "Publication pre-commit formatting",
+      "cause": "Windows CRLF fixture copies tripped git diff --check before commit; normalized ONLY line endings. Python AST identical; three C preprocessing streams and compiled ELFs byte-identical. Original executed hashes retained. No device tests repeated."
+    }
+  ],
+  "test_source_sha256": {
+    "mipad2-multiopen-device-test-r24.c": "b2d6ffce57ec544276714140837a715721c5dd3555b9a7bcc9d47874ee1d8de0",
+    "mipad2-r24-multiopen-long.c": "d34beb72d42133b45b77a15063cf7d0fc9bb262c9f4a9d5f01dea13be3264389",
+    "mipad2-r24-cadence-enum-device-test.c": "f8e5a673f4b7f4eb476548c28c6e96f1d79bcb4b91e52a0d579ed3e34106a00a",
+    "run_r24_strict_queues_after_reprobe_remote.py": "51603b126b6b9f277576fcce2e3f85220d9e33d2fab0d033b6500cc1d1ee4b7b",
+    "run_r24_restart_enum_remote.py": "a282a9be3c2ba30ee2b73f37caa494443dac06e1d7b753011ce1aceec6f52d4d",
+    "r24_fresh_audio_audit.py": "3902402c116cedc864d62080c305de4285fba683ae86f56ba911a29624e429a2",
+    "r24_resume_residency_normal_remote.py": "a07971126e1e5d5f0ba7eeefae78f5d1edf102c61769bc5c5bbb621fb1838b41"
+  },
+  "test_binary_sha256": {
+    "mipad2-multiopen-device-test-r24": "bd54b80b9a6c5f75dffed0c0f8dd31d01648034edfe59bcb94982593db6526e3",
+    "mipad2-r24-multiopen-long": "2ec0926bb85fcd0d6898702d6c78770ed8c26870e5c207cd2e4f69abb9389778",
+    "mipad2-r24-cadence-enum-device-test": "36efdfd1d2c08f9af48230deaa163ed347581db8a655092089017b0ed387016f",
+    "mipad2-streamparm-abi-test-r24": "0e3636d2be3d86dfbeb308351cd9cf00fa589796884ced069ee5953ec0d24b09"
+  },
+  "source_deployment_qualified": false,
+  "cold_boot_camera_passed": false,
+  "physical_reset_fault_injected": false,
+  "physical_dma_fencing_proven": false,
+  "recovery_applied_control_replay_proven": false,
+  "android_windows_live_parity_proven": false,
+  "full_objective_complete": false,
+  "executed_test_input_sha256": {
+    "mipad2-multiopen-device-test-r24.c": "7b06343932187a69b4d96067ba868f5f7e62def85f2f6f1063fd00864c8d21c4",
+    "mipad2-r24-multiopen-long.c": "22a9f114c83ac7fe5ab0ece32aef87fcc58e95b6d6947b3c00e1cb306107c766",
+    "mipad2-r24-cadence-enum-device-test.c": "f873b05eefcec34cdda0ac2dbbb8d717fd4775700f126c949784af3c49b61b05",
+    "run_r24_strict_queues_after_reprobe_remote.py": "c37fcb27cd3b8fb33979022cc2e102f4294bd2c7e130f91fb6650471deca6021",
+    "run_r24_restart_enum_remote.py": "9086f47f8f644c6a6d904c11123681ee4016a80d15e4d8e6a7c49d1410fd429c",
+    "r24_fresh_audio_audit.py": "47f74b0039838a0ea5e365ed63f63f3b5a047dfa00798584b5749b1471f94f25",
+    "r24_resume_residency_normal_remote.py": "8edea53b8ce1ab4538742e9a199e55fbe5032424804ccd81d266c0932d22c8a0"
+  },
+  "published_lf_normalization": [
+    {
+      "source": "mipad2-multiopen-device-test-r24.c",
+      "executed_sha256": "7b06343932187a69b4d96067ba868f5f7e62def85f2f6f1063fd00864c8d21c4",
+      "published_sha256": "b2d6ffce57ec544276714140837a715721c5dd3555b9a7bcc9d47874ee1d8de0",
+      "only_crlf_to_lf": true,
+      "preprocessing_identical": true,
+      "compiled_elf_identical": true
+    },
+    {
+      "source": "mipad2-r24-multiopen-long.c",
+      "executed_sha256": "22a9f114c83ac7fe5ab0ece32aef87fcc58e95b6d6947b3c00e1cb306107c766",
+      "published_sha256": "d34beb72d42133b45b77a15063cf7d0fc9bb262c9f4a9d5f01dea13be3264389",
+      "only_crlf_to_lf": true,
+      "preprocessing_identical": true,
+      "compiled_elf_identical": true
+    },
+    {
+      "source": "mipad2-r24-cadence-enum-device-test.c",
+      "executed_sha256": "f873b05eefcec34cdda0ac2dbbb8d717fd4775700f126c949784af3c49b61b05",
+      "published_sha256": "f8e5a673f4b7f4eb476548c28c6e96f1d79bcb4b91e52a0d579ed3e34106a00a",
+      "only_crlf_to_lf": true,
+      "preprocessing_identical": true,
+      "compiled_elf_identical": true
+    },
+    {
+      "source": "run_r24_strict_queues_after_reprobe_remote.py",
+      "executed_sha256": "c37fcb27cd3b8fb33979022cc2e102f4294bd2c7e130f91fb6650471deca6021",
+      "published_sha256": "51603b126b6b9f277576fcce2e3f85220d9e33d2fab0d033b6500cc1d1ee4b7b",
+      "only_crlf_to_lf": true,
+      "ast_identical": true
+    },
+    {
+      "source": "run_r24_restart_enum_remote.py",
+      "executed_sha256": "9086f47f8f644c6a6d904c11123681ee4016a80d15e4d8e6a7c49d1410fd429c",
+      "published_sha256": "a282a9be3c2ba30ee2b73f37caa494443dac06e1d7b753011ce1aceec6f52d4d",
+      "only_crlf_to_lf": true,
+      "ast_identical": true
+    },
+    {
+      "source": "r24_fresh_audio_audit.py",
+      "executed_sha256": "47f74b0039838a0ea5e365ed63f63f3b5a047dfa00798584b5749b1471f94f25",
+      "published_sha256": "3902402c116cedc864d62080c305de4285fba683ae86f56ba911a29624e429a2",
+      "only_crlf_to_lf": true,
+      "ast_identical": true
+    },
+    {
+      "source": "r24_resume_residency_normal_remote.py",
+      "executed_sha256": "8edea53b8ce1ab4538742e9a199e55fbe5032424804ccd81d266c0932d22c8a0",
+      "published_sha256": "a07971126e1e5d5f0ba7eeefae78f5d1edf102c61769bc5c5bbb621fb1838b41",
+      "only_crlf_to_lf": true,
+      "ast_identical": true
+    }
+  ]
+}

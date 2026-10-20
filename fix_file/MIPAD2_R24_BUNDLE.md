@@ -33,3 +33,11 @@ and the original complete Linux/flash/Android-Windows parity objective remain
 OPEN. Before experimental one-shot boot, preserve the proven fallback and verify
 serial/recovery, exact source/artifact/target/free-space/GRUB guards; do not treat
 compilation or cryptographic packaging as a safe DMA fence.
+
+
+## Subsequent physical test
+
+R24 was subsequently staged and booted once; cold camera enumeration FAILED.
+See [the device report](MIPAD2_R24_DEVICE_20261020.md) for later manual reprobe
+and scoped normal-path passes. Earlier packaging-only statements describe that
+earlier operation, not current deployment qualification.
