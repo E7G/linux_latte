@@ -62,3 +62,16 @@ Android and current upstream contain the same unconditional parameter-free
 pattern, so copying either would retain this bug, not independently fix it:
 - https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/drivers/external_drivers/camera/drivers/media/pci/atomisp2/atomisp_driver/atomisp_compat_css20.c
 - https://github.com/torvalds/linux/blob/master/drivers/staging/media/atomisp/pci/atomisp_compat_css20.c
+
+## Completed offline integration gates,2026-10-20
+
+All27 exact-source host suites pass on code4bd0fc1ddedbd6eca449daedbad0c8f22868a4bd,
+including the updated prior CSS-restart contract and new heap-lifetime suite.
+Clang21 W=1 olddefconfig/prepare/modules_prepare/atomisp_compat_css20.o and
+atomisp_cmd.o pass in a separate focused directory. R19/R20 artifacts and
+user-dirty litmus hash preserved; final driver patch checkpatch0/0/0.
+No full R24 bzImage/modules build has completed at this documentation point.
+Any later full-build evidence must name its own source/outputs separately.
+The focused wrapper's final human-readable line retained an R23 label; its
+structured commands/hash report correctly identifies R24. No duplicate build.
+See tests/mipad2-r24-host-validation-summary.json for exact boundaries.
