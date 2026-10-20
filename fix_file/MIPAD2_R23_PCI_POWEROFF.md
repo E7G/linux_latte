@@ -59,3 +59,19 @@ only once finished. Do not promote this research candidate from stub results.
 Primary API references:
 - https://github.com/torvalds/linux/blob/v6.14/include/linux/pci.h
 - https://github.com/torvalds/linux/blob/v6.14/drivers/pci/pci.c
+
+## Completed offline gates, 2026-10-20
+
+All 26 exact-source regression suites pass, including the new 544-case
+power-off suite and retained PCI restore/stream-stop tests. On final source
+136479068020b2479be7ab3389f94211ff65e080, Clang21 W=1 olddefconfig,
+prepare/modules_prepare, atomisp_v4l2.o and atomisp_cmd.o all exit0 in a
+separate focused output directory. R19/R20 artifacts and the user-modified
+litmus file hash remain unchanged. This is not a full bzImage/modules build.
+The first completed build/test run used functional commit462ce269; three
+checkpatch alignment checks prompted a whitespace-only commit and a second
+complete 26-suite/focused-object run. Final patch check:0 errors,0 warnings,
+0 checks. Both runs and scratch before/after reports are retained.
+
+See tests/mipad2-r23-host-validation-summary.json. The tablet remains on
+6.14.0-mipad2-integrated-r19; no R23 install/boot/error injection occurred.

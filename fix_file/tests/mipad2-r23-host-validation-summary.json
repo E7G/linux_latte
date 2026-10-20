@@ -1,0 +1,201 @@
+{
+  "code_commit": "136479068020b2479be7ab3389f94211ff65e080",
+  "functional_commit": "462ce269b2931eb35020d231a37bc6a1ff9b12b4",
+  "prior": "48da9d0d83777f87326af87387150ed7b5dc5ae5",
+  "host_suites": 26,
+  "tests": [
+    {
+      "name": "mipad2-buffer-metadata-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "5f15835a35c86a09b2c2cff23ce2c47c056f0d91bcb9685d34e47ac1b6acae7a"
+    },
+    {
+      "name": "mipad2-create-bufs-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "ad2c7549a938a225e237f8f1917fc8a5c92ca42410acabaf659498c411707c2e"
+    },
+    {
+      "name": "mipad2-css-restart-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "b06a97b9beedcdf879e087d24f302b84dd05b441526a6690bce10c7673a23d83"
+    },
+    {
+      "name": "mipad2-frame-interval-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "018eed50c550da3d6837d7a5e297a525e60f4b2380244b8d8eef1ad28bf3aa94"
+    },
+    {
+      "name": "mipad2-frame-sequence-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "a4b1e23f9c7b192e3ac6443ac22324c38d65985e9cc8c37d69b44535c8651adb"
+    },
+    {
+      "name": "mipad2-input-geometry-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "e9da6d837e035cb26fb37394116b78a813875715be1507e281bdfb1cb8bff988"
+    },
+    {
+      "name": "mipad2-multiopen-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "056195e0719f80b3364b216d9b2d688e5bdb25728fd275319b4812423717d170"
+    },
+    {
+      "name": "mipad2-ov5693-crop-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "cc208c50ece0a22e752c652a10c1926b5abbf4df46b6f02bda5ed27b15b5fa7b"
+    },
+    {
+      "name": "mipad2-ov5693-timing-policy-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "c1170e4db2e01432c7f6ae07f8fcc26bc953ece990f06e4fdf338a9b83062af3"
+    },
+    {
+      "name": "mipad2-preview-warm-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "12cbd3f80679f6f5ebe9660fafa497e540746ee1f3db764bc9925eb670d30575"
+    },
+    {
+      "name": "mipad2-queue-reconfigure-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "4d148a9d09e48b83eac90b8869e379e5c77e17bb3f17f8dc9c6bc96863cb12e1"
+    },
+    {
+      "name": "mipad2-sensor-events-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "412fde196fc8293c5a9e48d62df32aa8a9225b0f9b6c5c8589036a7453b6685b"
+    },
+    {
+      "name": "mipad2-sensor-format-error-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "110c115ec2f26196e87a9c720007153a8c04ee047aac0b2ae8fcac246d4cdc38"
+    },
+    {
+      "name": "mipad2-sensor-geometry-lock-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "7c34e96639789afaad9b4988c4f1ac3b7159b037bf557137c23c27897f6e8b4d"
+    },
+    {
+      "name": "mipad2-stream-parameter-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "dd4cc45034834852680562ce72a83d4ef6be3b42e1a677429bd8a42bced6bf78"
+    },
+    {
+      "name": "mipad2-stream-start-unwind-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "fb4df2550b9bdbc2c9924a0a9a64aea92f4023458a0d0381ff6eb08791ee38d7"
+    },
+    {
+      "name": "mipad2-stream-stop-pm-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "b04680192d5e7a09a42ca0e6294c26fb57789eb8428cd06c67dbd6c130a99aea"
+    },
+    {
+      "name": "mipad2-t4ka3-metadata-control-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "b5ca453cb7525725c831bd56438bcd578e7e51d6aff06f4cfd9ba084b2ca57f3"
+    },
+    {
+      "name": "mipad2-t4ka3-start-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "465bee965d9e3f783856be6eb56dc16ff45243995b4614f3088dd3fd8e4ea451"
+    },
+    {
+      "name": "mipad2-power-transport-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "e32809b3a68c91a52f89061eaf618333ce88340f4b20a2dfbd0e88aa81baee3a"
+    },
+    {
+      "name": "mipad2-recovery-error-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "be8f1d4b79003438825889bccd5862282113d7900daae9716dc73c4263f4f510"
+    },
+    {
+      "name": "mipad2-stop-irq-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "3b2eb83e5b0430bcb80f80e15d7832be58218e606715c055716b5a4311667e39"
+    },
+    {
+      "name": "mipad2-css-uninit-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "40ba3b6bf114330d12b422b3c8fe4c4933fffd9b80d7561a0f18799f57a35410"
+    },
+    {
+      "name": "mipad2-pci-restore-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "765cad3600060b2d520e6380812babe75bff83f7d9a1ad9dbf7219ddcd3bb6eb"
+    },
+    {
+      "name": "mipad2-stream-stop-order-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "f417b4ca33badbab6f6bac3be724ec73dce780bc8ca07dadea19d9dd665cf675"
+    },
+    {
+      "name": "mipad2-pci-poweroff-host-test.py",
+      "exit_code": 0,
+      "script_sha256": "7e54c1161b2b432250a8c6959a240159ce62b7060c2e7d8ae6f03c4ce2cf4d7f"
+    }
+  ],
+  "poweroff_model": {
+    "cases": 544,
+    "original_failed": 537,
+    "candidate_failed": 0,
+    "scope": "Exact driver functions and kernel PCI errno translator; PCI/IRQ/MMIO/QoS/CSS/PUNIT stubs. Not DMA fencing, PCI core internals or hardware validation.",
+    "all_standard_and_unknown_positive_pci_codes": true,
+    "negative_errno_preserved": true,
+    "lock_balance_and_first_error_checked": true,
+    "normal_transactions_preserved_except_delayed_qos_release": true
+  },
+  "focused_build": {
+    "objects_sha256": {
+      "drivers/staging/media/atomisp/pci/atomisp_v4l2.o": "437d170fda721fe5e3b3cc9a83e039d25feb6349a2b2eaa13a732a7a9ec473a9",
+      "drivers/staging/media/atomisp/pci/atomisp_cmd.o": "21d4cb40b0d44abd446079809a9b87de58cf351547a7041e9eefeb0af43e1ac7"
+    },
+    "commands": [
+      {
+        "command": [
+          "make",
+          "O=/tmp/linux-latte-6.14-integrated-r23-focused-v2-20261020",
+          "LLVM=1",
+          "CC=clang-21",
+          "LOCALVERSION=",
+          "olddefconfig"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "make",
+          "O=/tmp/linux-latte-6.14-integrated-r23-focused-v2-20261020",
+          "LLVM=1",
+          "CC=clang-21",
+          "LOCALVERSION=",
+          "-j4",
+          "W=1",
+          "prepare",
+          "modules_prepare",
+          "drivers/staging/media/atomisp/pci/atomisp_v4l2.o",
+          "drivers/staging/media/atomisp/pci/atomisp_cmd.o"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "source_unchanged": true,
+    "full_kernel_built": false
+  },
+  "checkpatch": {
+    "errors": 0,
+    "warnings": 0,
+    "checks": 0
+  },
+  "device_kernel": "6.14.0-mipad2-integrated-r19",
+  "no_reboot": true,
+  "installed": false,
+  "booted": false,
+  "r19_r20_artifacts_unchanged": true,
+  "userdirty_unchanged": true,
+  "physical_fault_injected": false,
+  "dma_quiescence_proven": false,
+  "pci_core_hidden_read_failures_fixed": false,
+  "source_not_deployment_ready": true,
+  "full_objective_complete": false
+}
