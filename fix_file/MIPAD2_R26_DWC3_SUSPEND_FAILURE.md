@@ -47,3 +47,20 @@ Fixes commit in this checkout and the upstream stable Cc spelling), zero errors.
 This is not a stable-default promotion or an OEM-parity
 completion claim. Full1080p recording cadence, power-off cold-start reliability,
 active-debug deep power and camera DMA/reset fencing are still open.
+
+
+## Completed regression and focused compile
+
+All30 canonical host suites exit0 (the previous28, severity classification,
+and exact DWC3 error contract). The complete current-source49152-case contract
+also passes inside that suite run. Clang21 W=1 prepare/modules_prepare and
+both dwc3/core.o and dwc3/gadget.o compile successfully in a fresh isolated
+R26-focused directory. Configuration differs only by LOCALVERSION. R19/R20/
+R24/R25 five artifacts each, protected source, and original dirty litmus remain
+unchanged. The initial untouched upstream mail checkpatch's two metadata
+warnings are retained; exact C-diff checkpatch exits0.
+
+See tests/mipad2-r26-dwc3-validation-summary.json for exact source/function/object
+hashes and bounded synthetic scope. Full bzImage/modules, installation, physical
+USB error behavior and S0I3 comparison are STILL PENDING. The tablet remains
+on R25 with no new reboot or default/feature/power-policy change.
