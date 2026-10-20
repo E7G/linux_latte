@@ -1819,9 +1819,16 @@ static void atomisp_css_stop_internal(struct atomisp_sub_device *asd,
 		list_splice_init(&asd->metadata_ready[i], &asd->metadata[i]);
 	}
 
-	atomisp_flush_params_queue(&asd->video_out);
-	atomisp_free_css_parameters(&asd->params.css_param);
-	memset(&asd->params.css_param, 0, sizeof(asd->params.css_param));
+	/*
+	 * Recovery keeps config's borrowed pointers and requeues frame_params.
+	 * Keep their owning global/pending parameter objects alive as well.
+	 * Ordinary STREAMOFF (including after failed recovery) frees them.
+	 */
+	if (!in_reset) {
+		atomisp_flush_params_queue(&asd->video_out);
+		atomisp_free_css_parameters(&asd->params.css_param);
+		memset(&asd->params.css_param, 0, sizeof(asd->params.css_param));
+	}
 }
 
 void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)

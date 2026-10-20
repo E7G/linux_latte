@@ -96,13 +96,15 @@ int main(void) {
   asd.s3a_stats.count=1;asd.s3a_stats_ready.count=2;asd.s3a_stats_in_css.count=3;
   asd.dis_stats.count=1;asd.dis_stats_in_css.count=2;
   if(mode==2)atomisp_css_stop_preserve_config(&asd);else atomisp_css_stop(&asd,mode==1);
-  assert(destroyed==1 && stopped==1 && flushed==1 && freed==1 && !asd.dis_stats_lock);
+  assert(destroyed==1 && stopped==1 && flushed==(mode==1?0u:1u) && freed==(mode==1?0u:1u) && !asd.dis_stats_lock);
   assert(defaults==(mode==0?22u:0u));
   if(mode)assert(!memcmp(before,asd.stream_env,sizeof(before)));
   else {typeof(asd.stream_env) zero={0};assert(!memcmp(zero,asd.stream_env,sizeof(zero)));}
   if(mode!=1)assert(!asd.params.config.shading_table && !asd.params.config.other && !asd.params.css_update_params_needed);
   else assert(asd.params.config.shading_table==&asd && asd.params.css_update_params_needed);
-  assert(!asd.params.css_param.shading_table && !asd.params.css_param.other && !asd.params.dis_proj_data_valid);
+  if(mode==1)assert(asd.params.css_param.shading_table==&asd && asd.params.css_param.other==&isp);
+  else assert(!asd.params.css_param.shading_table && !asd.params.css_param.other);
+  assert(!asd.params.dis_proj_data_valid);
   assert(asd.s3a_stats.count==6 && !asd.s3a_stats_ready.count && !asd.s3a_stats_in_css.count);
   assert(asd.dis_stats.count==3 && !asd.dis_stats_in_css.count);
   for(unsigned i=0;i<2;i++)assert(asd.metadata[i].count==6 && !asd.metadata_ready[i].count && !asd.metadata_in_css[i].count);
