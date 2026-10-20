@@ -47,3 +47,21 @@ isolated signed delivery, controlled physical cold starts and warm/stream/
 suspend regressions with original failures retained. Full reset/DMA ownership,
 applied ISP-control replay, full recording cadence/image quality and complete
 kernel+flash/Android-Windows parity remain open. No deployment qualification.
+
+
+## Completed offline regression gates
+
+All28 exact-source host suites exit0, including prior recovery/ownership/ABI
+models and the new4608-case current-source pulse contract. W=1 Clang21/LLVM
+prepare/modules_prepare/t4ka3.o compile passes in an isolated R25-focused output;
+config differs only by LOCALVERSION. R19/R20/R24 five build artifacts each and
+the original dirty litmus remain unchanged. Source stayed fixed throughout.
+See tests/mipad2-r25-reset-validation-summary.json for exact hashes and scope.
+
+The eight actual ACPI table checksums are valid. Combined iasl disassembly hit
+duplicate CPU SSDT objects (exit255); standalone DSDT disassembly exits0 while
+retaining unresolved external warnings. Raw PR0 AML confirms the five rear and
+four front resource references; cosmetic doubled disassembler commas are not
+extra package elements. No table override or ACPI/PMIC write was performed.
+This inspection does not certify all firmware semantics or establish the cause
+of the first probe failure. Physical cold-boot testing of R25 is still REQUIRED.
