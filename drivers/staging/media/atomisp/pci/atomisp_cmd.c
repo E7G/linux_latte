@@ -323,22 +323,35 @@ void atomisp_msi_irq_init(struct atomisp_device *isp)
 	pci_write_config_word(pdev, PCI_COMMAND, msg16);
 }
 
-void atomisp_msi_irq_uninit(struct atomisp_device *isp)
+int atomisp_msi_irq_uninit(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	u32 msg32;
 	u16 msg16;
+	int ret;
 
-	pci_read_config_dword(pdev, PCI_MSI_CAPID, &msg32);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_MSI_CAPID, &msg32));
+	if (ret)
+		return ret;
 	msg32 &=  ~(1 << MSI_ENABLE_BIT);
-	pci_write_config_dword(pdev, PCI_MSI_CAPID, msg32);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_MSI_CAPID, msg32));
+	if (ret)
+		return ret;
 
 	msg32 = 0x0;
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, msg32);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, msg32));
+	if (ret)
+		return ret;
 
-	pci_read_config_word(pdev, PCI_COMMAND, &msg16);
+	ret = pcibios_err_to_errno(pci_read_config_word(pdev, PCI_COMMAND, &msg16));
+	if (ret)
+		return ret;
 	msg16 &= ~(PCI_COMMAND_MASTER);
-	pci_write_config_word(pdev, PCI_COMMAND, msg16);
+	ret = pcibios_err_to_errno(pci_write_config_word(pdev, PCI_COMMAND, msg16));
+	if (ret)
+		return ret;
+
+	return 0;
 }
 
 static void atomisp_sof_event(struct atomisp_sub_device *asd)
