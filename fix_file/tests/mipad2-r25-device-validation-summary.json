@@ -1,0 +1,390 @@
+{
+  "schema": 1,
+  "qualification": "partial; not deployment-ready or OEM parity",
+  "built_source_commit": "11d2680b7773cd46d5dc4513be7b31bd99f124b5",
+  "build": {
+    "exit_code": 0,
+    "command_exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "config_difference": [
+      "CONFIG_LOCALVERSION"
+    ],
+    "artifacts_sha256": {
+      ".config": "4cc1f20080b88e483e511759372886f1d2db0e628aa9d1d8c3d04ae0dd939fea",
+      "arch/x86/boot/bzImage": "15b806e37ff567d986a75fe54605d917ce5b577fe31befee8707796d262d9fa2",
+      "vmlinux": "a67fc7de6935a847370575850ec97084348566df539ee1b5350692802d3d15e6",
+      "Module.symvers": "65d798b2fc1e31b371edfea788a8e4225393397b00e814fef342304b0fcd35f3",
+      "System.map": "187b20bd7c0787e553a0df6ba5bb59b5e7647eae20edac506c59d15bdc811e98"
+    },
+    "source_unchanged": true,
+    "userdirty_unchanged": true,
+    "r19_r20_r24_artifacts_unchanged": true
+  },
+  "archive": {
+    "archive_sha256": "0b8d43e9f0f9b3c3f73e75285fc04e2c50f68aa836a98f76fa9016003dadb24b",
+    "archive_bytes": 20902938,
+    "regular_files_verified": 52,
+    "compressed_modules_verified": 34,
+    "no_links_or_special_entries": true,
+    "all_module_signatures_cryptographically_verified": true,
+    "embedded_config_matches_completed_build": true
+  },
+  "boot": {
+    "kernel": "6.14.0-mipad2-integrated-r25",
+    "reboot_commands": 1,
+    "running_config_exact": true,
+    "loaded_modules_match": {
+      "atomisp": true,
+      "ov5693": true,
+      "t4ka3": true,
+      "snd_soc_sst_cht_bsw_rt5659": true,
+      "brcmfmac": true
+    },
+    "protected_files_unchanged": true,
+    "saved_default_unchanged": true,
+    "next_entry_consumed": true,
+    "kind": "warm machine reboot / fresh-kernel first probe, NOT S5 or removal-of-power"
+  },
+  "first_probe": {
+    "state": "passed",
+    "front_nodes": 1,
+    "rear_nodes": 1,
+    "vcm_nodes": 1,
+    "video_present": true,
+    "media_present": true,
+    "both_native_drivers_bound": true,
+    "first_boot_fault_counts": {
+      "t4ka3.*Error reading reg": 0,
+      "t4ka3.*sensor detect failed": 0,
+      "t4ka3.*probe.*failed": 0,
+      "ov5693.*Error reading reg": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU HANG": 0
+    },
+    "smoke_exit_code": 0,
+    "manual_reprobes": 0,
+    "module_reloads": 0,
+    "gpio_pmic_writes_by_test": 0,
+    "power_off_cold_boot_proven": false,
+    "full_cold_reliability_proven": false
+  },
+  "harness_history": {
+    "first_probe_original_false_positive_preserved": true,
+    "same_untrimmed_saved_boot_log_reclassified": true,
+    "word_boundary_severity_fixture_tests": [
+      {
+        "optimized": false,
+        "test_groups": 4,
+        "exit_code": 0
+      },
+      {
+        "optimized": true,
+        "test_groups": 4,
+        "exit_code": 0
+      }
+    ],
+    "audio_initial_stale_identity_guard_failed_before_pcm": true,
+    "audio_corrected_new_helper_one_run": true,
+    "no_native_tests_repeated_to_repair_harness_bookkeeping": true
+  },
+  "native_strict": {
+    "cases": [
+      {
+        "input": 0,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      },
+      {
+        "input": 1,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      }
+    ],
+    "debug_restored": true
+  },
+  "native_cadence": {
+    "cases": [
+      {
+        "input": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0,
+        "cadence": [
+          {
+            "requested_fps": 30,
+            "capture_code": 0,
+            "period_gate": true,
+            "measured_fps": {
+              "before-observer-close": 30.004556624192595,
+              "after-observer-close": 30.00362586190493,
+              "ordinary-restart": 30.003686893728236,
+              "remaining-fd-takeover": 30.00188655930735
+            }
+          },
+          {
+            "requested_fps": 15,
+            "capture_code": 0,
+            "period_gate": true,
+            "measured_fps": {
+              "before-observer-close": 15.000249156680914,
+              "after-observer-close": 15.000989048261069,
+              "ordinary-restart": 14.999330114663682,
+              "remaining-fd-takeover": 15.001168311328724
+            }
+          }
+        ]
+      },
+      {
+        "input": 1,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0,
+        "cadence": [
+          {
+            "requested_fps": 30,
+            "capture_code": 0,
+            "period_gate": true,
+            "measured_fps": {
+              "before-observer-close": 30.015715007399404,
+              "after-observer-close": 30.018555537635283,
+              "ordinary-restart": 30.011623145574728,
+              "remaining-fd-takeover": 30.012844480052976
+            }
+          },
+          {
+            "requested_fps": 15,
+            "capture_code": 0,
+            "period_gate": true,
+            "measured_fps": {
+              "before-observer-close": 15.00585355456874,
+              "after-observer-close": 15.00672377530523,
+              "ordinary-restart": 15.005494808734614,
+              "remaining-fd-takeover": 15.00649476006275
+            }
+          }
+        ]
+      }
+    ],
+    "debug_restored": true
+  },
+  "silent_audio_electrical": {
+    "fresh_boot_and_resume_electrical_passed": true,
+    "audible_test": false,
+    "acoustic_verified": false,
+    "taint": 1088,
+    "rtc_code": 0,
+    "smoke_code": 0,
+    "kernel_fault_lines": 0,
+    "s0i3_delta_us": 9086368
+  },
+  "residency": [
+    {
+      "phase": "original",
+      "rtc_code": 0,
+      "elapsed_boottime": 11.382057452999902,
+      "functional_resume_passed": true,
+      "s0i3_delta_us": 0,
+      "s0i3_entered": false,
+      "boot_unchanged": true,
+      "debug_restored": true,
+      "usb_callback_counts": {
+        "dwc3": {
+          "lines": 16,
+          "error_return_lines": 0
+        },
+        "dwc3-pci": {
+          "lines": 12,
+          "error_return_lines": 0
+        },
+        "xhci_hcd": {
+          "lines": 12,
+          "error_return_lines": 0
+        }
+      },
+      "pending_wakeup_lines": 0,
+      "suspend_abort_lines": 0
+    },
+    {
+      "phase": "off",
+      "rtc_code": 0,
+      "elapsed_boottime": 11.138796643999967,
+      "functional_resume_passed": true,
+      "s0i3_delta_us": 9521760,
+      "s0i3_entered": true,
+      "boot_unchanged": true,
+      "debug_restored": true,
+      "usb_callback_counts": {
+        "dwc3": {
+          "lines": 16,
+          "error_return_lines": 0
+        },
+        "dwc3-pci": {
+          "lines": 12,
+          "error_return_lines": 0
+        },
+        "xhci_hcd": {
+          "lines": 12,
+          "error_return_lines": 0
+        }
+      },
+      "pending_wakeup_lines": 0,
+      "suspend_abort_lines": 0
+    },
+    {
+      "phase": "on",
+      "rtc_code": 0,
+      "elapsed_boottime": 11.116139007000129,
+      "functional_resume_passed": true,
+      "s0i3_delta_us": 0,
+      "s0i3_entered": false,
+      "boot_unchanged": true,
+      "debug_restored": true,
+      "usb_callback_counts": {
+        "dwc3": {
+          "lines": 16,
+          "error_return_lines": 0
+        },
+        "dwc3-pci": {
+          "lines": 12,
+          "error_return_lines": 0
+        },
+        "xhci_hcd": {
+          "lines": 12,
+          "error_return_lines": 0
+        }
+      },
+      "pending_wakeup_lines": 0,
+      "suspend_abort_lines": 0
+    },
+    {
+      "phase": "off2",
+      "rtc_code": 0,
+      "elapsed_boottime": 10.699903724000023,
+      "functional_resume_passed": true,
+      "s0i3_delta_us": 9185856,
+      "s0i3_entered": true,
+      "boot_unchanged": true,
+      "debug_restored": true,
+      "usb_callback_counts": {
+        "dwc3": {
+          "lines": 16,
+          "error_return_lines": 0
+        },
+        "dwc3-pci": {
+          "lines": 12,
+          "error_return_lines": 0
+        },
+        "xhci_hcd": {
+          "lines": 12,
+          "error_return_lines": 0
+        }
+      },
+      "pending_wakeup_lines": 0,
+      "suspend_abort_lines": 0
+    }
+  ],
+  "observer_comparison": {
+    "phases": [
+      "closed",
+      "managed-open-read-reconnect",
+      "closed"
+    ],
+    "only_host_reader_state_varied": true,
+    "serial_bytes_not_exported": true,
+    "observer_terminal": true,
+    "no_kernel_or_power_policy_change": true,
+    "not_an_acceptance_retry": true
+  },
+  "post_five_rtc_native": {
+    "exit_code": 0,
+    "cases": [
+      {
+        "input": 0,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      },
+      {
+        "input": 1,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      }
+    ],
+    "debug_restored": true,
+    "after_rtc_cycles": 5,
+    "media_saved": false,
+    "raw_frame_data_exported": false
+  },
+  "checkpoint": {
+    "protected_software_unchanged": true,
+    "anti_idle": "active",
+    "thermal_guard": "active",
+    "gpu": {
+      "gt_min_freq_mhz": "200",
+      "gt_max_freq_mhz": "600"
+    },
+    "saved_entry": "mipad2-bqdiag1",
+    "next_entry_empty": true,
+    "controls": [
+      {
+        "input": 0,
+        "values": {
+          "exposure": 1976,
+          "analogue_gain": 8
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      },
+      {
+        "input": 1,
+        "values": {
+          "exposure": 2486,
+          "analogue_gain": 128
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      }
+    ],
+    "isp_pm": {
+      "runtime_usage": "0",
+      "runtime_status": "suspended"
+    },
+    "trace_instances": [],
+    "legacy_aliases_preserved": 35,
+    "free_root_bytes": 2596528128
+  },
+  "full_normal_gate_passed": false,
+  "active_debug_deep_residency_qualified": false,
+  "power_off_cold_boot_proven": false,
+  "physical_dma_fencing_proven": false,
+  "full_h264_cadence_passed": false,
+  "android_windows_parity_proven": false,
+  "full_objective_complete": false,
+  "raw_media_or_private_traces_published": false
+}

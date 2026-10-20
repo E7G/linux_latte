@@ -65,3 +65,64 @@ four front resource references; cosmetic doubled disassembler commas are not
 extra package elements. No table override or ACPI/PMIC write was performed.
 This inspection does not certify all firmware semantics or establish the cause
 of the first probe failure. Physical cold-boot testing of R25 is still REQUIRED.
+
+
+## Actual R25 build and first-device qualification (2026-10-20)
+
+The completed Clang21 W=1 full bzImage/modules build uses source
+11d2680b7773cd46d5dc4513be7b31bd99f124b5. All three build phases exit0;
+only LOCALVERSION differs in configuration. The source, original dirty litmus,
+and R19/R20/R24 protected artifacts stayed unchanged. Existing compiler warnings
+remain in private build logs. The 20,902,938-byte archive has SHA256
+0b8d43e9f0f9b3c3f73e75285fc04e2c50f68aa836a98f76fa9016003dadb24b.
+All52 regular files,34 compressed modules, embedded configuration, and each
+CMS module signature against the actual build certificate were verified.
+
+One warm machine reboot reached R25 with matching running configuration and
+five loaded native module identities. Both sensors and rear VCM registered on
+the first probe with no sensor-read/probe error, rebind or module reload.
+This is one fresh-kernel first probe, NOT S5/removal-of-power qualification or
+proof that the OEM pulse uniquely caused the improvement over R24.
+The stable bqdiag1 GRUB default and existing application/default are unchanged.
+
+### Real narrow gates and retained failures
+
+Both inputs pass native strict multiopen/takeover/ordinary restart, a separate
+320-frame-per-phase variant, streamparm ABI, and four cached-format phases at
+30 and15 fps (1280x720 YU12; mean period within1%). Mutable controls and sensor
+shapes are restored. A new real strict run after all five RTC cycles also passes
+on both inputs. These native gates are NOT full1080p H264 cadence, optical
+quality, automatic exposure/WB/focus, or end-user parity measurements.
+
+Silent zero-PCM RT5659/dual-TFA active/idle electrical checks before/after RTC
+pass. No tone was played; no new audible/acoustic verification is claimed.
+The audio run enters S0I3 for9.086368s. A separate10s RTC run resumes correctly
+but has ZERO S0I3 residency: the strict coordinator rejects it. This real deep
+power failure remains RED despite the child script's functional-resume exit0.
+
+A controlled same-boot host COM17 reader OFF/managed-ON/OFF comparison gives
+9.521760s /0 /9.185856s S0I3. All RTC wakes and driver suspend/resume callbacks
+return successfully; no pending-wakeup/early-abort line is observed. Only the
+owned Windows serial reader changes; cable, kernel and power policy do not.
+The observer is closed afterward. This supports a USB-debug-observer/standby
+interaction, not a complete root-cause proof or permission to suppress logging,
+disconnect USB, or rewrite the failed acceptance gate as green.
+
+Two harness problems are separately retained: the first severity regexp matched
+the suffix of `debug:` as `BUG:`; the same full saved boot log was reclassified
+using word-boundary severity markers with actual kernel BUG forms retained.
+The published four-group fixture passes in normal and optimized Python modes.
+The original generated audio helper had stale parent/source identity assertions
+and failed BEFORE PCM or RTC; a new corrected helper ran once. Native passes
+were not repeated just to repair bookkeeping. Private original reports remain.
+
+Final read-only checkpoint: both sensors and ISP suspended with usage0, controls
+restored, thermal guard and anti-idle active, GPU200..600MHz, no trace instances,
+35 private scalar aliases intact, protected software/default unchanged.
+Only explicit scalar summaries are published. No raw media, request/pointer
+traces, serial contents, or firmware dumps are included.
+
+See tests/mipad2-r25-device-validation-summary.json. Normal qualification is
+PARTIAL. Active-debug deep power, power-off cold-boot reliability, physical DMA
+stop/reset fencing and full recording cadence remain open. The integrated
+kernel/flash/OEM-parity objective is NOT complete; no stable-default promotion.
