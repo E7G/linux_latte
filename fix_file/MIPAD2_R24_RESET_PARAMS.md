@@ -75,3 +75,16 @@ Any later full-build evidence must name its own source/outputs separately.
 The focused wrapper's final human-readable line retained an R23 label; its
 structured commands/hash report correctly identifies R24. No duplicate build.
 See tests/mipad2-r24-host-validation-summary.json for exact boundaries.
+
+## Later completed combined full-kernel build,2026-10-20
+
+Source130c1b76c1aa7761ac570f0342d6c6f77ad8497a completed isolated Clang21/
+LLVM/ThinLTO W=1 olddefconfig,8 focused objects, then full bzImage/modules.
+All three phase exits0; release6.14.0-mipad2-integrated-r24. Exact source/
+HEAD stayed unchanged during build; R19/R20 five protected artifact hashes
+and user-dirty litmus hash stayed unchanged. Config differs from R19 only
+by LOCALVERSION. Artifact hashes/module count and warning boundaries are
+in tests/mipad2-r24-full-build-summary.json. No installed/staged R24 image,
+reboot, physical error injection or boot regression was performed. Existing
+kernel-doc/const-init/stack warnings remain. Full compile is NOT a physical
+DMA fence, safe VB2 release, image-quality or deployment qualification.
