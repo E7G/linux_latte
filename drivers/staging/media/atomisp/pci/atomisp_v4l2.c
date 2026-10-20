@@ -645,8 +645,7 @@ int atomisp_power_off(struct device *dev)
 	u32 reg;
 
 	if (isp->pm_only) {
-		ret = pcibios_err_to_errno(pci_write_config_dword(pdev,
-							PCI_INTERRUPT_CTRL, 0));
+		ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, 0));
 		if (ret)
 			return ret;
 	} else {
@@ -662,13 +661,11 @@ int atomisp_power_off(struct device *dev)
 	 * MRFLD HW design need all CSI ports are disabled before
 	 * powering down the IUNIT.
 	 */
-	ret = pcibios_err_to_errno(pci_read_config_dword(pdev,
-						      MRFLD_PCI_CSI_CONTROL, &reg));
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &reg));
 	if (ret)
 		return ret;
 	reg |= MRFLD_ALL_CSI_PORTS_OFF_MASK;
-	ret = pcibios_err_to_errno(pci_write_config_dword(pdev,
-						       MRFLD_PCI_CSI_CONTROL, reg));
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, reg));
 	if (ret)
 		return ret;
 
