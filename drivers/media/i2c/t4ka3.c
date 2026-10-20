@@ -1404,6 +1404,20 @@ static int t4ka3_pm_resume(struct device *dev)
 
 	if (sensor->powerdown_gpio)
 		gpiod_set_value_cansleep(sensor->powerdown_gpio, 0);
+
+	/*
+	 * Mi Pad 2 Android's __power_up() pulses reset after releasing
+	 * powerdown. Both descriptors are active-low on this board, so the
+	 * physical high-low-high pulse is logical 0-1-0. ACPI still owns the
+	 * rails and PMC clock; do not duplicate the legacy GMIN power writes.
+	 */
+	if (sensor->reset_gpio && t4ka3_has_mipad2_otp(sensor)) {
+		fsleep(1000);
+		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
+		fsleep(1000);
+		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+		fsleep(1000);
+	}
 	if (sensor->reset_gpio)
 		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
 
