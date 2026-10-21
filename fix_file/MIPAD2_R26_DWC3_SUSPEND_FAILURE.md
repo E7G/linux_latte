@@ -130,5 +130,5 @@ S0I3 root-cause fix. Successful current RTC samples cannot erase intermittent R2
 failures or certify all active-debug power modes. Full recording cadence (the
 earlier R17g end-to-end gate is RED), optical/automatic camera behavior, power-off
 cold starts, physical camera DMA/reset fencing and complete flash/OEM parity
-remain OPEN. There is no new R26 full H264 measurement or stable-default promotion.
+remain OPEN. At this earlier checkpoint there was no R26 full H264 measurement or stable-default promotion. The subsequent 2026-10-21 full-quality recording crossover is documented in MIPAD2_R26_RECORDING_CADENCE.md; overall cadence remains RED and no default is promoted.
 See tests/mipad2-r26-device-validation-summary.json for explicit bounded scalars.
