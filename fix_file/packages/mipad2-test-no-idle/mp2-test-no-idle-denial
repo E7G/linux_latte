@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Optional Denial backend for the existing no-idle tool; never unlock a session."""
+import copy
+import json
+import os
+from pathlib import Path
+import socket
+import stat
+import sys
+
+
+def require(value, message):
+    if not value:
+        raise ValueError(message)
+
+
+def request(path, method, params=None):
+    message = dict(version=1, id=1, method=method)
+    if params is not None:
+        message['params'] = params
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.settimeout(5)
+        sock.connect(str(path))
+        sock.sendall((json.dumps(message) + '\n').encode())
+        data = b''
+        while b'\n' not in data:
+            chunk = sock.recv(65536)
+            require(bool(chunk), 'Incomplete Denial reply')
+            data += chunk
+            require(len(data) < 2 * 1024**2, 'Oversized Denial reply')
+    reply = json.loads(data.split(b'\n', 1)[0])
+    require(reply.get('version') == 1 and reply.get('id') == 1,
+            'Invalid Denial reply envelope')
+    require(reply.get('ok') is True,
+            'Denial request rejected: ' + str(reply.get('error', {}).get('code')))
+    return reply['result']
+
+
+def snapshot(call):
+    result = call('settings.document.get')
+    require(type(result.get('revision')) is int, 'Missing settings revision')
+    value = json.loads(result['document'])
+    require(type(value.get('power', {}).get('idleDpmsEnabled')) is bool,
+            'Unsupported Denial DPMS setting')
+    return result['revision'], value
+
+
+def without_revision(value):
+    value = copy.deepcopy(value)
+    value.pop('revision', None)
+    return value
+
+
+def read_backup(path):
+    require(not path.is_symlink(), 'Symlinked Denial backup')
+    mode = path.stat()
+    require(stat.S_ISREG(mode.st_mode) and mode.st_uid == os.getuid()
+            and not mode.st_mode & 0o077, 'Unsafe Denial backup owner/mode')
+    value = json.loads(path.read_text(encoding='utf-8'))
+    require(set(value) == {'schema', 'idleDpmsEnabled'} and value['schema'] == 1
+            and type(value['idleDpmsEnabled']) is bool, 'Invalid Denial backup')
+    return value['idleDpmsEnabled']
+
+
+def save_once(path, original):
+    if path.exists() or path.is_symlink():
+        read_backup(path)
+        return
+    require(not path.parent.is_symlink(), 'Symlinked Denial state directory')
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    require(path.parent.stat().st_uid == os.getuid()
+            and not path.parent.stat().st_mode & 0o077,
+            'Unsafe Denial state directory')
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    with os.fdopen(os.open(path, flags, 0o600), 'w', encoding='utf-8') as stream:
+        json.dump(dict(schema=1, idleDpmsEnabled=original), stream)
+        stream.write('\n')
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def reconcile(action, call, backup):
+    require(action in ['enable', 'disable', 'status'], 'Invalid no-idle action')
+    revision, before = snapshot(call)
+    enabled = before['power']['idleDpmsEnabled']
+    if action == 'status':
+        require(not enabled, 'Denial automatic display power-off is still enabled')
+        return dict(backend='denial', automatic_dpms_disabled=True, changed=False)
+    if action == 'enable':
+        save_once(backup, enabled)
+        desired = False
+    else:
+        if not backup.exists() and not backup.is_symlink():
+            return dict(backend='denial', changed=False, restore_record_present=False)
+        desired = read_backup(backup)
+        require(enabled is False or enabled == desired,
+                'Denial DPMS setting changed independently; preserve backup')
+    planned = copy.deepcopy(before)
+    planned['power']['idleDpmsEnabled'] = desired
+    if enabled != desired:
+        call('settings.document.apply', dict(expected_revision=revision,
+             document=json.dumps(planned)))
+    _, after = snapshot(call)
+    require(without_revision(after) == without_revision(planned),
+            'Concurrent/unexpected settings change; backup retained')
+    if action == 'disable':
+        backup.unlink()
+    return dict(backend='denial', automatic_dpms_disabled=not desired,
+                changed=enabled != desired, unrelated_settings_preserved=True)
+
+
+def main():
+    require(os.getuid() != 0, 'Run this backend as the desktop user, not root')
+    require(len(sys.argv) == 2 and sys.argv[1] in ['enable', 'disable', 'status'],
+            'Usage: mp2-test-no-idle-denial {enable|disable|status}')
+    runtime = Path(os.environ['XDG_RUNTIME_DIR'])
+    require(runtime.is_absolute(), 'Absolute XDG_RUNTIME_DIR required')
+    control = runtime / 'denial/control.sock'
+    state_home = Path(os.environ.get('XDG_STATE_HOME', str(Path.home()/'.local/state')))
+    require(state_home.is_absolute(), 'Absolute XDG_STATE_HOME required')
+    backup = state_home / 'mipad2-test-no-idle/denial.saved.json'
+    if not control.exists():
+        require(not backup.exists() and not backup.is_symlink(),
+                'Denial session unavailable; restore record retained')
+        print(json.dumps(dict(backend='denial', applicable=False)))
+        return
+    require(stat.S_ISSOCK(control.stat().st_mode), 'Invalid Denial control socket')
+    print(json.dumps(reconcile(sys.argv[1],
+          lambda method, params=None: request(control, method, params), backup)))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, OSError, KeyError, json.JSONDecodeError) as error:
+        print('MISS Denial no-idle: ' + str(error), file=sys.stderr)
+        sys.exit(1)

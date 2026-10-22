@@ -13,6 +13,18 @@ gset() {
     DBUS_SESSION_BUS_ADDRESS="$bus" gsettings "$@"
 }
 
+# The system inhibitor and GNOME settings do not control Denial's native DPMS.
+# Keep one service; delegate only its desktop-owned display timeout setting.
+denial() {
+  backend=/usr/local/libexec/mp2-test-no-idle-denial
+  if [ -x "$backend" ]; then
+    runuser -u "$user_name" -- env XDG_RUNTIME_DIR="$runtime" "$backend" "$1"
+  elif [ -S "$runtime/denial/control.sock" ]; then
+    echo "MISS Denial backend is not installed; native DPMS is unverified" >&2
+    return 1
+  fi
+}
+
 save_once() {
   [ -f "$state/settings.saved" ] && return
   {
@@ -31,6 +43,7 @@ case "${1:-status}" in
   enable)
     mkdir -p "$state"
     save_once
+    denial enable
     gset set org.gnome.desktop.session idle-delay "uint32 0"
     gset set org.gnome.settings-daemon.plugins.power idle-dim false
     gset set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type "'nothing'"
@@ -39,6 +52,7 @@ case "${1:-status}" in
     echo "test no-idle enabled"
     ;;
   disable)
+    denial disable
     systemctl disable --now mipad2-test-no-idle.service || true
     if [ -f "$state/settings.saved" ]; then
       while IFS='|' read -r schema key value; do
@@ -70,6 +84,7 @@ case "${1:-status}" in
       echo "MISS test no-idle is not fully active; run enable and check status again" >&2
       exit 1
     fi
+    denial status
     echo "PASS anti-idle inhibitor active; GNOME idle/sleep disabled"
     ;;
   *) echo "Usage: sudo mp2-test-no-idle {enable|disable|status}" >&2; exit 2 ;;

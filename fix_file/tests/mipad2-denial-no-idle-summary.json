@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "scope": "existing opt-in no-idle helper gains Denial native DPMS backend; no new service",
+  "source_sha256": {
+    "fix_file/packages/mipad2-test-no-idle/PKGBUILD": "7d59ec9b8d510a8efa56b9a0685c45e0d0ef4d5db9863f8f105f29e0dbabd4e4",
+    "fix_file/packages/mipad2-test-no-idle/README": "b6ba900ada969c0a3c5d211a865380a5490dc67a7cc67f277ee0500b704ecf7a",
+    "fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle": "d2e12b53537584aa74746b3923b09d58760591356f37962fa4cabd9c640ff0f2",
+    "fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle-denial": "b60c893e330b4235d4e8573643926ee5cc59fadd173bf74be2eefa7e273dbbbe",
+    "fix_file/tests/mipad2-denial-no-idle-host-test.py": "8c97f63423d61c98dc8d15883e8134dcee9532264011cd9881504f7969ead9e8"
+  },
+  "contracts": {
+    "state": "denial-and-legacy-no-idle-contracts-pass",
+    "tests": [
+      {
+        "label": "kernel-denial-normal",
+        "exit_code": 0,
+        "cases": 18
+      },
+      {
+        "label": "kernel-denial-optimized",
+        "exit_code": 0,
+        "cases": 18
+      },
+      {
+        "label": "kernel-gnome-legacy",
+        "exit_code": 0,
+        "cases": null
+      },
+      {
+        "label": "shell-syntax",
+        "exit_code": 0,
+        "cases": null
+      },
+      {
+        "label": "flash-normal",
+        "exit_code": 0,
+        "cases": 87
+      },
+      {
+        "label": "flash-optimized",
+        "exit_code": 0,
+        "cases": 87
+      }
+    ],
+    "runtime_settings_written": false,
+    "new_service_added": false
+  },
+  "native_status": {
+    "backend": "denial",
+    "automatic_dpms_disabled": true,
+    "changed": false,
+    "state": "actual-native-status-pass",
+    "runtime_installed": false,
+    "settings_written": false,
+    "new_service_added": false
+  },
+  "device_configuration": {
+    "only_field_changed": "power.idleDpmsEnabled",
+    "automatic_dpms_disabled": true,
+    "persisted": true,
+    "observation_seconds": 630.03,
+    "sample_count": 21,
+    "authentication_and_other_settings_preserved": true
+  },
+  "current_native_session_gate": {
+    "method": "audio.get",
+    "read_only": true,
+    "error_code": "locked",
+    "current_kernel_is_stable_bqdiag1": true,
+    "not_evidence_of_driver_failure": true
+  },
+  "new_helper_installed_on_tablet": false,
+  "live_enable_disable_test_performed": false,
+  "kernel_rebuilt": false,
+  "default_promoted": false,
+  "full_objective_complete": false,
+  "raw_logs_settings_or_media_exported": false
+}
