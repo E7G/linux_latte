@@ -48,7 +48,7 @@ for name in ['__ov5693_get_pad_format','__ov5693_get_pad_crop']:
 names=['NATIVE_START_LEFT','NATIVE_START_TOP','NATIVE_WIDTH','NATIVE_HEIGHT','MIN_CROP_WIDTH','MIN_CROP_HEIGHT']
 defs=[]
 for prefix,s,extras in [('OV5693',ov,['FIXED_PPL','TIMING_MIN_VTS','TIMING_MAX_VTS','INTEGRATION_TIME_MARGIN','EXPOSURE_MIN','MIPAD2_DEFAULT_FPS','MIPAD2_VBLANK_BINNED','MIPAD2_VBLANK_UNBINNED','ACTIVE_START_LEFT','ACTIVE_START_TOP','ACTIVE_WIDTH','ACTIVE_HEIGHT']),
-                        ('T4KA3',t4,['PIXELS_PER_LINE','MIN_VBLANK','MAX_VBLANK','LINES_PER_FRAME_30FPS'])]:
+                        ('T4KA3',t4,['PIXELS_PER_LINE','MIN_VBLANK','MAX_VBLANK','LINES_PER_FRAME_30FPS','COARSE_INTEGRATION_TIME_MARGIN','COARSE_INTEGRATION_TIME_MIN'])]:
  for name in names+extras:defs.append(re.search(r'^#define '+prefix+'_'+name+r'\s+[^\n]+',s,re.M)[0])
 base=r'''
 #define _GNU_SOURCE

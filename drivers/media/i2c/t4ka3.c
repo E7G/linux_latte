@@ -101,6 +101,7 @@
 #define T4KA3_REG_PARAM_HOLD			CCI_REG8(0x0104)
 #define T4KA3_REG_COARSE_INTEGRATION_TIME	CCI_REG16(0x0202)
 #define T4KA3_COARSE_INTEGRATION_TIME_MARGIN	6
+#define T4KA3_COARSE_INTEGRATION_TIME_MIN	1
 #define T4KA3_REG_DIGGAIN_GREEN_R		CCI_REG16(0x020e)
 #define T4KA3_REG_DIGGAIN_RED			CCI_REG16(0x0210)
 #define T4KA3_REG_DIGGAIN_BLUE			CCI_REG16(0x0212)
@@ -648,8 +649,9 @@ static int t4ka3_update_exposure_range(struct t4ka3_data *sensor,
 	int exp_max = fmt->height + sensor->ctrls.vblank->val -
 		      T4KA3_COARSE_INTEGRATION_TIME_MARGIN;
 
-	return __v4l2_ctrl_modify_range(sensor->ctrls.exposure, 0, exp_max,
-					1, exp_max);
+	return __v4l2_ctrl_modify_range(sensor->ctrls.exposure,
+					T4KA3_COARSE_INTEGRATION_TIME_MIN,
+					exp_max, 1, exp_max);
 }
 
 static void t4ka3_fill_format(struct t4ka3_data *sensor,
@@ -702,6 +704,9 @@ static void t4ka3_get_vblank_limits(struct t4ka3_data *sensor,
 	struct v4l2_mbus_framefmt *fmt = v4l2_subdev_state_get_format(state, 0);
 
 	*min = T4KA3_MIN_VBLANK + (sensor->mode.binning - 1) * fmt->height;
+	/* A minimum-size crop must still allow one exposure line + margin. */
+	*min = max(*min, T4KA3_COARSE_INTEGRATION_TIME_MARGIN +
+		   T4KA3_COARSE_INTEGRATION_TIME_MIN - (int)fmt->height);
 	*max = T4KA3_MAX_VBLANK - fmt->height;
 	*def = T4KA3_LINES_PER_FRAME_30FPS - fmt->height;
 }
@@ -1338,7 +1343,8 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 	max = T4KA3_LINES_PER_FRAME_30FPS -
 	      T4KA3_COARSE_INTEGRATION_TIME_MARGIN;
 	ctrls->exposure = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_EXPOSURE,
-					    0, max, 1, max);
+					    T4KA3_COARSE_INTEGRATION_TIME_MIN,
+					    max, 1, max);
 
 	ctrls->gain = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_ANALOGUE_GAIN,
 					T4KA3_MIN_GLOBAL_GAIN_SUPPORTED,
