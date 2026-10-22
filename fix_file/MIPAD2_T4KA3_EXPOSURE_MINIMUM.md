@@ -1,6 +1,7 @@
 # T4KA3 minimum integration: Xiaomi Android source comparison
 
-2026-10-22, Linux6.14 integration candidate. No new kernel installed or booted.
+2026-10-22 initial source-only checkpoint. For the later built and booted r27
+results and unresolved power gate, see [device checkpoint](MIPAD2_R27_DEVICE_CHECKPOINT.md).
 
 Xiaomi Android's [pinned T4KA3 header](https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/drivers/external_drivers/camera/drivers/media/i2c/micam/t4ka3.h)
 defines minimum coarse integration as one line, a six-line integration margin,
