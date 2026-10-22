@@ -1,0 +1,7 @@
+{
+  "cases": 6,
+  "passed": true,
+  "core_empty_errno": "ENOENT",
+  "production_source_changed": false,
+  "binary_sha256": "7990e9996735d1296ed4b8c2819f4f4298e59567116c0dc867dc70a6a549cd1f"
+}

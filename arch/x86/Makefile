@@ -159,7 +159,10 @@ else
 	# Use -mskip-rax-setup if supported.
 	KBUILD_CFLAGS += -mskip-rax-setup
 
-ifdef CONFIG_X86_NATIVE_CPU
+ifdef CONFIG_MSILVERMONT
+        KBUILD_CFLAGS += -march=silvermont -mtune=silvermont
+        KBUILD_RUSTFLAGS += -Ctarget-cpu=silvermont
+else ifdef CONFIG_X86_NATIVE_CPU
         KBUILD_CFLAGS += -march=native
         KBUILD_RUSTFLAGS += -Ctarget-cpu=native
 else

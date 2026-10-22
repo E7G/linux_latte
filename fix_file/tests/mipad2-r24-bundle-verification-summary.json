@@ -1,0 +1,33 @@
+{
+  "state": "archive-verified",
+  "at": 1792483052.284816,
+  "release": "6.14.0-mipad2-integrated-r24",
+  "source_commit": "130c1b76c1aa7761ac570f0342d6c6f77ad8497a",
+  "integration_commit": "d7c2dfb7ae2032055e30c17c0aa1f3e7addebb86",
+  "archive_sha256": "66747643319bbe4183e884e42b207c6e29d4f8086fc199039b2bd6d8c292a329",
+  "archive_bytes": 20898799,
+  "regular_files_verified": 52,
+  "compressed_modules_verified": 34,
+  "no_links_or_special_entries": true,
+  "all_module_signatures_cryptographically_verified": true,
+  "embedded_config_matches_completed_build": true,
+  "protected_r19_r20_userdirty_unchanged_at_packaging": true,
+  "tablet_staged": false,
+  "installed": false,
+  "booted": false,
+  "hardware_validation_complete": false,
+  "build_artifacts_sha256": {
+    ".config": "3fdd1f84ef732cb7ee5dd984ed80288d10e792b957c761e99fafd69bf4611807",
+    "arch/x86/boot/bzImage": "e9d7d66f2781d4059b026a7be63303a7ce5049286faaec01c59c6c770874fb1b",
+    "vmlinux": "f57ec4166fe7b042664744ea29057c044379f1324b9aa99fc679631c1744a324",
+    "Module.symvers": "65d798b2fc1e31b371edfea788a8e4225393397b00e814fef342304b0fcd35f3",
+    "System.map": "d60ec769bff4c1ee0aa6e28ed5e6f147a1244859dab644f53365176f619351cb"
+  },
+  "build_config_difference": [
+    "CONFIG_LOCALVERSION"
+  ],
+  "module_signature_certificate_serial": "0b35642e7a0587c286545fe4fcdf8c1aad090e59",
+  "source_deployment_qualified": false,
+  "physical_reset_dma_fence_proven": false,
+  "full_objective_complete": false
+}

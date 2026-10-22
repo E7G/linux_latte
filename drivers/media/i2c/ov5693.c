@@ -15,9 +15,14 @@
 #include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/device.h>
+#include <linux/err.h>
+#include <linux/gcd.h>
 #include <linux/i2c.h>
+#include <linux/math64.h>
 #include <linux/module.h>
+#include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
@@ -38,6 +43,20 @@
 #define OV5693_REG_CHIP_ID			CCI_REG16(0x300a)
 /* Yes, this is right. The datasheet for the OV5693 gives its ID as 0x5690 */
 #define OV5693_CHIP_ID				0x5690
+
+/* Mi Pad 2 front-camera OTP banks, from Xiaomi's Android driver. */
+#define OV5693_MIPAD2_OTP_START_REG		0x3d00
+#define OV5693_MIPAD2_OTP_READ_REG		0x3d81
+#define OV5693_MIPAD2_OTP_BANK_REG		0x3d84
+#define OV5693_MIPAD2_OTP_FRAME_OFF_REG		0x4202
+#define OV5693_MIPAD2_OTP_BANKS			26
+#define OV5693_MIPAD2_OTP_BANK_SIZE		16
+#define OV5693_MIPAD2_OTP_SIZE \
+	(OV5693_MIPAD2_OTP_BANKS * OV5693_MIPAD2_OTP_BANK_SIZE)
+#define OV5693_MIPAD2_OTP_TYPE			0x3a
+#define OV5693_MIPAD2_OTP_CAL_SIZE		320
+#define OV5693_MIPAD2_OTP_DATA_OFFSET		(3 * OV5693_MIPAD2_OTP_BANK_SIZE)
+#define OV5693_MIPAD2_OTP_DATA_SIZE		(23 * OV5693_MIPAD2_OTP_BANK_SIZE)
 
 /* Exposure */
 #define OV5693_EXPOSURE_CTRL_REG		CCI_REG24(0x3500)
@@ -64,6 +83,11 @@
 #define OV5693_DIGITAL_GAIN_MAX			4095
 #define OV5693_DIGITAL_GAIN_DEF			1024
 #define OV5693_DIGITAL_GAIN_STEP		1
+#define OV5693_COLOR_BALANCE_MIN		256
+#define OV5693_COLOR_BALANCE_MAX		4095
+#define OV5693_COLOR_BALANCE_UNITY		1024
+#define OV5693_RED_BALANCE_DEF			1650
+#define OV5693_BLUE_BALANCE_DEF			1633
 
 /* Timing and Format */
 #define OV5693_CROP_START_X_REG			CCI_REG16(0x3800)
@@ -121,6 +145,10 @@
 #define OV5693_XVCLK_FREQ			19200000
 #define OV5693_LINK_FREQ_419_2MHZ		419200000
 #define OV5693_PIXEL_RATE			167680000
+#define OV5693_MIPAD2_PIXEL_RATE			160000000
+#define OV5693_MIPAD2_DEFAULT_FPS		30
+#define OV5693_MIPAD2_VBLANK_BINNED		16
+#define OV5693_MIPAD2_VBLANK_UNBINNED		24
 
 #define to_ov5693_sensor(x) container_of(x, struct ov5693_device, sd)
 
@@ -144,6 +172,18 @@ struct ov5693_device {
 	struct regulator_bulk_data supplies[OV5693_NUM_SUPPLIES];
 	struct clk *xvclk;
 
+	/* Mi Pad 2 front-module factory calibration cache. */
+	struct nvmem_device *otp_nvmem;
+	struct nvmem_device *otp_cal_nvmem;
+	u8 otp_data[OV5693_MIPAD2_OTP_SIZE];
+	u8 otp_cal_data[OV5693_MIPAD2_OTP_CAL_SIZE];
+	bool otp_cached;
+	bool otp_cal_cached;
+	bool streaming;
+	bool needs_reinit;
+	unsigned int pixel_rate;
+	bool mipad2;
+
 	struct ov5693_mode {
 		struct v4l2_rect crop;
 		struct v4l2_mbus_framefmt format;
@@ -164,6 +204,8 @@ struct ov5693_device {
 		struct v4l2_ctrl *exposure;
 		struct v4l2_ctrl *analogue_gain;
 		struct v4l2_ctrl *digital_gain;
+		struct v4l2_ctrl *red_balance;
+		struct v4l2_ctrl *blue_balance;
 		struct v4l2_ctrl *hflip;
 		struct v4l2_ctrl *vflip;
 		struct v4l2_ctrl *hblank;
@@ -171,6 +213,389 @@ struct ov5693_device {
 		struct v4l2_ctrl *test_pattern;
 	} ctrls;
 };
+
+static int ov5693_enable_streaming(struct ov5693_device *ov5693, bool enable);
+
+static bool ov5693_has_mipad2_otp(struct ov5693_device *ov5693)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       ACPI_COMPANION(ov5693->dev);
+}
+
+static int ov5693_mipad2_read_otp_bank(struct ov5693_device *ov5693,
+				       unsigned int bank, u8 *data)
+{
+	unsigned int i;
+	u64 value;
+	int ret = 0;
+
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_BANK_REG),
+		  0xc0 | bank, &ret);
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_READ_REG), 1,
+		  &ret);
+	if (ret)
+		return ret;
+
+	usleep_range(5000, 6000);
+
+	for (i = 0; i < OV5693_MIPAD2_OTP_BANK_SIZE; i++) {
+		ret = cci_read(ov5693->regmap,
+			       CCI_REG8(OV5693_MIPAD2_OTP_START_REG + i),
+			       &value, NULL);
+		if (ret)
+			return ret;
+		data[i] = value;
+	}
+
+	return 0;
+}
+
+static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
+{
+	unsigned int bank;
+	int stop_ret = 0;
+	int ret;
+
+	if (ov5693->otp_cached)
+		return 0;
+	if (ov5693->streaming || ov5693->needs_reinit)
+		return -EBUSY;
+
+	/*
+	 * Xiaomi's Android driver enables streaming while reading the sensor's
+	 * OTP window. Do the same, but only while the V4L2 stream is idle.
+	 * The caller has already runtime-resumed the sensor before taking lock.
+	 */
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x00, &ret);
+	if (ret)
+		return ret;
+
+	ret = ov5693_enable_streaming(ov5693, true);
+	if (ret)
+		goto stop_streaming;
+
+	for (bank = 0; bank < OV5693_MIPAD2_OTP_BANKS; bank++) {
+		u8 *bank_data = &ov5693->otp_data[bank * OV5693_MIPAD2_OTP_BANK_SIZE];
+
+		ret = ov5693_mipad2_read_otp_bank(ov5693, bank, bank_data);
+		if (ret)
+			break;
+	}
+
+stop_streaming:
+	/* Always attempt to restore both sensor state registers on failure. */
+	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+		  0x0f, &stop_ret);
+	{
+		int stream_ret = ov5693_enable_streaming(ov5693, false);
+
+		if (!stop_ret)
+			stop_ret = stream_ret;
+	}
+	if (!ret)
+		ret = stop_ret;
+	if (ret)
+		return ret;
+
+	if (ov5693->otp_data[0] != OV5693_MIPAD2_OTP_TYPE) {
+		dev_err(ov5693->dev,
+			"invalid Mi Pad 2 front-camera OTP type 0x%02x\n",
+			ov5693->otp_data[0]);
+		return -EBADMSG;
+	}
+
+	ov5693->otp_cached = true;
+	dev_info(ov5693->dev,
+		 "cached Mi Pad 2 front-camera OTP (%u raw banks)\n",
+		 OV5693_MIPAD2_OTP_BANKS);
+
+	return 0;
+}
+
+/*
+ * Repack the Mi Pad 2 factory OTP into Xiaomi's 320-byte AtomISP layout.
+ * The source layout and checksum rules match Xiaomi's Android OV5693 driver.
+ */
+static bool ov5693_mipad2_otp_checksum(const u8 *data, size_t size, u8 expected)
+{
+	u8 sum = 0;
+	size_t i;
+
+	for (i = 0; i < size; i++)
+		sum = (sum + data[i]) % 255;
+
+	return (u8)(sum + 1) == expected;
+}
+
+static bool ov5693_mipad2_otp_group_valid(const u8 *data)
+{
+	return (data[0] & 0xc0) == 0x40;
+}
+
+static u16 ov5693_mipad2_otp_crc16(const u8 *data, size_t size)
+{
+	u16 crc = 0;
+	size_t i;
+	int bit;
+
+	for (i = 0; i < size; i++) {
+		crc ^= data[i];
+		for (bit = 0; bit < 8; bit++)
+			crc = (crc >> 1) ^ ((crc & 1) ? 0xa001 : 0);
+	}
+
+	return crc;
+}
+
+static int ov5693_mipad2_parse_otp(const u8 *raw, u8 *cal)
+{
+	const u8 *data = raw + OV5693_MIPAD2_OTP_DATA_OFFSET;
+	unsigned int module_bank = 1;
+	unsigned int module_offset = 0;
+	unsigned int light_offset = 38;
+	unsigned int light_data_offset = 38;
+	unsigned int lsc_offset = 79;
+	unsigned int i, j;
+	u16 crc;
+	u8 module;
+
+	if (raw[0] != OV5693_MIPAD2_OTP_TYPE)
+		return -EBADMSG;
+
+	/* Android validates the metadata bank before interpreting its group flag. */
+	if (!ov5693_mipad2_otp_checksum(raw + 1 * OV5693_MIPAD2_OTP_BANK_SIZE + 1,
+					14, raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE + 15]))
+		return -EBADMSG;
+	if ((raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) == 0x00 ||
+	    (raw[1 * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) == 0xc0)
+		module_bank = 2;
+
+	if (!ov5693_mipad2_otp_checksum(raw + module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 1,
+					14, raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 15]))
+		return -EBADMSG;
+	if ((raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE] & 0xc0) != 0x40)
+		return -EBADMSG;
+	module = raw[module_bank * OV5693_MIPAD2_OTP_BANK_SIZE + 1];
+
+	memset(cal, 0, OV5693_MIPAD2_OTP_CAL_SIZE);
+
+	/* Module and light-source-1 data use one of two 19-byte groups. */
+	if (!ov5693_mipad2_otp_group_valid(data))
+		module_offset = 19;
+	if (!ov5693_mipad2_otp_group_valid(data + module_offset) ||
+	    !ov5693_mipad2_otp_checksum(data + module_offset + 1, 17,
+					data[module_offset ? 37 : 18]))
+		return -EBADMSG;
+	/* Android skips the three-byte prefix only for the fallback group. */
+	i = module_offset ? module_offset + 3 : module_offset;
+	cal[0] = data[i + 1];
+	cal[1] = data[i + 2];
+	cal[13] = data[i + 3];
+	cal[14] = data[i + 4];
+	cal[16] = data[i + 5];
+	cal[18] = data[i + 6];
+	cal[19] = data[i + 7];
+	cal[302] = data[i + 8];
+	cal[303] = data[i + 9];
+	cal[306] = data[i + 10];
+	cal[307] = data[i + 11];
+	cal[310] = data[i + 12];
+	cal[311] = data[i + 13];
+	cal[314] = data[i + 14];
+	cal[315] = data[i + 15];
+
+	/* Light-source-2 values are stored in a second pair of groups. */
+	if (!ov5693_mipad2_otp_group_valid(data + light_offset)) {
+		light_offset += 19;
+		light_data_offset = light_offset + 3;
+	}
+	if (!ov5693_mipad2_otp_group_valid(data + light_offset) ||
+	    !ov5693_mipad2_otp_checksum(data + light_offset + 1, 17,
+					data[light_offset == 38 ? 56 : 75]))
+		return -EBADMSG;
+	i = light_data_offset;
+	cal[15] = data[i + 4];
+	cal[17] = data[i + 5];
+	cal[304] = data[i + 8];
+	cal[305] = data[i + 9];
+	cal[308] = data[i + 10];
+	cal[309] = data[i + 11];
+	cal[312] = data[i + 12];
+	cal[313] = data[i + 13];
+	cal[316] = data[i + 14];
+	cal[317] = data[i + 15];
+
+	/* Android supplies a fixed AF block because this module has no AF OTP. */
+	cal[2] = 1;
+	cal[3] = 0;
+	cal[4] = 10;
+	cal[5] = 0x8a;
+	cal[6] = 0x02;
+	cal[7] = 0x2c;
+	cal[8] = 0x01;
+	cal[9] = 0x64;
+	cal[10] = 0x00;
+	cal[11] = 0x84;
+	cal[12] = 0x03;
+
+	if ((data[lsc_offset] & 0xf0) != 0x50 ||
+	    !ov5693_mipad2_otp_checksum(data + lsc_offset + 1, 141, data[221]))
+		return -EBADMSG;
+	cal[20] = data[lsc_offset + 1];
+	if (module == 1) {
+		for (j = 0; j < 4; j++)
+			for (i = 0; i < 35; i++)
+				cal[21 + i + 35 * j] =
+					data[lsc_offset + 1 + (j + 1) * 35 - i];
+	} else {
+		for (j = 0; j < 20; j++)
+			for (i = 0; i < 7; i++)
+				cal[21 + i + 7 * j] =
+					data[lsc_offset + 1 + (j + 1) * 7 - i];
+	}
+
+	/* Second light-source grid begins at bank 17 (payload offset 224). */
+	lsc_offset = 224;
+	if (!ov5693_mipad2_otp_checksum(data + lsc_offset, 141, data[365]))
+		return -EBADMSG;
+	cal[161] = data[lsc_offset];
+	if (module == 1) {
+		for (j = 0; j < 4; j++)
+			for (i = 0; i < 35; i++)
+				cal[162 + 35 * j + i] =
+					data[lsc_offset + (j + 1) * 35 - i];
+	} else {
+		for (j = 0; j < 20; j++)
+			for (i = 0; i < 7; i++)
+				cal[162 + 7 * j + i] =
+					data[lsc_offset + (j + 1) * 7 - i];
+	}
+
+	crc = ov5693_mipad2_otp_crc16(cal, OV5693_MIPAD2_OTP_CAL_SIZE - 2);
+	cal[OV5693_MIPAD2_OTP_CAL_SIZE - 2] = crc & 0xff;
+	cal[OV5693_MIPAD2_OTP_CAL_SIZE - 1] = crc >> 8;
+
+	return 0;
+}
+
+static int ov5693_mipad2_otp_cal_read(void *context, unsigned int offset,
+				      void *val, size_t bytes)
+{
+	struct ov5693_device *ov5693 = context;
+	int ret;
+
+	if (offset > OV5693_MIPAD2_OTP_CAL_SIZE ||
+	    bytes > OV5693_MIPAD2_OTP_CAL_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0) {
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 calibrated OTP power-up failed: %pe\n",
+			ERR_PTR(ret));
+		return ret;
+	}
+
+	mutex_lock(&ov5693->lock);
+	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (!ret && !ov5693->otp_cal_cached) {
+		ret = ov5693_mipad2_parse_otp(ov5693->otp_data,
+					      ov5693->otp_cal_data);
+		if (!ret)
+			ov5693->otp_cal_cached = true;
+	}
+	if (ret)
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 calibrated OTP read failed: %pe\n",
+			ERR_PTR(ret));
+	if (!ret)
+		memcpy(val, ov5693->otp_cal_data + offset, bytes);
+	mutex_unlock(&ov5693->lock);
+
+	pm_runtime_put_autosuspend(ov5693->dev);
+	return ret;
+}
+
+static int ov5693_mipad2_otp_read(void *context, unsigned int offset,
+				  void *val, size_t bytes)
+{
+	struct ov5693_device *ov5693 = context;
+	int ret;
+
+	if (offset > OV5693_MIPAD2_OTP_SIZE ||
+	    bytes > OV5693_MIPAD2_OTP_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	/*
+	 * Runtime resume takes ov5693->lock, so wake the device before taking
+	 * the same lock here. This avoids self-deadlock from a suspended state.
+	 */
+	ret = pm_runtime_resume_and_get(ov5693->dev);
+	if (ret < 0) {
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 raw OTP power-up failed: %pe\n", ERR_PTR(ret));
+		return ret;
+	}
+
+	mutex_lock(&ov5693->lock);
+	ret = ov5693_mipad2_fetch_otp(ov5693);
+	if (ret)
+		dev_err_ratelimited(ov5693->dev,
+			"Mi Pad 2 raw OTP read failed: %pe\n",
+			ERR_PTR(ret));
+	if (!ret)
+		memcpy(val, ov5693->otp_data + offset, bytes);
+	mutex_unlock(&ov5693->lock);
+
+	pm_runtime_put_autosuspend(ov5693->dev);
+	return ret;
+}
+
+static int ov5693_register_mipad2_otp(struct ov5693_device *ov5693)
+{
+	struct nvmem_config raw_config = {
+		.dev = ov5693->dev,
+		.name = "mipad2-ov5693-otp-raw",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = ov5693_mipad2_otp_read,
+		.size = OV5693_MIPAD2_OTP_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = ov5693,
+	};
+	struct nvmem_config cal_config = {
+		.dev = ov5693->dev,
+		.name = "mipad2-ov5693-otp-calibrated",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = ov5693_mipad2_otp_cal_read,
+		.size = OV5693_MIPAD2_OTP_CAL_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = ov5693,
+	};
+
+	if (!ov5693_has_mipad2_otp(ov5693))
+		return 0;
+
+	ov5693->otp_nvmem = devm_nvmem_register(ov5693->dev, &raw_config);
+	if (IS_ERR(ov5693->otp_nvmem))
+		return PTR_ERR(ov5693->otp_nvmem);
+
+	ov5693->otp_cal_nvmem = devm_nvmem_register(ov5693->dev, &cal_config);
+	return PTR_ERR_OR_ZERO(ov5693->otp_cal_nvmem);
+}
 
 static const struct cci_reg_sequence ov5693_global_regs[] = {
 	{CCI_REG8(0x3016), 0xf0},
@@ -426,16 +851,27 @@ static int ov5693_get_gain(struct ov5693_device *ov5693, u32 *gain)
 	return ret;
 }
 
-static int ov5693_digital_gain_configure(struct ov5693_device *ov5693,
-					 u32 gain)
+static int ov5693_color_gain_configure(struct ov5693_device *ov5693)
 {
+	u32 gain = ov5693->ctrls.digital_gain->val & OV5693_MWB_GAIN_MASK;
+	u32 red_gain;
+	u32 blue_gain;
 	int ret = 0;
 
-	gain &= OV5693_MWB_GAIN_MASK;
+	/*
+	 * RED_BALANCE and BLUE_BALANCE are Q10 multipliers. Keep
+	 * DIGITAL_GAIN as the common/green gain and scale R/B around it.
+	 */
+	red_gain = DIV_ROUND_CLOSEST(gain * ov5693->ctrls.red_balance->val,
+				     OV5693_COLOR_BALANCE_UNITY);
+	blue_gain = DIV_ROUND_CLOSEST(gain * ov5693->ctrls.blue_balance->val,
+				      OV5693_COLOR_BALANCE_UNITY);
 
-	cci_write(ov5693->regmap, OV5693_MWB_RED_GAIN_REG, gain, &ret);
+	cci_write(ov5693->regmap, OV5693_MWB_RED_GAIN_REG,
+		  min(red_gain, (u32)OV5693_MWB_GAIN_MAX), &ret);
 	cci_write(ov5693->regmap, OV5693_MWB_GREEN_GAIN_REG, gain, &ret);
-	cci_write(ov5693->regmap, OV5693_MWB_BLUE_GAIN_REG, gain, &ret);
+	cci_write(ov5693->regmap, OV5693_MWB_BLUE_GAIN_REG,
+		  min(blue_gain, (u32)OV5693_MWB_GAIN_MAX), &ret);
 
 	return ret;
 }
@@ -471,6 +907,24 @@ static int ov5693_test_pattern_configure(struct ov5693_device *ov5693, u32 idx)
 	return ret;
 }
 
+/* Keep an untouched default exposure at the current frame limit.
+ * Format probes may temporarily shrink the range to just a few lines;
+ * leaving that clipped value as the new default makes later frames dark.
+ * A manually selected exposure remains unchanged if it still fits.
+ */
+static void ov5693_update_exposure_range(struct ov5693_device *ov5693,
+					 int exposure_max)
+{
+	struct v4l2_ctrl *exposure = ov5693->ctrls.exposure;
+	bool follow_default = exposure->val == exposure->default_value;
+
+	__v4l2_ctrl_modify_range(exposure, exposure->minimum, exposure_max,
+				 exposure->step, exposure_max);
+
+	if (follow_default && exposure->val != exposure_max)
+		__v4l2_ctrl_s_ctrl(exposure, exposure_max);
+}
+
 static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct ov5693_device *ov5693 =
@@ -483,15 +937,14 @@ static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 
 		exposure_max = ov5693->mode.format.height + ctrl->val -
 			       OV5693_INTEGRATION_TIME_MARGIN;
-		__v4l2_ctrl_modify_range(ov5693->ctrls.exposure,
-					 ov5693->ctrls.exposure->minimum,
-					 exposure_max,
-					 ov5693->ctrls.exposure->step,
-					 min(ov5693->ctrls.exposure->val,
-					     exposure_max));
+		ov5693_update_exposure_range(ov5693, exposure_max);
 	}
 
 	/* Only apply changes to the controls if the device is powered up */
+	/* Cache controls until an unknown hardware state is reinitialized. */
+	if (ov5693->needs_reinit)
+		return 0;
+
 	if (!pm_runtime_get_if_in_use(ov5693->dev))
 		return 0;
 
@@ -503,7 +956,9 @@ static int ov5693_s_ctrl(struct v4l2_ctrl *ctrl)
 		ret = ov5693_analog_gain_configure(ov5693, ctrl->val);
 		break;
 	case V4L2_CID_DIGITAL_GAIN:
-		ret = ov5693_digital_gain_configure(ov5693, ctrl->val);
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+		ret = ov5693_color_gain_configure(ov5693);
 		break;
 	case V4L2_CID_HFLIP:
 		ret = ov5693_flip_horz_configure(ov5693, !!ctrl->val);
@@ -723,6 +1178,7 @@ static int __maybe_unused ov5693_sensor_resume(struct device *dev)
 		goto err_power;
 	}
 
+	ov5693->needs_reinit = false;
 	goto out_unlock;
 
 err_power:
@@ -750,7 +1206,23 @@ static int ov5693_detect(struct ov5693_device *ov5693)
 
 /* V4L2 Framework callbacks */
 
-static unsigned int __ov5693_calc_vts(u32 height)
+static unsigned int ov5693_min_vblank(struct ov5693_device *ov5693)
+{
+	if (!ov5693->mipad2)
+		return OV5693_TIMING_MIN_VTS;
+
+	/*
+	 * Mi Pad 2 guard bands, not exact silicon limits. Live crop/timing
+	 * tests expose no-frame boundaries below these values. Allow fast
+	 * intervals above this floor; do not impose a global FPS ceiling.
+	 */
+	if (ov5693->mode.binning_x && ov5693->mode.binning_y)
+		return OV5693_MIPAD2_VBLANK_BINNED;
+
+	return OV5693_MIPAD2_VBLANK_UNBINNED;
+}
+
+static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
 {
 	/*
 	 * We need to set a sensible default VTS for whatever format height we
@@ -758,11 +1230,22 @@ static unsigned int __ov5693_calc_vts(u32 height)
 	 * an even multiple of 30fps.
 	 */
 
-	unsigned int tgt_fps;
+	unsigned int tgt_fps, vts, min_vts;
 
-	tgt_fps = rounddown(OV5693_PIXEL_RATE / OV5693_FIXED_PPL / height, 30);
+	/* Android's tested 30fps baseline; faster modes remain selectable. */
+	if (ov5693->mipad2)
+		tgt_fps = OV5693_MIPAD2_DEFAULT_FPS;
+	else
+		tgt_fps = rounddown(ov5693->pixel_rate / OV5693_FIXED_PPL / height,
+				    30);
+	tgt_fps = max(tgt_fps, 30U);
+	vts = ALIGN_DOWN(ov5693->pixel_rate / OV5693_FIXED_PPL / tgt_fps, 2);
 
-	return ALIGN_DOWN(OV5693_PIXEL_RATE / OV5693_FIXED_PPL / tgt_fps, 2);
+	/* Tiny crops must still have valid VBLANK and exposure defaults. */
+	min_vts = max_t(u32, height + ov5693_min_vblank(ov5693),
+			OV5693_INTEGRATION_TIME_MARGIN + OV5693_EXPOSURE_MIN);
+
+	return max(vts, ALIGN(min_vts, 2));
 }
 
 static struct v4l2_mbus_framefmt *
@@ -801,7 +1284,16 @@ static int ov5693_get_fmt(struct v4l2_subdev *sd,
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 
-	format->format = ov5693->mode.format;
+	if (format->pad ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (format->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	format->format = *__ov5693_get_pad_format(ov5693, state,
+					       format->pad, format->which);
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
 }
@@ -818,16 +1310,28 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	unsigned int hblank;
 	int exposure_max;
 
+	if (format->pad ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (format->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE && ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return -EBUSY;
+	}
+
 	crop = __ov5693_get_pad_crop(ov5693, state, format->pad, format->which);
 
 	/*
 	 * Align to two to simplify the binning calculations below, and clamp
 	 * the requested format at the crop rectangle
 	 */
-	width = clamp_t(unsigned int, ALIGN(format->format.width, 2),
-			OV5693_MIN_CROP_WIDTH, crop->width);
-	height = clamp_t(unsigned int, ALIGN(format->format.height, 2),
-			 OV5693_MIN_CROP_HEIGHT, crop->height);
+	width = ALIGN(clamp_t(unsigned int, format->format.width,
+			      OV5693_MIN_CROP_WIDTH, crop->width), 2);
+	height = ALIGN(clamp_t(unsigned int, format->format.height,
+			       OV5693_MIN_CROP_HEIGHT, crop->height), 2);
 
 	/*
 	 * We can only support setting either the dimensions of the crop rect
@@ -848,19 +1352,17 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 	format->format = *fmt;
 
 	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
-		return 0;
-
-	mutex_lock(&ov5693->lock);
+		goto out_unlock;
 
 	ov5693->mode.binning_x = hratio > 1;
 	ov5693->mode.inc_x_odd = hratio > 1 ? 3 : 1;
 	ov5693->mode.binning_y = vratio > 1;
 	ov5693->mode.inc_y_odd = vratio > 1 ? 3 : 1;
 
-	ov5693->mode.vts = __ov5693_calc_vts(fmt->height);
+	ov5693->mode.vts = __ov5693_calc_vts(ov5693, fmt->height);
 
 	__v4l2_ctrl_modify_range(ov5693->ctrls.vblank,
-				 OV5693_TIMING_MIN_VTS,
+				 ov5693_min_vblank(ov5693),
 				 OV5693_TIMING_MAX_VTS - fmt->height,
 				 1, ov5693->mode.vts - fmt->height);
 	__v4l2_ctrl_s_ctrl(ov5693->ctrls.vblank,
@@ -871,12 +1373,9 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
 				 hblank);
 
 	exposure_max = ov5693->mode.vts - OV5693_INTEGRATION_TIME_MARGIN;
-	__v4l2_ctrl_modify_range(ov5693->ctrls.exposure,
-				 ov5693->ctrls.exposure->minimum, exposure_max,
-				 ov5693->ctrls.exposure->step,
-				 min(ov5693->ctrls.exposure->val,
-				     exposure_max));
+	ov5693_update_exposure_range(ov5693, exposure_max);
 
+out_unlock:
 	mutex_unlock(&ov5693->lock);
 	return 0;
 }
@@ -886,6 +1385,12 @@ static int ov5693_get_selection(struct v4l2_subdev *sd,
 				struct v4l2_subdev_selection *sel)
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+
+	if (sel->pad ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (sel->which == V4L2_SUBDEV_FORMAT_TRY && !state))
+		return -EINVAL;
 
 	switch (sel->target) {
 	case V4L2_SEL_TGT_CROP:
@@ -923,22 +1428,34 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 	struct v4l2_rect *__crop;
 	struct v4l2_rect rect;
 
-	if (sel->target != V4L2_SEL_TGT_CROP)
+	if (sel->target != V4L2_SEL_TGT_CROP || sel->pad ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (sel->which == V4L2_SUBDEV_FORMAT_TRY && !state))
 		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE && ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return -EBUSY;
+	}
 
 	/*
 	 * Clamp the boundaries of the crop rectangle to the size of the sensor
 	 * pixel array. Align to multiples of 2 to ensure Bayer pattern isn't
 	 * disrupted.
 	 */
-	rect.left = clamp(ALIGN(sel->r.left, 2), OV5693_NATIVE_START_LEFT,
-			  OV5693_NATIVE_WIDTH);
-	rect.top = clamp(ALIGN(sel->r.top, 2), OV5693_NATIVE_START_TOP,
-			 OV5693_NATIVE_HEIGHT);
-	rect.width = clamp_t(unsigned int, ALIGN(sel->r.width, 2),
+	/* Bound before ALIGN, and leave room for a non-empty rectangle. */
+	rect.left = ALIGN(clamp(sel->r.left, OV5693_NATIVE_START_LEFT,
+				OV5693_NATIVE_WIDTH - OV5693_MIN_CROP_WIDTH), 2);
+	rect.top = ALIGN(clamp(sel->r.top, OV5693_NATIVE_START_TOP,
+			       OV5693_NATIVE_HEIGHT - OV5693_MIN_CROP_HEIGHT), 2);
+	rect.width = clamp_t(unsigned int, sel->r.width,
 			     OV5693_MIN_CROP_WIDTH, OV5693_NATIVE_WIDTH);
-	rect.height = clamp_t(unsigned int, ALIGN(sel->r.height, 2),
+	rect.height = clamp_t(unsigned int, sel->r.height,
 			      OV5693_MIN_CROP_HEIGHT, OV5693_NATIVE_HEIGHT);
+	rect.width = ALIGN(rect.width, 2);
+	rect.height = ALIGN(rect.height, 2);
 
 	/* Make sure the crop rectangle isn't outside the bounds of the array */
 	rect.width = min_t(unsigned int, rect.width,
@@ -962,6 +1479,7 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 	*__crop = rect;
 	sel->r = rect;
 
+	mutex_unlock(&ov5693->lock);
 	return 0;
 }
 
@@ -976,28 +1494,54 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 			return ret;
 
 		mutex_lock(&ov5693->lock);
-		ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
+		/* An interrupted stop may leave power on for another PM user. */
+		if (ov5693->needs_reinit) {
+			ret = ov5693_sensor_init(ov5693);
+			if (!ret)
+				ov5693->needs_reinit = false;
+		} else {
+			ret = ov5693_mode_configure(ov5693);
+		}
+		if (!ret)
+			ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
 		if (ret) {
 			mutex_unlock(&ov5693->lock);
 			goto err_power_down;
 		}
 
 		ret = ov5693_enable_streaming(ov5693, true);
+		if (!ret)
+			ov5693->streaming = true;
 		mutex_unlock(&ov5693->lock);
-	} else {
-		mutex_lock(&ov5693->lock);
-		ret = ov5693_enable_streaming(ov5693, false);
-		mutex_unlock(&ov5693->lock);
+		if (ret)
+			goto err_power_down;
+		return 0;
 	}
-	if (ret)
-		goto err_power_down;
 
-	if (!enable)
+	mutex_lock(&ov5693->lock);
+	if (!ov5693->streaming) {
+		mutex_unlock(&ov5693->lock);
+		return 0;
+	}
+	ret = ov5693_enable_streaming(ov5693, false);
+	ov5693->streaming = false;
+	ov5693->needs_reinit = !!ret;
+	mutex_unlock(&ov5693->lock);
+
+	/* The s_stream wrapper completes stop even on error: release our ref. */
+	if (ret) {
+		dev_warn(ov5693->dev, "stop failed: %d; requesting powerdown\n", ret);
+		/* Runtime resume takes lock, so synchronous PM must run unlocked. */
+		ret = pm_runtime_put_sync_suspend(ov5693->dev);
+		if (ret && ret != -EBUSY)
+			dev_warn(ov5693->dev, "stop powerdown failed: %d\n", ret);
+	} else {
 		pm_runtime_put(ov5693->dev);
-
+	}
 	return 0;
+
 err_power_down:
-	pm_runtime_put_noidle(ov5693->dev);
+	pm_runtime_put(ov5693->dev);
 	return ret;
 }
 
@@ -1006,21 +1550,54 @@ static int ov5693_get_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_frame_interval *interval)
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
-	unsigned int framesize = OV5693_FIXED_PPL * (ov5693->mode.format.height +
-				 ov5693->ctrls.vblank->val);
-	unsigned int fps = DIV_ROUND_CLOSEST(OV5693_PIXEL_RATE, framesize);
+	unsigned int frame_size;
+	unsigned int divisor;
 
-	/*
-	 * FIXME: Implement support for V4L2_SUBDEV_FORMAT_TRY, using the V4L2
-	 * subdev active state API.
-	 */
-	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE)
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
 		return -EINVAL;
 
-	interval->interval.numerator = 1;
-	interval->interval.denominator = fps;
+	mutex_lock(&ov5693->lock);
+	frame_size = OV5693_FIXED_PPL *
+		(ov5693->mode.format.height + ov5693->ctrls.vblank->val);
+	divisor = gcd(frame_size, ov5693->pixel_rate);
+	interval->interval.numerator = frame_size / divisor;
+	interval->interval.denominator = ov5693->pixel_rate / divisor;
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
+}
+
+static int ov5693_set_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+	struct v4l2_ctrl *vblank = ov5693->ctrls.vblank;
+	u64 numerator, denominator, lines;
+	unsigned int height;
+	int ret;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
+		return -EINVAL;
+
+	mutex_lock(&ov5693->lock);
+	height = ov5693->mode.format.height;
+	if (!interval->interval.numerator || !interval->interval.denominator) {
+		lines = height + vblank->default_value;
+	} else {
+		numerator = (u64)ov5693->pixel_rate * interval->interval.numerator;
+		denominator = (u64)OV5693_FIXED_PPL * interval->interval.denominator;
+		lines = div64_u64(numerator + denominator / 2, denominator);
+		lines = clamp_t(u64, lines, height + vblank->minimum,
+				height + vblank->maximum);
+	}
+
+	ret = __v4l2_ctrl_s_ctrl(vblank, lines - height);
+	mutex_unlock(&ov5693->lock);
+	if (ret)
+		return ret;
+
+	return ov5693_get_frame_interval(sd, sd_state, interval);
 }
 
 static int ov5693_enum_mbus_code(struct v4l2_subdev *sd,
@@ -1042,17 +1619,25 @@ static int ov5693_enum_frame_size(struct v4l2_subdev *sd,
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
 	struct v4l2_rect *__crop;
 
-	if (fse->index > 1 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10)
+	if (fse->index > 1 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10 ||
+	    fse->pad ||
+	    (fse->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     fse->which != V4L2_SUBDEV_FORMAT_TRY) ||
+	    (fse->which == V4L2_SUBDEV_FORMAT_TRY && !state))
 		return -EINVAL;
 
+	mutex_lock(&ov5693->lock);
 	__crop = __ov5693_get_pad_crop(ov5693, state, fse->pad, fse->which);
-	if (!__crop)
+	if (!__crop) {
+		mutex_unlock(&ov5693->lock);
 		return -EINVAL;
+	}
 
 	fse->min_width = __crop->width / (fse->index + 1);
 	fse->min_height = __crop->height / (fse->index + 1);
 	fse->max_width = fse->min_width;
 	fse->max_height = fse->min_height;
+	mutex_unlock(&ov5693->lock);
 
 	return 0;
 }
@@ -1069,6 +1654,25 @@ static const struct v4l2_subdev_pad_ops ov5693_pad_ops = {
 	.get_selection = ov5693_get_selection,
 	.set_selection = ov5693_set_selection,
 	.get_frame_interval = ov5693_get_frame_interval,
+	.set_frame_interval = ov5693_set_frame_interval,
+};
+
+/* Legacy ACTIVE state stays private; each TRY state starts from a snapshot. */
+static int ov5693_init_state(struct v4l2_subdev *sd,
+			     struct v4l2_subdev_state *state)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+
+	mutex_lock(&ov5693->lock);
+	*v4l2_subdev_state_get_crop(state, 0) = ov5693->mode.crop;
+	*v4l2_subdev_state_get_format(state, 0) = ov5693->mode.format;
+	mutex_unlock(&ov5693->lock);
+
+	return 0;
+}
+
+static const struct v4l2_subdev_internal_ops ov5693_internal_ops = {
+	.init_state = ov5693_init_state,
 };
 
 static const struct v4l2_subdev_ops ov5693_ops = {
@@ -1088,7 +1692,7 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 	int hblank;
 	int ret;
 
-	ret = v4l2_ctrl_handler_init(&ctrls->handler, 12);
+	ret = v4l2_ctrl_handler_init(&ctrls->handler, 14);
 	if (ret)
 		return ret;
 
@@ -1102,8 +1706,8 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 	/* pixel rate */
 	ctrls->pixel_rate = v4l2_ctrl_new_std(&ctrls->handler, NULL,
 					      V4L2_CID_PIXEL_RATE, 0,
-					      OV5693_PIXEL_RATE, 1,
-					      OV5693_PIXEL_RATE);
+					      ov5693->pixel_rate, 1,
+					      ov5693->pixel_rate);
 
 	/* Exposure */
 	exposure_max = ov5693->mode.vts - OV5693_INTEGRATION_TIME_MARGIN;
@@ -1127,6 +1731,17 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 						OV5693_DIGITAL_GAIN_STEP,
 						OV5693_DIGITAL_GAIN_DEF);
 
+	ctrls->red_balance = v4l2_ctrl_new_std(&ctrls->handler, ops,
+					      V4L2_CID_RED_BALANCE,
+					      OV5693_COLOR_BALANCE_MIN,
+					      OV5693_COLOR_BALANCE_MAX, 1,
+					      OV5693_RED_BALANCE_DEF);
+	ctrls->blue_balance = v4l2_ctrl_new_std(&ctrls->handler, ops,
+					       V4L2_CID_BLUE_BALANCE,
+					       OV5693_COLOR_BALANCE_MIN,
+					       OV5693_COLOR_BALANCE_MAX, 1,
+					       OV5693_BLUE_BALANCE_DEF);
+
 	/* Flip */
 	ctrls->hflip = v4l2_ctrl_new_std(&ctrls->handler, ops,
 					 V4L2_CID_HFLIP, 0, 1, 1, 0);
@@ -1146,7 +1761,7 @@ static int ov5693_init_controls(struct ov5693_device *ov5693)
 	vblank_def = ov5693->mode.vts - ov5693->mode.format.height;
 	ctrls->vblank = v4l2_ctrl_new_std(&ctrls->handler, ops,
 					  V4L2_CID_VBLANK,
-					  OV5693_TIMING_MIN_VTS,
+					  ov5693_min_vblank(ov5693),
 					  vblank_max, 1, vblank_def);
 
 	ctrls->test_pattern = v4l2_ctrl_new_std_menu_items(
@@ -1277,6 +1892,17 @@ static int ov5693_probe(struct i2c_client *client)
 
 	ov5693->dev = &client->dev;
 
+	/*
+	 * Mi Pad 2 Android modes use a 160 MHz timing pixel clock. PLL3
+	 * timing registers are unchanged here; the 419.2 MHz MIPI link
+	 * belongs to the separate PLL1 transport path. Deriving frame
+	 * periods from transport bandwidth overstates cadence by 4.8%.
+	 * Keep other boards' historical rate and all PLL/link settings.
+	 */
+	ov5693->mipad2 = ov5693_has_mipad2_otp(ov5693);
+	ov5693->pixel_rate = ov5693->mipad2 ?
+		OV5693_MIPAD2_PIXEL_RATE : OV5693_PIXEL_RATE;
+
 	ov5693->regmap = devm_cci_regmap_init_i2c(client, 16);
 	if (IS_ERR(ov5693->regmap))
 		return PTR_ERR(ov5693->regmap);
@@ -1288,6 +1914,7 @@ static int ov5693_probe(struct i2c_client *client)
 	mutex_init(&ov5693->lock);
 
 	v4l2_i2c_subdev_init(&ov5693->sd, client, &ov5693_ops);
+	ov5693->sd.internal_ops = &ov5693_internal_ops;
 
 	ov5693->xvclk = devm_v4l2_sensor_clk_get(&client->dev, "xvclk");
 	if (IS_ERR(ov5693->xvclk))
@@ -1309,13 +1936,14 @@ static int ov5693_probe(struct i2c_client *client)
 		return dev_err_probe(&client->dev, ret,
 				     "Error fetching regulators\n");
 
-	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	ov5693->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+			    V4L2_SUBDEV_FL_HAS_EVENTS;
 	ov5693->pad.flags = MEDIA_PAD_FL_SOURCE;
 	ov5693->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 
 	ov5693->mode.crop = ov5693_default_crop;
 	ov5693->mode.format = ov5693_default_fmt;
-	ov5693->mode.vts = __ov5693_calc_vts(ov5693->mode.format.height);
+	ov5693->mode.vts = __ov5693_calc_vts(ov5693, ov5693->mode.format.height);
 
 	ret = ov5693_init_controls(ov5693);
 	if (ret)
@@ -1343,6 +1971,10 @@ static int ov5693_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_get_noresume(&client->dev);
 	pm_runtime_enable(&client->dev);
+
+	ret = ov5693_register_mipad2_otp(ov5693);
+	if (ret)
+		goto err_pm_runtime;
 
 	ret = v4l2_async_register_subdev_sensor(&ov5693->sd);
 	if (ret) {

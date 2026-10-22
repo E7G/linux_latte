@@ -1,0 +1,35 @@
+name: Mi Pad 2 kernel config audit
+
+on:
+  pull_request:
+    branches: [cachyos-mipad2]
+    paths:
+      - "arch/x86/configs/xiaomipad2_defconfig"
+      - "fix_file/tests/mipad2-kernel-config-audit.sh"
+      - ".github/workflows/mipad2-kernel-config-audit.yml"
+  push:
+    branches: [cachyos-mipad2]
+    paths:
+      - "arch/x86/configs/xiaomipad2_defconfig"
+      - "fix_file/tests/mipad2-kernel-config-audit.sh"
+      - ".github/workflows/mipad2-kernel-config-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  config-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Install Kconfig host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex libssl-dev libelf-dev
+      - name: Generate and audit Mi Pad 2 config
+        run: |
+          make xiaomipad2_defconfig
+          sh fix_file/tests/mipad2-kernel-config-audit.sh .config

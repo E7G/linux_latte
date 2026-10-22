@@ -10,6 +10,7 @@
 
 #include <linux/gpio/consumer.h>
 #include <linux/input.h>
+#include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -55,7 +56,7 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 		struct snd_kcontrol *k, int  event)
 {
 	struct snd_soc_dapm_context *dapm = w->dapm;
-	struct snd_soc_card *card = dapm->card;
+	struct snd_soc_card *card = snd_soc_dapm_to_card(dapm);
 	struct snd_soc_dai *codec_dai;
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(card);
 	int ret;
@@ -136,16 +137,16 @@ static int cht_spk_power_apply(struct snd_soc_card *card, bool on)
 		 * 这里若自己加前缀，会被加成 "Left Left OUT" 而查不到。
 		 */
 		if (on)
-			ret = snd_soc_dapm_enable_pin(&component->dapm, "OUT");
+			ret = snd_soc_dapm_enable_pin(snd_soc_component_to_dapm(component), "OUT");
 		else
-			ret = snd_soc_dapm_disable_pin(&component->dapm, "OUT");
+			ret = snd_soc_dapm_disable_pin(snd_soc_component_to_dapm(component), "OUT");
 		if (ret < 0) {
 			dev_err(card->dev, "failed to %s OUT on %s: %d\n",
 				on ? "enable" : "disable", component->name, ret);
 			continue;
 		}
 
-		snd_soc_dapm_sync(&component->dapm);
+		snd_soc_dapm_sync(snd_soc_component_to_dapm(component));
 
 		dev_info(card->dev, "TFA9890 %s: output %s\n", component->name,
 			 on ? "enabled" : "disabled");
@@ -188,8 +189,8 @@ static const struct snd_soc_dapm_route cht_audio_map[] = {
 	{"Int Mic", NULL, "MICBIAS3"},
 	{"Headphone", NULL, "HPOL"},
 	{"Headphone", NULL, "HPOR"},
-	{"Ext Spk", NULL, "SPOL"},
-	{"Ext Spk", NULL, "SPOR"},
+	{"Ext Spk", NULL, "Left OUT"},
+	{"Ext Spk", NULL, "Right OUT"},
 	/*
 	 * 功放的 DAI widget 接到 rt5659 的 AIF2 上：扬声器的数据由 rt5659 内部
 	 * 回环（aif1 -> aif2）后经硬件 I2S 引脚送出。功放自身不再承载 PCM
@@ -256,8 +257,7 @@ static int cht_aif1_hw_params(struct snd_pcm_substream *substream,
 	/* TDM 4 slot 24 bit set the Rx and Tx bitmask to
 	 * 4 active slots as 0xF
 	 */
-	ret = snd_soc_dai_set_tdm_slot(codec_dai, 0xF, 0xF, 4,
-			SNDRV_PCM_FORMAT_GSM);
+	ret = snd_soc_dai_set_tdm_slot(codec_dai, 0xF, 0xF, 4, 24);
 	if (ret < 0) {
 		pr_err("can't set codec TDM slot %d\n", ret);
 		return ret;
@@ -265,7 +265,7 @@ static int cht_aif1_hw_params(struct snd_pcm_substream *substream,
 
 	/* TDM slave Mode */
 	fmt =   SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_IB_NF
-		| SND_SOC_DAIFMT_CBS_CFS;
+		| SND_SOC_DAIFMT_CBC_CFC;
 
 	/* Set codec DAI configuration */
 	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
@@ -365,18 +365,18 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	 * 加失败会静默断开通路，最终只表现为 "no backend DAIs enabled"。
 	 */
 	if (ctx->use_ssp0)
-		ret = snd_soc_dapm_add_routes(&card->dapm, cht_audio_ssp0_map,
+		ret = snd_soc_dapm_add_routes(snd_soc_card_to_dapm(card), cht_audio_ssp0_map,
 					      ARRAY_SIZE(cht_audio_ssp0_map));
 	else
-		ret = snd_soc_dapm_add_routes(&card->dapm, cht_audio_ssp2_map,
+		ret = snd_soc_dapm_add_routes(snd_soc_card_to_dapm(card), cht_audio_ssp2_map,
 					      ARRAY_SIZE(cht_audio_ssp2_map));
 	if (ret) {
 		dev_err(runtime->dev, "failed to add SSP DAPM routes: %d\n", ret);
 		return ret;
 	}
 
-	card->dapm.bias_level = SND_SOC_BIAS_OFF;
-	card->dapm.idle_bias_off = true;
+	snd_soc_dapm_init_bias_level(snd_soc_card_to_dapm(card), SND_SOC_BIAS_OFF);
+	snd_soc_dapm_set_idle_bias(snd_soc_card_to_dapm(card), false);
 
 	ret = snd_soc_card_jack_new_pins(card, "Headset",
 					 SND_JACK_HEADSET | SND_JACK_BTN_0 |
@@ -399,7 +399,9 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_2, KEY_VOLUMEDOWN);
 
 	/* codec 侧注册 jack，插孔状态变化由 rt5659 的中断驱动 */
-	rt5659_set_jack_detect(component, &ctx->headset);
+	ret = rt5659_set_jack_detect(component, &ctx->headset);
+	if (ret)
+		return ret;
 
 	if (ctx->mclk) {
 		/*
@@ -438,17 +440,17 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	}
 
 	/* Keep the voice call paths active during suspend. */
-	snd_soc_dapm_ignore_suspend(&component->dapm, "HPOL");
-	snd_soc_dapm_ignore_suspend(&component->dapm, "HPOR");
-	snd_soc_dapm_ignore_suspend(&component->dapm, "SPOL");
-	snd_soc_dapm_ignore_suspend(&component->dapm, "SPOR");
+	snd_soc_dapm_ignore_suspend(snd_soc_component_to_dapm(component), "HPOL");
+	snd_soc_dapm_ignore_suspend(snd_soc_component_to_dapm(component), "HPOR");
+	snd_soc_dapm_ignore_suspend(snd_soc_component_to_dapm(component), "SPOL");
+	snd_soc_dapm_ignore_suspend(snd_soc_component_to_dapm(component), "SPOR");
 
-	snd_soc_dapm_enable_pin(&card->dapm, "Headset Mic");
-	snd_soc_dapm_enable_pin(&card->dapm, "Headphone");
-	snd_soc_dapm_enable_pin(&card->dapm, "Ext Spk");
-	snd_soc_dapm_enable_pin(&card->dapm, "Int Mic");
+	snd_soc_dapm_enable_pin(snd_soc_card_to_dapm(card), "Headset Mic");
+	snd_soc_dapm_enable_pin(snd_soc_card_to_dapm(card), "Headphone");
+	snd_soc_dapm_enable_pin(snd_soc_card_to_dapm(card), "Ext Spk");
+	snd_soc_dapm_enable_pin(snd_soc_card_to_dapm(card), "Int Mic");
 
-	snd_soc_dapm_sync(&card->dapm);
+	snd_soc_dapm_sync(snd_soc_card_to_dapm(card));
 	return 0;
 }
 
@@ -519,13 +521,14 @@ static int cht_aif1_startup(struct snd_pcm_substream *substream)
 	int stream = 0;
 	int paths, i;
 
-	pr_info("%s runtime=%p\n", __func__, substream->runtime);
+	dev_dbg(rtd->dev, "%s runtime=%p\n", __func__, substream->runtime);
 
 	paths = snd_soc_dapm_dai_get_connected_widgets(cpu_dai, stream, &list_1, NULL);
-	pr_info("%d paths got\n", paths);
+	dev_dbg(rtd->dev, "%d paths got\n", paths);
 
 	for_each_dapm_widgets(list_1, i, widget) {
-		pr_info("rt5659 path widget: name=%s, sname=%s\n", widget->name,widget->sname);
+		dev_dbg(rtd->dev, "rt5659 path widget: name=%s, sname=%s\n",
+			widget->name, widget->sname);
 	}
 
 	return snd_pcm_hw_constraint_single(substream->runtime,
@@ -647,7 +650,7 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.stream_name = "rt5659 AIF2 Playback",
 		SND_SOC_DAILINK_REG(rt5659_aif1_cpu, rt5659_aif2_codec),
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-			SND_SOC_DAIFMT_CBM_CFM,
+			SND_SOC_DAIFMT_CBP_CFP,
 		/*
 		 * c2c_params 是必需的：snd_soc_dai_link_event_pre_pmu() 会
 		 * 用它构造 hw_params，缺了直接返回 -EINVAL，AIF2 回环不会启动，
@@ -724,6 +727,39 @@ static struct snd_soc_codec_conf cht_tfa_codec_conf[] = {
 	{ .dlc.name = "i2c-tfa9890:01", .name_prefix = "Right" },
 };
 
+static int cht_late_probe(struct snd_soc_card *card)
+{
+	struct snd_ctl_elem_value *value;
+	struct snd_kcontrol *kcontrol;
+	int ret;
+
+	/*
+	 * Component routes have already sampled the codec's reset defaults.
+	 * A raw DIG_INF23_DATA write in link init changes the register but not
+	 * the DAPM mux paths, leaving DAC_REF disconnected on a cold boot.
+	 * Materialize the controls, then select Android's DAC_REF transmit
+	 * source through DAPM so hardware, control cache and paths agree.
+	 */
+	ret = snd_soc_dapm_new_widgets(card);
+	if (ret < 0)
+		return ret;
+
+	kcontrol = snd_soc_card_get_kcontrol(card, "IF2 ADC Mux");
+	if (!kcontrol)
+		return -ENODEV;
+
+	value = kzalloc(sizeof(*value), GFP_KERNEL);
+	if (!value)
+		return -ENOMEM;
+	value->value.enumerated.item[0] = 2; /* DAC_REF */
+	ret = snd_soc_dapm_put_enum_double(kcontrol, value);
+	kfree(value);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
 /* SoC card */
 static struct snd_soc_card snd_soc_card_cht = {
 	.owner = THIS_MODULE,
@@ -739,6 +775,7 @@ static struct snd_soc_card snd_soc_card_cht = {
 	.num_configs = ARRAY_SIZE(cht_tfa_codec_conf),
 	.suspend_pre = cht_suspend_pre,
 	.resume_post = cht_resume_post,
+	.late_probe = cht_late_probe,
 };
 
 

@@ -1,0 +1,155 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r10",
+  "debug_before": [
+    "drivers/staging/media/atomisp/pci/atomisp_compat_css20.c:2301 [atomisp]atomisp_get_css_frame_info =_ \"ia_css_pipe_get_info FAILED\"",
+    "drivers/staging/media/atomisp/pci/atomisp_cmd.c:4326 [atomisp]atomisp_set_fmt =_ \"setting resolution %ux%u bytesperline %u\\n\""
+  ],
+  "cases": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "original_shape": {
+        "width": 1936,
+        "height": 1096,
+        "code": "0x3007",
+        "crop": [
+          344,
+          430,
+          1936,
+          1096
+        ]
+      },
+      "original_controls": {
+        "10356993": 983,
+        "9963793": 2071,
+        "10356995": 1,
+        "9963790": 1440,
+        "9963791": 1581,
+        "10422533": 1024
+      },
+      "cadence": [
+        {
+          "requested_fps": 15,
+          "setting": {
+            "code": 0,
+            "stdout": "Frame rate set to 14.999 fps\n",
+            "stderr": ""
+          },
+          "capture": {
+            "code": 1,
+            "stdout": "AFTER S_FMT requested rate 15 actual period 87339/1310000\nHIGH_EXPOSURE 3113 range 1..4151\nPERIOD before-REQBUFS 87339/1310000\nPERIOD after-REQBUFS 87339/1310000\nPRESERVE exposure 3113 -> 3113 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 87339/1310000\nPERIOD before-REQBUFS 87339/1310000\nPERIOD after-REQBUFS 10899/655000\nPRESERVE exposure 3113 -> 1030 format 1280x720 -> 1280x720",
+            "stderr": "multiopen regression: Input/output error\nrestore video format: Device or resource busy\n"
+          },
+          "measured_fps": {
+            "before-observer-close": 14.312471329573018,
+            "after-observer-close": 14.312714372317949
+          },
+          "period_gate": false
+        }
+      ],
+      "streamparm_correct_node": {
+        "code": 0,
+        "stdout": "requested 1/30 returned 43659/1310000\nrequested 1/15 returned 87339/1310000\nrequested 0/0 returned 10899/655000\nrequested 0/1 returned 10899/655000\nrequested 1/0 returned 10899/655000\nPASS streamparm ABI, private CI flags masked, unchanged format; controls restored\n",
+        "stderr": ""
+      },
+      "shape_after": {
+        "width": 1936,
+        "height": 1096,
+        "code": "0x3007",
+        "crop": [
+          344,
+          430,
+          1936,
+          1096
+        ]
+      },
+      "controls_after": {
+        "10356993": 983,
+        "9963793": 2071,
+        "10356995": 1,
+        "9963790": 1440,
+        "9963791": 1581,
+        "10422533": 1024
+      },
+      "restore_errors": []
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "original_shape": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x300a",
+        "crop": [
+          344,
+          496,
+          2592,
+          1472
+        ]
+      },
+      "original_controls": {
+        "10356993": 740,
+        "9963793": 1470,
+        "10356995": 128,
+        "9963790": 1585,
+        "9963791": 1570
+      },
+      "cadence": [
+        {
+          "requested_fps": 15,
+          "setting": {
+            "code": 0,
+            "stdout": "Frame rate set to 15.000 fps\n",
+            "stderr": ""
+          },
+          "capture": {
+            "code": 1,
+            "stdout": "AFTER S_FMT requested rate 15 actual period 1/15\nHIGH_EXPOSURE 3733 range 0..4978\nPERIOD before-REQBUFS 1/15\nPERIOD after-REQBUFS 1/15\nPRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/15\nPERIOD before-REQBUFS 1/15\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 3733 -> 2486 format 1280x720 -> 1280x720",
+            "stderr": "multiopen regression: Input/output error\nrestore video format: Device or resource busy\n"
+          },
+          "measured_fps": {
+            "before-observer-close": 15.0070482255312,
+            "after-observer-close": 15.005353604972752
+          },
+          "period_gate": false
+        }
+      ],
+      "streamparm_correct_node": {
+        "code": 0,
+        "stdout": "requested 1/30 returned 1/30\nrequested 1/15 returned 1/15\nrequested 0/0 returned 1/30\nrequested 0/1 returned 1/30\nrequested 1/0 returned 1/30\nPASS streamparm ABI, private CI flags masked, unchanged format; controls restored\n",
+        "stderr": ""
+      },
+      "shape_after": {
+        "width": 1296,
+        "height": 736,
+        "code": "0x300a",
+        "crop": [
+          344,
+          496,
+          2592,
+          1472
+        ]
+      },
+      "controls_after": {
+        "10356993": 740,
+        "9963793": 1470,
+        "10356995": 128,
+        "9963790": 1585,
+        "9963791": 1570
+      },
+      "restore_errors": []
+    }
+  ],
+  "scope": "r10 strict high-exposure preservation negative baseline plus scoped CSS fallback debug",
+  "debug_after": [
+    "drivers/staging/media/atomisp/pci/atomisp_compat_css20.c:2301 [atomisp]atomisp_get_css_frame_info =_ \"ia_css_pipe_get_info FAILED\"",
+    "drivers/staging/media/atomisp/pci/atomisp_cmd.c:4326 [atomisp]atomisp_set_fmt =_ \"setting resolution %ux%u bytesperline %u\\n\""
+  ],
+  "debug_restored": true,
+  "new_dmesg": "[ 1323.478107] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 0\n[ 1323.567809] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 1280\n[ 1332.416809] atomisp-isp2 0000:00:03.0: ia_css_pipe_get_info FAILED\n[ 1332.416847] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 0\n[ 1332.437340] atomisp-isp2 0000:00:03.0: Set fmt/input IOCTL while streaming\n[ 1332.794393] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 0\n[ 1332.879678] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 1280\n[ 1341.356823] atomisp-isp2 0000:00:03.0: ia_css_pipe_get_info FAILED\n[ 1341.356861] atomisp-isp2 0000:00:03.0: setting resolution 1280x720 bytesperline 0\n[ 1341.375460] atomisp-isp2 0000:00:03.0: Set fmt/input IOCTL while streaming\n",
+  "restore_input": {
+    "code": 0,
+    "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,204 @@
+name: Mi Pad 2 camera compile check
+
+on:
+  push:
+    branches:
+      - main
+      - cachyos-mipad2
+      - codex/mipad2-6.14-integrated
+      - test/mipad2-camera-20260829
+  pull_request:
+    paths:
+      - 'drivers/hid/hid-sensor-hub.c'
+      - 'drivers/media/i2c/ov5693.c'
+      - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
+      - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
+      - 'fix_file/packages/**'
+      - 'fix_file/tests/mipad2-package-source-test.py'
+      - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
+      - 'fix_file/tests/mipad2-atomic-wrap-test.py'
+      - 'fix_file/tests/mipad2-dapm-init-test.py'
+      - 'fix_file/tests/mipad2-rt5659-rebind-test.py'
+      - 'sound/soc/intel/boards/cht_bsw_rt5659.c'
+      - 'sound/soc/codecs/rt5659.c'
+      - 'arch/x86/include/asm/atomic.h'
+      - 'arch/x86/include/asm/atomic64_64.h'
+      - 'include/linux/atomic/atomic-arch-fallback.h'
+      - 'scripts/atomic/**'
+      - 'net/ipv4/route.c'
+      - 'fix_file/tests/atomic-wrap-module/**'
+      - 'fix_file/tests/mipad2-test-no-idle-test.sh'
+      - 'fix_file/tests/README.md'
+      - 'drivers/iio/accel/hid-sensor-accel-3d.c'
+      - 'drivers/iio/gyro/hid-sensor-gyro-3d.c'
+      - 'drivers/iio/magnetometer/hid-sensor-magn-3d.c'
+      - 'fix_file/tests/mipad2-sensor-orientation-audit.sh'
+      - '.github/workflows/mipad2-camera-check.yml'
+  workflow_dispatch:
+
+jobs:
+  camera-drivers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev dwarves
+
+      - name: Configure Mi Pad 2 kernel
+        run: |
+          make xiaomipad2_defconfig
+          sh fix_file/tests/mipad2-kernel-config-audit.sh .config
+
+      - name: Verify HID sensor orientation integration
+        run: |
+          sh -n fix_file/tests/mipad2-sensor-orientation-audit.sh
+          sh fix_file/tests/mipad2-sensor-orientation-audit.sh
+          grep -q '^CONFIG_HID_SENSOR_HUB=y' .config
+          grep -q '^CONFIG_HID_SENSOR_ACCEL_3D=y' .config
+          grep -q '^CONFIG_HID_SENSOR_GYRO_3D=y' .config
+          grep -q '^CONFIG_HID_SENSOR_MAGNETOMETER_3D=y' .config
+
+      - name: Verify camera configuration
+        run: |
+          grep -E 'CONFIG_VIDEO_(OV5693|T4KA3|DW9719)=' .config
+          grep -E 'CONFIG_VIDEO_ATOMISP=' .config
+          grep -q '^CONFIG_VIDEO_OV5693=m' .config
+          grep -q '^CONFIG_VIDEO_T4KA3=m' .config
+          grep -q '^CONFIG_VIDEO_DW9719=m' .config
+          grep -q '^CONFIG_VIDEO_ATOMISP=m' .config
+          test -s drivers/media/i2c/t4ka3.c
+          test -s drivers/media/pci/intel/ipu-bridge.c
+          test -s drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          test -s fix_file/packages/mipad2-camera-support/shisp_2401a0_v21.bin
+          grep -q 'shisp_2401a0_v21.bin' fix_file/packages/mipad2-camera-support/PKGBUILD
+          grep -q 'config VIDEO_T4KA3' drivers/media/i2c/Kconfig
+          grep -q 'CONFIG_VIDEO_T4KA3' drivers/media/i2c/Makefile
+          grep -q 'IPU_SENSOR_CONFIG("XMCC0003"' drivers/media/pci/intel/ipu-bridge.c
+          grep -q 'IPU_SENSOR_CONFIG("TOSB0001"' drivers/media/pci/intel/ipu-bridge.c
+          grep -q '321468000' drivers/media/pci/intel/ipu-bridge.c
+          grep -q 'ATOMISP_SENSOR_CONFIG("XMCC0003", 4, true)' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          grep -q 'ATOMISP_SENSOR_CONFIG("TOSB0001", 4, true)' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          grep -q 'TOSB0001:01.*CsiLanes.*4' drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.c
+          grep -q '{ "TOSB0001" }' drivers/media/i2c/t4ka3.c
+          grep -q 'I2C4.CAM3' drivers/acpi/x86/utils.c
+          grep -q 'I2C4.CA27' drivers/acpi/x86/utils.c
+          grep -q 'I2C2.BL02' drivers/acpi/x86/utils.c
+          grep -q '{ "LP855600", LP8556 }' drivers/video/backlight/lp855x_bl.c
+          grep -q 'CONFIG_BACKLIGHT_LP855X=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q 'ATOMISP_DEFAULT_WIDTH.*1280' drivers/staging/media/atomisp/pci/atomisp_common.h
+          grep -q 'ATOMISP_DEFAULT_HEIGHT.*720' drivers/staging/media/atomisp/pci/atomisp_common.h
+          grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_fops.c
+          grep -q 'fmt.pix.width = ATOMISP_DEFAULT_WIDTH' drivers/staging/media/atomisp/pci/atomisp_ioctl.c
+          grep -q 'ret > old_ret' drivers/staging/media/atomisp/pci/hmm/hmm_bo.c
+          grep -A4 'atomisp_get_sensor_fps' drivers/staging/media/atomisp/pci/atomisp_cmd.c | \
+            grep -q 'V4L2_SUBDEV_FORMAT_ACTIVE'
+          grep -q 'devm_regulator_get_optional' drivers/media/i2c/dw9719.c
+          grep -q 'mt_is_mipad2_button_keyboard' drivers/hid/hid-multitouch.c
+          grep -q 'Menu: Super+A' drivers/hid/hid-multitouch.c
+          grep -q 'Home: Super' drivers/hid/hid-multitouch.c
+          grep -q 'Back: Alt+Left' drivers/hid/hid-multitouch.c
+          grep -q '^CONFIG_USB_DWC3_DUAL_ROLE=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_DWC3_PCI=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_HCIUART=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BT_BCM=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_CFG80211=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_BRCMFMAC=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_SERIAL_CONSOLE=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_CONFIGFS_SERIAL=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_USB_CONFIGFS_ACM=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_U_SERIAL_CONSOLE=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_NLS_CODEPAGE_437=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_NLS_ASCII=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_CRYPTO_USER=m' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_I2C_HID_OF=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_IKCONFIG=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q '^CONFIG_IKCONFIG_PROC=y' arch/x86/configs/xiaomipad2_defconfig
+          grep -q 'FTSC1000 FocalTech I2C-HID touchscreen' \
+            drivers/platform/x86/x86-android-tablets/other.c
+          grep -q 'adapter_path = "\\\\_SB_.PCI0.I2C6"' \
+            drivers/platform/x86/x86-android-tablets/other.c
+          grep -q 'GPIO_LOOKUP("INT33FF:01", 20, "reset"' \
+            drivers/platform/x86/x86-android-tablets/other.c
+          grep -q 'match_i2c_client_addr' drivers/platform/x86/x86-android-tablets/core.c
+          grep -q 'skipping duplicate' drivers/platform/x86/x86-android-tablets/core.c
+          if grep -q '^CONFIG_LOCALVERSION="-mipad2-cachyos"' arch/x86/configs/xiaomipad2_defconfig; then
+            grep -q '^CONFIG_MSILVERMONT=y' arch/x86/configs/xiaomipad2_defconfig
+            grep -q '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3=y' arch/x86/configs/xiaomipad2_defconfig
+            grep -q '^CONFIG_SCHED_BORE=y' arch/x86/configs/xiaomipad2_defconfig
+            grep -q '^CONFIG_HZ_300=y' arch/x86/configs/xiaomipad2_defconfig
+            grep -q '^CONFIG_LRU_GEN_ENABLED=y' arch/x86/configs/xiaomipad2_defconfig
+          else
+            grep -q '^CONFIG_LOCALVERSION="-mipad2-complete"' arch/x86/configs/xiaomipad2_defconfig
+          fi
+
+      - name: Validate OV5693 OTP parser mapping and CRC
+        run: |
+          python3 fix_file/tests/mipad2-ov5693-otp-parser-test.py
+          sh -n fix_file/tests/mipad2-ov5693-otp-test.sh
+          make -j"$(nproc)" W=1 drivers/media/i2c/ov5693.o
+
+      - name: Validate no-idle status preflight
+        run: |
+          sh -n fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle
+          sh fix_file/tests/mipad2-test-no-idle-test.sh
+
+      - name: Compile camera sensor and VCM drivers
+        run: |
+          make -j"$(nproc)" W=1 \
+            drivers/acpi/x86/utils.o \
+            drivers/media/pci/intel/ipu-bridge.o \
+            drivers/staging/media/atomisp/pci/atomisp_csi2_bridge.o \
+            drivers/staging/media/atomisp/pci/atomisp_cmd.o \
+            drivers/staging/media/atomisp/pci/atomisp_fops.o \
+            drivers/staging/media/atomisp/pci/atomisp_ioctl.o \
+            drivers/staging/media/atomisp/pci/hmm/hmm_bo.o \
+            drivers/media/i2c/t4ka3.o \
+            drivers/media/i2c/dw9719.o \
+            drivers/hid/hid-multitouch.o \
+            drivers/hid/hid-sensor-hub.o \
+            drivers/iio/accel/hid-sensor-accel-3d.o \
+            drivers/iio/gyro/hid-sensor-gyro-3d.o \
+            drivers/iio/magnetometer/hid-sensor-magn-3d.o \
+            drivers/hid/i2c-hid/i2c-hid-of.o \
+            drivers/platform/x86/x86-android-tablets/core.o \
+            drivers/platform/x86/x86-android-tablets/other.o
+
+      - name: Compile CachyOS scheduler integration
+        if: github.ref_name == 'cachyos-mipad2'
+        run: |
+          make -j"$(nproc)" W=1 \
+            kernel/sched/bore.o \
+            block/adios.o
+
+      - name: Validate local recovery and USB debug packages
+        run: |
+          python3 fix_file/tests/mipad2-package-source-test.py
+          python3 fix_file/tests/mipad2-usb-serial-handoff-test.py
+          python3 fix_file/tests/mipad2-atomic-wrap-test.py --cc gcc
+          CC=gcc python3 fix_file/tests/mipad2-dapm-init-test.py
+          CC=gcc python3 fix_file/tests/mipad2-rt5659-rebind-test.py
+          sh -n fix_file/packages/mipad2-recovery/mp2-backup
+          sh -n fix_file/packages/mipad2-recovery/mp2-recover
+          sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial
+          sh -n fix_file/packages/mipad2-usb-serial/mipad2-usb-serial-sleep
+          grep -q 'mipad2-usb-serial.service' \
+            fix_file/packages/mipad2-usb-serial/mipad2-usb-serial-sleep
+          sh -n fix_file/packages/mipad2-test-no-idle/mp2-test-no-idle
+          sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          sh -n fix_file/tests/mipad2-kernel-config-audit.sh
+          grep -q '^ExecStart=.*mipad2-hardware-smoke' \
+            fix_file/tests/mipad2-hardware-audit.service
+          grep -q 'serial-getty@ttyGS0.service' \
+            fix_file/packages/mipad2-usb-serial/mipad2-usb-serial.service
+          ! grep -R -n -E 'brcmfmac|btbcm|BCM4356|wireless firmware' \
+            fix_file/packages/mipad2-usb-serial \
+            fix_file/packages/mipad2-recovery \
+            fix_file/packages/mipad2-test-no-idle
+
+      - name: Compile Mi Pad 2 speaker machine driver
+        run: make -j"$(nproc)" W=1 sound/soc/intel/boards/cht_bsw_rt5659.o

@@ -1,0 +1,666 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "original": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "shape": {
+        "width": 2624,
+        "height": 1956,
+        "code": "0x3007",
+        "crop": [
+          0,
+          0,
+          2624,
+          1956
+        ]
+      },
+      "controls": {
+        "10356993": 40,
+        "9963790": 1650,
+        "9963791": 1633,
+        "9963793": 1976,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 8,
+        "10422531": 0,
+        "10422533": 1024
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "shape": {
+        "width": 3280,
+        "height": 2464,
+        "code": "0x300a",
+        "crop": [
+          0,
+          0,
+          3280,
+          2464
+        ]
+      },
+      "controls": {
+        "10356993": 32,
+        "9963790": 1585,
+        "9963791": 1570,
+        "9963793": 2486,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 128,
+        "10422531": 0
+      }
+    }
+  ],
+  "initial_video": {
+    "code": 0,
+    "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "input": 0,
+      "metadata_mode": 0,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 2604/78125\nHIGH_EXPOSURE 1482 range 1..1976\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=400601539 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=400.601539\nbefore-observer-close frame=1 bytes=1384448 timestamp=400.635117\nbefore-observer-close frame=2 bytes=1384448 timestamp=400.668220\nbefore-observer-close frame=3 bytes=1384448 timestamp=400.701743\nbefore-observer-close frame=4 bytes=1384448 timestamp=400.735036\nbefore-observer-close frame=5 bytes=1384448 timestamp=400.768212\nbefore-observer-close frame=6 bytes=1384448 timestamp=400.801522\nbefore-observer-close frame=7 bytes=1384448 timestamp=400.834858\nbefore-observer-close frame=8 bytes=1384448 timestamp=400.868216\nbefore-observer-close frame=9 bytes=1384448 timestamp=400.901574\nbefore-observer-close frame=10 bytes=1384448 timestamp=400.935115\nbefore-observer-close frame=11 bytes=1384448 timestamp=400.968397\nbefore-observer-close frame=12 bytes=1384448 timestamp=401.001586\nbefore-observer-close frame=13 bytes=1384448 timestamp=401.034866\nbefore-observer-close frame=14 bytes=1384448 timestamp=401.068258\nbefore-observer-close frame=15 bytes=1384448 timestamp=401.101549\nbefore-observer-close frame=16 bytes=1384448 timestamp=401.134861\nbefore-observer-close frame=17 bytes=1384448 timestamp=401.168391\nbefore-observer-close frame=18 bytes=1384448 timestamp=401.201665\nbefore-observer-close frame=19 bytes=1384448 timestamp=401.234877\nbefore-observer-close frame=20 bytes=1384448 timestamp=401.268157\nbefore-observer-close frame=21 bytes=1384448 timestamp=401.301520\nbefore-observer-close frame=22 bytes=1384448 timestamp=401.334856\nbefore-observer-close frame=23 bytes=1384448 timestamp=401.368282\nbefore-observer-close frame=24 bytes=1384448 timestamp=401.401766\nbefore-observer-close frame=25 bytes=1384448 timestamp=401.435008\nbefore-observer-close frame=26 bytes=1384448 timestamp=401.468208\nbefore-observer-close frame=27 bytes=1384448 timestamp=401.501503\nbefore-observer-close frame=28 bytes=1384448 timestamp=401.534854\nbefore-observer-close frame=29 bytes=1384448 timestamp=401.568201\nbefore-observer-close frame=30 bytes=1384448 timestamp=401.601639\nbefore-observer-close frame=31 bytes=1384448 timestamp=401.635036\nbefore-observer-close frame=32 bytes=1384448 timestamp=401.668318\nbefore-observer-close frame=33 bytes=1384448 timestamp=401.701544\nbefore-observer-close frame=34 bytes=1384448 timestamp=401.734961\nbefore-observer-close frame=35 bytes=1384448 timestamp=401.768176\nbefore-observer-close frame=36 bytes=1384448 timestamp=401.801457\nbefore-observer-close frame=37 bytes=1384448 timestamp=401.834995\nbefore-observer-close frame=38 bytes=1384448 timestamp=401.868388\nbefore-observer-close frame=39 bytes=1384448 timestamp=401.901646\nbefore-observer-close frame=40 bytes=1384448 timestamp=401.934865\nbefore-observer-close frame=41 bytes=1384448 timestamp=401.968173\nbefore-observer-close frame=42 bytes=1384448 timestamp=402.001505\nbefore-observer-close frame=43 bytes=1384448 timestamp=402.034713\nbefore-observer-close frame=44 bytes=1384448 timestamp=402.068315\nbefore-observer-close frame=45 bytes=1384448 timestamp=402.101308\nbefore-observer-close frame=46 bytes=1384448 timestamp=402.134862\nbefore-observer-close frame=47 bytes=1384448 timestamp=402.168182\nbefore-observer-close frame=48 bytes=1384448 timestamp=402.201496\nbefore-observer-close frame=49 bytes=1384448 timestamp=402.234892\nbefore-observer-close frame=50 bytes=1384448 timestamp=402.268358\nbefore-observer-close frame=51 bytes=1384448 timestamp=402.301724\nbefore-observer-close frame=52 bytes=1384448 timestamp=402.334991\nbefore-observer-close frame=53 bytes=1384448 timestamp=402.368224\nbefore-observer-close frame=54 bytes=1384448 timestamp=402.401507\nbefore-observer-close frame=55 bytes=1384448 timestamp=402.434814\nbefore-observer-close frame=56 bytes=1384448 timestamp=402.468144\nbefore-observer-close frame=57 bytes=1384448 timestamp=402.501507\nbefore-observer-close frame=58 bytes=1384448 timestamp=402.535063\nbefore-observer-close frame=59 bytes=1384448 timestamp=402.568328\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=402.601541\nafter-observer-close frame=61 bytes=1384448 timestamp=402.634848\nafter-observer-close frame=62 bytes=1384448 timestamp=402.668174\nafter-observer-close frame=63 bytes=1384448 timestamp=402.701470\nafter-observer-close frame=64 bytes=1384448 timestamp=402.734863\nafter-observer-close frame=65 bytes=1384448 timestamp=402.768424\nafter-observer-close frame=66 bytes=1384448 timestamp=402.801690\nafter-observer-close frame=67 bytes=1384448 timestamp=402.834665\nafter-observer-close frame=68 bytes=1384448 timestamp=402.867909\nafter-observer-close frame=69 bytes=1384448 timestamp=402.901527\nafter-observer-close frame=70 bytes=1384448 timestamp=402.934889\nafter-observer-close frame=71 bytes=1384448 timestamp=402.968069\nafter-observer-close frame=72 bytes=1384448 timestamp=403.001610\nafter-observer-close frame=73 bytes=1384448 timestamp=403.034563\nafter-observer-close frame=74 bytes=1384448 timestamp=403.068107\nafter-observer-close frame=75 bytes=1384448 timestamp=403.101647\nafter-observer-close frame=76 bytes=1384448 timestamp=403.135072\nafter-observer-close frame=77 bytes=1384448 timestamp=403.168167\nafter-observer-close frame=78 bytes=1384448 timestamp=403.201550\nafter-observer-close frame=79 bytes=1384448 timestamp=403.235026\nafter-observer-close frame=80 bytes=1384448 timestamp=403.268274\nafter-observer-close frame=81 bytes=1384448 timestamp=403.301491\nafter-observer-close frame=82 bytes=1384448 timestamp=403.334784\nafter-observer-close frame=83 bytes=1384448 timestamp=403.368388\nafter-observer-close frame=84 bytes=1384448 timestamp=403.401511\nafter-observer-close frame=85 bytes=1384448 timestamp=403.434894\nafter-observer-close frame=86 bytes=1384448 timestamp=403.468292\nafter-observer-close frame=87 bytes=1384448 timestamp=403.501623\nafter-observer-close frame=88 bytes=1384448 timestamp=403.534818\nafter-observer-close frame=89 bytes=1384448 timestamp=403.568121\nafter-observer-close frame=90 bytes=1384448 timestamp=403.601475\nafter-observer-close frame=91 bytes=1384448 timestamp=403.634956\nafter-observer-close frame=92 bytes=1384448 timestamp=403.668374\nafter-observer-close frame=93 bytes=1384448 timestamp=403.701730\nafter-observer-close frame=94 bytes=1384448 timestamp=403.734921\nafter-observer-close frame=95 bytes=1384448 timestamp=403.768157\nafter-observer-close frame=96 bytes=1384448 timestamp=403.801447\nafter-observer-close frame=97 bytes=1384448 timestamp=403.834798\nafter-observer-close frame=98 bytes=1384448 timestamp=403.868083\nafter-observer-close frame=99 bytes=1384448 timestamp=403.901519\nafter-observer-close frame=100 bytes=1384448 timestamp=403.934993\nafter-observer-close frame=101 bytes=1384448 timestamp=403.968311\nafter-observer-close frame=102 bytes=1384448 timestamp=404.001456\nafter-observer-close frame=103 bytes=1384448 timestamp=404.034782\nafter-observer-close frame=104 bytes=1384448 timestamp=404.068123\nafter-observer-close frame=105 bytes=1384448 timestamp=404.101449\nafter-observer-close frame=106 bytes=1384448 timestamp=404.134946\nafter-observer-close frame=107 bytes=1384448 timestamp=404.168350\nafter-observer-close frame=108 bytes=1384448 timestamp=404.201461\nafter-observer-close frame=109 bytes=1384448 timestamp=404.234822\nafter-observer-close frame=110 bytes=1384448 timestamp=404.268341\nafter-observer-close frame=111 bytes=1384448 timestamp=404.301540\nafter-observer-close frame=112 bytes=1384448 timestamp=404.334905\nafter-observer-close frame=113 bytes=1384448 timestamp=404.368279\nafter-observer-close frame=114 bytes=1384448 timestamp=404.401585\nafter-observer-close frame=115 bytes=1384448 timestamp=404.434851\nafter-observer-close frame=116 bytes=1384448 timestamp=404.468116\nafter-observer-close frame=117 bytes=1384448 timestamp=404.501423\nafter-observer-close frame=118 bytes=1384448 timestamp=404.534758\nafter-observer-close frame=119 bytes=1384448 timestamp=404.567979\nRESTART_PRESERVE exposure 1482 -> 1482\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=404929797 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=404.929797\nordinary-restart frame=1 bytes=1384448 timestamp=404.963388\nordinary-restart frame=2 bytes=1384448 timestamp=404.996910\nordinary-restart frame=3 bytes=1384448 timestamp=405.030190\nordinary-restart frame=4 bytes=1384448 timestamp=405.063460\nordinary-restart frame=5 bytes=1384448 timestamp=405.096606\nordinary-restart frame=6 bytes=1384448 timestamp=405.130060\nordinary-restart frame=7 bytes=1384448 timestamp=405.163369\nordinary-restart frame=8 bytes=1384448 timestamp=405.196729\nordinary-restart frame=9 bytes=1384448 timestamp=405.230242\nordinary-restart frame=10 bytes=1384448 timestamp=405.263522\nordinary-restart frame=11 bytes=1384448 timestamp=405.296771\nordinary-restart frame=12 bytes=1384448 timestamp=405.330049\nordinary-restart frame=13 bytes=1384448 timestamp=405.363371\nordinary-restart frame=14 bytes=1384448 timestamp=405.396716\nordinary-restart frame=15 bytes=1384448 timestamp=405.430091\nordinary-restart frame=16 bytes=1384448 timestamp=405.463595\nordinary-restart frame=17 bytes=1384448 timestamp=405.496836\nordinary-restart frame=18 bytes=1384448 timestamp=405.530044\nordinary-restart frame=19 bytes=1384448 timestamp=405.563011\nordinary-restart frame=20 bytes=1384448 timestamp=405.596622\nordinary-restart frame=21 bytes=1384448 timestamp=405.630165\nordinary-restart frame=22 bytes=1384448 timestamp=405.663411\nordinary-restart frame=23 bytes=1384448 timestamp=405.696921\nordinary-restart frame=24 bytes=1384448 timestamp=405.730171\nordinary-restart frame=25 bytes=1384448 timestamp=405.763389\nordinary-restart frame=26 bytes=1384448 timestamp=405.796689\nordinary-restart frame=27 bytes=1384448 timestamp=405.830016\nordinary-restart frame=28 bytes=1384448 timestamp=405.863287\nordinary-restart frame=29 bytes=1384448 timestamp=405.896666\nordinary-restart frame=30 bytes=1384448 timestamp=405.930256\nordinary-restart frame=31 bytes=1384448 timestamp=405.963505\nordinary-restart frame=32 bytes=1384448 timestamp=405.996686\nordinary-restart frame=33 bytes=1384448 timestamp=406.029948\nordinary-restart frame=34 bytes=1384448 timestamp=406.063339\nordinary-restart frame=35 bytes=1384448 timestamp=406.096317\nordinary-restart frame=36 bytes=1384448 timestamp=406.129921\nordinary-restart frame=37 bytes=1384448 timestamp=406.162992\nordinary-restart frame=38 bytes=1384448 timestamp=406.196262\nordinary-restart frame=39 bytes=1384448 timestamp=406.229658\nordinary-restart frame=40 bytes=1384448 timestamp=406.262938\nordinary-restart frame=41 bytes=1384448 timestamp=406.296659\nordinary-restart frame=42 bytes=1384448 timestamp=406.329585\nordinary-restart frame=43 bytes=1384448 timestamp=406.363510\nordinary-restart frame=44 bytes=1384448 timestamp=406.396963\nordinary-restart frame=45 bytes=1384448 timestamp=406.430208\nordinary-restart frame=46 bytes=1384448 timestamp=406.463371\nordinary-restart frame=47 bytes=1384448 timestamp=406.496593\nordinary-restart frame=48 bytes=1384448 timestamp=406.529932\nordinary-restart frame=49 bytes=1384448 timestamp=406.563498\nordinary-restart frame=50 bytes=1384448 timestamp=406.596766\nordinary-restart frame=51 bytes=1384448 timestamp=406.630167\nordinary-restart frame=52 bytes=1384448 timestamp=406.663473\nordinary-restart frame=53 bytes=1384448 timestamp=406.696689\nordinary-restart frame=54 bytes=1384448 timestamp=406.729922\nordinary-restart frame=55 bytes=1384448 timestamp=406.763266\nordinary-restart frame=56 bytes=1384448 timestamp=406.796586\nordinary-restart frame=57 bytes=1384448 timestamp=406.830144\nordinary-restart frame=58 bytes=1384448 timestamp=406.863496\nordinary-restart frame=59 bytes=1384448 timestamp=406.896761\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=407225479 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=407.225479\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=407.258765\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=407.292109\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=407.325545\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=407.358766\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=407.392101\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=407.425454\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=407.458761\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=407.492088\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=407.525801\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=407.558795\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=407.592337\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=407.625706\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=407.658886\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=407.692321\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=407.725807\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=407.759086\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=407.792513\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=407.825841\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=407.859098\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=407.892399\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=407.925712\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=407.959175\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=407.992666\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=408.025868\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=408.058862\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=408.092398\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=408.125719\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=408.159044\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=408.192416\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=408.225798\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=408.259299\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=408.292546\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=408.325722\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=408.359023\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=408.392386\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=408.425675\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=408.459295\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=408.492598\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=408.525828\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=408.559033\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=408.592339\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=408.625710\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=408.659048\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=408.692412\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=408.725942\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=408.759161\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=408.792328\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=408.825697\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=408.859020\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=408.892375\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=408.925756\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=408.959243\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=408.992495\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=409.025718\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=409.058995\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=409.092306\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=409.125714\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=409.159195\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=409.192571\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 9.092146226000011,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 29.99813401437563,
+        "after-observer-close": 30.003488541210316,
+        "ordinary-restart": 29.995465092395918,
+        "remaining-fd-takeover": 29.993513267300468
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 0,
+      "metadata_mode": 1,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 2604/78125\nHIGH_EXPOSURE 1482 range 1..1976\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=410105246 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=410.105246\nbefore-observer-close frame=1 bytes=1384448 timestamp=410.138417\nbefore-observer-close frame=2 bytes=1384448 timestamp=410.171781\nbefore-observer-close frame=3 bytes=1384448 timestamp=410.204999\nbefore-observer-close frame=4 bytes=1384448 timestamp=410.238452\nbefore-observer-close frame=5 bytes=1384448 timestamp=410.271938\nbefore-observer-close frame=6 bytes=1384448 timestamp=410.305307\nbefore-observer-close frame=7 bytes=1384448 timestamp=410.338605\nbefore-observer-close frame=8 bytes=1384448 timestamp=410.371804\nbefore-observer-close frame=9 bytes=1384448 timestamp=410.405112\nbefore-observer-close frame=10 bytes=1384448 timestamp=410.438426\nbefore-observer-close frame=11 bytes=1384448 timestamp=410.471756\nbefore-observer-close frame=12 bytes=1384448 timestamp=410.505259\nbefore-observer-close frame=13 bytes=1384448 timestamp=410.538660\nbefore-observer-close frame=14 bytes=1384448 timestamp=410.571776\nbefore-observer-close frame=15 bytes=1384448 timestamp=410.605086\nbefore-observer-close frame=16 bytes=1384448 timestamp=410.638425\nbefore-observer-close frame=17 bytes=1384448 timestamp=410.671770\nbefore-observer-close frame=18 bytes=1384448 timestamp=410.705075\nbefore-observer-close frame=19 bytes=1384448 timestamp=410.738627\nbefore-observer-close frame=20 bytes=1384448 timestamp=410.771996\nbefore-observer-close frame=21 bytes=1384448 timestamp=410.805211\nbefore-observer-close frame=22 bytes=1384448 timestamp=410.838431\nbefore-observer-close frame=23 bytes=1384448 timestamp=410.871768\nbefore-observer-close frame=24 bytes=1384448 timestamp=410.905075\nbefore-observer-close frame=25 bytes=1384448 timestamp=410.938414\nbefore-observer-close frame=26 bytes=1384448 timestamp=410.971976\nbefore-observer-close frame=27 bytes=1384448 timestamp=411.005223\nbefore-observer-close frame=28 bytes=1384448 timestamp=411.038441\nbefore-observer-close frame=29 bytes=1384448 timestamp=411.071571\nbefore-observer-close frame=30 bytes=1384448 timestamp=411.105066\nbefore-observer-close frame=31 bytes=1384448 timestamp=411.138369\nbefore-observer-close frame=32 bytes=1384448 timestamp=411.171679\nbefore-observer-close frame=33 bytes=1384448 timestamp=411.205341\nbefore-observer-close frame=34 bytes=1384448 timestamp=411.238521\nbefore-observer-close frame=35 bytes=1384448 timestamp=411.271733\nbefore-observer-close frame=36 bytes=1384448 timestamp=411.305036\nbefore-observer-close frame=37 bytes=1384448 timestamp=411.338428\nbefore-observer-close frame=38 bytes=1384448 timestamp=411.371603\nbefore-observer-close frame=39 bytes=1384448 timestamp=411.405152\nbefore-observer-close frame=40 bytes=1384448 timestamp=411.438631\nbefore-observer-close frame=41 bytes=1384448 timestamp=411.471901\nbefore-observer-close frame=42 bytes=1384448 timestamp=411.505062\nbefore-observer-close frame=43 bytes=1384448 timestamp=411.538404\nbefore-observer-close frame=44 bytes=1384448 timestamp=411.571451\nbefore-observer-close frame=45 bytes=1384448 timestamp=411.605051\nbefore-observer-close frame=46 bytes=1384448 timestamp=411.638446\nbefore-observer-close frame=47 bytes=1384448 timestamp=411.671956\nbefore-observer-close frame=48 bytes=1384448 timestamp=411.705244\nbefore-observer-close frame=49 bytes=1384448 timestamp=411.738387\nbefore-observer-close frame=50 bytes=1384448 timestamp=411.771710\nbefore-observer-close frame=51 bytes=1384448 timestamp=411.805010\nbefore-observer-close frame=52 bytes=1384448 timestamp=411.838373\nbefore-observer-close frame=53 bytes=1384448 timestamp=411.871803\nbefore-observer-close frame=54 bytes=1384448 timestamp=411.905281\nbefore-observer-close frame=55 bytes=1384448 timestamp=411.938501\nbefore-observer-close frame=56 bytes=1384448 timestamp=411.971695\nbefore-observer-close frame=57 bytes=1384448 timestamp=412.005027\nbefore-observer-close frame=58 bytes=1384448 timestamp=412.038366\nbefore-observer-close frame=59 bytes=1384448 timestamp=412.071882\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=412.105144\nafter-observer-close frame=61 bytes=1384448 timestamp=412.138617\nafter-observer-close frame=62 bytes=1384448 timestamp=412.171793\nafter-observer-close frame=63 bytes=1384448 timestamp=412.205038\nafter-observer-close frame=64 bytes=1384448 timestamp=412.238355\nafter-observer-close frame=65 bytes=1384448 timestamp=412.271676\nafter-observer-close frame=66 bytes=1384448 timestamp=412.304999\nafter-observer-close frame=67 bytes=1384448 timestamp=412.338493\nafter-observer-close frame=68 bytes=1384448 timestamp=412.371863\nafter-observer-close frame=69 bytes=1384448 timestamp=412.405190\nafter-observer-close frame=70 bytes=1384448 timestamp=412.438358\nafter-observer-close frame=71 bytes=1384448 timestamp=412.471660\nafter-observer-close frame=72 bytes=1384448 timestamp=412.504979\nafter-observer-close frame=73 bytes=1384448 timestamp=412.538324\nafter-observer-close frame=74 bytes=1384448 timestamp=412.571827\nafter-observer-close frame=75 bytes=1384448 timestamp=412.604777\nafter-observer-close frame=76 bytes=1384448 timestamp=412.638364\nafter-observer-close frame=77 bytes=1384448 timestamp=412.671661\nafter-observer-close frame=78 bytes=1384448 timestamp=412.704802\nafter-observer-close frame=79 bytes=1384448 timestamp=412.738114\nafter-observer-close frame=80 bytes=1384448 timestamp=412.771303\nafter-observer-close frame=81 bytes=1384448 timestamp=412.804638\nafter-observer-close frame=82 bytes=1384448 timestamp=412.838347\nafter-observer-close frame=83 bytes=1384448 timestamp=412.871654\nafter-observer-close frame=84 bytes=1384448 timestamp=412.905009\nafter-observer-close frame=85 bytes=1384448 timestamp=412.938293\nafter-observer-close frame=86 bytes=1384448 timestamp=412.971618\nafter-observer-close frame=87 bytes=1384448 timestamp=413.005135\nafter-observer-close frame=88 bytes=1384448 timestamp=413.038426\nafter-observer-close frame=89 bytes=1384448 timestamp=413.071622\nafter-observer-close frame=90 bytes=1384448 timestamp=413.104820\nafter-observer-close frame=91 bytes=1384448 timestamp=413.137948\nafter-observer-close frame=92 bytes=1384448 timestamp=413.171282\nafter-observer-close frame=93 bytes=1384448 timestamp=413.204609\nafter-observer-close frame=94 bytes=1384448 timestamp=413.237935\nafter-observer-close frame=95 bytes=1384448 timestamp=413.271306\nafter-observer-close frame=96 bytes=1384448 timestamp=413.304594\nafter-observer-close frame=97 bytes=1384448 timestamp=413.337952\nafter-observer-close frame=98 bytes=1384448 timestamp=413.371266\nafter-observer-close frame=99 bytes=1384448 timestamp=413.404618\nafter-observer-close frame=100 bytes=1384448 timestamp=413.438485\nafter-observer-close frame=101 bytes=1384448 timestamp=413.471662\nafter-observer-close frame=102 bytes=1384448 timestamp=413.504761\nafter-observer-close frame=103 bytes=1384448 timestamp=413.538428\nafter-observer-close frame=104 bytes=1384448 timestamp=413.571285\nafter-observer-close frame=105 bytes=1384448 timestamp=413.604868\nafter-observer-close frame=106 bytes=1384448 timestamp=413.638106\nafter-observer-close frame=107 bytes=1384448 timestamp=413.671543\nafter-observer-close frame=108 bytes=1384448 timestamp=413.704757\nafter-observer-close frame=109 bytes=1384448 timestamp=413.738140\nafter-observer-close frame=110 bytes=1384448 timestamp=413.771318\nafter-observer-close frame=111 bytes=1384448 timestamp=413.804625\nafter-observer-close frame=112 bytes=1384448 timestamp=413.838203\nafter-observer-close frame=113 bytes=1384448 timestamp=413.871547\nafter-observer-close frame=114 bytes=1384448 timestamp=413.904880\nafter-observer-close frame=115 bytes=1384448 timestamp=413.938313\nafter-observer-close frame=116 bytes=1384448 timestamp=413.971749\nafter-observer-close frame=117 bytes=1384448 timestamp=414.004965\nafter-observer-close frame=118 bytes=1384448 timestamp=414.038221\nafter-observer-close frame=119 bytes=1384448 timestamp=414.071512\nRESTART_PRESERVE exposure 1482 -> 1482\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=414404054 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=414.404054\nordinary-restart frame=1 bytes=1384448 timestamp=414.437366\nordinary-restart frame=2 bytes=1384448 timestamp=414.470707\nordinary-restart frame=3 bytes=1384448 timestamp=414.504169\nordinary-restart frame=4 bytes=1384448 timestamp=414.537480\nordinary-restart frame=5 bytes=1384448 timestamp=414.570993\nordinary-restart frame=6 bytes=1384448 timestamp=414.603986\nordinary-restart frame=7 bytes=1384448 timestamp=414.637223\nordinary-restart frame=8 bytes=1384448 timestamp=414.670576\nordinary-restart frame=9 bytes=1384448 timestamp=414.703966\nordinary-restart frame=10 bytes=1384448 timestamp=414.737304\nordinary-restart frame=11 bytes=1384448 timestamp=414.770625\nordinary-restart frame=12 bytes=1384448 timestamp=414.804231\nordinary-restart frame=13 bytes=1384448 timestamp=414.837523\nordinary-restart frame=14 bytes=1384448 timestamp=414.870645\nordinary-restart frame=15 bytes=1384448 timestamp=414.903953\nordinary-restart frame=16 bytes=1384448 timestamp=414.937328\nordinary-restart frame=17 bytes=1384448 timestamp=414.970651\nordinary-restart frame=18 bytes=1384448 timestamp=415.004212\nordinary-restart frame=19 bytes=1384448 timestamp=415.037513\nordinary-restart frame=20 bytes=1384448 timestamp=415.070812\nordinary-restart frame=21 bytes=1384448 timestamp=415.104135\nordinary-restart frame=22 bytes=1384448 timestamp=415.137257\nordinary-restart frame=23 bytes=1384448 timestamp=415.170716\nordinary-restart frame=24 bytes=1384448 timestamp=415.204200\nordinary-restart frame=25 bytes=1384448 timestamp=415.237733\nordinary-restart frame=26 bytes=1384448 timestamp=415.270995\nordinary-restart frame=27 bytes=1384448 timestamp=415.304156\nordinary-restart frame=28 bytes=1384448 timestamp=415.337491\nordinary-restart frame=29 bytes=1384448 timestamp=415.370812\nordinary-restart frame=30 bytes=1384448 timestamp=415.404144\nordinary-restart frame=31 bytes=1384448 timestamp=415.437538\nordinary-restart frame=32 bytes=1384448 timestamp=415.471086\nordinary-restart frame=33 bytes=1384448 timestamp=415.504313\nordinary-restart frame=34 bytes=1384448 timestamp=415.537473\nordinary-restart frame=35 bytes=1384448 timestamp=415.570765\nordinary-restart frame=36 bytes=1384448 timestamp=415.604147\nordinary-restart frame=37 bytes=1384448 timestamp=415.637298\nordinary-restart frame=38 bytes=1384448 timestamp=415.670885\nordinary-restart frame=39 bytes=1384448 timestamp=415.703956\nordinary-restart frame=40 bytes=1384448 timestamp=415.737242\nordinary-restart frame=41 bytes=1384448 timestamp=415.770744\nordinary-restart frame=42 bytes=1384448 timestamp=415.804100\nordinary-restart frame=43 bytes=1384448 timestamp=415.837179\nordinary-restart frame=44 bytes=1384448 timestamp=415.870824\nordinary-restart frame=45 bytes=1384448 timestamp=415.903852\nordinary-restart frame=46 bytes=1384448 timestamp=415.937093\nordinary-restart frame=47 bytes=1384448 timestamp=415.970511\nordinary-restart frame=48 bytes=1384448 timestamp=416.003765\nordinary-restart frame=49 bytes=1384448 timestamp=416.037189\nordinary-restart frame=50 bytes=1384448 timestamp=416.070603\nordinary-restart frame=51 bytes=1384448 timestamp=416.103857\nordinary-restart frame=52 bytes=1384448 timestamp=416.137098\nordinary-restart frame=53 bytes=1384448 timestamp=416.170620\nordinary-restart frame=54 bytes=1384448 timestamp=416.203872\nordinary-restart frame=55 bytes=1384448 timestamp=416.237423\nordinary-restart frame=56 bytes=1384448 timestamp=416.270716\nordinary-restart frame=57 bytes=1384448 timestamp=416.304076\nordinary-restart frame=58 bytes=1384448 timestamp=416.337241\nordinary-restart frame=59 bytes=1384448 timestamp=416.370889\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=416688756 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=416.688756\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=416.722251\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=416.755462\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=416.788666\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=416.821823\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=416.855345\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=416.888676\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=416.922109\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=416.955519\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=416.988773\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=417.021936\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=417.055283\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=417.088638\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=417.121998\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=417.155447\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=417.188640\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=417.222124\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=417.255304\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=417.288625\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=417.321937\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=417.355310\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=417.388802\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=417.422111\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=417.455340\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=417.488618\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=417.521940\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=417.555276\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=417.588584\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=417.622180\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=417.655444\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=417.688627\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=417.721924\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=417.755254\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=417.788607\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=417.821929\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=417.855513\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=417.888744\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=417.921917\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=417.955248\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=417.988569\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=418.021985\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=418.055410\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=418.088812\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=418.122043\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=418.155261\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=418.188589\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=418.221584\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=418.255183\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=418.288608\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=418.321997\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=418.355322\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=418.388556\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=418.421873\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=418.455182\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=418.488506\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=418.521959\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=418.555437\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=418.588605\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=418.621871\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=418.655145\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 9.013518114000021,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 30.00046780390483,
+        "after-observer-close": 30.004556624192595,
+        "ordinary-restart": 29.99743242315695,
+        "remaining-fd-takeover": 30.00423619131323
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 0,
+      "metadata_mode": 2,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 2604/78125\nHIGH_EXPOSURE 1482 range 1..1976\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=419529663 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=419.529663\nbefore-observer-close frame=1 bytes=1384448 timestamp=419.562969\nbefore-observer-close frame=2 bytes=1384448 timestamp=419.596073\nbefore-observer-close frame=3 bytes=1384448 timestamp=419.629443\nbefore-observer-close frame=4 bytes=1384448 timestamp=419.662726\nbefore-observer-close frame=5 bytes=1384448 timestamp=419.696076\nbefore-observer-close frame=6 bytes=1384448 timestamp=419.729419\nbefore-observer-close frame=7 bytes=1384448 timestamp=419.762931\nbefore-observer-close frame=8 bytes=1384448 timestamp=419.796109\nbefore-observer-close frame=9 bytes=1384448 timestamp=419.829426\nbefore-observer-close frame=10 bytes=1384448 timestamp=419.862752\nbefore-observer-close frame=11 bytes=1384448 timestamp=419.896040\nbefore-observer-close frame=12 bytes=1384448 timestamp=419.929410\nbefore-observer-close frame=13 bytes=1384448 timestamp=419.962727\nbefore-observer-close frame=14 bytes=1384448 timestamp=419.996282\nbefore-observer-close frame=15 bytes=1384448 timestamp=420.029535\nbefore-observer-close frame=16 bytes=1384448 timestamp=420.062772\nbefore-observer-close frame=17 bytes=1384448 timestamp=420.096023\nbefore-observer-close frame=18 bytes=1384448 timestamp=420.129388\nbefore-observer-close frame=19 bytes=1384448 timestamp=420.162752\nbefore-observer-close frame=20 bytes=1384448 timestamp=420.196150\nbefore-observer-close frame=21 bytes=1384448 timestamp=420.229583\nbefore-observer-close frame=22 bytes=1384448 timestamp=420.262865\nbefore-observer-close frame=23 bytes=1384448 timestamp=420.296084\nbefore-observer-close frame=24 bytes=1384448 timestamp=420.329374\nbefore-observer-close frame=25 bytes=1384448 timestamp=420.362712\nbefore-observer-close frame=26 bytes=1384448 timestamp=420.396047\nbefore-observer-close frame=27 bytes=1384448 timestamp=420.429151\nbefore-observer-close frame=28 bytes=1384448 timestamp=420.462979\nbefore-observer-close frame=29 bytes=1384448 timestamp=420.496181\nbefore-observer-close frame=30 bytes=1384448 timestamp=420.529383\nbefore-observer-close frame=31 bytes=1384448 timestamp=420.562685\nbefore-observer-close frame=32 bytes=1384448 timestamp=420.596019\nbefore-observer-close frame=33 bytes=1384448 timestamp=420.629354\nbefore-observer-close frame=34 bytes=1384448 timestamp=420.662847\nbefore-observer-close frame=35 bytes=1384448 timestamp=420.696212\nbefore-observer-close frame=36 bytes=1384448 timestamp=420.729525\nbefore-observer-close frame=37 bytes=1384448 timestamp=420.762717\nbefore-observer-close frame=38 bytes=1384448 timestamp=420.795990\nbefore-observer-close frame=39 bytes=1384448 timestamp=420.829217\nbefore-observer-close frame=40 bytes=1384448 timestamp=420.862665\nbefore-observer-close frame=41 bytes=1384448 timestamp=420.896158\nbefore-observer-close frame=42 bytes=1384448 timestamp=420.929252\nbefore-observer-close frame=43 bytes=1384448 timestamp=420.962638\nbefore-observer-close frame=44 bytes=1384448 timestamp=420.995828\nbefore-observer-close frame=45 bytes=1384448 timestamp=421.029331\nbefore-observer-close frame=46 bytes=1384448 timestamp=421.062642\nbefore-observer-close frame=47 bytes=1384448 timestamp=421.095991\nbefore-observer-close frame=48 bytes=1384448 timestamp=421.129497\nbefore-observer-close frame=49 bytes=1384448 timestamp=421.162872\nbefore-observer-close frame=50 bytes=1384448 timestamp=421.196067\nbefore-observer-close frame=51 bytes=1384448 timestamp=421.229317\nbefore-observer-close frame=52 bytes=1384448 timestamp=421.262647\nbefore-observer-close frame=53 bytes=1384448 timestamp=421.295971\nbefore-observer-close frame=54 bytes=1384448 timestamp=421.329303\nbefore-observer-close frame=55 bytes=1384448 timestamp=421.362800\nbefore-observer-close frame=56 bytes=1384448 timestamp=421.396111\nbefore-observer-close frame=57 bytes=1384448 timestamp=421.429398\nbefore-observer-close frame=58 bytes=1384448 timestamp=421.462607\nbefore-observer-close frame=59 bytes=1384448 timestamp=421.495954\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=421.529251\nafter-observer-close frame=61 bytes=1384448 timestamp=421.562622\nafter-observer-close frame=62 bytes=1384448 timestamp=421.596175\nafter-observer-close frame=63 bytes=1384448 timestamp=421.629402\nafter-observer-close frame=64 bytes=1384448 timestamp=421.662646\nafter-observer-close frame=65 bytes=1384448 timestamp=421.695872\nafter-observer-close frame=66 bytes=1384448 timestamp=421.729214\nafter-observer-close frame=67 bytes=1384448 timestamp=421.762579\nafter-observer-close frame=68 bytes=1384448 timestamp=421.795963\nafter-observer-close frame=69 bytes=1384448 timestamp=421.829515\nafter-observer-close frame=70 bytes=1384448 timestamp=421.862722\nafter-observer-close frame=71 bytes=1384448 timestamp=421.895906\nafter-observer-close frame=72 bytes=1384448 timestamp=421.929218\nafter-observer-close frame=73 bytes=1384448 timestamp=421.962571\nafter-observer-close frame=74 bytes=1384448 timestamp=421.995905\nafter-observer-close frame=75 bytes=1384448 timestamp=422.029298\nafter-observer-close frame=76 bytes=1384448 timestamp=422.062842\nafter-observer-close frame=77 bytes=1384448 timestamp=422.096078\nafter-observer-close frame=78 bytes=1384448 timestamp=422.129237\nafter-observer-close frame=79 bytes=1384448 timestamp=422.162523\nafter-observer-close frame=80 bytes=1384448 timestamp=422.195921\nafter-observer-close frame=81 bytes=1384448 timestamp=422.229181\nafter-observer-close frame=82 bytes=1384448 timestamp=422.262629\nafter-observer-close frame=83 bytes=1384448 timestamp=422.296121\nafter-observer-close frame=84 bytes=1384448 timestamp=422.329336\nafter-observer-close frame=85 bytes=1384448 timestamp=422.362557\nafter-observer-close frame=86 bytes=1384448 timestamp=422.395854\nafter-observer-close frame=87 bytes=1384448 timestamp=422.429144\nafter-observer-close frame=88 bytes=1384448 timestamp=422.462515\nafter-observer-close frame=89 bytes=1384448 timestamp=422.495916\nafter-observer-close frame=90 bytes=1384448 timestamp=422.528968\nafter-observer-close frame=91 bytes=1384448 timestamp=422.562442\nafter-observer-close frame=92 bytes=1384448 timestamp=422.595563\nafter-observer-close frame=93 bytes=1384448 timestamp=422.629167\nafter-observer-close frame=94 bytes=1384448 timestamp=422.662425\nafter-observer-close frame=95 bytes=1384448 timestamp=422.695813\nafter-observer-close frame=96 bytes=1384448 timestamp=422.729137\nafter-observer-close frame=97 bytes=1384448 timestamp=422.762675\nafter-observer-close frame=98 bytes=1384448 timestamp=422.795985\nafter-observer-close frame=99 bytes=1384448 timestamp=422.829178\nafter-observer-close frame=100 bytes=1384448 timestamp=422.862467\nafter-observer-close frame=101 bytes=1384448 timestamp=422.895819\nafter-observer-close frame=102 bytes=1384448 timestamp=422.929342\nafter-observer-close frame=103 bytes=1384448 timestamp=422.962161\nafter-observer-close frame=104 bytes=1384448 timestamp=422.995459\nafter-observer-close frame=105 bytes=1384448 timestamp=423.029314\nafter-observer-close frame=106 bytes=1384448 timestamp=423.062609\nafter-observer-close frame=107 bytes=1384448 timestamp=423.095774\nafter-observer-close frame=108 bytes=1384448 timestamp=423.129119\nafter-observer-close frame=109 bytes=1384448 timestamp=423.162452\nafter-observer-close frame=110 bytes=1384448 timestamp=423.195948\nafter-observer-close frame=111 bytes=1384448 timestamp=423.229328\nafter-observer-close frame=112 bytes=1384448 timestamp=423.262612\nafter-observer-close frame=113 bytes=1384448 timestamp=423.295793\nafter-observer-close frame=114 bytes=1384448 timestamp=423.329084\nafter-observer-close frame=115 bytes=1384448 timestamp=423.362427\nafter-observer-close frame=116 bytes=1384448 timestamp=423.395773\nafter-observer-close frame=117 bytes=1384448 timestamp=423.429281\nafter-observer-close frame=118 bytes=1384448 timestamp=423.462573\nafter-observer-close frame=119 bytes=1384448 timestamp=423.495845\nRESTART_PRESERVE exposure 1482 -> 1482\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=423865352 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=423.865352\nordinary-restart frame=1 bytes=1384448 timestamp=423.898771\nordinary-restart frame=2 bytes=1384448 timestamp=423.932131\nordinary-restart frame=3 bytes=1384448 timestamp=423.965397\nordinary-restart frame=4 bytes=1384448 timestamp=423.998613\nordinary-restart frame=5 bytes=1384448 timestamp=424.031983\nordinary-restart frame=6 bytes=1384448 timestamp=424.065321\nordinary-restart frame=7 bytes=1384448 timestamp=424.098658\nordinary-restart frame=8 bytes=1384448 timestamp=424.132217\nordinary-restart frame=9 bytes=1384448 timestamp=424.165464\nordinary-restart frame=10 bytes=1384448 timestamp=424.198591\nordinary-restart frame=11 bytes=1384448 timestamp=424.231915\nordinary-restart frame=12 bytes=1384448 timestamp=424.265260\nordinary-restart frame=13 bytes=1384448 timestamp=424.298611\nordinary-restart frame=14 bytes=1384448 timestamp=424.331985\nordinary-restart frame=15 bytes=1384448 timestamp=424.365544\nordinary-restart frame=16 bytes=1384448 timestamp=424.398784\nordinary-restart frame=17 bytes=1384448 timestamp=424.431950\nordinary-restart frame=18 bytes=1384448 timestamp=424.465237\nordinary-restart frame=19 bytes=1384448 timestamp=424.498572\nordinary-restart frame=20 bytes=1384448 timestamp=424.531917\nordinary-restart frame=21 bytes=1384448 timestamp=424.565344\nordinary-restart frame=22 bytes=1384448 timestamp=424.598605\nordinary-restart frame=23 bytes=1384448 timestamp=424.632050\nordinary-restart frame=24 bytes=1384448 timestamp=424.665255\nordinary-restart frame=25 bytes=1384448 timestamp=424.698538\nordinary-restart frame=26 bytes=1384448 timestamp=424.731904\nordinary-restart frame=27 bytes=1384448 timestamp=424.765201\nordinary-restart frame=28 bytes=1384448 timestamp=424.798661\nordinary-restart frame=29 bytes=1384448 timestamp=424.832209\nordinary-restart frame=30 bytes=1384448 timestamp=424.865310\nordinary-restart frame=31 bytes=1384448 timestamp=424.898556\nordinary-restart frame=32 bytes=1384448 timestamp=424.931877\nordinary-restart frame=33 bytes=1384448 timestamp=424.965212\nordinary-restart frame=34 bytes=1384448 timestamp=424.998499\nordinary-restart frame=35 bytes=1384448 timestamp=425.031991\nordinary-restart frame=36 bytes=1384448 timestamp=425.065274\nordinary-restart frame=37 bytes=1384448 timestamp=425.098247\nordinary-restart frame=38 bytes=1384448 timestamp=425.131514\nordinary-restart frame=39 bytes=1384448 timestamp=425.164895\nordinary-restart frame=40 bytes=1384448 timestamp=425.198166\nordinary-restart frame=41 bytes=1384448 timestamp=425.231528\nordinary-restart frame=42 bytes=1384448 timestamp=425.264834\nordinary-restart frame=43 bytes=1384448 timestamp=425.298597\nordinary-restart frame=44 bytes=1384448 timestamp=425.331602\nordinary-restart frame=45 bytes=1384448 timestamp=425.364887\nordinary-restart frame=46 bytes=1384448 timestamp=425.398149\nordinary-restart frame=47 bytes=1384448 timestamp=425.431780\nordinary-restart frame=48 bytes=1384448 timestamp=425.465163\nordinary-restart frame=49 bytes=1384448 timestamp=425.498646\nordinary-restart frame=50 bytes=1384448 timestamp=425.532024\nordinary-restart frame=51 bytes=1384448 timestamp=425.565170\nordinary-restart frame=52 bytes=1384448 timestamp=425.598422\nordinary-restart frame=53 bytes=1384448 timestamp=425.631766\nordinary-restart frame=54 bytes=1384448 timestamp=425.665125\nordinary-restart frame=55 bytes=1384448 timestamp=425.698484\nordinary-restart frame=56 bytes=1384448 timestamp=425.731462\nordinary-restart frame=57 bytes=1384448 timestamp=425.764790\nordinary-restart frame=58 bytes=1384448 timestamp=425.798332\nordinary-restart frame=59 bytes=1384448 timestamp=425.831545\nPERIOD before-REQBUFS 2604/78125\nPERIOD after-REQBUFS 2604/78125\nPRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 2604/78125\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=16 top=242 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=426121386 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=426.121386\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=426.154905\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=426.188454\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=426.221622\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=426.254816\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=426.288193\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=426.321508\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=426.354793\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=426.388262\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=426.421421\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=426.454681\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=426.487984\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=426.521448\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=426.554787\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=426.588343\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=426.621622\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=426.655054\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=426.688283\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=426.721489\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=426.754760\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=426.788086\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=426.821460\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=426.854920\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=426.888396\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=426.921551\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=426.954755\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=426.988063\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=427.021397\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=427.054987\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=427.087946\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=427.121570\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=427.154764\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=427.187849\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=427.221311\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=427.254513\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=427.287848\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=427.321160\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=427.354530\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=427.387848\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=427.421330\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=427.454903\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=427.488001\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=427.521388\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=427.554606\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=427.588267\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=427.621424\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=427.654388\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=427.687967\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=427.721315\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=427.754747\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=427.787888\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=427.821512\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=427.854417\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=427.887994\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=427.921344\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=427.954911\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=427.988079\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=428.021470\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=428.054739\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=428.087964\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 8.932729784000003,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 30.005731603308632,
+        "after-observer-close": 30.001108515535186,
+        "ordinary-restart": 30.007227164372484,
+        "remaining-fd-takeover": 30.00135260335425
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 1,
+      "metadata_mode": 0,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 1 (t4ka3 6-0037: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 1/30\nHIGH_EXPOSURE 1864 range 0..2486\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=429035552 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=429.035552\nbefore-observer-close frame=1 bytes=1384448 timestamp=429.068842\nbefore-observer-close frame=2 bytes=1384448 timestamp=429.102428\nbefore-observer-close frame=3 bytes=1384448 timestamp=429.135679\nbefore-observer-close frame=4 bytes=1384448 timestamp=429.169292\nbefore-observer-close frame=5 bytes=1384448 timestamp=429.202507\nbefore-observer-close frame=6 bytes=1384448 timestamp=429.235698\nbefore-observer-close frame=7 bytes=1384448 timestamp=429.269014\nbefore-observer-close frame=8 bytes=1384448 timestamp=429.302229\nbefore-observer-close frame=9 bytes=1384448 timestamp=429.335572\nbefore-observer-close frame=10 bytes=1384448 timestamp=429.368890\nbefore-observer-close frame=11 bytes=1384448 timestamp=429.402233\nbefore-observer-close frame=12 bytes=1384448 timestamp=429.435539\nbefore-observer-close frame=13 bytes=1384448 timestamp=429.468819\nbefore-observer-close frame=14 bytes=1384448 timestamp=429.502118\nbefore-observer-close frame=15 bytes=1384448 timestamp=429.535460\nbefore-observer-close frame=16 bytes=1384448 timestamp=429.568836\nbefore-observer-close frame=17 bytes=1384448 timestamp=429.602124\nbefore-observer-close frame=18 bytes=1384448 timestamp=429.635459\nbefore-observer-close frame=19 bytes=1384448 timestamp=429.668758\nbefore-observer-close frame=20 bytes=1384448 timestamp=429.702055\nbefore-observer-close frame=21 bytes=1384448 timestamp=429.735361\nbefore-observer-close frame=22 bytes=1384448 timestamp=429.768679\nbefore-observer-close frame=23 bytes=1384448 timestamp=429.802121\nbefore-observer-close frame=24 bytes=1384448 timestamp=429.835399\nbefore-observer-close frame=25 bytes=1384448 timestamp=429.868678\nbefore-observer-close frame=26 bytes=1384448 timestamp=429.901985\nbefore-observer-close frame=27 bytes=1384448 timestamp=429.935253\nbefore-observer-close frame=28 bytes=1384448 timestamp=429.968607\nbefore-observer-close frame=29 bytes=1384448 timestamp=430.002055\nbefore-observer-close frame=30 bytes=1384448 timestamp=430.035299\nbefore-observer-close frame=31 bytes=1384448 timestamp=430.068624\nbefore-observer-close frame=32 bytes=1384448 timestamp=430.101888\nbefore-observer-close frame=33 bytes=1384448 timestamp=430.135207\nbefore-observer-close frame=34 bytes=1384448 timestamp=430.168473\nbefore-observer-close frame=35 bytes=1384448 timestamp=430.201824\nbefore-observer-close frame=36 bytes=1384448 timestamp=430.235302\nbefore-observer-close frame=37 bytes=1384448 timestamp=430.268679\nbefore-observer-close frame=38 bytes=1384448 timestamp=430.301904\nbefore-observer-close frame=39 bytes=1384448 timestamp=430.335130\nbefore-observer-close frame=40 bytes=1384448 timestamp=430.368452\nbefore-observer-close frame=41 bytes=1384448 timestamp=430.401787\nbefore-observer-close frame=42 bytes=1384448 timestamp=430.435127\nbefore-observer-close frame=43 bytes=1384448 timestamp=430.468625\nbefore-observer-close frame=44 bytes=1384448 timestamp=430.502007\nbefore-observer-close frame=45 bytes=1384448 timestamp=430.535200\nbefore-observer-close frame=46 bytes=1384448 timestamp=430.568464\nbefore-observer-close frame=47 bytes=1384448 timestamp=430.601646\nbefore-observer-close frame=48 bytes=1384448 timestamp=430.635093\nbefore-observer-close frame=49 bytes=1384448 timestamp=430.668261\nbefore-observer-close frame=50 bytes=1384448 timestamp=430.701961\nbefore-observer-close frame=51 bytes=1384448 timestamp=430.734999\nbefore-observer-close frame=52 bytes=1384448 timestamp=430.768225\nbefore-observer-close frame=53 bytes=1384448 timestamp=430.801543\nbefore-observer-close frame=54 bytes=1384448 timestamp=430.835054\nbefore-observer-close frame=55 bytes=1384448 timestamp=430.868318\nbefore-observer-close frame=56 bytes=1384448 timestamp=430.901727\nbefore-observer-close frame=57 bytes=1384448 timestamp=430.935221\nbefore-observer-close frame=58 bytes=1384448 timestamp=430.968195\nbefore-observer-close frame=59 bytes=1384448 timestamp=431.001643\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=431.034943\nafter-observer-close frame=61 bytes=1384448 timestamp=431.068118\nafter-observer-close frame=62 bytes=1384448 timestamp=431.101230\nafter-observer-close frame=63 bytes=1384448 timestamp=431.134519\nafter-observer-close frame=64 bytes=1384448 timestamp=431.167858\nafter-observer-close frame=65 bytes=1384448 timestamp=431.201187\nafter-observer-close frame=66 bytes=1384448 timestamp=431.234493\nafter-observer-close frame=67 bytes=1384448 timestamp=431.267855\nafter-observer-close frame=68 bytes=1384448 timestamp=431.301128\nafter-observer-close frame=69 bytes=1384448 timestamp=431.334547\nafter-observer-close frame=70 bytes=1384448 timestamp=431.367869\nafter-observer-close frame=71 bytes=1384448 timestamp=431.401086\nafter-observer-close frame=72 bytes=1384448 timestamp=431.434490\nafter-observer-close frame=73 bytes=1384448 timestamp=431.467880\nafter-observer-close frame=74 bytes=1384448 timestamp=431.501227\nafter-observer-close frame=75 bytes=1384448 timestamp=431.534741\nafter-observer-close frame=76 bytes=1384448 timestamp=431.567903\nafter-observer-close frame=77 bytes=1384448 timestamp=431.601070\nafter-observer-close frame=78 bytes=1384448 timestamp=431.634381\nafter-observer-close frame=79 bytes=1384448 timestamp=431.667907\nafter-observer-close frame=80 bytes=1384448 timestamp=431.701155\nafter-observer-close frame=81 bytes=1384448 timestamp=431.734389\nafter-observer-close frame=82 bytes=1384448 timestamp=431.767759\nafter-observer-close frame=83 bytes=1384448 timestamp=431.801070\nafter-observer-close frame=84 bytes=1384448 timestamp=431.834723\nafter-observer-close frame=85 bytes=1384448 timestamp=431.867729\nafter-observer-close frame=86 bytes=1384448 timestamp=431.901028\nafter-observer-close frame=87 bytes=1384448 timestamp=431.934341\nafter-observer-close frame=88 bytes=1384448 timestamp=431.967705\nafter-observer-close frame=89 bytes=1384448 timestamp=432.001081\nafter-observer-close frame=90 bytes=1384448 timestamp=432.034257\nafter-observer-close frame=91 bytes=1384448 timestamp=432.067803\nafter-observer-close frame=92 bytes=1384448 timestamp=432.101157\nafter-observer-close frame=93 bytes=1384448 timestamp=432.134172\nafter-observer-close frame=94 bytes=1384448 timestamp=432.167650\nafter-observer-close frame=95 bytes=1384448 timestamp=432.200939\nafter-observer-close frame=96 bytes=1384448 timestamp=432.234362\nafter-observer-close frame=97 bytes=1384448 timestamp=432.267423\nafter-observer-close frame=98 bytes=1384448 timestamp=432.300676\nafter-observer-close frame=99 bytes=1384448 timestamp=432.333988\nafter-observer-close frame=100 bytes=1384448 timestamp=432.367626\nafter-observer-close frame=101 bytes=1384448 timestamp=432.400636\nafter-observer-close frame=102 bytes=1384448 timestamp=432.434085\nafter-observer-close frame=103 bytes=1384448 timestamp=432.467707\nafter-observer-close frame=104 bytes=1384448 timestamp=432.500588\nafter-observer-close frame=105 bytes=1384448 timestamp=432.534039\nafter-observer-close frame=106 bytes=1384448 timestamp=432.567278\nafter-observer-close frame=107 bytes=1384448 timestamp=432.600690\nafter-observer-close frame=108 bytes=1384448 timestamp=432.634073\nafter-observer-close frame=109 bytes=1384448 timestamp=432.667379\nafter-observer-close frame=110 bytes=1384448 timestamp=432.700674\nafter-observer-close frame=111 bytes=1384448 timestamp=432.733975\nafter-observer-close frame=112 bytes=1384448 timestamp=432.767280\nafter-observer-close frame=113 bytes=1384448 timestamp=432.800609\nafter-observer-close frame=114 bytes=1384448 timestamp=432.833969\nafter-observer-close frame=115 bytes=1384448 timestamp=432.867283\nafter-observer-close frame=116 bytes=1384448 timestamp=432.900629\nafter-observer-close frame=117 bytes=1384448 timestamp=432.933905\nafter-observer-close frame=118 bytes=1384448 timestamp=432.967089\nafter-observer-close frame=119 bytes=1384448 timestamp=433.000472\nRESTART_PRESERVE exposure 1864 -> 1864\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=433323387 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=433.323387\nordinary-restart frame=1 bytes=1384448 timestamp=433.356794\nordinary-restart frame=2 bytes=1384448 timestamp=433.390095\nordinary-restart frame=3 bytes=1384448 timestamp=433.423423\nordinary-restart frame=4 bytes=1384448 timestamp=433.456731\nordinary-restart frame=5 bytes=1384448 timestamp=433.490185\nordinary-restart frame=6 bytes=1384448 timestamp=433.523544\nordinary-restart frame=7 bytes=1384448 timestamp=433.556744\nordinary-restart frame=8 bytes=1384448 timestamp=433.590035\nordinary-restart frame=9 bytes=1384448 timestamp=433.623277\nordinary-restart frame=10 bytes=1384448 timestamp=433.656620\nordinary-restart frame=11 bytes=1384448 timestamp=433.690023\nordinary-restart frame=12 bytes=1384448 timestamp=433.723527\nordinary-restart frame=13 bytes=1384448 timestamp=433.756809\nordinary-restart frame=14 bytes=1384448 timestamp=433.789896\nordinary-restart frame=15 bytes=1384448 timestamp=433.823179\nordinary-restart frame=16 bytes=1384448 timestamp=433.856506\nordinary-restart frame=17 bytes=1384448 timestamp=433.889836\nordinary-restart frame=18 bytes=1384448 timestamp=433.923355\nordinary-restart frame=19 bytes=1384448 timestamp=433.956705\nordinary-restart frame=20 bytes=1384448 timestamp=433.989951\nordinary-restart frame=21 bytes=1384448 timestamp=434.023113\nordinary-restart frame=22 bytes=1384448 timestamp=434.056427\nordinary-restart frame=23 bytes=1384448 timestamp=434.089730\nordinary-restart frame=24 bytes=1384448 timestamp=434.123165\nordinary-restart frame=25 bytes=1384448 timestamp=434.156619\nordinary-restart frame=26 bytes=1384448 timestamp=434.189871\nordinary-restart frame=27 bytes=1384448 timestamp=434.223013\nordinary-restart frame=28 bytes=1384448 timestamp=434.256344\nordinary-restart frame=29 bytes=1384448 timestamp=434.289649\nordinary-restart frame=30 bytes=1384448 timestamp=434.322988\nordinary-restart frame=31 bytes=1384448 timestamp=434.356399\nordinary-restart frame=32 bytes=1384448 timestamp=434.389878\nordinary-restart frame=33 bytes=1384448 timestamp=434.423054\nordinary-restart frame=34 bytes=1384448 timestamp=434.456265\nordinary-restart frame=35 bytes=1384448 timestamp=434.489549\nordinary-restart frame=36 bytes=1384448 timestamp=434.522871\nordinary-restart frame=37 bytes=1384448 timestamp=434.556197\nordinary-restart frame=38 bytes=1384448 timestamp=434.589745\nordinary-restart frame=39 bytes=1384448 timestamp=434.622976\nordinary-restart frame=40 bytes=1384448 timestamp=434.656149\nordinary-restart frame=41 bytes=1384448 timestamp=434.689418\nordinary-restart frame=42 bytes=1384448 timestamp=434.722760\nordinary-restart frame=43 bytes=1384448 timestamp=434.756103\nordinary-restart frame=44 bytes=1384448 timestamp=434.789515\nordinary-restart frame=45 bytes=1384448 timestamp=434.822989\nordinary-restart frame=46 bytes=1384448 timestamp=434.856214\nordinary-restart frame=47 bytes=1384448 timestamp=434.889392\nordinary-restart frame=48 bytes=1384448 timestamp=434.922668\nordinary-restart frame=49 bytes=1384448 timestamp=434.956007\nordinary-restart frame=50 bytes=1384448 timestamp=434.989312\nordinary-restart frame=51 bytes=1384448 timestamp=435.022818\nordinary-restart frame=52 bytes=1384448 timestamp=435.056121\nordinary-restart frame=53 bytes=1384448 timestamp=435.089278\nordinary-restart frame=54 bytes=1384448 timestamp=435.122618\nordinary-restart frame=55 bytes=1384448 timestamp=435.155883\nordinary-restart frame=56 bytes=1384448 timestamp=435.189242\nordinary-restart frame=57 bytes=1384448 timestamp=435.222643\nordinary-restart frame=58 bytes=1384448 timestamp=435.256122\nordinary-restart frame=59 bytes=1384448 timestamp=435.289285\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=435642972 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=435.642972\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=435.676272\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=435.709878\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=435.743276\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=435.776843\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=435.810102\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=435.843146\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=435.876454\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=435.909781\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=435.943098\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=435.976476\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=436.010078\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=436.043221\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=436.076382\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=436.109676\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=436.143005\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=436.176333\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=436.209836\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=436.243179\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=436.276291\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=436.309601\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=436.342949\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=436.376377\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=436.409589\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=436.443172\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=436.476053\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=436.509571\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=436.542832\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=436.576179\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=436.609500\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=436.642910\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=436.676293\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=436.709409\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=436.742717\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=436.776061\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=436.809352\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=436.842788\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=436.876322\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=436.909438\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=436.942676\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=436.975976\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=437.009279\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=437.042603\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=437.076027\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=437.109479\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=437.142668\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=437.175868\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=437.209175\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=437.242510\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=437.275899\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=437.309339\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=437.342552\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=437.375794\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=437.409105\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=437.442423\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=437.475741\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=437.509220\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=437.542598\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=437.575786\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=437.608983\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 8.962021602999982,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 30.00878392709179,
+        "after-observer-close": 30.0173642820838,
+        "ordinary-restart": 30.011730008373046,
+        "remaining-fd-takeover": 30.010005030490106
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 1,
+      "metadata_mode": 1,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 1 (t4ka3 6-0037: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 1/30\nHIGH_EXPOSURE 1864 range 0..2486\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=438502781 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=438.502781\nbefore-observer-close frame=1 bytes=1384448 timestamp=438.536077\nbefore-observer-close frame=2 bytes=1384448 timestamp=438.569396\nbefore-observer-close frame=3 bytes=1384448 timestamp=438.602894\nbefore-observer-close frame=4 bytes=1384448 timestamp=438.636191\nbefore-observer-close frame=5 bytes=1384448 timestamp=438.669386\nbefore-observer-close frame=6 bytes=1384448 timestamp=438.702673\nbefore-observer-close frame=7 bytes=1384448 timestamp=438.735980\nbefore-observer-close frame=8 bytes=1384448 timestamp=438.769323\nbefore-observer-close frame=9 bytes=1384448 timestamp=438.802739\nbefore-observer-close frame=10 bytes=1384448 timestamp=438.836026\nbefore-observer-close frame=11 bytes=1384448 timestamp=438.868976\nbefore-observer-close frame=12 bytes=1384448 timestamp=438.902273\nbefore-observer-close frame=13 bytes=1384448 timestamp=438.935840\nbefore-observer-close frame=14 bytes=1384448 timestamp=438.968933\nbefore-observer-close frame=15 bytes=1384448 timestamp=439.002496\nbefore-observer-close frame=16 bytes=1384448 timestamp=439.035728\nbefore-observer-close frame=17 bytes=1384448 timestamp=439.069159\nbefore-observer-close frame=18 bytes=1384448 timestamp=439.102572\nbefore-observer-close frame=19 bytes=1384448 timestamp=439.135784\nbefore-observer-close frame=20 bytes=1384448 timestamp=439.169062\nbefore-observer-close frame=21 bytes=1384448 timestamp=439.202421\nbefore-observer-close frame=22 bytes=1384448 timestamp=439.235801\nbefore-observer-close frame=23 bytes=1384448 timestamp=439.269347\nbefore-observer-close frame=24 bytes=1384448 timestamp=439.302555\nbefore-observer-close frame=25 bytes=1384448 timestamp=439.335710\nbefore-observer-close frame=26 bytes=1384448 timestamp=439.369001\nbefore-observer-close frame=27 bytes=1384448 timestamp=439.402321\nbefore-observer-close frame=28 bytes=1384448 timestamp=439.435673\nbefore-observer-close frame=29 bytes=1384448 timestamp=439.469123\nbefore-observer-close frame=30 bytes=1384448 timestamp=439.502440\nbefore-observer-close frame=31 bytes=1384448 timestamp=439.535686\nbefore-observer-close frame=32 bytes=1384448 timestamp=439.568920\nbefore-observer-close frame=33 bytes=1384448 timestamp=439.602233\nbefore-observer-close frame=34 bytes=1384448 timestamp=439.635665\nbefore-observer-close frame=35 bytes=1384448 timestamp=439.668924\nbefore-observer-close frame=36 bytes=1384448 timestamp=439.702470\nbefore-observer-close frame=37 bytes=1384448 timestamp=439.735684\nbefore-observer-close frame=38 bytes=1384448 timestamp=439.768802\nbefore-observer-close frame=39 bytes=1384448 timestamp=439.802126\nbefore-observer-close frame=40 bytes=1384448 timestamp=439.835458\nbefore-observer-close frame=41 bytes=1384448 timestamp=439.868783\nbefore-observer-close frame=42 bytes=1384448 timestamp=439.901990\nbefore-observer-close frame=43 bytes=1384448 timestamp=439.935596\nbefore-observer-close frame=44 bytes=1384448 timestamp=439.968813\nbefore-observer-close frame=45 bytes=1384448 timestamp=440.002053\nbefore-observer-close frame=46 bytes=1384448 timestamp=440.035345\nbefore-observer-close frame=47 bytes=1384448 timestamp=440.068656\nbefore-observer-close frame=48 bytes=1384448 timestamp=440.102128\nbefore-observer-close frame=49 bytes=1384448 timestamp=440.135418\nbefore-observer-close frame=50 bytes=1384448 timestamp=440.168797\nbefore-observer-close frame=51 bytes=1384448 timestamp=440.201944\nbefore-observer-close frame=52 bytes=1384448 timestamp=440.235108\nbefore-observer-close frame=53 bytes=1384448 timestamp=440.268547\nbefore-observer-close frame=54 bytes=1384448 timestamp=440.301900\nbefore-observer-close frame=55 bytes=1384448 timestamp=440.335388\nbefore-observer-close frame=56 bytes=1384448 timestamp=440.368726\nbefore-observer-close frame=57 bytes=1384448 timestamp=440.402037\nbefore-observer-close frame=58 bytes=1384448 timestamp=440.435171\nbefore-observer-close frame=59 bytes=1384448 timestamp=440.468472\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=440.501813\nafter-observer-close frame=61 bytes=1384448 timestamp=440.535174\nafter-observer-close frame=62 bytes=1384448 timestamp=440.568683\nafter-observer-close frame=63 bytes=1384448 timestamp=440.601878\nafter-observer-close frame=64 bytes=1384448 timestamp=440.635074\nafter-observer-close frame=65 bytes=1384448 timestamp=440.668546\nafter-observer-close frame=66 bytes=1384448 timestamp=440.701689\nafter-observer-close frame=67 bytes=1384448 timestamp=440.735063\nafter-observer-close frame=68 bytes=1384448 timestamp=440.768570\nafter-observer-close frame=69 bytes=1384448 timestamp=440.801806\nafter-observer-close frame=70 bytes=1384448 timestamp=440.835097\nafter-observer-close frame=71 bytes=1384448 timestamp=440.868266\nafter-observer-close frame=72 bytes=1384448 timestamp=440.901580\nafter-observer-close frame=73 bytes=1384448 timestamp=440.934968\nafter-observer-close frame=74 bytes=1384448 timestamp=440.968492\nafter-observer-close frame=75 bytes=1384448 timestamp=441.001792\nafter-observer-close frame=76 bytes=1384448 timestamp=441.034963\nafter-observer-close frame=77 bytes=1384448 timestamp=441.068196\nafter-observer-close frame=78 bytes=1384448 timestamp=441.101511\nafter-observer-close frame=79 bytes=1384448 timestamp=441.134821\nafter-observer-close frame=80 bytes=1384448 timestamp=441.168288\nafter-observer-close frame=81 bytes=1384448 timestamp=441.201646\nafter-observer-close frame=82 bytes=1384448 timestamp=441.234926\nafter-observer-close frame=83 bytes=1384448 timestamp=441.268155\nafter-observer-close frame=84 bytes=1384448 timestamp=441.301440\nafter-observer-close frame=85 bytes=1384448 timestamp=441.334724\nafter-observer-close frame=86 bytes=1384448 timestamp=441.368077\nafter-observer-close frame=87 bytes=1384448 timestamp=441.401580\nafter-observer-close frame=88 bytes=1384448 timestamp=441.434840\nafter-observer-close frame=89 bytes=1384448 timestamp=441.468153\nafter-observer-close frame=90 bytes=1384448 timestamp=441.501307\nafter-observer-close frame=91 bytes=1384448 timestamp=441.534667\nafter-observer-close frame=92 bytes=1384448 timestamp=441.567929\nafter-observer-close frame=93 bytes=1384448 timestamp=441.601275\nafter-observer-close frame=94 bytes=1384448 timestamp=441.634758\nafter-observer-close frame=95 bytes=1384448 timestamp=441.668041\nafter-observer-close frame=96 bytes=1384448 timestamp=441.701314\nafter-observer-close frame=97 bytes=1384448 timestamp=441.734381\nafter-observer-close frame=98 bytes=1384448 timestamp=441.767688\nafter-observer-close frame=99 bytes=1384448 timestamp=441.801024\nafter-observer-close frame=100 bytes=1384448 timestamp=441.834405\nafter-observer-close frame=101 bytes=1384448 timestamp=441.867721\nafter-observer-close frame=102 bytes=1384448 timestamp=441.901004\nafter-observer-close frame=103 bytes=1384448 timestamp=441.934310\nafter-observer-close frame=104 bytes=1384448 timestamp=441.967581\nafter-observer-close frame=105 bytes=1384448 timestamp=442.000926\nafter-observer-close frame=106 bytes=1384448 timestamp=442.034276\nafter-observer-close frame=107 bytes=1384448 timestamp=442.067549\nafter-observer-close frame=108 bytes=1384448 timestamp=442.100970\nafter-observer-close frame=109 bytes=1384448 timestamp=442.134557\nafter-observer-close frame=110 bytes=1384448 timestamp=442.167383\nafter-observer-close frame=111 bytes=1384448 timestamp=442.200672\nafter-observer-close frame=112 bytes=1384448 timestamp=442.234061\nafter-observer-close frame=113 bytes=1384448 timestamp=442.267596\nafter-observer-close frame=114 bytes=1384448 timestamp=442.300580\nafter-observer-close frame=115 bytes=1384448 timestamp=442.333913\nafter-observer-close frame=116 bytes=1384448 timestamp=442.367579\nafter-observer-close frame=117 bytes=1384448 timestamp=442.400657\nafter-observer-close frame=118 bytes=1384448 timestamp=442.434056\nafter-observer-close frame=119 bytes=1384448 timestamp=442.467364\nRESTART_PRESERVE exposure 1864 -> 1864\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=442818748 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=442.818748\nordinary-restart frame=1 bytes=1384448 timestamp=442.851857\nordinary-restart frame=2 bytes=1384448 timestamp=442.885105\nordinary-restart frame=3 bytes=1384448 timestamp=442.918403\nordinary-restart frame=4 bytes=1384448 timestamp=442.951720\nordinary-restart frame=5 bytes=1384448 timestamp=442.985025\nordinary-restart frame=6 bytes=1384448 timestamp=443.018534\nordinary-restart frame=7 bytes=1384448 timestamp=443.051817\nordinary-restart frame=8 bytes=1384448 timestamp=443.085096\nordinary-restart frame=9 bytes=1384448 timestamp=443.118303\nordinary-restart frame=10 bytes=1384448 timestamp=443.151619\nordinary-restart frame=11 bytes=1384448 timestamp=443.185226\nordinary-restart frame=12 bytes=1384448 timestamp=443.218331\nordinary-restart frame=13 bytes=1384448 timestamp=443.251758\nordinary-restart frame=14 bytes=1384448 timestamp=443.285029\nordinary-restart frame=15 bytes=1384448 timestamp=443.318232\nordinary-restart frame=16 bytes=1384448 timestamp=443.351517\nordinary-restart frame=17 bytes=1384448 timestamp=443.384862\nordinary-restart frame=18 bytes=1384448 timestamp=443.418376\nordinary-restart frame=19 bytes=1384448 timestamp=443.451715\nordinary-restart frame=20 bytes=1384448 timestamp=443.484943\nordinary-restart frame=21 bytes=1384448 timestamp=443.518188\nordinary-restart frame=22 bytes=1384448 timestamp=443.551434\nordinary-restart frame=23 bytes=1384448 timestamp=443.584742\nordinary-restart frame=24 bytes=1384448 timestamp=443.617911\nordinary-restart frame=25 bytes=1384448 timestamp=443.651616\nordinary-restart frame=26 bytes=1384448 timestamp=443.684844\nordinary-restart frame=27 bytes=1384448 timestamp=443.717926\nordinary-restart frame=28 bytes=1384448 timestamp=443.751290\nordinary-restart frame=29 bytes=1384448 timestamp=443.784638\nordinary-restart frame=30 bytes=1384448 timestamp=443.817857\nordinary-restart frame=31 bytes=1384448 timestamp=443.851491\nordinary-restart frame=32 bytes=1384448 timestamp=443.884758\nordinary-restart frame=33 bytes=1384448 timestamp=443.917819\nordinary-restart frame=34 bytes=1384448 timestamp=443.951372\nordinary-restart frame=35 bytes=1384448 timestamp=443.984524\nordinary-restart frame=36 bytes=1384448 timestamp=444.017545\nordinary-restart frame=37 bytes=1384448 timestamp=444.051279\nordinary-restart frame=38 bytes=1384448 timestamp=444.084639\nordinary-restart frame=39 bytes=1384448 timestamp=444.117653\nordinary-restart frame=40 bytes=1384448 timestamp=444.150990\nordinary-restart frame=41 bytes=1384448 timestamp=444.184299\nordinary-restart frame=42 bytes=1384448 timestamp=444.217672\nordinary-restart frame=43 bytes=1384448 timestamp=444.250977\nordinary-restart frame=44 bytes=1384448 timestamp=444.284477\nordinary-restart frame=45 bytes=1384448 timestamp=444.317846\nordinary-restart frame=46 bytes=1384448 timestamp=444.351117\nordinary-restart frame=47 bytes=1384448 timestamp=444.384478\nordinary-restart frame=48 bytes=1384448 timestamp=444.417653\nordinary-restart frame=49 bytes=1384448 timestamp=444.451021\nordinary-restart frame=50 bytes=1384448 timestamp=444.484030\nordinary-restart frame=51 bytes=1384448 timestamp=444.517335\nordinary-restart frame=52 bytes=1384448 timestamp=444.550664\nordinary-restart frame=53 bytes=1384448 timestamp=444.584020\nordinary-restart frame=54 bytes=1384448 timestamp=444.617326\nordinary-restart frame=55 bytes=1384448 timestamp=444.650601\nordinary-restart frame=56 bytes=1384448 timestamp=444.683950\nordinary-restart frame=57 bytes=1384448 timestamp=444.717250\nordinary-restart frame=58 bytes=1384448 timestamp=444.750642\nordinary-restart frame=59 bytes=1384448 timestamp=444.783865\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=445152147 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=445.152147\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=445.185488\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=445.218965\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=445.252138\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=445.285357\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=445.318649\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=445.351975\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=445.385106\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=445.418802\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=445.451689\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=445.485228\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=445.518512\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=445.551576\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=445.585408\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=445.618519\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=445.651952\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=445.685220\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=445.718497\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=445.751783\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=445.785097\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=445.818424\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=445.851975\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=445.885196\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=445.918404\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=445.951678\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=445.984997\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=446.018433\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=446.051842\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=446.085107\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=446.118404\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=446.151587\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=446.184879\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=446.218271\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=446.251678\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=446.285026\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=446.318343\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=446.351533\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=446.384794\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=446.418284\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=446.451529\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=446.484934\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=446.518244\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=446.551496\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=446.584486\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=446.617998\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=446.651224\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=446.684759\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=446.718108\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=446.751377\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=446.784738\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=446.817925\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=446.851245\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=446.884580\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=446.918062\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=446.951364\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=446.984657\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=447.017622\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=447.051222\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=447.084667\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=447.117890\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 8.999501395999971,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 30.014890438019112,
+        "after-observer-close": 30.01702830402343,
+        "ordinary-restart": 30.02365762445752,
+        "remaining-fd-takeover": 30.0140964510624
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 1,
+      "metadata_mode": 2,
+      "input_set": {
+        "code": 0,
+        "stdout": "Video input set to 1 (t4ka3 6-0037: Camera, ok)\n",
+        "stderr": ""
+      },
+      "format_set": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "capture": {
+        "code": 0,
+        "stdout": "WITHOUT S_FMT requested rate 30 actual period 1/30\nHIGH_EXPOSURE 1864 range 0..2486\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=448064489 PASS\nbefore-observer-close frame=0 bytes=1384448 timestamp=448.064489\nbefore-observer-close frame=1 bytes=1384448 timestamp=448.097793\nbefore-observer-close frame=2 bytes=1384448 timestamp=448.131240\nbefore-observer-close frame=3 bytes=1384448 timestamp=448.164616\nbefore-observer-close frame=4 bytes=1384448 timestamp=448.197874\nbefore-observer-close frame=5 bytes=1384448 timestamp=448.231069\nbefore-observer-close frame=6 bytes=1384448 timestamp=448.264339\nbefore-observer-close frame=7 bytes=1384448 timestamp=448.297672\nbefore-observer-close frame=8 bytes=1384448 timestamp=448.331024\nbefore-observer-close frame=9 bytes=1384448 timestamp=448.364489\nbefore-observer-close frame=10 bytes=1384448 timestamp=448.397875\nbefore-observer-close frame=11 bytes=1384448 timestamp=448.431051\nbefore-observer-close frame=12 bytes=1384448 timestamp=448.464272\nbefore-observer-close frame=13 bytes=1384448 timestamp=448.497587\nbefore-observer-close frame=14 bytes=1384448 timestamp=448.530916\nbefore-observer-close frame=15 bytes=1384448 timestamp=448.564284\nbefore-observer-close frame=16 bytes=1384448 timestamp=448.597830\nbefore-observer-close frame=17 bytes=1384448 timestamp=448.631052\nbefore-observer-close frame=18 bytes=1384448 timestamp=448.664133\nbefore-observer-close frame=19 bytes=1384448 timestamp=448.697406\nbefore-observer-close frame=20 bytes=1384448 timestamp=448.730585\nbefore-observer-close frame=21 bytes=1384448 timestamp=448.763842\nbefore-observer-close frame=22 bytes=1384448 timestamp=448.797162\nbefore-observer-close frame=23 bytes=1384448 timestamp=448.830452\nbefore-observer-close frame=24 bytes=1384448 timestamp=448.863757\nbefore-observer-close frame=25 bytes=1384448 timestamp=448.897120\nbefore-observer-close frame=26 bytes=1384448 timestamp=448.930715\nbefore-observer-close frame=27 bytes=1384448 timestamp=448.964036\nbefore-observer-close frame=28 bytes=1384448 timestamp=448.997341\nbefore-observer-close frame=29 bytes=1384448 timestamp=449.030789\nbefore-observer-close frame=30 bytes=1384448 timestamp=449.064062\nbefore-observer-close frame=31 bytes=1384448 timestamp=449.097206\nbefore-observer-close frame=32 bytes=1384448 timestamp=449.130667\nbefore-observer-close frame=33 bytes=1384448 timestamp=449.163921\nbefore-observer-close frame=34 bytes=1384448 timestamp=449.197233\nbefore-observer-close frame=35 bytes=1384448 timestamp=449.230688\nbefore-observer-close frame=36 bytes=1384448 timestamp=449.264085\nbefore-observer-close frame=37 bytes=1384448 timestamp=449.297342\nbefore-observer-close frame=38 bytes=1384448 timestamp=449.330518\nbefore-observer-close frame=39 bytes=1384448 timestamp=449.363811\nbefore-observer-close frame=40 bytes=1384448 timestamp=449.397142\nbefore-observer-close frame=41 bytes=1384448 timestamp=449.430501\nbefore-observer-close frame=42 bytes=1384448 timestamp=449.463936\nbefore-observer-close frame=43 bytes=1384448 timestamp=449.497235\nbefore-observer-close frame=44 bytes=1384448 timestamp=449.530409\nbefore-observer-close frame=45 bytes=1384448 timestamp=449.563722\nbefore-observer-close frame=46 bytes=1384448 timestamp=449.597034\nbefore-observer-close frame=47 bytes=1384448 timestamp=449.630353\nbefore-observer-close frame=48 bytes=1384448 timestamp=449.663748\nbefore-observer-close frame=49 bytes=1384448 timestamp=449.697252\nbefore-observer-close frame=50 bytes=1384448 timestamp=449.730473\nbefore-observer-close frame=51 bytes=1384448 timestamp=449.763604\nbefore-observer-close frame=52 bytes=1384448 timestamp=449.796913\nbefore-observer-close frame=53 bytes=1384448 timestamp=449.830236\nbefore-observer-close frame=54 bytes=1384448 timestamp=449.863561\nbefore-observer-close frame=55 bytes=1384448 timestamp=449.897121\nbefore-observer-close frame=56 bytes=1384448 timestamp=449.930390\nbefore-observer-close frame=57 bytes=1384448 timestamp=449.963521\nbefore-observer-close frame=58 bytes=1384448 timestamp=449.996814\nbefore-observer-close frame=59 bytes=1384448 timestamp=450.030120\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nafter-observer-close frame=60 bytes=1384448 timestamp=450.063454\nafter-observer-close frame=61 bytes=1384448 timestamp=450.096871\nafter-observer-close frame=62 bytes=1384448 timestamp=450.130352\nafter-observer-close frame=63 bytes=1384448 timestamp=450.163282\nafter-observer-close frame=64 bytes=1384448 timestamp=450.196769\nafter-observer-close frame=65 bytes=1384448 timestamp=450.230076\nafter-observer-close frame=66 bytes=1384448 timestamp=450.263443\nafter-observer-close frame=67 bytes=1384448 timestamp=450.296741\nafter-observer-close frame=68 bytes=1384448 timestamp=450.330223\nafter-observer-close frame=69 bytes=1384448 timestamp=450.363499\nafter-observer-close frame=70 bytes=1384448 timestamp=450.396741\nafter-observer-close frame=71 bytes=1384448 timestamp=450.429947\nafter-observer-close frame=72 bytes=1384448 timestamp=450.463249\nafter-observer-close frame=73 bytes=1384448 timestamp=450.496733\nafter-observer-close frame=74 bytes=1384448 timestamp=450.530018\nafter-observer-close frame=75 bytes=1384448 timestamp=450.563487\nafter-observer-close frame=76 bytes=1384448 timestamp=450.596720\nafter-observer-close frame=77 bytes=1384448 timestamp=450.629875\nafter-observer-close frame=78 bytes=1384448 timestamp=450.663151\nafter-observer-close frame=79 bytes=1384448 timestamp=450.696556\nafter-observer-close frame=80 bytes=1384448 timestamp=450.729786\nafter-observer-close frame=81 bytes=1384448 timestamp=450.763356\nafter-observer-close frame=82 bytes=1384448 timestamp=450.796576\nafter-observer-close frame=83 bytes=1384448 timestamp=450.829764\nafter-observer-close frame=84 bytes=1384448 timestamp=450.863053\nafter-observer-close frame=85 bytes=1384448 timestamp=450.896356\nafter-observer-close frame=86 bytes=1384448 timestamp=450.929698\nafter-observer-close frame=87 bytes=1384448 timestamp=450.963086\nafter-observer-close frame=88 bytes=1384448 timestamp=450.996544\nafter-observer-close frame=89 bytes=1384448 timestamp=451.029735\nafter-observer-close frame=90 bytes=1384448 timestamp=451.062986\nafter-observer-close frame=91 bytes=1384448 timestamp=451.096237\nafter-observer-close frame=92 bytes=1384448 timestamp=451.129570\nafter-observer-close frame=93 bytes=1384448 timestamp=451.162905\nafter-observer-close frame=94 bytes=1384448 timestamp=451.196383\nafter-observer-close frame=95 bytes=1384448 timestamp=451.229689\nafter-observer-close frame=96 bytes=1384448 timestamp=451.262942\nafter-observer-close frame=97 bytes=1384448 timestamp=451.296170\nafter-observer-close frame=98 bytes=1384448 timestamp=451.329479\nafter-observer-close frame=99 bytes=1384448 timestamp=451.362782\nafter-observer-close frame=100 bytes=1384448 timestamp=451.396091\nafter-observer-close frame=101 bytes=1384448 timestamp=451.429615\nafter-observer-close frame=102 bytes=1384448 timestamp=451.462842\nafter-observer-close frame=103 bytes=1384448 timestamp=451.496075\nafter-observer-close frame=104 bytes=1384448 timestamp=451.529344\nafter-observer-close frame=105 bytes=1384448 timestamp=451.562671\nafter-observer-close frame=106 bytes=1384448 timestamp=451.595962\nafter-observer-close frame=107 bytes=1384448 timestamp=451.629528\nafter-observer-close frame=108 bytes=1384448 timestamp=451.662504\nafter-observer-close frame=109 bytes=1384448 timestamp=451.695730\nafter-observer-close frame=110 bytes=1384448 timestamp=451.729278\nafter-observer-close frame=111 bytes=1384448 timestamp=451.762557\nafter-observer-close frame=112 bytes=1384448 timestamp=451.795883\nafter-observer-close frame=113 bytes=1384448 timestamp=451.829175\nafter-observer-close frame=114 bytes=1384448 timestamp=451.862708\nafter-observer-close frame=115 bytes=1384448 timestamp=451.895983\nafter-observer-close frame=116 bytes=1384448 timestamp=451.929147\nafter-observer-close frame=117 bytes=1384448 timestamp=451.962169\nafter-observer-close frame=118 bytes=1384448 timestamp=451.995908\nafter-observer-close frame=119 bytes=1384448 timestamp=452.029315\nRESTART_PRESERVE exposure 1864 -> 1864\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=452314526 PASS\nordinary-restart frame=0 bytes=1384448 timestamp=452.314526\nordinary-restart frame=1 bytes=1384448 timestamp=452.347656\nordinary-restart frame=2 bytes=1384448 timestamp=452.380934\nordinary-restart frame=3 bytes=1384448 timestamp=452.414046\nordinary-restart frame=4 bytes=1384448 timestamp=452.447417\nordinary-restart frame=5 bytes=1384448 timestamp=452.480989\nordinary-restart frame=6 bytes=1384448 timestamp=452.514349\nordinary-restart frame=7 bytes=1384448 timestamp=452.547640\nordinary-restart frame=8 bytes=1384448 timestamp=452.580861\nordinary-restart frame=9 bytes=1384448 timestamp=452.613885\nordinary-restart frame=10 bytes=1384448 timestamp=452.647477\nordinary-restart frame=11 bytes=1384448 timestamp=452.680861\nordinary-restart frame=12 bytes=1384448 timestamp=452.714364\nordinary-restart frame=13 bytes=1384448 timestamp=452.747585\nordinary-restart frame=14 bytes=1384448 timestamp=452.780772\nordinary-restart frame=15 bytes=1384448 timestamp=452.813858\nordinary-restart frame=16 bytes=1384448 timestamp=452.847159\nordinary-restart frame=17 bytes=1384448 timestamp=452.880704\nordinary-restart frame=18 bytes=1384448 timestamp=452.914190\nordinary-restart frame=19 bytes=1384448 timestamp=452.947087\nordinary-restart frame=20 bytes=1384448 timestamp=452.980756\nordinary-restart frame=21 bytes=1384448 timestamp=453.013975\nordinary-restart frame=22 bytes=1384448 timestamp=453.047236\nordinary-restart frame=23 bytes=1384448 timestamp=453.080611\nordinary-restart frame=24 bytes=1384448 timestamp=453.113979\nordinary-restart frame=25 bytes=1384448 timestamp=453.147508\nordinary-restart frame=26 bytes=1384448 timestamp=453.180724\nordinary-restart frame=27 bytes=1384448 timestamp=453.213837\nordinary-restart frame=28 bytes=1384448 timestamp=453.247155\nordinary-restart frame=29 bytes=1384448 timestamp=453.280346\nordinary-restart frame=30 bytes=1384448 timestamp=453.313792\nordinary-restart frame=31 bytes=1384448 timestamp=453.347010\nordinary-restart frame=32 bytes=1384448 timestamp=453.380299\nordinary-restart frame=33 bytes=1384448 timestamp=453.413635\nordinary-restart frame=34 bytes=1384448 timestamp=453.447085\nordinary-restart frame=35 bytes=1384448 timestamp=453.480368\nordinary-restart frame=36 bytes=1384448 timestamp=453.513700\nordinary-restart frame=37 bytes=1384448 timestamp=453.547090\nordinary-restart frame=38 bytes=1384448 timestamp=453.580610\nordinary-restart frame=39 bytes=1384448 timestamp=453.613837\nordinary-restart frame=40 bytes=1384448 timestamp=453.646986\nordinary-restart frame=41 bytes=1384448 timestamp=453.680360\nordinary-restart frame=42 bytes=1384448 timestamp=453.713607\nordinary-restart frame=43 bytes=1384448 timestamp=453.746921\nordinary-restart frame=44 bytes=1384448 timestamp=453.780386\nordinary-restart frame=45 bytes=1384448 timestamp=453.813768\nordinary-restart frame=46 bytes=1384448 timestamp=453.847013\nordinary-restart frame=47 bytes=1384448 timestamp=453.880176\nordinary-restart frame=48 bytes=1384448 timestamp=453.913514\nordinary-restart frame=49 bytes=1384448 timestamp=453.946816\nordinary-restart frame=50 bytes=1384448 timestamp=453.980152\nordinary-restart frame=51 bytes=1384448 timestamp=454.013722\nordinary-restart frame=52 bytes=1384448 timestamp=454.046946\nordinary-restart frame=53 bytes=1384448 timestamp=454.080100\nordinary-restart frame=54 bytes=1384448 timestamp=454.113397\nordinary-restart frame=55 bytes=1384448 timestamp=454.146745\nordinary-restart frame=56 bytes=1384448 timestamp=454.180052\nordinary-restart frame=57 bytes=1384448 timestamp=454.213465\nordinary-restart frame=58 bytes=1384448 timestamp=454.246847\nordinary-restart frame=59 bytes=1384448 timestamp=454.280105\nPERIOD before-REQBUFS 1/30\nPERIOD after-REQBUFS 1/30\nPRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720\nPERIOD after-STREAMON 1/30\nSENSOR_GEOMETRY_GUARD ACTIVE fmt/crop EBUSY unchanged, TRY independent while streaming PASS\nENUM_CROP left=344 top=496 width=2592 height=1472 unchanged PASS\nENUM_STEPWISE 4..1920/2 x 4..1440/2 ACTIVE/control preservation PASS\nFRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=454616186 PASS\nremaining-fd-takeover frame=0 bytes=1384448 timestamp=454.616186\nremaining-fd-takeover frame=1 bytes=1384448 timestamp=454.649505\nremaining-fd-takeover frame=2 bytes=1384448 timestamp=454.682940\nremaining-fd-takeover frame=3 bytes=1384448 timestamp=454.716254\nremaining-fd-takeover frame=4 bytes=1384448 timestamp=454.749449\nremaining-fd-takeover frame=5 bytes=1384448 timestamp=454.782761\nremaining-fd-takeover frame=6 bytes=1384448 timestamp=454.816062\nremaining-fd-takeover frame=7 bytes=1384448 timestamp=454.849374\nremaining-fd-takeover frame=8 bytes=1384448 timestamp=454.882804\nremaining-fd-takeover frame=9 bytes=1384448 timestamp=454.916257\nremaining-fd-takeover frame=10 bytes=1384448 timestamp=454.949492\nremaining-fd-takeover frame=11 bytes=1384448 timestamp=454.982660\nremaining-fd-takeover frame=12 bytes=1384448 timestamp=455.015955\nremaining-fd-takeover frame=13 bytes=1384448 timestamp=455.049283\nremaining-fd-takeover frame=14 bytes=1384448 timestamp=455.082600\nremaining-fd-takeover frame=15 bytes=1384448 timestamp=455.116110\nremaining-fd-takeover frame=16 bytes=1384448 timestamp=455.149402\nremaining-fd-takeover frame=17 bytes=1384448 timestamp=455.182549\nremaining-fd-takeover frame=18 bytes=1384448 timestamp=455.215772\nremaining-fd-takeover frame=19 bytes=1384448 timestamp=455.248948\nremaining-fd-takeover frame=20 bytes=1384448 timestamp=455.282207\nremaining-fd-takeover frame=21 bytes=1384448 timestamp=455.315484\nremaining-fd-takeover frame=22 bytes=1384448 timestamp=455.348783\nremaining-fd-takeover frame=23 bytes=1384448 timestamp=455.382304\nremaining-fd-takeover frame=24 bytes=1384448 timestamp=455.415579\nremaining-fd-takeover frame=25 bytes=1384448 timestamp=455.448741\nremaining-fd-takeover frame=26 bytes=1384448 timestamp=455.482072\nremaining-fd-takeover frame=27 bytes=1384448 timestamp=455.515682\nremaining-fd-takeover frame=28 bytes=1384448 timestamp=455.549116\nremaining-fd-takeover frame=29 bytes=1384448 timestamp=455.582483\nremaining-fd-takeover frame=30 bytes=1384448 timestamp=455.615635\nremaining-fd-takeover frame=31 bytes=1384448 timestamp=455.648909\nremaining-fd-takeover frame=32 bytes=1384448 timestamp=455.682286\nremaining-fd-takeover frame=33 bytes=1384448 timestamp=455.715591\nremaining-fd-takeover frame=34 bytes=1384448 timestamp=455.748897\nremaining-fd-takeover frame=35 bytes=1384448 timestamp=455.782529\nremaining-fd-takeover frame=36 bytes=1384448 timestamp=455.815237\nremaining-fd-takeover frame=37 bytes=1384448 timestamp=455.848447\nremaining-fd-takeover frame=38 bytes=1384448 timestamp=455.882155\nremaining-fd-takeover frame=39 bytes=1384448 timestamp=455.915479\nremaining-fd-takeover frame=40 bytes=1384448 timestamp=455.948810\nremaining-fd-takeover frame=41 bytes=1384448 timestamp=455.982299\nremaining-fd-takeover frame=42 bytes=1384448 timestamp=456.015591\nremaining-fd-takeover frame=43 bytes=1384448 timestamp=456.048790\nremaining-fd-takeover frame=44 bytes=1384448 timestamp=456.082072\nremaining-fd-takeover frame=45 bytes=1384448 timestamp=456.115363\nremaining-fd-takeover frame=46 bytes=1384448 timestamp=456.148683\nremaining-fd-takeover frame=47 bytes=1384448 timestamp=456.182102\nremaining-fd-takeover frame=48 bytes=1384448 timestamp=456.215136\nremaining-fd-takeover frame=49 bytes=1384448 timestamp=456.248810\nremaining-fd-takeover frame=50 bytes=1384448 timestamp=456.281953\nremaining-fd-takeover frame=51 bytes=1384448 timestamp=456.315241\nremaining-fd-takeover frame=52 bytes=1384448 timestamp=456.348634\nremaining-fd-takeover frame=53 bytes=1384448 timestamp=456.382195\nremaining-fd-takeover frame=54 bytes=1384448 timestamp=456.415075\nremaining-fd-takeover frame=55 bytes=1384448 timestamp=456.448500\nremaining-fd-takeover frame=56 bytes=1384448 timestamp=456.481954\nremaining-fd-takeover frame=57 bytes=1384448 timestamp=456.515154\nremaining-fd-takeover frame=58 bytes=1384448 timestamp=456.548470\nremaining-fd-takeover frame=59 bytes=1384448 timestamp=456.581791\nPASS owner isolation/takeover with increasing frame sequence\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 8.919465295999998,
+      "frames": 240,
+      "geometry_guard_phases": 4,
+      "measured_fps": {
+        "before-observer-close": 30.015806629015866,
+        "after-observer-close": 30.012294867236015,
+        "ordinary-restart": 30.01660070645864,
+        "remaining-fd-takeover": 30.016203662485868
+      },
+      "short_phase_1pct_cadence": true,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963790": 1650,
+              "9963791": 1633,
+              "9963793": 1976,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 8,
+              "10422531": 0,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963790": 1585,
+              "9963791": 1570,
+              "9963793": 2486,
+              "9963796": 0,
+              "9963797": 0,
+              "10356995": 128,
+              "10422531": 0
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    }
+  ],
+  "scope": "R17 sensor ACTIVE fmt/crop EBUSY unchanged, effective per-fd TRY crop/fmt while capturing, both inputs/all three metadata layouts; 240 frames per case; no image quality/3A claim",
+  "new_dmesg": ""
+}

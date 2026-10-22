@@ -1,0 +1,161 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "built_source_commit": "86c16f5c75fefb42c5b6c89025d2f5475c912f45",
+  "kernel_sha256": "b8ad7d138cffa5f9c9baad74aba027d7b300aa268ca837e1c2b338b66b45aaf9",
+  "bundle_sha256": "c645ea1b144e61dad143d4b8e35726a6b9b5cb443de05f7f36a033345a4f56a1",
+  "full_build_passed": true,
+  "module_signatures_verified": 34,
+  "r17_artifacts_preserved": true,
+  "stable_saved_entry": "mipad2-bqdiag1",
+  "one_shot_only": true,
+  "powered_t4_format": {
+    "widths": [
+      1934,
+      1934,
+      1936
+    ],
+    "passed": true,
+    "hblank_values": [
+      1506,
+      1506,
+      1504
+    ],
+    "full_sampled_restore": true
+  },
+  "control_events": {
+    "both_sensors_passed": true,
+    "per_fd_initial_change_poll_sequence_unsubscribe": true,
+    "full_sampled_restore": true
+  },
+  "direct_sensor_compliance": {
+    "totals": [
+      "46/46",
+      "46/46"
+    ],
+    "pad_geometry_section_absent": true
+  },
+  "video_compliance": {
+    "starting_inputs": [
+      0,
+      1
+    ],
+    "totals": [
+      "83/83",
+      "83/83"
+    ],
+    "warnings_each": 2
+  },
+  "geometry": {
+    "cases": 6,
+    "frames": 1440,
+    "active_busy_guard_phases": 24,
+    "try_isolation_passed": true
+  },
+  "default_bounds": {
+    "cases": 39,
+    "frames": 9360,
+    "default_cases": 26,
+    "front_minimum_cases": 13,
+    "default_30fps_1pct_passed": true,
+    "minimum_physical_max_fps_claimed": false
+  },
+  "silent_audio_electrical_passed": true,
+  "acoustic_verified": false,
+  "post_camera_resume": {
+    "functional_passed": true,
+    "s0i3_delta_us": 9409088,
+    "s0i3_entered": true,
+    "causal_explanation_of_r17_zero_claimed": false
+  },
+  "gui": {
+    "user_front_rear_normal": true,
+    "user_switch_each_side_twice": true,
+    "initial_pid": 31033,
+    "fresh_reopens": 3,
+    "ae_frame_samples": [
+      6,
+      6,
+      7
+    ],
+    "three_processes_closed_cleanly": true,
+    "final_window_open": true,
+    "current_unit": "mipad2-r18-gui-clean-reopen-2",
+    "current_pid": 35654,
+    "photos_recordings_tested": false
+  },
+  "retained_harness_failures": [
+    {
+      "test": "first powered-format",
+      "cause": "probe loop overwrote global width used by restore",
+      "recovered_exact_saved_state": true,
+      "corrected_v2_passed": true
+    },
+    {
+      "test": "first per-fd events",
+      "cause": "fixture expected EAGAIN, actual Linux 6.14 empty nonblocking event queue returns ENOENT",
+      "core_source_verified": true,
+      "host_positive_negative_cases": 6,
+      "corrected_v2_passed": true
+    },
+    {
+      "test": "GUI prelaunch",
+      "cause": "v4l2-ctl includes (Disabled) label after zero pattern value",
+      "no_process_launched_before_correction": true
+    }
+  ],
+  "remaining": [
+    "full geometry/control/real-I2C/PM error transactions",
+    "physical high-rate and early cadence cause/full interval enumeration",
+    "full 3A/AWB/image quality/photos/recording",
+    "compat32/Media Requests",
+    "broader hardware",
+    "full flash image build and boot"
+  ],
+  "raw_json_sha256": {
+    "mipad2-r18-boot-entry-install.json": "aaf263a2086587d239b85f767a08071009af9082da45eebc8813927ecf470582",
+    "mipad2-r18-both-crop-edges.json": "3de0474035cea237e09658038e0a08ca3eb2f558ad3fa8198b507767573f7ee9",
+    "mipad2-r18-build-state.json": "eeed673428f1839a18f0c7b6d9de492b64832d532f191b55d0e3511c67303a24",
+    "mipad2-r18-bundle-manifest.json": "07c3f1c2c200f1c94b34f5c103494df1aea274d27f4594d78a0f245482f24367",
+    "mipad2-r18-cadence-no-sfmt-restart.json": "e8f0d009f0dcfcca9b9fbdc3eb5ef0e756b5174b306457dc3ad9eb1c887be44b",
+    "mipad2-r18-candidate-applied.json": "83c26ac8b73dfec08e22a350cf72c10f452e4f74b16db588b26d806860f09e1a",
+    "mipad2-r18-close-r17-gui.json": "d38072fb4f5f485f0c9b0b6c523a3b2af310b6395a9be2195caaaabf587e58a6",
+    "mipad2-r18-control-events-v2.json": "82393e676cd4d572beb6ea273faee1f5a953fa5248ed1714a362789728ff8b16",
+    "mipad2-r18-control-events.json": "0e9062504e7307236883256e4edda5a0a15cea103ebc81998289012d49c21413",
+    "mipad2-r18-createbufs-size-contract.json": "04899854a74b63557badb9a161a1577ecebafd18ace71b7fde7aa67c1ab16ea5",
+    "mipad2-r18-createbufs-stream.json": "17d212bbcd480206e0419a4e382a08bac69b41757adc03454550b6e339091892",
+    "mipad2-r18-default-bounds.json": "673dd91fdbbdcc40f62e4436c5e5af1bd14edf00ebbb1dbd76f576d91df5989c",
+    "mipad2-r18-device-stage.json": "b0d4dd1e1eab4a45c97ac6494f342caaaef03637d378cead0ff2969495c69574",
+    "mipad2-r18-even-size-matrix-v2.json": "1fbaaa015882a93b49c4d7e1021146d8a7acf41a2ac47d5a4023c59a6d428d05",
+    "mipad2-r18-event-empty-contract-host.json": "3be95fe533267f1b173ca55cfc25e91e71d041cf92af880c8b1fffe38a724594",
+    "mipad2-r18-events-device-prepared.json": "6b619793d1ea0003435cb3c7d29642dd11950f0ff9a42ca541e1e4eca11a4255",
+    "mipad2-r18-existing-host-tests.json": "3e1f48fded8fed6e76a44d54988965ba5f779e62beae7e119dfd34bb16cffdcb",
+    "mipad2-r18-fresh-audio-audit.json": "59c26888c592da3f5ab0c85fec58d2ef586d542818123a277e0778e0283df994",
+    "mipad2-r18-full-mutable-helper-host.json": "20bf2da45a772b3e45e29f85e8c2669250076eab5a3783f958616358f00ab424",
+    "mipad2-r18-geometry-device-prepared.json": "2b2dd7668551dbc593443235ebfeeea61e4c54e06c454197666d0c74be15ac02",
+    "mipad2-r18-gui-open.json": "7e8b6ee03ccfec03d49c4c856d0e196e62322369160973f235f8731ba16f8bfe",
+    "mipad2-r18-gui-reopens.json": "71d0ad97ff4a8e808d5f1b2e9353d0640d3e780b1bc6e3733f94778cdc33e94e",
+    "mipad2-r18-hardware-continuation.json": "365731069574c1d4d3866447df3ab4c157aca24847afe80cfa62dbeae3a578db",
+    "mipad2-r18-hardware-runner.json": "f77b74eb43a87e89c39e22dc89c77bde9172c1d9c07afab37f77b871d3aa8089",
+    "mipad2-r18-header-preflight.json": "097ef335e2bd115596c21f9d161422eadb5b7e6deb2eea050fd10d6799a528cb",
+    "mipad2-r18-helper-readonly-device.json": "c0c63527085cf5c002c0c96a44384a59446424df4d55008e77239261cb0d97c9",
+    "mipad2-r18-live-checkpoint.json": "d4ead26b42b0f67f3d404de80ba98fe0ebd2e595e3c566d1cb15cff79dc73c64",
+    "mipad2-r18-metadata-modes-long.json": "b59dc5dad08ee5637c509cfba52071d35ecfdaade7995afa044d90c08afce551",
+    "mipad2-r18-new-host-tests.json": "fe764f061facbfa38b5d7418ef20ae68f386a16bc65f74b6e03417969ab5164c",
+    "mipad2-r18-ov5693-warm-modes.json": "94c961eda52f1d75a7015b0abe44755b9cad3b4605213ecf10ddbfc473f5981c",
+    "mipad2-r18-powered-format-v2.json": "840af73bafe5f188a7bbf984c2d797dba0a7e736b21b343ef0b6f0a04621ca30",
+    "mipad2-r18-powered-format.json": "5c3b2e6b66a05a852667c0b63fb39ef8a211d8abdb3bfc5a86bd464361a8a6b3",
+    "mipad2-r18-powered-harness-recovery.json": "35803b0b230a569b41e647096d52374898590222cc37ee09f40e3cbe4549de10",
+    "mipad2-r18-r17-powered-negative.json": "26bf05ec725e9b0b5ed9cef3ee413db78e5037d7fec415664c49f5fa55ab1125",
+    "mipad2-r18-resume-residency-normal.json": "e53f5cb80a33c61f193cae7647491995043c74a69f7785cb0cb41f5c93b9047d",
+    "mipad2-r18-runtime-binaries.json": "5db85f3c064abd7aae65070235a8a1e97e470a6d1c7d997911115f242d375f89",
+    "mipad2-r18-scaling-matrix-v2.json": "dfe8ff1c5ad16dca2bc6fffeaeec4c6a5ffe855d448a443b5de044d9c328bd2a",
+    "mipad2-r18-sensor-compliance.json": "5ef956ddf237fa147b8f1b15aa9cf693bf64c6d6c14f2dca7a4eadcac5e48c69",
+    "mipad2-r18-sensor-geometry.json": "aa6530611ce6cee70d7d7d31fbe04b0be2d1b212e64ebdc2ccfa5ffce280c625",
+    "mipad2-r18-source-publication.json": "a93d2a6e8aba69e0e5f518619841a24007607bd4c2b9c3b226fb8bf5afe77c56",
+    "mipad2-r18-stage-runner.json": "6542701a01893a33e756323c9c25c5ee67ed76bb5cf92ee9e1cb122b12886f29",
+    "mipad2-r18-strict-queue-tests.json": "0e29a6a3c5d9b372ef7be94a6a6224c93be56a343581f27170b497a95f83d8b1",
+    "mipad2-r18-whole-compliance.json": "d31a9f053f2a1a21bedc462166a5b6f92c2594e51f75aff4630274fb606b61a6"
+  },
+  "full_objective_complete": false
+}

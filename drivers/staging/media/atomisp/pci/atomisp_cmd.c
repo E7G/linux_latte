@@ -6,6 +6,7 @@
  *
  * Copyright (c) 2010 Silicon Hive www.siliconhive.com.
  */
+#include <linux/dmi.h>
 #include <linux/errno.h>
 #include <linux/firmware.h>
 #include <linux/pci.h>
@@ -81,7 +82,9 @@ struct atomisp_video_pipe *atomisp_to_video_pipe(struct video_device *dev)
 
 static unsigned short atomisp_get_sensor_fps(struct atomisp_sub_device *asd)
 {
-	struct v4l2_subdev_frame_interval fi = { 0 };
+	struct v4l2_subdev_frame_interval fi = {
+		.which = V4L2_SUBDEV_FORMAT_ACTIVE,
+	};
 	struct atomisp_device *isp = asd->isp;
 
 	unsigned short fps = 0;
@@ -265,8 +268,11 @@ int atomisp_reset(struct atomisp_device *isp)
 	dev_dbg(isp->dev, "%s\n", __func__);
 
 	ret = atomisp_power_off(isp->dev);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(isp->dev, "atomisp_power_off failed, %d\n", ret);
+		isp->isp_fatal_error = true;
+		return ret;
+	}
 
 	ret = atomisp_power_on(isp->dev);
 	if (ret < 0) {
@@ -317,22 +323,35 @@ void atomisp_msi_irq_init(struct atomisp_device *isp)
 	pci_write_config_word(pdev, PCI_COMMAND, msg16);
 }
 
-void atomisp_msi_irq_uninit(struct atomisp_device *isp)
+int atomisp_msi_irq_uninit(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	u32 msg32;
 	u16 msg16;
+	int ret;
 
-	pci_read_config_dword(pdev, PCI_MSI_CAPID, &msg32);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_MSI_CAPID, &msg32));
+	if (ret)
+		return ret;
 	msg32 &=  ~(1 << MSI_ENABLE_BIT);
-	pci_write_config_dword(pdev, PCI_MSI_CAPID, msg32);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_MSI_CAPID, msg32));
+	if (ret)
+		return ret;
 
 	msg32 = 0x0;
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, msg32);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, msg32));
+	if (ret)
+		return ret;
 
-	pci_read_config_word(pdev, PCI_COMMAND, &msg16);
+	ret = pcibios_err_to_errno(pci_read_config_word(pdev, PCI_COMMAND, &msg16));
+	if (ret)
+		return ret;
 	msg16 &= ~(PCI_COMMAND_MASTER);
-	pci_write_config_word(pdev, PCI_COMMAND, msg16);
+	ret = pcibios_err_to_errno(pci_write_config_word(pdev, PCI_COMMAND, msg16));
+	if (ret)
+		return ret;
+
+	return 0;
 }
 
 static void atomisp_sof_event(struct atomisp_sub_device *asd)
@@ -582,7 +601,8 @@ void atomisp_buffer_done(struct ia_css_frame *frame, enum vb2_buffer_state state
 
 	frame->vb.vb2_buf.timestamp = ktime_get_ns();
 	frame->vb.field = pipe->pix.field;
-	frame->vb.sequence = atomic_read(&pipe->asd->sequence);
+	frame->vb.sequence = pipe->use_sof_sequence ?
+		atomic_read(&pipe->asd->sequence) : pipe->sequence;
 	list_del(&frame->queue);
 	if (state == VB2_BUF_STATE_DONE)
 		vb2_set_plane_payload(&frame->vb.vb2_buf, 0, pipe->pix.sizeimage);
@@ -841,6 +861,17 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 	if (frame) {
 		spin_lock_irqsave(&pipe->irq_lock, irqflags);
 		atomisp_buffer_done(frame, error ? VB2_BUF_STATE_ERROR : VB2_BUF_STATE_DONE);
+		/*
+		 * Buffered-sensor CSS disables receiver SOF interrupts. Count
+		 * frames actually returned by the ISP, including invalid frames,
+		 * rather than leaving every buffer at sequence 0. Flushes and
+		 * failed STREAMON returns must not advance this counter.
+		 * CSS exposure IDs wrap at 250 and explicitly do not account for
+		 * sensor-side drops (ia_css_event_public.h); they are not a V4L2
+		 * sequence. This fallback cannot expose losses inside the ISP.
+		 */
+		if (!pipe->use_sof_sequence)
+			pipe->sequence++;
 		spin_unlock_irqrestore(&pipe->irq_lock, irqflags);
 	}
 
@@ -867,11 +898,12 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 						  assert_recovery_work);
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	unsigned long flags;
+	bool css_started = false;
 	int ret;
 
 	mutex_lock(&isp->mutex);
 
-	if (!isp->asd.streaming)
+	if (!isp->asd.streaming || isp->asd.video_out.stopping)
 		goto out_unlock;
 
 	atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
@@ -905,23 +937,28 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 			       isp->saved_regs.i_control | MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK);
 
 	/* reset ISP and restore its state */
-	atomisp_reset(isp);
+	ret = atomisp_reset(isp);
+	if (ret)
+		goto recovery_failed;
 
 	atomisp_css_input_set_mode(&isp->asd, IA_CSS_INPUT_MODE_BUFFERED_SENSOR);
 
 	/* Recreate streams destroyed by atomisp_css_stop() */
-	atomisp_create_pipes_stream(&isp->asd);
+	ret = atomisp_create_pipes_stream(&isp->asd);
+	if (ret)
+		goto recovery_failed;
 
 	/* Invalidate caches. FIXME: should flush only necessary buffers */
 	wbinvd();
 
-	if (atomisp_css_start(&isp->asd)) {
-		dev_warn(isp->dev, "start SP failed, so do not set streaming to be enable!\n");
-	} else {
-		spin_lock_irqsave(&isp->lock, flags);
-		isp->asd.streaming = true;
-		spin_unlock_irqrestore(&isp->lock, flags);
-	}
+	ret = atomisp_css_start(&isp->asd);
+	if (ret)
+		goto recovery_failed;
+	css_started = true;
+
+	spin_lock_irqsave(&isp->lock, flags);
+	isp->asd.streaming = true;
+	spin_unlock_irqrestore(&isp->lock, flags);
 
 	atomisp_csi2_configure(&isp->asd);
 
@@ -930,6 +967,12 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 
 	if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_AUTO, true) < 0)
 		dev_dbg(isp->dev, "DFS auto failed while recovering!\n");
+
+	/* Match initial STREAMON after power-cycle restores the CSI registers. */
+	if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
+					    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+		pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
+				      isp->saved_regs.csi_control | MRFLD_PCI_CSI_CONTROL_CSI_READY);
 
 	/* Dequeueing buffers is not needed, CSS will recycle buffers that it has */
 	atomisp_flush_video_pipe(&isp->asd.video_out, VB2_BUF_STATE_ERROR, false);
@@ -940,7 +983,31 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 	ret = v4l2_subdev_call(isp->inputs[isp->asd.input_curr].csi_remote_source,
 			       video, s_stream, 1);
 	if (ret)
-		dev_err(isp->dev, "Starting sensor stream failed: %d\n", ret);
+		goto recovery_failed;
+	goto out_unlock;
+
+recovery_failed:
+	spin_lock_irqsave(&isp->lock, flags);
+	isp->asd.streaming = false;
+	spin_unlock_irqrestore(&isp->lock, flags);
+	isp->isp_fatal_error = true;
+	/* Reset failure may leave the ISP off: do not access its MMIO then. */
+	if (css_started) {
+		atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
+		if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
+						    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+			pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
+					      isp->saved_regs.csi_control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY);
+		if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, false))
+			dev_warn(isp->dev, "DFS failed after recovery error\n");
+	}
+	/*
+	 * Wake the owner, but retain buffers and the MC pipeline for its VB2
+	 * STREAMOFF/release callback. In particular a failed power-cycle is
+	 * not evidence that the old CSS buffers are safe to return here.
+	 */
+	vb2_queue_error(&isp->asd.video_out.vb_queue);
+	dev_err(isp->dev, "Stream recovery failed, queue stopped: %d\n", ret);
 
 out_unlock:
 	mutex_unlock(&isp->mutex);
@@ -985,7 +1052,9 @@ irqreturn_t atomisp_isr_thread(int irq, void *isp_ptr)
 	 * time, instead, dequue one and process one, then another
 	 */
 	mutex_lock(&isp->mutex);
-	atomisp_css_isr_thread(isp);
+	/* STREAMOFF may have completed while this IRQ thread waited. */
+	if (isp->asd.streaming)
+		atomisp_css_isr_thread(isp);
 	mutex_unlock(&isp->mutex);
 
 	return IRQ_HANDLED;
@@ -3572,6 +3641,8 @@ void atomisp_get_padding(struct atomisp_device *isp, u32 width, u32 height,
 	u32 min_pad_w = ISP2400_MIN_PAD_W;
 	u32 min_pad_h = ISP2400_MIN_PAD_H;
 	struct v4l2_mbus_framefmt *sink;
+	u32 requested_width = width;
+	u64 input_width;
 
 	if (!input->crop_support) {
 		*padding_w = pad_w;
@@ -3590,6 +3661,23 @@ void atomisp_get_padding(struct atomisp_device *isp, u32 width, u32 height,
 
 	*padding_w = min_t(u32, (native_rect.width - width) & ~1, pad_w);
 	*padding_h = min_t(u32, (native_rect.height - height) & ~1, pad_h);
+
+	/*
+	 * Mi Pad 2 OV5693 capture needs an input width of at least 36, aligned
+	 * to four. Keep the requested output size and add the extra input pixels
+	 * to the padding. Do not apply this measured constraint to other boards
+	 * or sensors. Retain the original width: the active-array clamp above
+	 * must not change the alignment of requests near the native-array edge.
+	 */
+	if (IS_ISP2401 && input->sensor &&
+	    dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	    dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	    !strncmp(input->sensor->name, "ov5693 ", 7)) {
+		input_width = (u64)requested_width + *padding_w;
+		input_width = ALIGN(max_t(u64, input_width, 36), 4);
+		if (input_width <= (u32)native_rect.width)
+			*padding_w = input_width - requested_width;
+	}
 
 	/* The below minimum padding requirements are for BYT / ISP2400 only */
 	if (IS_ISP2401)
@@ -3760,6 +3848,10 @@ set_fmt:
 	if (sd_state)
 		v4l2_subdev_unlock_state(sd_state);
 
+	/* Do not hide sensor errors behind a successful CSI set_fmt call. */
+	if (ret)
+		return ret;
+
 	/* Propagate new fmt to sensor ISP */
 	if (ret == 0 && which == V4L2_SUBDEV_FORMAT_ACTIVE && input->sensor_isp) {
 		sd_state = v4l2_subdev_lock_and_get_active_state(input->sensor_isp);
@@ -3780,6 +3872,9 @@ set_fmt:
 			v4l2_subdev_unlock_state(sd_state);
 	}
 
+	if (ret)
+		return ret;
+
 	/* Propagate new fmt to CSI port */
 	if (ret == 0 && which == V4L2_SUBDEV_FORMAT_ACTIVE) {
 		format.pad = CSI2_PAD_SINK;
@@ -3799,6 +3894,7 @@ int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *f,
 {
 	const struct atomisp_format_bridge *fmt, *snr_fmt;
 	struct atomisp_sub_device *asd = &isp->asd;
+	struct atomisp_input_subdev *input = &isp->inputs[asd->input_curr];
 	struct v4l2_mbus_framefmt ffmt = { };
 	u32 padding_w, padding_h;
 	int ret;
@@ -3820,6 +3916,13 @@ int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *f,
 	if (asd->run_mode->val == ATOMISP_RUN_MODE_PREVIEW) {
 		f->width = min(f->width, 1920U);
 		f->height = min(f->height, 1440U);
+	}
+
+	/* Bound crop requests before adding padding or aligning sensor sizes. */
+	if (input->crop_support && input->native_rect.width > 0 &&
+	    input->native_rect.height > 0) {
+		f->width = min_t(u32, f->width, input->native_rect.width);
+		f->height = min_t(u32, f->height, input->native_rect.height);
 	}
 
 	/*

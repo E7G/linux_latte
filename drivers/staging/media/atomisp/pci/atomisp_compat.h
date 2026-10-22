@@ -206,6 +206,7 @@ int atomisp_create_pipes_stream(struct atomisp_sub_device *asd);
 void atomisp_destroy_pipes_stream(struct atomisp_sub_device *asd);
 
 void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset);
+void atomisp_css_stop_preserve_config(struct atomisp_sub_device *asd);
 
 void atomisp_css_continuous_set_num_raw_frames(
      struct atomisp_sub_device *asd,

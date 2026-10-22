@@ -1,0 +1,1588 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r15",
+  "source_commit": "616abdb8f2da5ac9bf23edc05cbee194ed03c4cc",
+  "boot_id": "2805b54d-e28a-4f2e-8e99-07e641fbd4b5",
+  "kernel_sha256": "74cb90f7ca5c0a3e56ac575b45075ddc0c2882bee88074bc31a4f951e2433437",
+  "serial_initrd_sha256": "9412578fccb3ba5f622cad7e47045e882f0c2ef8de2e718cd4871296929199bd",
+  "bundle_sha256": "fdf38be3793636e8027d86a6b7f7675902f1f3846f0dfb566699152a8bafd268",
+  "full_targets_verified_exit0": true,
+  "original_build_exit_unobserved": true,
+  "incremental_completion_verified": true,
+  "module_signatures_verified": 34,
+  "r14_artifacts_unchanged": true,
+  "original_gate_frames": 3876,
+  "metadata_runs": [
+    {
+      "run": "short",
+      "rows": [
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 0,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.461716545419886,
+            "after-observer-close": 30.497102775235906,
+            "ordinary-restart": 30.436514963697768,
+            "remaining-fd-takeover": 30.39505279068006
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=91338465 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=92362868 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=93069583 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": false
+        },
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 1,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.323663760188428,
+            "after-observer-close": 30.34959979914092,
+            "ordinary-restart": 30.32098901553242,
+            "remaining-fd-takeover": 30.2804242562717
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=93957045 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=95051154 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=95684894 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": false
+        },
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 2,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.27500715591046,
+            "after-observer-close": 30.239302846617942,
+            "ordinary-restart": 30.2452892961923,
+            "remaining-fd-takeover": 30.207498050243295
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=96470271 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=97507268 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=98138741 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 0,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.188927799062245,
+            "after-observer-close": 30.18901065123139,
+            "ordinary-restart": 30.147393346744327,
+            "remaining-fd-takeover": 30.135087378056152
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=99307662 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=100487988 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=101192890 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 1,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.123698861597994,
+            "after-observer-close": 30.111329798446427,
+            "ordinary-restart": 30.145823570197702,
+            "remaining-fd-takeover": 30.11116494622416
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=102178736 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=103324225 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=104073681 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 2,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 48,
+          "fps": {
+            "before-observer-close": 30.115451690708518,
+            "after-observer-close": 30.098394387470904,
+            "ordinary-restart": 30.124441328543064,
+            "remaining-fd-takeover": 30.092959888820463
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=105024954 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=106118381 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=106819951 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        }
+      ],
+      "frame_payload_and_api_checks_passed": true,
+      "full_cadence_gate_passed": false
+    },
+    {
+      "run": "long",
+      "rows": [
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 0,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 29.99604458937534,
+            "after-observer-close": 29.99256794333433,
+            "ordinary-restart": 29.986241905620197,
+            "remaining-fd-takeover": 30.001139026295366
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=767997144 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=772333316 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=774672313 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 1,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 29.999338997614778,
+            "after-observer-close": 29.995480342030366,
+            "ordinary-restart": 30.003976798280625,
+            "remaining-fd-takeover": 29.997142645056336
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=777224264 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=781516979 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=783846715 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 0,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 2,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 29.995449842778708,
+            "after-observer-close": 29.99836280121508,
+            "ordinary-restart": 30.00142888161397,
+            "remaining-fd-takeover": 29.994748377106838
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=786449414 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=790797531 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=793072586 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 0,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 30.0151194805243,
+            "after-observer-close": 30.014646129864737,
+            "ordinary-restart": 30.014065913941486,
+            "remaining-fd-takeover": 30.015684466984883
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=795939303 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=800226186 PASS",
+            "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=802533335 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 1,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 30.010600354429073,
+            "after-observer-close": 30.016646519901418,
+            "ordinary-restart": 30.013913229267253,
+            "remaining-fd-takeover": 30.017150476992487
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=805190305 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=809467237 PASS",
+            "FRAME_METADATA mode=1 exp_id=0 config_id=0 timestamp_us=811806642 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        },
+        {
+          "input": 1,
+          "request": [
+            1280,
+            720
+          ],
+          "metadata_mode": 2,
+          "selected": [
+            1280,
+            720
+          ],
+          "set_fmt_exit": 0,
+          "capture_exit": 0,
+          "frames": 240,
+          "fps": {
+            "before-observer-close": 30.016478537963046,
+            "after-observer-close": 30.015715007399404,
+            "ordinary-restart": 30.016921403489686,
+            "remaining-fd-takeover": 30.018188987393636
+          },
+          "metadata_samples": [
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=814422023 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=818799607 PASS",
+            "FRAME_METADATA mode=2 exp_id=0 config_id=0 timestamp_us=821114349 PASS"
+          ],
+          "live_crop_checks": 4,
+          "error": "",
+          "cadence_1pct_passed": true
+        }
+      ],
+      "frame_payload_and_api_checks_passed": true,
+      "full_cadence_gate_passed": true
+    }
+  ],
+  "metadata_long_frames": 1440,
+  "metadata_short_frames": 288,
+  "short_cadence_failure_retained": true,
+  "metadata_layouts_and_key_checks_passed": true,
+  "nonzero_per_frame_config_hardware_validation": false,
+  "crop_edges_idle_passed": 5,
+  "crop_edge_images_or_streaming_tested": false,
+  "matrices_30fps": {
+    "scaling-matrix-v2": [
+      {
+        "input": 0,
+        "request": [
+          1,
+          1
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          4,
+          4
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.01397013882959,
+          "after-observer-close": 30.015853828250517,
+          "ordinary-restart": 30.01446151327467,
+          "remaining-fd-takeover": 30.018720765858088
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=292077589 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=293071008 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=293735363 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          16384,
+          16384
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.00717444261661,
+          "after-observer-close": 30.025521693439533,
+          "ordinary-restart": 30.014379616411873,
+          "remaining-fd-takeover": 30.01241422588495
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=294638359 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=295883724 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=296583775 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1920,
+          1440
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.044876119515582,
+          "after-observer-close": 30.005864782665245,
+          "ordinary-restart": 29.995882383418753,
+          "remaining-fd-takeover": 30.02576756780779
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=297569115 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=298632713 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=299377062 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1920,
+          1200
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1200
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.953164143341045,
+          "after-observer-close": 30.027488801111367,
+          "ordinary-restart": 30.029538145702606,
+          "remaining-fd-takeover": 30.030849873052045
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=300276501 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=301336585 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=302062368 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1280,
+          960
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1280,
+          960
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.00079092994473,
+          "after-observer-close": 29.997518387111594,
+          "ordinary-restart": 30.018802686408385,
+          "remaining-fd-takeover": 30.012987438204345
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=303176954 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=304248116 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=304945258 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1280,
+          720
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1280,
+          720
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.05341311148414,
+          "after-observer-close": 29.993919414519475,
+          "ordinary-restart": 30.01454341057974,
+          "remaining-fd-takeover": 30.00791117658093
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=305847186 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=306942426 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=307590309 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          720,
+          1280
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          720,
+          1280
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.03494975972467,
+          "after-observer-close": 30.01044909273047,
+          "ordinary-restart": 30.004718923972995,
+          "remaining-fd-takeover": 30.03404768860888
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=308556343 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=309583533 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=310321889 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          1,
+          1
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          4,
+          4
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.02724289855748,
+          "after-observer-close": 30.046189187195164,
+          "ordinary-restart": 30.02273539871806,
+          "remaining-fd-takeover": 30.03929686198377
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=311429094 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=312433753 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=313101093 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          16384,
+          16384
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.998091030570333,
+          "after-observer-close": 30.021752124039274,
+          "ordinary-restart": 30.036343976211967,
+          "remaining-fd-takeover": 30.025111911781906
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=314097899 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=315278728 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=316083767 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          1920,
+          1440
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1440
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.0327356818938,
+          "after-observer-close": 29.995800587918374,
+          "ordinary-restart": 29.96042500224879,
+          "remaining-fd-takeover": 30.022079875107632
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=317121626 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=318225753 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=319048209 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          1920,
+          1200
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1920,
+          1200
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.03404768860422,
+          "after-observer-close": 30.0057829327094,
+          "ordinary-restart": 30.037000122882393,
+          "remaining-fd-takeover": 30.018393088128022
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=320119827 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=321355405 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=322206622 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          1280,
+          960
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1280,
+          960
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.043317000690863,
+          "after-observer-close": 30.025111911781906,
+          "ordinary-restart": 29.995228031906144,
+          "remaining-fd-takeover": 30.02724289855748
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=323261016 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=324295380 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=325033921 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          1280,
+          720
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1280,
+          720
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.041511907364594,
+          "after-observer-close": 30.030767886735706,
+          "ordinary-restart": 29.979450449419357,
+          "remaining-fd-takeover": 29.965077064729304
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=326023925 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=327152510 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=327927880 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 1,
+        "request": [
+          720,
+          1280
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          720,
+          1280
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.009957849652263,
+          "after-observer-close": 30.0002181834038,
+          "ordinary-restart": 30.04980071518935,
+          "remaining-fd-takeover": 30.012741773097993
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=328901874 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=330054475 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=330743132 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      }
+    ],
+    "even-size-matrix-v2": [
+      {
+        "input": 0,
+        "request": [
+          4,
+          4
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          4,
+          4
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.9825556040138,
+          "after-observer-close": 29.994001199760625,
+          "ordinary-restart": 29.986887551897706,
+          "remaining-fd-takeover": 29.990648370553288
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=334366898 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=335354625 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=336042858 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          8,
+          8
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          8,
+          8
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.000463643527247,
+          "after-observer-close": 30.000136364255237,
+          "ordinary-restart": 30.011349746816634,
+          "remaining-fd-takeover": 29.99212025204355
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=336823085 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=337851304 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=338436016 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          16,
+          16
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          16,
+          16
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.004064186874643,
+          "after-observer-close": 29.96368945632063,
+          "ordinary-restart": 30.000136364259888,
+          "remaining-fd-takeover": 30.002345637929803
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=339387292 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=340325662 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=340979021 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          4,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          4,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.959608999865722,
+          "after-observer-close": 30.02584952681919,
+          "ordinary-restart": 29.981329808255808,
+          "remaining-fd-takeover": 30.011431627136407
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=341790759 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=342957828 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=343498578 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          8,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          8,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.001036399440668,
+          "after-observer-close": 30.027816677448357,
+          "ordinary-restart": 30.012086685816612,
+          "remaining-fd-takeover": 29.966056630395475
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=344470928 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=345486611 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=346236947 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          16,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          16,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.966791346679962,
+          "after-observer-close": 30.025275823102724,
+          "ordinary-restart": 30.00864794672262,
+          "remaining-fd-takeover": 30.000463643527247
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=346962196 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=348020747 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=348590534 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          18,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          18,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.961975529235282,
+          "after-observer-close": 29.960180196867995,
+          "ordinary-restart": 29.980430955065174,
+          "remaining-fd-takeover": 29.99342871243401
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=349503154 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=350484746 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=351241156 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          20,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          20,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.007256300159526,
+          "after-observer-close": 29.979613862573178,
+          "ordinary-restart": 30.00660145231618,
+          "remaining-fd-takeover": 29.998663695892663
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=352067020 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=353203109 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=353789234 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          22,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          22,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.97757132618074,
+          "after-observer-close": 29.97748963051426,
+          "ordinary-restart": 29.96075141564644,
+          "remaining-fd-takeover": 29.98893135806182
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=354562164 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=355552938 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=356172117 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          24,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          24,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.96368945632063,
+          "after-observer-close": 29.992692689421368,
+          "ordinary-restart": 29.998745507008618,
+          "remaining-fd-takeover": 30.031013847027697
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=356944085 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=357991232 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=358586110 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          26,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          26,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.992447356442923,
+          "after-observer-close": 29.998172838562812,
+          "ordinary-restart": 30.00316397001935,
+          "remaining-fd-takeover": 29.98541618394591
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=359459328 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=360395818 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=361024279 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          30,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          30,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.982228715341037,
+          "after-observer-close": 29.980594378908357,
+          "ordinary-restart": 30.020441191319236,
+          "remaining-fd-takeover": 29.998990943033842
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=361877215 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=363017459 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=363612121 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          32,
+          4
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          32,
+          4
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.000954575829034,
+          "after-observer-close": 29.990403071012988,
+          "ordinary-restart": 29.997272975185687,
+          "remaining-fd-takeover": 29.99113898166766
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=364585686 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=365596923 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=366336181 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          32,
+          8
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          32,
+          8
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.00283663182388,
+          "after-observer-close": 29.9993181973148,
+          "ordinary-restart": 29.997354778716375,
+          "remaining-fd-takeover": 30.002427469129497
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=367158081 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=368295503 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=368902672 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          32,
+          16
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          32,
+          16
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.994246558160164,
+          "after-observer-close": 30.011185987503485,
+          "ordinary-restart": 30.006437744822335,
+          "remaining-fd-takeover": 30.00455523702418
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=369756890 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=370749465 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=371439861 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1282,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1282,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.970302155137205,
+          "after-observer-close": 30.024538236252038,
+          "ordinary-restart": 30.03298167442055,
+          "remaining-fd-takeover": 29.962465202683703
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=372201405 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=373199876 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=373789333 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1294,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1294,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.963526216726667,
+          "after-observer-close": 30.033473671563527,
+          "ordinary-restart": 30.016263357237392,
+          "remaining-fd-takeover": 30.002918465706614
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=374755193 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=375769209 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=376350206 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1298,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1298,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.00463708027767,
+          "after-observer-close": 30.005619234146632,
+          "ordinary-restart": 29.99899094302919,
+          "remaining-fd-takeover": 29.977734718849554
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=377180494 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=378191832 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=378771549 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1302,
+          32
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1302,
+          32
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.99449192057392,
+          "after-observer-close": 30.016017638504277,
+          "ordinary-restart": 30.002427469129497,
+          "remaining-fd-takeover": 30.03585188502009
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=379611333 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=380623739 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=381320811 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1282,
+          970
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1282,
+          970
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 30.019703841977105,
+          "after-observer-close": 29.9847622889829,
+          "ordinary-restart": 30.000463643531898,
+          "remaining-fd-takeover": 30.02732486562794
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=382206360 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=383294055 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=383932925 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      },
+      {
+        "input": 0,
+        "request": [
+          1282,
+          974
+        ],
+        "metadata_mode": 0,
+        "selected": [
+          1282,
+          974
+        ],
+        "set_fmt_exit": 0,
+        "capture_exit": 0,
+        "frames": 48,
+        "fps": {
+          "before-observer-close": 29.98566140191449,
+          "after-observer-close": 29.992202027473326,
+          "ordinary-restart": 30.023472896992818,
+          "remaining-fd-takeover": 30.002427469129497
+        },
+        "metadata_samples": [
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=384846602 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=385910569 PASS",
+          "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=386650517 PASS"
+        ],
+        "live_crop_checks": 4,
+        "error": ""
+      }
+    ]
+  },
+  "matrix_frames": 1680,
+  "warm_frames": 96,
+  "default_interval_rows": [
+    {
+      "input": 0,
+      "request": [
+        4,
+        4
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        4,
+        4
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "fps": {},
+      "metadata_samples": [],
+      "live_crop_checks": 1,
+      "error": "multiopen regression: Connection timed out"
+    },
+    {
+      "input": 0,
+      "request": [
+        8,
+        8
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        8,
+        8
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "fps": {},
+      "metadata_samples": [],
+      "live_crop_checks": 1,
+      "error": "multiopen regression: Connection timed out"
+    },
+    {
+      "input": 0,
+      "request": [
+        16,
+        16
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        16,
+        16
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "fps": {},
+      "metadata_samples": [],
+      "live_crop_checks": 1,
+      "error": "multiopen regression: Connection timed out"
+    },
+    {
+      "input": 0,
+      "request": [
+        22,
+        32
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        22,
+        32
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "fps": {},
+      "metadata_samples": [],
+      "live_crop_checks": 1,
+      "error": "multiopen regression: Connection timed out"
+    },
+    {
+      "input": 0,
+      "request": [
+        640,
+        480
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        640,
+        480
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 1,
+      "frames": 0,
+      "fps": {},
+      "metadata_samples": [],
+      "live_crop_checks": 1,
+      "error": "multiopen regression: Connection timed out"
+    },
+    {
+      "input": 0,
+      "request": [
+        1280,
+        960
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        1280,
+        960
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "fps": {
+        "before-observer-close": 60.01189326610735,
+        "after-observer-close": 60.106990442978045,
+        "ordinary-restart": 60.009274160564644,
+        "remaining-fd-takeover": 60.0439958733393
+      },
+      "metadata_samples": [
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=422197529 PASS",
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=422813187 PASS",
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=423210069 PASS"
+      ],
+      "live_crop_checks": 4,
+      "error": ""
+    },
+    {
+      "input": 0,
+      "request": [
+        1280,
+        720
+      ],
+      "metadata_mode": 0,
+      "selected": [
+        1280,
+        720
+      ],
+      "set_fmt_exit": 0,
+      "capture_exit": 0,
+      "frames": 48,
+      "fps": {
+        "before-observer-close": 59.94942448552128,
+        "after-observer-close": 59.966418805459526,
+        "ordinary-restart": 60.03056101287533,
+        "remaining-fd-takeover": 60.084336559670874
+      },
+      "metadata_samples": [
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=423922639 PASS",
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=424500695 PASS",
+        "FRAME_METADATA mode=0 exp_id=0 config_id=0 timestamp_us=424890365 PASS"
+      ],
+      "live_crop_checks": 4,
+      "error": ""
+    }
+  ],
+  "default_interval_matrix_passed": false,
+  "default_positive_frames": 96,
+  "compliance_no_stream": [
+    {
+      "input": 0,
+      "exit_code": 0,
+      "summary": [
+        "Total for atomisp device /dev/video0: 74, Succeeded: 74, Failed: 0, Warnings: 2"
+      ],
+      "fail_warnings": [
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS",
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS"
+      ]
+    },
+    {
+      "input": 1,
+      "exit_code": 0,
+      "summary": [
+        "Total for atomisp device /dev/video0: 74, Succeeded: 74, Failed: 0, Warnings: 2"
+      ],
+      "fail_warnings": [
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS",
+        "\t\twarn: v4l2-test-formats.cpp(1485): S_PARM is supported for buftype 1, but not for ENUM_FRAMEINTERVALS"
+      ]
+    }
+  ],
+  "compliance_streaming": [
+    {
+      "starting_input": 0,
+      "exit_code": 124,
+      "timed_out": true,
+      "summary": [],
+      "failure_lines": []
+    },
+    {
+      "starting_input": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "summary": [
+        "Total for atomisp device /dev/video0: 83, Succeeded: 83, Failed: 0, Warnings: 2"
+      ],
+      "failure_lines": []
+    }
+  ],
+  "rear_start_streaming_83of83_passed": true,
+  "full_both_input_streaming_compliance_passed": false,
+  "front_trace_timeout": true,
+  "front_trace_main_thread_in_dqbuf": true,
+  "front_trace_both_sensor_restoration": true,
+  "front_timeout_root_cause_proven": false,
+  "final_recovery_frames": 960,
+  "final_recovery_passed": true,
+  "captured_frames_including_short_cadence_failed_run": 8436,
+  "s0i3_independent_delta_us": 9023072,
+  "electrical_audio_passed": true,
+  "audible_test": false,
+  "acoustic_verified": false,
+  "desktop_photos_recording_tested": false,
+  "collected_fatal_kernel_lines": {},
+  "saved_default": "mipad2-bqdiag1",
+  "candidate_default_promoted": false,
+  "goal_complete": false
+}

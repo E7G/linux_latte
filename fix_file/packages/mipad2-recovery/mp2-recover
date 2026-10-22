@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
+
+dev=/dev/mmcblk0p2
+boot=/var/lib/mipad2-recovery/boot-known-good.tar.zst
+
+case "${1:-}" in
+  --status|--list)
+    timeshift --list --snapshot-device "$dev" --btrfs --scripted
+    exit 0
+    ;;
+  --yes) yes=1 ;;
+  "") yes=0 ;;
+  *) echo "Usage: sudo mp2-recover [--status|--yes]" >&2; exit 2 ;;
+esac
+
+snap="$(timeshift --list --snapshot-device "$dev" --btrfs --scripted 2>/dev/null |
+  awk '{for (i=1; i<=NF; i++) if ($i ~ /^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print $i}' |
+  tail -1)"
+[ -n "$snap" ] || { echo "No Timeshift snapshot found." >&2; exit 1; }
+
+echo "Selected snapshot: $snap"
+echo "This restores the root filesystem and the saved /boot."
+echo "Type RECOVER to continue:"
+if [ "$yes" != 1 ]; then
+  read -r answer
+  [ "$answer" = RECOVER ] || { echo "Cancelled."; exit 1; }
+fi
+
+timeshift --restore --snapshot "$snap" --target "$dev" \
+  --skip-grub --btrfs --scripted --yes
+if [ -f "$boot" ]; then
+  tar --zstd -xpf "$boot" -C /boot
+fi
+sync
+echo "Recovery complete. Reboot with: sudo reboot"

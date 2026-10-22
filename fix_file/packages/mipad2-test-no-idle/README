@@ -1,0 +1,22 @@
+# Mi Pad 2 test no-idle mode
+
+Opt in with `sudo mp2-test-no-idle enable`; inspect with `status`; restore with
+`disable`. The existing single system inhibitor blocks idle/sleep/lid handling.
+GNOME power settings are saved and restored as before.
+
+When a Denial session is available, its own `power.idleDpmsEnabled` is disabled
+through the versioned native settings API. This is required even with the
+system inhibitor active. The original boolean is saved privately in the desktop
+user's state directory and restored on disable. Repeated enable preserves that
+first restore value. Only this field is edited, with expected_revision CAS;
+concurrent changes/errors retain the restore record and fail visibly.
+
+Authentication, idle lock, physical power-key action and Denial suspend policy
+are not changed. This does not unlock the desktop or repeatedly inject input.
+Denial's persisted setting survives reboot. `status` checks the native setting,
+not merely whether the inhibitor process exists. Restoring a saved Denial value
+requires its session to be available; no offline blind settings-file overwrite
+is performed. Without Denial and without a saved restore record, the existing
+GNOME-only path remains supported. No extra service or watchdog is created.
+
+No Wi-Fi, Bluetooth, display scale, kernel selection or Secure Boot changes.

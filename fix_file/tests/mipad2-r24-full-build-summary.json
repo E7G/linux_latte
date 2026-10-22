@@ -1,0 +1,71 @@
+{
+  "build_source_commit": "130c1b76c1aa7761ac570f0342d6c6f77ad8497a",
+  "release": "6.14.0-mipad2-integrated-r24",
+  "state": "built",
+  "phase_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "commands": [
+    [
+      "make",
+      "O=/tmp/linux-latte-6.14-integrated-r24",
+      "LLVM=1",
+      "CC=clang-21",
+      "LOCALVERSION=",
+      "olddefconfig"
+    ],
+    [
+      "make",
+      "O=/tmp/linux-latte-6.14-integrated-r24",
+      "LLVM=1",
+      "CC=clang-21",
+      "LOCALVERSION=",
+      "-j4",
+      "W=1",
+      "arch/x86/platform/intel/iosf_mbi.o",
+      "drivers/staging/media/atomisp/pci/atomisp_v4l2.o",
+      "drivers/staging/media/atomisp/pci/atomisp_compat_css20.o",
+      "drivers/media/i2c/ov5693.o",
+      "drivers/media/i2c/t4ka3.o",
+      "drivers/staging/media/atomisp/pci/atomisp_cmd.o",
+      "drivers/staging/media/atomisp/pci/atomisp_fops.o",
+      "drivers/staging/media/atomisp/pci/atomisp_ioctl.o"
+    ],
+    [
+      "make",
+      "O=/tmp/linux-latte-6.14-integrated-r24",
+      "LLVM=1",
+      "CC=clang-21",
+      "LOCALVERSION=",
+      "-j4",
+      "W=1",
+      "bzImage",
+      "modules"
+    ]
+  ],
+  "elapsed_seconds": 1250.3256533145905,
+  "artifacts_sha256": {
+    ".config": "3fdd1f84ef732cb7ee5dd984ed80288d10e792b957c761e99fafd69bf4611807",
+    "arch/x86/boot/bzImage": "e9d7d66f2781d4059b026a7be63303a7ce5049286faaec01c59c6c770874fb1b",
+    "vmlinux": "f57ec4166fe7b042664744ea29057c044379f1324b9aa99fc679631c1744a324",
+    "Module.symvers": "65d798b2fc1e31b371edfea788a8e4225393397b00e814fef342304b0fcd35f3",
+    "System.map": "d60ec769bff4c1ee0aa6e28ed5e6f147a1244859dab644f53365176f619351cb"
+  },
+  "built_module_count": 34,
+  "config_difference": [
+    "CONFIG_LOCALVERSION"
+  ],
+  "source_unchanged_during_build": true,
+  "source_head_unchanged_during_build": true,
+  "r19_r20_artifacts_unchanged": true,
+  "userdirty_unchanged": true,
+  "installed": false,
+  "booted": false,
+  "device_fault_injection": false,
+  "physical_dma_safety_proven": false,
+  "source_deployment_qualified": false,
+  "full_objective_complete": false,
+  "warnings_retained": "Existing kernel-doc Perl precedence, Clang const-init/typecheck and linker stack-frame warnings remain; successful build is not warning-free or boot/fault validation."
+}

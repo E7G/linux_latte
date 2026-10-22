@@ -1,0 +1,32 @@
+# Mi Pad 2 USB serial debug
+
+This package exposes the tablet's USB device controller as one CDC ACM serial
+console (`/dev/ttyGS0`). The service enables `serial-getty@ttyGS0.service`.
+With `CONFIG_U_SERIAL_CONSOLE=y`, the gadget can also be a kernel log console.
+Select it with `console=ttyGS0,115200n8 console=tty0`; keep tty0 last so
+userspace /dev/console remains the screen and does not depend on a USB host.
+Verify ttyGS0 is enabled in /proc/consoles, not only that its ConfigFS
+console attribute is 1. Printk replay is bounded by the gadget FIFO and
+does not guarantee a complete early boot log. The service runs from
+sysinit.target, before local filesystems are mounted.
+
+If the same Mi Pad 2 ACM gadget is already bound (for example by an
+initramfs), starting the helper preserves its UDC binding and connection.
+This does not change explicit service stop or suspend detach behavior.
+
+On Windows it appears as **Mi Pad 2 USB Serial**, normally a `COM` port. Use
+115200 8N1. This is a fallback debug path when Wi-Fi is unavailable.
+
+The package does not install, replace, or configure Wi-Fi or Bluetooth
+firmware/modules. It replaces the old Mi Pad 2 USB Ethernet gadget because a
+single UDC cannot bind both legacy `g_ether` and the ACM function.
+
+
+## Suspend / S0ix
+
+The USB serial service is stopped immediately before system sleep and restored
+after resume only when it was active beforehand. This temporarily detaches the
+configfs ACM gadget from the Cherry Trail DWC3 UDC so the OTG block is free to
+enter a low-power state instead of remaining in D0 throughout s2idle. The
+gadget configuration itself is preserved and the serial console returns after
+resume.

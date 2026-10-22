@@ -1,0 +1,4 @@
+Mi Pad 2 RT5659 UCM profile; devices: Speaker, Headphones, IntMic, HeadsetMic.
+
+7.2 integration: this profile requires codec_conf-prefixed Left/Right Amp Input
+controls. Keep the 6.14 package when booting the old kernel; do not mix profiles.

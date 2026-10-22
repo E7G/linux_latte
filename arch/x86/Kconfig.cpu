@@ -204,6 +204,14 @@ config CC_HAS_MARCH_NATIVE
 	# usage warnings that only appear wth '-march=native'.
 	depends on CC_IS_GCC || CLANG_VERSION >= 190100
 
+config MSILVERMONT
+	bool "Optimize for Intel Silvermont/Airmont (Mi Pad 2)"
+	depends on X86_64 && !X86_NATIVE_CPU
+	help
+	  Build for the Silvermont instruction set used by the Mi Pad 2's
+	  Airmont CPU. Unlike native tuning, this is safe when cross-building
+	  on a newer x86 host. Do not use this image on older x86 CPUs.
+
 config X86_NATIVE_CPU
 	bool "Build and optimize for local/native CPU"
 	depends on X86_64

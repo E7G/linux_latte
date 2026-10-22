@@ -1,0 +1,421 @@
+{
+  "schema": 1,
+  "qualification": "Scoped R26 first-probe/native/silent-electrical/two-RTC gates pass; full objective incomplete",
+  "built_source_commit": "6074419168fbb70aa5685e976874da6cf86d1fae",
+  "build": {
+    "exit_code": 0,
+    "command_exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "config_difference": [
+      "CONFIG_LOCALVERSION"
+    ],
+    "artifacts_sha256": {
+      ".config": "5bb803c0c49a11db7a0b0b48ef81e7cb741c3ac508ecbc0ca941dc542b30de6f",
+      "arch/x86/boot/bzImage": "51a2c4ed03cbecafded5e8f509fcf8238d6355d89e53e2f5c7bc63be73715ac1",
+      "vmlinux": "c7e4342ee6ac8eacb9f50def046b6e0778417abcd78cb73b9829f160df10317c",
+      "Module.symvers": "65d798b2fc1e31b371edfea788a8e4225393397b00e814fef342304b0fcd35f3",
+      "System.map": "49c798c94b3a1ec19d0aaf13f8dcfe46a8a2b23f2c39c69720bb17d455f8a29e"
+    },
+    "source_unchanged": true,
+    "userdirty_unchanged": true,
+    "r19_r20_r24_r25_artifacts_unchanged": true
+  },
+  "archive": {
+    "archive_sha256": "8f28943fb55fceecf5a147969daea543c9fb4883b55ffee733744601ba2b16b1",
+    "archive_bytes": 20900926,
+    "regular_files_verified": 52,
+    "compressed_modules_verified": 34,
+    "no_links_or_special_entries": true,
+    "all_module_signatures_cryptographically_verified": true,
+    "embedded_config_matches_completed_build": true
+  },
+  "boot": {
+    "kernel": "6.14.0-mipad2-integrated-r26",
+    "reboot_commands": 1,
+    "running_config_exact": true,
+    "loaded_modules_match": {
+      "atomisp": true,
+      "ov5693": true,
+      "t4ka3": true,
+      "snd_soc_sst_cht_bsw_rt5659": true,
+      "brcmfmac": true
+    },
+    "protected_files_unchanged": true,
+    "saved_default_unchanged": true,
+    "next_entry_consumed": true,
+    "kind": "warm machine reboot / fresh kernel first probe, NOT S5 or removal-of-power"
+  },
+  "first_probe": {
+    "state": "passed",
+    "front_nodes": 1,
+    "rear_nodes": 1,
+    "vcm_nodes": 1,
+    "video_present": true,
+    "media_present": true,
+    "both_native_drivers_bound": true,
+    "first_boot_fault_counts": {
+      "t4ka3.*Error reading reg": 0,
+      "t4ka3.*sensor detect failed": 0,
+      "t4ka3.*probe.*failed": 0,
+      "ov5693.*Error reading reg": 0,
+      "(?<!\\w)(?:BUG:|kernel BUG at\\b|kernel BUG!)": 0,
+      "(?<!\\w)WARNING:": 0,
+      "(?<!\\w)Oops:": 0,
+      "(?<!\\w)GPU HANG\\b": 0
+    },
+    "smoke_exit_code": 0,
+    "manual_reprobes": 0,
+    "module_reloads": 0,
+    "gpio_pmic_writes_by_test": 0,
+    "power_off_cold_boot_proven": false,
+    "full_cold_reliability_proven": false
+  },
+  "narrow_lifecycle": {
+    "steps": [
+      {
+        "script": "run_r26_strict_queues_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "cases": [
+            {
+              "input": 0,
+              "diagnostic_code": 0,
+              "long_strict_code": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "restore_errors": 0
+            },
+            {
+              "input": 1,
+              "diagnostic_code": 0,
+              "long_strict_code": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "restore_errors": 0
+            }
+          ],
+          "debug_restored": true
+        }
+      },
+      {
+        "script": "run_r26_restart_enum_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "cases": [
+            {
+              "input": 0,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "cadence": [
+                {
+                  "requested_fps": 30,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 30.005670563165715,
+                    "after-observer-close": 30.00516699146873,
+                    "ordinary-restart": 30.00531958716747,
+                    "remaining-fd-takeover": 30.000177967157388
+                  }
+                },
+                {
+                  "requested_fps": 15,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 15.001729012835442,
+                    "after-observer-close": 15.002041803316546,
+                    "ordinary-restart": 15.001851075861538,
+                    "remaining-fd-takeover": 15.000386450634076
+                  }
+                }
+              ]
+            },
+            {
+              "input": 1,
+              "streamparm_code": 0,
+              "controls_restored": true,
+              "shape_restored": true,
+              "cadence": [
+                {
+                  "requested_fps": 30,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 30.01716574868409,
+                    "after-observer-close": 30.00792921383793,
+                    "ordinary-restart": 30.013959034506758,
+                    "remaining-fd-takeover": 30.018020988193275
+                  }
+                },
+                {
+                  "requested_fps": 15,
+                  "capture_code": 0,
+                  "period_gate": true,
+                  "measured_fps": {
+                    "before-observer-close": 15.006391705484052,
+                    "after-observer-close": 15.006078733588726,
+                    "ordinary-restart": 15.006708507404866,
+                    "remaining-fd-takeover": 15.007284892191654
+                  }
+                }
+              ]
+            }
+          ],
+          "debug_restored": true
+        }
+      },
+      {
+        "script": "r26_fresh_audio_audit.py",
+        "exit_code": 0,
+        "summary": {
+          "fresh_boot_and_resume_electrical_passed": true,
+          "audible_test": false,
+          "acoustic_verified": false,
+          "taint": 1088,
+          "rtc_code": 0,
+          "smoke_code": 0,
+          "kernel_fault_lines": 0
+        }
+      },
+      {
+        "script": "r26_resume_residency_normal_remote.py",
+        "exit_code": 0,
+        "summary": {
+          "s0i3_delta_us": 9907872,
+          "functional_resume_passed": true,
+          "s0i3_entered": true,
+          "debug_restored": true,
+          "boot_unchanged": true,
+          "rtc_code": 0
+        }
+      }
+    ],
+    "pm": {
+      "v4l-subdev4": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "v4l-subdev5": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "0000:00:03.0": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "selected_kernel_error_counts": {
+      "(?<!\\w)(?:BUG:|kernel BUG at\\b|kernel BUG!)": 0,
+      "(?<!\\w)WARNING:": 0,
+      "(?<!\\w)Oops:": 0,
+      "(?<!\\w)GPU HANG\\b": 0,
+      "general protection fault": 0,
+      "SP is not idle": 0,
+      "ISP is not idle": 0,
+      "stop stream timeout": 0,
+      "IUNIT power-.*timeout": 0
+    },
+    "tones_played": false,
+    "new_media_saved": false,
+    "raw_data_exported": false
+  },
+  "post_two_rtc_native": {
+    "exit_code": 0,
+    "cases": [
+      {
+        "input": 0,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      },
+      {
+        "input": 1,
+        "diagnostic_code": 0,
+        "long_strict_code": 0,
+        "streamparm_code": 0,
+        "controls_restored": true,
+        "shape_restored": true,
+        "restore_errors": 0
+      }
+    ],
+    "debug_restored": true,
+    "after_rtc_cycles": 2,
+    "media_saved": false,
+    "raw_frame_data_exported": false
+  },
+  "checkpoint": {
+    "protected_software_unchanged": true,
+    "anti_idle": "active",
+    "thermal_guard": "active",
+    "gpu": {
+      "gt_min_freq_mhz": "200",
+      "gt_max_freq_mhz": "600"
+    },
+    "saved_entry": "mipad2-bqdiag1",
+    "next_entry_empty": true,
+    "controls": [
+      {
+        "input": 0,
+        "values": {
+          "exposure": 1976,
+          "analogue_gain": 8
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      },
+      {
+        "input": 1,
+        "values": {
+          "exposure": 2486,
+          "analogue_gain": 128
+        },
+        "pm": {
+          "runtime_usage": "0",
+          "runtime_status": "suspended"
+        }
+      }
+    ],
+    "isp_pm": {
+      "runtime_usage": "0",
+      "runtime_status": "suspended"
+    },
+    "trace_instances": [],
+    "legacy_aliases_preserved": 35,
+    "free_root_bytes": 2485542912
+  },
+  "serial_console": {
+    "bound_acm_port": 0,
+    "kernel_console_tty": "ttyGS0",
+    "getty_active": true,
+    "host_capture_bytes_at_snapshot": 63490,
+    "raw_serial_contents_not_published": true,
+    "bidirectional_login_tested": false
+  },
+  "preceding_r25_diagnostic": {
+    "original_zero_s0i3_retained": true,
+    "initial_tracefs_text_append_failed_before_probe_or_rtc": true,
+    "initial_tracefs_failure_cleanup_verified": true,
+    "inner_returns": [
+      {
+        "phase": "off",
+        "rtc_code": 0,
+        "boot_unchanged": true,
+        "s0i3_delta_us": 9803904,
+        "returns": {
+          "soft_ret": {
+            "0": 1
+          },
+          "gadget_ret": {
+            "0": 1
+          },
+          "core_ret": {
+            "0": 1
+          }
+        },
+        "kretprobe_missed": {
+          "soft_ret": 0,
+          "gadget_ret": 0,
+          "core_ret": 0
+        },
+        "coverage_all_functions": true,
+        "fault_injected": false,
+        "acceptance_gate": false,
+        "probes_removed": true,
+        "instance_removed": true,
+        "pm_debug_unchanged": true
+      },
+      {
+        "phase": "on",
+        "rtc_code": 0,
+        "boot_unchanged": true,
+        "s0i3_delta_us": 0,
+        "returns": {
+          "soft_ret": {
+            "0": 1
+          },
+          "gadget_ret": {
+            "0": 1
+          },
+          "core_ret": {
+            "0": 1
+          }
+        },
+        "kretprobe_missed": {
+          "soft_ret": 0,
+          "gadget_ret": 0,
+          "core_ret": 0
+        },
+        "coverage_all_functions": true,
+        "fault_injected": false,
+        "acceptance_gate": false,
+        "probes_removed": true,
+        "instance_removed": true,
+        "pm_debug_unchanged": true
+      }
+    ],
+    "no_probe_miss_or_ring_overflow": true,
+    "usb_halt_failure_not_observed_in_zero_residency_sample": true,
+    "subsequent_cpu_irq_telemetry": [
+      {
+        "phase": "off",
+        "rtc_code": 0,
+        "boot_unchanged": true,
+        "residency_delta_us": {
+          "S0IR": 32,
+          "S0I1": 22848,
+          "S0I2": 192,
+          "S0I3": 9102848,
+          "S0": 2159328
+        },
+        "no_policy_change": true,
+        "no_tracing": true
+      },
+      {
+        "phase": "on",
+        "rtc_code": 0,
+        "boot_unchanged": true,
+        "residency_delta_us": {
+          "S0IR": 64,
+          "S0I1": 22816,
+          "S0I2": 192,
+          "S0I3": 9685056,
+          "S0": 2227072
+        },
+        "no_policy_change": true,
+        "no_tracing": true
+      }
+    ],
+    "managed_serial_open_also_had_positive_s0i3": true,
+    "serial_open_not_deterministic_blocker": true,
+    "original_zero_failure_not_reclassified": true,
+    "all_diagnostic_observers_terminal": true,
+    "private_return_traces_and_irq_tables_not_published": true
+  },
+  "transient_ssh_observation_timeout_during_lifecycle": true,
+  "same_boot_ssh_recovered_without_reboot_or_network_restart": true,
+  "continuous_network_reliability_or_resume_latency_bound_proven": false,
+  "r26_installed": true,
+  "r26_booted": true,
+  "narrow_normal_gate_passed": true,
+  "full_active_debug_power_reliability_qualified": false,
+  "zero_s0i3_root_cause_or_fix_proven": false,
+  "power_off_cold_boot_proven": false,
+  "physical_dma_fencing_proven": false,
+  "full_h264_cadence_passed": false,
+  "r26_full_h264_measurement_performed": false,
+  "android_windows_parity_proven": false,
+  "full_objective_complete": false,
+  "raw_media_or_private_traces_published": false
+}

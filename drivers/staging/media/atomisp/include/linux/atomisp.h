@@ -37,6 +37,33 @@
  */
 #define ATOMISP_BUFFER_HAS_PER_FRAME_SETTING	0x80000000
 
+/* Buffer metadata layout is per file handle, selected before allocation. */
+#define ATOMISP_BUFFER_METADATA_STANDARD	0
+#define ATOMISP_BUFFER_METADATA_LEGACY	1
+#define ATOMISP_BUFFER_METADATA_ANDROID	2
+
+/*
+ * Correlate metadata with the index, sequence and timeval timestamp returned
+ * by DQBUF. timestamp_us is tv_sec * 1000000 + tv_usec, not a kernel pointer.
+ * Query before requeueing the buffer; a stale or absent record is EAGAIN.
+ * exp_id is unencoded in this interface; flags contains only V4L2_BUF_FLAG_ERROR.
+ */
+struct atomisp_frame_metadata {
+	__u32 index;
+	__u32 sequence;
+	__aligned_u64 timestamp_us;
+	__u32 exp_id;
+	__u32 isp_config_id;
+	__u32 flags;
+	__u32 reserved;
+};
+
+/* Offsets 50/51 are unused in the original Mi Pad 2 Android ABI. */
+#define ATOMISP_IOC_S_BUFFER_METADATA_MODE \
+	_IOW('v', BASE_VIDIOC_PRIVATE + 50, __u32)
+#define ATOMISP_IOC_G_FRAME_METADATA \
+	_IOWR('v', BASE_VIDIOC_PRIVATE + 51, struct atomisp_frame_metadata)
+
 /* Custom format for RAW capture from M10MO 0x3130314d */
 #define V4L2_PIX_FMT_CUSTOM_M10MO_RAW	v4l2_fourcc('M', '1', '0', '1')
 

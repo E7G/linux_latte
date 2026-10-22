@@ -82,6 +82,45 @@ static const struct override_status_id override_status_ids[] = {
 	      }),
 
 	/*
+	 * The Mi Pad 2 firmware hides the camera description used by the
+	 * AtomISP Linux drivers behind its OSID switch. CAM3 is the front
+	 * OV5693 and CA27 is the rear T4KA3 description with the complete
+	 * Intel camera _DSM data.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C4.CAM3", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C4.CA27", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
+	 * The same firmware OSID switch also hides the complete RT5659 audio
+	 * codec description and the Broadcom UART Bluetooth child.  Keep the
+	 * firmware-provided resources and only override _STA so the normal ACPI
+	 * I2C / serdev enumeration paths can instantiate them.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C2.RTK3", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.URT1.BTH1", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
+	 * The Mi Pad 2 firmware also hides the LP8556 LCD backlight behind
+	 * its OSID switch. DD02 brightness control targets I2C2.BL02.
+	 */
+	PRESENT_ENTRY_PATH("\\_SB_.PCI0.I2C2.BL02", INTEL_ATOM_AIRMONT, {
+		DMI_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+		DMI_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+	      }),
+
+	/*
 	 * Lenovo Yoga Book uses PWM2 for touch keyboard backlight control.
 	 * It needs to be enabled only for the Android device version (YB1-X90*
 	 * aka YETI-11); the Windows version (YB1-X91*) uses ACPI control

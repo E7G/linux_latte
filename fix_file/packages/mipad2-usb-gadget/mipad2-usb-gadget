@@ -1,0 +1,62 @@
+#!/bin/sh
+set -eu
+
+G=/sys/kernel/config/usb_gadget/mipad2
+UDC="${1:-}"
+
+cleanup() {
+    [ -e "$G/UDC" ] && printf '' > "$G/UDC" 2>/dev/null || true
+    rm -f "$G/configs/c.1/ecm.usb0" "$G/configs/c.1/rndis.usb1"
+    rmdir "$G/configs/c.1/strings/0x409" "$G/configs/c.1/strings" \
+        "$G/configs/c.1" "$G/functions/ecm.usb0" "$G/functions/rndis.usb1" \
+        "$G/functions" "$G/strings/0x409" "$G/strings" "$G/os_desc" "$G" 2>/dev/null || true
+}
+
+if [ "${1:-}" = stop ]; then
+    cleanup
+    exit 0
+fi
+
+if [ -e "$G" ]; then
+    cleanup
+fi
+
+if [ -z "$UDC" ]; then
+    UDC=$(find /sys/class/udc -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n1)
+fi
+[ -n "$UDC" ] || { echo 'No USB device controller (UDC) found' >&2; exit 1; }
+
+mkdir -p /sys/kernel/config/usb_gadget
+mkdir -p "$G"
+printf '0x1d6b' > "$G/idVendor"
+printf '0x0104' > "$G/idProduct"
+printf '0x0200' > "$G/bcdUSB"
+printf '0x0100' > "$G/bcdDevice"
+mkdir -p "$G/strings/0x409"
+printf 'Mi Pad 2' > "$G/strings/0x409/manufacturer"
+printf 'Mi Pad 2 USB network' > "$G/strings/0x409/product"
+printf 'mipad2-%s' "$(cat /etc/machine-id)" > "$G/strings/0x409/serialnumber"
+
+mkdir -p "$G/configs/c.1/strings/0x409"
+printf 'USB Ethernet (ECM/RNDIS)' > "$G/configs/c.1/strings/0x409/configuration"
+printf '250' > "$G/configs/c.1/MaxPower"
+
+mkdir -p "$G/functions/ecm.usb0"
+printf '02:00:00:00:02:01' > "$G/functions/ecm.usb0/host_addr"
+printf '02:00:00:00:02:02' > "$G/functions/ecm.usb0/dev_addr"
+ln -sfn "$G/functions/ecm.usb0" "$G/configs/c.1/ecm.usb0"
+
+mkdir -p "$G/functions/rndis.usb1"
+printf '02:00:00:00:01:01' > "$G/functions/rndis.usb1/host_addr"
+printf '02:00:00:00:01:02' > "$G/functions/rndis.usb1/dev_addr"
+ln -sfn "$G/functions/rndis.usb1" "$G/configs/c.1/rndis.usb1"
+
+printf '%s' "$UDC" > "$G/UDC"
+
+for n in usb0 usb1; do
+    if [ -e "/sys/class/net/$n" ]; then
+        ip link set "$n" up || true
+        ip addr replace "192.168.7.1/24" dev "$n" || true
+        break
+    fi
+done

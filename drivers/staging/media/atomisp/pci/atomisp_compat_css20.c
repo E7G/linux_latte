@@ -801,6 +801,9 @@ int atomisp_css_load_firmware(struct atomisp_device *isp)
 
 void atomisp_css_uninit(struct atomisp_device *isp)
 {
+	/* A failed power-off can be retried without a matching CSS init. */
+	if (!isp->css_initialized)
+		return;
 	isp->css_initialized = false;
 	ia_css_uninit();
 }
@@ -886,8 +889,13 @@ int atomisp_q_video_buffer_to_css(struct atomisp_sub_device *asd,
 
 	err = ia_css_pipe_enqueue_buffer(
 		  stream_env->pipes[css_pipe_id], &css_buf);
-	if (err)
+	if (err) {
+		dev_err_ratelimited(asd->isp->dev,
+				    "CSS enqueue failed: %d (stream=%d pipe=%d type=%d state=%d)\n",
+				    err, stream_id, css_pipe_id, css_buf_type,
+				    stream_env->stream_state);
 		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -1768,7 +1776,8 @@ int atomisp_css_input_configure_port(
 	return 0;
 }
 
-void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)
+static void atomisp_css_stop_internal(struct atomisp_sub_device *asd,
+				      bool in_reset, bool preserve_pipe_config)
 {
 	unsigned long irqflags;
 	unsigned int i;
@@ -1783,7 +1792,7 @@ void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)
 
 	ia_css_stop_sp();
 
-	if (!in_reset) {
+	if (!in_reset && !preserve_pipe_config) {
 		struct atomisp_stream_env *stream_env;
 		int i, j;
 
@@ -1798,6 +1807,10 @@ void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)
 			ia_css_stream_config_defaults(
 			    &stream_env->stream_config);
 		}
+	}
+
+	/* Never retain pointers into the CSS parameters freed below. */
+	if (!in_reset) {
 		memset(&asd->params.config, 0, sizeof(asd->params.config));
 		asd->params.css_update_params_needed = false;
 	}
@@ -1816,9 +1829,27 @@ void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)
 		list_splice_init(&asd->metadata_ready[i], &asd->metadata[i]);
 	}
 
-	atomisp_flush_params_queue(&asd->video_out);
-	atomisp_free_css_parameters(&asd->params.css_param);
-	memset(&asd->params.css_param, 0, sizeof(asd->params.css_param));
+	/*
+	 * Recovery keeps config's borrowed pointers and requeues frame_params.
+	 * Keep their owning global/pending parameter objects alive as well.
+	 * Ordinary STREAMOFF (including after failed recovery) frees them.
+	 */
+	if (!in_reset) {
+		atomisp_flush_params_queue(&asd->video_out);
+		atomisp_free_css_parameters(&asd->params.css_param);
+		memset(&asd->params.css_param, 0, sizeof(asd->params.css_param));
+	}
+}
+
+void atomisp_css_stop(struct atomisp_sub_device *asd, bool in_reset)
+{
+	atomisp_css_stop_internal(asd, in_reset, false);
+}
+
+/* Keep output geometry for STREAMON with the existing MMAP buffers. */
+void atomisp_css_stop_preserve_config(struct atomisp_sub_device *asd)
+{
+	atomisp_css_stop_internal(asd, false, true);
 }
 
 void atomisp_css_continuous_set_num_raw_frames(

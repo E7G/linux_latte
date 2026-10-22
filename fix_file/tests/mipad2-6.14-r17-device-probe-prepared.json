@@ -1,0 +1,9 @@
+{
+  "source_sha256": "65a0af19d21bc1662dd86e3241d864cb158ded80d75dbef7e1562dbc9db6bff5",
+  "binary_sha256": "7a0c0ab8f3ee50e4aa4c4196ea242193c2d57f4df099e3f8aa776b73845ad958",
+  "hardware_run": false,
+  "scope": "R17 release-guarded native64-bit ACTIVE/TRY isolation plus existing240-frame owner/metadata/restart/crop/payload assertions; no earlier-kernel dangerous test",
+  "revision": 3,
+  "observer_fmt_and_crop_after_real_try_mutation_checked": true,
+  "own_try_crop_and_format_effect_checked": true
+}

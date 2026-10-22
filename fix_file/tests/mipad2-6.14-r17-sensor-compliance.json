@@ -1,0 +1,230 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r17",
+  "boot_id": "727d5d87-69d5-472d-8a33-86a9fb4fcd72",
+  "original": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev5",
+      "shape": {
+        "width": 2624,
+        "height": 1956,
+        "code": "0x3007",
+        "crop": [
+          0,
+          0,
+          2624,
+          1956
+        ]
+      },
+      "controls": {
+        "10356993": 40,
+        "9963793": 1976,
+        "10356995": 8,
+        "9963790": 1650,
+        "9963791": 1633,
+        "10422533": 1024
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev4",
+      "shape": {
+        "width": 3280,
+        "height": 2464,
+        "code": "0x300a",
+        "crop": [
+          0,
+          0,
+          3280,
+          2464
+        ]
+      },
+      "controls": {
+        "10356993": 32,
+        "9963793": 2486,
+        "10356995": 128,
+        "9963790": 1585,
+        "9963791": 1570
+      }
+    }
+  ],
+  "initial_video": {
+    "code": 0,
+    "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev5",
+      "set_input": {
+        "code": 0,
+        "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+        "stderr": ""
+      },
+      "set_fmt": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "compliance": {
+        "code": 1,
+        "stdout": "v4l2-compliance 1.32.0, 64 bits, 64-bit time_t\n\nCompliance test for device /dev/v4l-subdev5:\n\nDriver Info:\n\tDriver version   : 6.14.0\n\tCapabilities     : 0x00000000\n\tClient Capabilities: 0x0000000000000002\ninterval-uses-which \nRequired ioctls:\n\ttest VIDIOC_SUDBEV_QUERYCAP: OK\n\ttest invalid ioctls: OK\n\nAllow for multiple opens:\n\ttest second /dev/v4l-subdev5 open: OK\n\ttest VIDIOC_SUBDEV_QUERYCAP: OK\n\ttest for unlimited opens: OK\n\nDebug ioctls:\n\ttest VIDIOC_LOG_STATUS: OK (Not Supported)\n\nInput ioctls:\n\ttest VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDIO: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMINPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDIO: OK (Not Supported)\n\tInputs: 0 Audio Inputs: 0 Tuners: 0\n\nOutput ioctls:\n\ttest VIDIOC_G/S_MODULATOR: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDOUT: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDOUT: OK (Not Supported)\n\tOutputs: 0 Audio Outputs: 0 Modulators: 0\n\nInput/Output configuration ioctls:\n\ttest VIDIOC_ENUM/G/S/QUERY_STD: OK (Not Supported)\n\ttest VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)\n\ttest VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)\n\ttest VIDIOC_G/S_EDID: OK (Not Supported)\n\nControl ioctls:\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK\n\t\tfail: v4l2-test-controls.cpp(1128): subscribe event for control 'User Controls' failed\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: FAIL\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 18 Private Controls: 0\n\nFormat ioctls:\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK (Not Supported)\n\ttest VIDIOC_G/S_PARM: OK (Not Supported)\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK (Not Supported)\n\ttest VIDIOC_TRY_FMT: OK (Not Supported)\n\ttest VIDIOC_S_FMT: OK (Not Supported)\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK (Not Supported)\n\nCodec ioctls:\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls:\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK (Not Supported)\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK (Not Supported)\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK (Not Supported)\n\nTotal for device /dev/v4l-subdev5: 46, Succeeded: 45, Failed: 1, Warnings: 0\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 0.04488614300001359,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963793": 1976,
+              "10356995": 8,
+              "9963790": 1650,
+              "9963791": 1633,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963793": 2486,
+              "10356995": 128,
+              "9963790": 1585,
+              "9963791": 1570
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev4",
+      "set_input": {
+        "code": 0,
+        "stdout": "Video input set to 1 (t4ka3 6-0037: Camera, ok)\n",
+        "stderr": ""
+      },
+      "set_fmt": {
+        "code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "compliance": {
+        "code": 1,
+        "stdout": "v4l2-compliance 1.32.0, 64 bits, 64-bit time_t\n\nCompliance test for device /dev/v4l-subdev4:\n\nDriver Info:\n\tDriver version   : 6.14.0\n\tCapabilities     : 0x00000000\n\tClient Capabilities: 0x0000000000000002\ninterval-uses-which \nRequired ioctls:\n\ttest VIDIOC_SUDBEV_QUERYCAP: OK\n\ttest invalid ioctls: OK\n\nAllow for multiple opens:\n\ttest second /dev/v4l-subdev4 open: OK\n\ttest VIDIOC_SUBDEV_QUERYCAP: OK\n\ttest for unlimited opens: OK\n\nDebug ioctls:\n\ttest VIDIOC_LOG_STATUS: OK (Not Supported)\n\nInput ioctls:\n\ttest VIDIOC_G/S_TUNER/ENUM_FREQ_BANDS: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDIO: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMINPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDIO: OK (Not Supported)\n\tInputs: 0 Audio Inputs: 0 Tuners: 0\n\nOutput ioctls:\n\ttest VIDIOC_G/S_MODULATOR: OK (Not Supported)\n\ttest VIDIOC_G/S_FREQUENCY: OK (Not Supported)\n\ttest VIDIOC_ENUMAUDOUT: OK (Not Supported)\n\ttest VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)\n\ttest VIDIOC_G/S_AUDOUT: OK (Not Supported)\n\tOutputs: 0 Audio Outputs: 0 Modulators: 0\n\nInput/Output configuration ioctls:\n\ttest VIDIOC_ENUM/G/S/QUERY_STD: OK (Not Supported)\n\ttest VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)\n\ttest VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)\n\ttest VIDIOC_G/S_EDID: OK (Not Supported)\n\nControl ioctls:\n\ttest VIDIOC_QUERY_EXT_CTRL/QUERYMENU: OK\n\ttest VIDIOC_QUERYCTRL: OK\n\ttest VIDIOC_G/S_CTRL: OK\n\ttest VIDIOC_G/S/TRY_EXT_CTRLS: OK\n\t\tfail: v4l2-test-controls.cpp(1128): subscribe event for control 'User Controls' failed\n\ttest VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: FAIL\n\ttest VIDIOC_G/S_JPEGCOMP: OK (Not Supported)\n\tStandard Controls: 17 Private Controls: 0\n\nFormat ioctls:\n\ttest VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK (Not Supported)\n\ttest VIDIOC_G/S_PARM: OK (Not Supported)\n\ttest VIDIOC_G_FBUF: OK (Not Supported)\n\ttest VIDIOC_G_FMT: OK (Not Supported)\n\ttest VIDIOC_TRY_FMT: OK (Not Supported)\n\ttest VIDIOC_S_FMT: OK (Not Supported)\n\ttest VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)\n\ttest Cropping: OK (Not Supported)\n\ttest Composing: OK (Not Supported)\n\ttest Scaling: OK (Not Supported)\n\nCodec ioctls:\n\ttest VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)\n\ttest VIDIOC_G_ENC_INDEX: OK (Not Supported)\n\ttest VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)\n\nBuffer ioctls:\n\ttest VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK (Not Supported)\n\ttest CREATE_BUFS maximum buffers: OK\n\ttest VIDIOC_REMOVE_BUFS: OK\n\ttest VIDIOC_EXPBUF: OK (Not Supported)\n\ttest Requests: OK (Not Supported)\n\ttest blocking wait: OK (Not Supported)\n\nTotal for device /dev/v4l-subdev4: 46, Succeeded: 45, Failed: 1, Warnings: 0\n",
+        "stderr": ""
+      },
+      "elapsed_seconds": 0.015852741000003334,
+      "restoration": {
+        "input": {
+          "code": 0,
+          "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+          "stderr": ""
+        },
+        "video_format": {
+          "code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "sensors": [
+          {
+            "input": 0,
+            "shape": {
+              "width": 2624,
+              "height": 1956,
+              "code": "0x3007",
+              "crop": [
+                0,
+                0,
+                2624,
+                1956
+              ]
+            },
+            "controls": {
+              "10356993": 40,
+              "9963793": 1976,
+              "10356995": 8,
+              "9963790": 1650,
+              "9963791": 1633,
+              "10422533": 1024
+            },
+            "errors": []
+          },
+          {
+            "input": 1,
+            "shape": {
+              "width": 3280,
+              "height": 2464,
+              "code": "0x300a",
+              "crop": [
+                0,
+                0,
+                3280,
+                2464
+              ]
+            },
+            "controls": {
+              "10356993": 32,
+              "9963793": 2486,
+              "10356995": 128,
+              "9963790": 1585,
+              "9963791": 1570
+            },
+            "errors": []
+          }
+        ],
+        "final_video": {
+          "code": 0,
+          "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+          "stderr": ""
+        },
+        "matched": true
+      }
+    }
+  ],
+  "scope": "Unmodified v4l2-compliance -u for both sensor subdevices; no streaming option. BOTH sensor and video sampled restoration; retain failures, not an image/3A test.",
+  "new_dmesg": "[  145.917254] ov5693 6-0036: =================  START STATUS  =================\n[  145.917274] ov5693 6-0036: ==================  END STATUS  ==================\n[  146.445372] t4ka3 6-0037: =================  START STATUS  =================\n[  146.445390] t4ka3 6-0037: ==================  END STATUS  ==================\n"
+}

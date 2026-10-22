@@ -17,6 +17,7 @@
 #include <linux/pci.h>
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
+#include <linux/string.h>
 
 #include <dt-bindings/leds/common.h>
 
@@ -812,6 +813,23 @@ static const struct software_node *ktd2026_node_group[] = {
 
 static struct pwm_device *xiaomi_mipad2_led_pwm;
 
+/*
+ * The firmware exposes this controller as FTSC1000 / PNP0C50, but returns
+ * _STA == 0 when Xiaomi's Android EFI loader did not set TCPL to 3. Recreate
+ * the I2C-HID description from the DSDT resources in that case.
+ */
+static const struct property_entry xiaomi_mipad2_touchscreen_props[] = {
+	PROPERTY_ENTRY_GPIO("reset-gpios", &cherryview_gpiochip_nodes[1],
+			    20, GPIO_ACTIVE_LOW),
+	PROPERTY_ENTRY_U32("hid-descr-addr", 0x0000),
+	PROPERTY_ENTRY_U32("post-reset-deassert-delay-ms", 120),
+	{ }
+};
+
+static const struct software_node xiaomi_mipad2_touchscreen_node = {
+	.properties = xiaomi_mipad2_touchscreen_props,
+};
+
 static int xiaomi_mipad2_brightness_set(struct led_classdev *led_cdev,
 					enum led_brightness val)
 {
@@ -830,13 +848,45 @@ static const struct software_node rt5659_swnode = {
 	.name = "rt5659",
 	.properties = (const struct property_entry[]) {
 		PROPERTY_ENTRY_U32("realtek,jd-src", 1),
+		PROPERTY_ENTRY_GPIO("ldo1-en-gpios", &cherryview_gpiochip_nodes[0],
+				    81, GPIO_ACTIVE_HIGH),
+		PROPERTY_ENTRY_GPIO("reset-gpios", &cherryview_gpiochip_nodes[1],
+				    46, GPIO_ACTIVE_HIGH),
 		{ }
 	},
 };
 
+/* Match the three attempts and 20 ms delay used by Xiaomi's Android driver. */
+static const struct property_entry xiaomi_mipad2_bq27520_props[] = {
+	PROPERTY_ENTRY_STRING_ARRAY_LEN("supplied-from", bq25890_psy, 1),
+	PROPERTY_ENTRY_U32("i2c-transfer-attempts", 3),
+	PROPERTY_ENTRY_U32("i2c-retry-delay-ms", 20),
+	{ }
+};
+
+static const struct software_node xiaomi_mipad2_bq27520_node = {
+	.properties = xiaomi_mipad2_bq27520_props,
+};
+
+static int match_mipad2_bq27520_client(struct device *dev, const void *data)
+{
+	struct acpi_device *adev;
+
+	if (!i2c_verify_client(dev))
+		return 0;
+
+	adev = ACPI_COMPANION(dev);
+	return acpi_dev_hid_uid_match(adev, "TXN27520", NULL);
+}
+
 static int match_rt5659_client(struct device *dev, const void *data)
 {
 	struct acpi_device *adev;
+	struct i2c_client *client;
+
+	client = i2c_verify_client(dev);
+	if (!client)
+		return 0;
 
 	/* 1. 检查设备名是否为 RT5659 */
 	if (!strstr(dev_name(dev), "10EC5659"))
@@ -844,7 +894,7 @@ static int match_rt5659_client(struct device *dev, const void *data)
 
 	/* 2. 获取 ACPI parent device */
 	/* 直接假设 parent 是 ACPI device（ACPI 创建的 I2C client 必然如此） */
-	adev = to_acpi_device(dev->parent);
+	adev = ACPI_COMPANION(dev);
 	if (!adev)
 		return 0;
 
@@ -852,23 +902,12 @@ static int match_rt5659_client(struct device *dev, const void *data)
 	return 1;
 }
 
-static struct gpiod_lookup_table xiaomi_mipad2_codec_rt5659_gpios = {
-	.dev_id = "i2c-10EC5659:01",
-	.table = {
-		GPIO_LOOKUP("INT33FF:00", 593 - 512, "ldo1-en", GPIO_ACTIVE_HIGH),
-		GPIO_LOOKUP("INT33FF:01", 656 - 610, "reset", GPIO_ACTIVE_HIGH),
-		{ }
-	},
-};
-
 static int __init xiaomi_mipad2_init(struct device *dev)
 {
 	struct device *client_dev;
 	struct i2c_client *client;
 	struct led_classdev *led_cdev;
 	int ret;
-
-	gpiod_add_lookup_table(&xiaomi_mipad2_codec_rt5659_gpios);
 
 	xiaomi_mipad2_led_pwm = devm_pwm_get(dev, "pwm_soc_lpss_2");
 	if (IS_ERR(xiaomi_mipad2_led_pwm))
@@ -894,6 +933,32 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 	if (ret)
 		return ret;
 
+	/*
+	 * Xiaomi's firmware exposes the BQ27520 as TXN27520:00. The generic
+	 * bq27xxx driver does not know this board-specific alias, while creating
+	 * a second client at 0x55 would collide with the ACPI-created one. Reuse
+	 * the existing client, fix its I2C type and add the charger relationship
+	 * before reprobe so the normal bq27520 driver binds and keeps the expected
+	 * bq27520-0 power-supply name.
+	 */
+	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL,
+				     match_mipad2_bq27520_client);
+	if (client_dev) {
+		client = to_i2c_client(client_dev);
+		strscpy(client->name, "bq27520", sizeof(client->name));
+		ret = device_add_software_node(&client->dev, &xiaomi_mipad2_bq27520_node);
+		if (ret && ret != -EEXIST)
+			dev_warn(dev, "adding BQ27520 properties failed: %d\n", ret);
+		else {
+			ret = device_reprobe(&client->dev);
+			if (ret)
+				dev_warn(dev, "reprobing BQ27520 failed: %d\n", ret);
+		}
+		put_device(client_dev);
+	} else {
+		dev_warn(dev, "TXN27520 ACPI I2C client not found\n");
+	}
+
 	/* 在 I2C bus 上查找 RT5659 client */
 	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL, match_rt5659_client);
 	if (!client_dev) {
@@ -914,7 +979,6 @@ static void xiaomi_mipad2_exit(void)
 {
 	/* ktd2026 的 swnode group 由 x86-android-tablets core 统一注销 */
 	software_node_unregister(&rt5659_swnode);
-	gpiod_remove_lookup_table(&xiaomi_mipad2_codec_rt5659_gpios);
 }
 
 /*
@@ -926,14 +990,22 @@ static void xiaomi_mipad2_exit(void)
  */
 static const struct x86_i2c_client_info xiaomi_mipad2_i2c_clients[] __initconst = {
 	{
-		/* BQ27520 fuel-gauge */
+		/* FTSC1000 FocalTech I2C-HID touchscreen */
 		.board_info = {
-			.type = "bq27520",
-			.addr = 0x55,
-			.dev_name = "bq27520",
-			.swnode = &fg_bq25890_supply_node,
+			.type = "hid-over-i2c",
+			.addr = 0x38,
+			.dev_name = "FTSC1000",
+			.swnode = &xiaomi_mipad2_touchscreen_node,
 		},
-		.adapter_path = "\\_SB_.PCI0.I2C1",
+		.adapter_path = "\\_SB_.PCI0.I2C6",
+		.irq_data = {
+			.type = X86_ACPI_IRQ_TYPE_GPIOINT,
+			.chip = "INT33FF:03",
+			.index = 77,
+			.trigger = ACPI_LEVEL_SENSITIVE,
+			.polarity = ACPI_ACTIVE_LOW,
+			.con_id = "FTSC1000_irq",
+		},
 	}, {
 		/* TFA9890A audio amplifier */
 		.board_info = {
@@ -966,6 +1038,7 @@ const struct x86_dev_info xiaomi_mipad2_info __initconst = {
 	.i2c_client_info = xiaomi_mipad2_i2c_clients,
 	.i2c_client_count = ARRAY_SIZE(xiaomi_mipad2_i2c_clients),
 	.swnode_group = ktd2026_node_group,
+	.gpiochip_type = X86_GPIOCHIP_CHERRYVIEW,
 	.init = xiaomi_mipad2_init,
 	.exit = xiaomi_mipad2_exit,
 };

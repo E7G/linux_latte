@@ -46,16 +46,16 @@ static int iosf_mbi_pci_read_mdr(u32 mcrx, u32 mcr, u32 *mdr)
 	if (mcrx) {
 		result = pci_write_config_dword(mbi_pdev, MBI_MCRX_OFFSET,
 						mcrx);
-		if (result < 0)
+		if (result)
 			goto fail_read;
 	}
 
 	result = pci_write_config_dword(mbi_pdev, MBI_MCR_OFFSET, mcr);
-	if (result < 0)
+	if (result)
 		goto fail_read;
 
 	result = pci_read_config_dword(mbi_pdev, MBI_MDR_OFFSET, mdr);
-	if (result < 0)
+	if (result)
 		goto fail_read;
 
 	return 0;
@@ -73,18 +73,18 @@ static int iosf_mbi_pci_write_mdr(u32 mcrx, u32 mcr, u32 mdr)
 		return -ENODEV;
 
 	result = pci_write_config_dword(mbi_pdev, MBI_MDR_OFFSET, mdr);
-	if (result < 0)
+	if (result)
 		goto fail_write;
 
 	if (mcrx) {
 		result = pci_write_config_dword(mbi_pdev, MBI_MCRX_OFFSET,
 						mcrx);
-		if (result < 0)
+		if (result)
 			goto fail_write;
 	}
 
 	result = pci_write_config_dword(mbi_pdev, MBI_MCR_OFFSET, mcr);
-	if (result < 0)
+	if (result)
 		goto fail_write;
 
 	return 0;

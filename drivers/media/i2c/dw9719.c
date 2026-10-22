@@ -107,7 +107,9 @@ static int dw9719_power_down(struct dw9719_device *dw9719)
 	 */
 	if (cci_write(dw9719->regmap, reg_pwr, DW9719_SHUTDOWN, NULL))
 		dev_err(dw9719->dev, "Error writing to power register\n");
-	return regulator_disable(dw9719->regulator);
+	if (dw9719->regulator)
+		return regulator_disable(dw9719->regulator);
+	return 0;
 }
 
 static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
@@ -117,9 +119,12 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 	int ret;
 	int err;
 
-	ret = regulator_enable(dw9719->regulator);
-	if (ret)
-		return ret;
+	ret = 0;
+	if (dw9719->regulator) {
+		ret = regulator_enable(dw9719->regulator);
+		if (ret)
+			return ret;
+	}
 
 	/*
 	 * Need 100us to transition from SHUTDOWN to STANDBY.
@@ -132,6 +137,8 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 	/* the jiggle is expected to fail, don't even log that as error */
 	fsleep(200);
 	cci_write(dw9719->regmap, reg_pwr, DW9719_STANDBY, &ret);
+	if (ret)
+		goto err_power_down;
 
 	if (detect) {
 		/* These models do not have an INFO register */
@@ -150,7 +157,7 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 
 		ret = cci_read(dw9719->regmap, DW9719_INFO, &val, NULL);
 		if (ret < 0)
-			return ret;
+			goto err_power_down;
 
 		switch (val) {
 		case DW9719_ID:
@@ -168,7 +175,8 @@ static int dw9719_power_up(struct dw9719_device *dw9719, bool detect)
 		default:
 			dev_err(dw9719->dev,
 				"Error unknown device id 0x%02llx\n", val);
-			return -ENXIO;
+			ret = -ENXIO;
+			goto err_power_down;
 		}
 
 props:
@@ -219,8 +227,12 @@ props:
 	}
 
 	if (ret)
-		dw9719_power_down(dw9719);
+		goto err_power_down;
 
+	return 0;
+
+err_power_down:
+	dw9719_power_down(dw9719);
 	return ret;
 }
 
@@ -367,10 +379,17 @@ static int dw9719_probe(struct i2c_client *client)
 
 	dw9719->dev = &client->dev;
 
-	dw9719->regulator = devm_regulator_get(&client->dev, "vdd");
-	if (IS_ERR(dw9719->regulator))
-		return dev_err_probe(&client->dev, PTR_ERR(dw9719->regulator),
-				     "getting regulator\n");
+	dw9719->regulator = devm_regulator_get_optional(&client->dev, "vdd");
+	if (IS_ERR(dw9719->regulator)) {
+		ret = PTR_ERR(dw9719->regulator);
+		if (ret == -ENODEV || ret == -ENOSYS) {
+			/* Mi Pad 2 firmware powers the VCM with the sensor. */
+			dw9719->regulator = NULL;
+			dev_dbg(&client->dev, "no vdd regulator; using sensor power domain\n");
+		} else {
+			return dev_err_probe(&client->dev, ret, "getting regulator\n");
+		}
+	}
 
 	v4l2_i2c_subdev_init(&dw9719->sd, client, &dw9719_ops);
 	dw9719->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;

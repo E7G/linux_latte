@@ -1,0 +1,163 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r15",
+  "built_source": "616abdb8f2da5ac9bf23edc05cbee194ed03c4cc",
+  "kernel_sources_unchanged": true,
+  "goal_complete": false,
+  "hearing_deferred": true,
+  "tones_played": false,
+  "blocked_actual_input": 0,
+  "blocked_sensor": "ov5693",
+  "blocked_geometry": [
+    1296,
+    736
+  ],
+  "blocked_hts": 2688,
+  "blocked_vts": 740,
+  "blocked_vblank": 4,
+  "scope": "front1280x720 only; VBLANK4 trigger independently reproducible with2 or8 buffers; assisted or unmodified full compliance not rerun; no physical minimum or global FPS ceiling inferred",
+  "video_and_both_sensor_state_restored": true,
+  "initial_two_buffer_exit126_invalid_harness": true,
+  "cases": [
+    {
+      "buffers": 2,
+      "setting": 4,
+      "exit": 1,
+      "frames": 0,
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 740
+      }
+    },
+    {
+      "buffers": 2,
+      "setting": 16,
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 79.0042590478533,
+        "after-observer-close": 79.40518299301476,
+        "ordinary-restart": 79.20050688327159,
+        "remaining-fd-takeover": 79.19024376189233
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 752
+      }
+    },
+    {
+      "buffers": 2,
+      "setting": 64,
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 74.40123911895529,
+        "after-observer-close": 74.49949882149922,
+        "ordinary-restart": 74.4264091963563,
+        "remaining-fd-takeover": 74.65928218494001
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 800
+      }
+    },
+    {
+      "buffers": 2,
+      "setting": "explicit30",
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 30.006601452311525,
+        "after-observer-close": 29.97789811328094,
+        "ordinary-restart": 29.997763803039078,
+        "remaining-fd-takeover": 30.019867694270218
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 1984
+      }
+    },
+    {
+      "buffers": 8,
+      "setting": 4,
+      "exit": 1,
+      "frames": 0,
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 740
+      }
+    },
+    {
+      "buffers": 8,
+      "setting": 16,
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 79.28442205274195,
+        "after-observer-close": 79.1549133612329,
+        "ordinary-restart": 79.1366906474116,
+        "remaining-fd-takeover": 79.06786178928708
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 752
+      }
+    },
+    {
+      "buffers": 8,
+      "setting": 64,
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 74.32934657750354,
+        "after-observer-close": 74.48638253483901,
+        "ordinary-restart": 74.6010539092958,
+        "remaining-fd-takeover": 74.3062498310984
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 800
+      }
+    },
+    {
+      "buffers": 8,
+      "setting": "explicit30",
+      "exit": 0,
+      "frames": 48,
+      "measured_fps": {
+        "before-observer-close": 29.980022403247155,
+        "after-observer-close": 30.00144552418917,
+        "ordinary-restart": 30.015935733139933,
+        "remaining-fd-takeover": 30.007911176571625
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 1984
+      }
+    }
+  ],
+  "evidence_sha256": {
+    "mipad2-r15-front-state-trace.json": "084affa9d718bbffc0561ea63b34571249575e3fba0612abdbc0f070bdff1e1c",
+    "mipad2-r15-queue-timing-isolation.json": "394bfe92bfb5ba118809cc43aad8b302108b790a14dc511436ad2aae4cb19329",
+    "mipad2-r15-queue-timing-isolation-v2.json": "dad96a4183ed0968efbfef21c35580712687be8aa0c3377cdfcd9d5e4b2f80b5",
+    "mipad2-r15-android-ov-timing-source.json": "c38e6cc02060752316cf02da8fec7a3ad7158ddf50567c32e787618a09199639",
+    "mipad2-r15-two-buffer-binary.json": "0b2d24646691406f6b2069d450f720f441e1230087f7b2562b5ff1978226cb02"
+  }
+}

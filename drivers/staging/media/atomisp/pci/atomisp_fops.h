@@ -11,6 +11,25 @@
 #define	__ATOMISP_FOPS_H__
 #include "atomisp_subdev.h"
 
+struct atomisp_metadata_record {
+	struct atomisp_frame_metadata frame;
+	bool valid;
+};
+
+struct atomisp_fh {
+	/* Must be first: v4l2_fh_release() frees this allocation. */
+	struct v4l2_fh fh;
+	/* Protect the per-handle snapshot, without taking the queue/ISP locks. */
+	spinlock_t metadata_lock;
+	u32 metadata_mode;
+	struct atomisp_metadata_record metadata[VIDEO_MAX_FRAME];
+};
+
+static inline struct atomisp_fh *atomisp_to_fh(void *fh)
+{
+	return container_of(fh, struct atomisp_fh, fh);
+}
+
 /*
  * Memory help functions for image frame and private parameters
  */

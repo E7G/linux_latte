@@ -1,145 +1,133 @@
-# 驱动加载顺序调整
-/etc/modules-load.d/modules.conf 新起一行填写
-```
-snd_soc_rt5659
-```
-# 声音修复
-注意。如果开机后扬声器某个声道没声音，请执行以下命令。无需root，普通用户执行。
+# Mi Pad 2 RT5659 / TFA9890 音频
+
+当前仓库提供 `mipad2-alsa-ucm`，用于 Xiaomi Mi Pad 2 的 RT5659 codec 与双 TFA9890 功放用户空间路由。PipeWire/WirePlumber 或其他支持 ALSA UCM2 的音频栈应通过该 UCM 配置管理扬声器、耳机、内置麦克风和耳麦麦克风。
+
+这部分不是“再打一份内核音频补丁”：当前重点是让用户空间使用与内核驱动匹配的 UCM profile。
+
+## 安装
+
+### Arch / makepkg
+
+从包目录执行 `makepkg`：
+
 ```bash
-amixer -c0 cset "name='Left Amp Input'" Left
-amixer -c0 cset "name='Right Amp Input'" Right
+cd fix_file/packages/mipad2-alsa-ucm
+makepkg -si
 ```
-/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/ 文件夹下
-cht-bsw-rt5659.conf
+
+不要使用旧文档中的：
+
+```text
+makepkg -si -f fix_file/packages/mipad2-alsa-ucm
 ```
-Syntax 3
 
-SectionUseCase."HiFi" {
-	File "HiFi.conf"
-	Comment "Default"
-}
-```
-HiFi.conf
-```
-SectionVerb {
-	If.Controls {
-		Condition {
-			Type ControlExists
-			Control "name='media0_in Gain 0 Switch'"
-		}
-		Before.EnableSequence "0"
-		True {
-			Include.pe.File "/platforms/bytcr/PlatformEnableSeq.conf"
-			Include.pd.File "/platforms/bytcr/PlatformDisableSeq.conf"
-		}
-	}
+`makepkg` 不是用最后一个路径参数选择 PKGBUILD，应该进入包目录后执行。
 
-    EnableSequence [
-		cset "name='codec_out0 Gain 0 Volume' 72%"
-		cset "name='IF2 ADC Mux' DAC_REF"
-		cset "name='IF3 ADC Mux' IF_ADC1"
-		# 音量50%
-		# cset "name='DAC1 Playback Volume' 50%"
-		# 功放左右声道归属属于扬声器路径，见 Speaker 段的 EnableSequence
-    ]
+安装后重新登录，或重启用户音频服务：
 
-	DisableSequence [
-
-	]
-
-	Value {
-		PlaybackPCM "hw:${CardId}"
-		# The speaker ampl. path on the 5659 has no speaker vol control
-		# Use the digital DAC1 master control as MixerElem
-		# PlaybackMixerElem "DAC1"
-		# PlaybackVolume "DAC1 Playback Volume"
-		# PlaybackSwitch "DAC1 Playback Switch"
-		# PlaybackVolumeScale "0-155:0-100%log"
-	}
-}
-
-SectionDevice."Speaker" {
-	Comment "Stereo Speakers"
-
-	ConflictingDevice []
-
-	Value {
-		# The speaker ampl. path on the 5659 has no speaker vol control
-		# Use the digital DAC1 master control as MixerElem
-		PlaybackMixerElem "DAC1"
-		PlaybackVolume "DAC1 Playback Volume"
-		PlaybackSwitch "DAC1 Playback Switch"
-	}
-
-	EnableSequence [
-		cset "name='DAC1 Playback Switch' on"
-		# 两颗 TFA9890 共用同一 I2S，各自放大一个声道。
-		# 控件名的 Left/Right 前缀由板级 codec_conf 提供。
-		cset "name='Left Amp Input' Left"
-		cset "name='Right Amp Input' Right"
-	]
-	DisableSequence [
-		cset "name='DAC1 Playback Switch' off"
-	]
-}
-
-SectionDevice."IntMic" {
-	Comment "Microphone"
-
-	ConflictingDevice []
-
-	EnableSequence [
-		# 开启 Int Mic
-		cset "name='Int Mic Switch' on"
-		cset "name='RECMIX1L BST3 Switch' on"
-		cset "name='RECMIX1R BST4 Switch' on"
-		cset "name='STO1 ADC Capture Switch' on"
-
-		# 开启 Boost（如果需要）
-		cset "name='IN3 Boost Volume' 45"
-		cset "name='IN4 Boost Volume' 45"
-
-		# 设置 ADC 源 (选择录音混音器的输出作为 ADC 输入)
-		cset "name='Stereo1 ADC Source' 'ADC1'"
-		cset "name='Stereo1 ADC1 Source' 'ADC'"
-
-		# 设置录音混音器输出到 ADC
-		cset "name='Stereo1 ADC MIXL ADC1 Switch' on"
-		cset "name='Stereo1 ADC MIXR ADC1 Switch' on"
-		cset "name='DAC1 MIXL Stereo ADC Switch' off"
-		cset "name='DAC1 MIXR Stereo ADC Switch' off"
-		cset "name='media_loop2_out mix 0 codec_in0 Switch' on"
-		cset "name='pcm1_out mix 0 media_loop2_in Switch' on"
-
-		# 设置 ADC 音量
-		cset "name='IN Capture Volume' 23"
-		cset "name='STO1 ADC Capture Volume' 70"
-	]
-
-	DisableSequence [
-		cset "name='Int Mic Switch' off"
-	]
-
-	Value {
-		CapturePCM "hw:${CardId}"
-		# CaptureMixerElem "Int Mic"
-		CaptureVolume "IN Capture Volume"
-		CaptureSwitch "Int Mic Switch"
-	}
-}
-```
-# 实验性设置方法
-复制audio下所有文件，保持目录结构复制到/usr/share/alsa/ucm2  
-修改文件所有者为root，组root。权限755
-
-# ~~设置声卡模式~~ 以下内容不需要了，已经修复
-## 安装声音调整面板
-新发行版使用 `PipeWire` 代替 `PulseAudio`。无需安装
 ```bash
-apt install pavucontrol
+systemctl --user restart pipewire pipewire-pulse wireplumber
 ```
-## 将声卡模式设置为专业音频
-配置 -> Built-in Audio -> 专业音频(Pro Audio)  
-pipewire版本高于 `1.2.7(大概)` 就有 `专业音频(Pro Audio)`
 
-至此声音设备正常识别
+如果你的发行版不使用 PipeWire/WirePlumber，只要它支持 ALSA UCM2，也可以按其音频服务方式重新加载配置。UCM 文件最终安装到 `/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/`。
+
+## 不要再使用旧的固定 mixer 修复
+
+不要再执行早期文档里的：
+
+```text
+amixer -c0 cset "name='Amp Input1'" Right
+```
+
+右扬声器和其他播放/录音路径已经由 UCM 的设备/verb 配置接管。额外固定 mixer 值可能与 WirePlumber/PipeWire 的路由切换互相覆盖。
+
+## 验证
+
+先确认内核声卡和用户空间设备：
+
+```bash
+cat /proc/asound/cards
+wpctl status
+```
+
+测试左右声道：
+
+```bash
+speaker-test -D default -c 2 -t pink
+```
+
+测试录音：
+
+```bash
+arecord -D default -f S16_LE -c 2 -r 48000 /tmp/mipad2-mic.wav
+aplay /tmp/mipad2-mic.wav
+```
+
+插拔耳机时，应能看到 RT5659 headset jack 状态变化，并由用户空间切换到相应路径。
+
+## 排错
+
+先确认当前 UCM 文件确实已经安装：
+
+```bash
+find /usr/share/alsa/ucm2 -path '*cht-bsw-rt5659*' -maxdepth 5 -type f -print
+```
+
+然后检查：
+
+```bash
+journalctl --user -b -u wireplumber
+journalctl --user -b -u pipewire
+
+dmesg | grep -Ei 'rt5659|tfa9890|snd|audio'
+```
+
+如果只有 suspend/resume 后失声，请把它当成电源管理回归问题记录：同时保存 suspend 前后的 `wpctl status`、`/proc/asound/cards` 和相关 `dmesg`，不要先用固定 mixer 命令掩盖问题。
+
+### 6.14 声卡重载后的无声：寄存器缓存不等于硬件
+
+2026-10-05 实测发现：卸载机器驱动会触发 RT5659 组件复位，但 I2C
+regmap 缓存仍保存旧的 AIF/PLL 配置。debugfs 缓存显示 AIF2 为主时钟，
+实际硬件却仍为从时钟，功放因此无法就绪。同步缓存后，用户确认扬声器出声。
+整合分支已在组件复位后标记缓存失效、重新绑定时同步，并传递同步错误。
+修复版的声卡重载静音回归已通过；不要再将缓存读数当作真实硬件时钟证据。
+完整记录及测试边界见 `KNOWN_ISSUES.md`。
+
+离线回归（不会播放声音或访问硬件）：
+
+```bash
+python3 fix_file/tests/mipad2-rt5659-rebind-test.py
+python3 fix_file/tests/mipad2-tfa-format-test.py
+```
+
+建议每次修改音频、电源管理或 suspend/resume 相关代码后，同时运行：
+
+```bash
+sudo sh fix_file/tests/mipad2-hardware-smoke.sh
+```
+
+该 smoke test 会检查系统是否仍然枚举出 ALSA 声卡，但它不会代替实际扬声器、耳机和麦克风试听/录音测试。
+
+
+## Cold-boot DAPM route initialization
+
+The board selects AIF2's DAC_REF source through the DAPM enum control in
+late probe, not by a raw codec register write after component routes have
+sampled reset defaults. A cache/hardware match alone does not prove the
+speaker path: check the IF2 ADC Mux graph, active TFA power/status, and sound.
+The corresponding offline callback test is
+`CC=clang python3 fix_file/tests/mipad2-dapm-init-test.py`.
+See KNOWN_ISSUES.md for the actual r3 failure and seeded-rebind evidence.
+
+## 7.2 integration candidate
+
+The 7.2 branch uses the requested upstream three-stage topology and board-level
+`codec_conf` prefixes. Both amplifiers share one codec driver. Their controls are
+`Left Amp Input` / `Right Amp Input`, and speaker output widgets are `Left OUT` /
+`Right OUT`. The cold-boot `IF2 ADC Mux` DAPM synchronization remains in late_probe.
+
+Install the matching UCM package from this branch before testing 7.2 audio.
+Do not reuse the 6.14 profile's unprefixed `Amp Input` / `Amp Input1` names.
+The running 6.14 device and its UCM have not been changed by this source merge.
+Compilation, cold boot, left/right playback, headset and resume checks are still
+required; source integration alone does not qualify the new topology.

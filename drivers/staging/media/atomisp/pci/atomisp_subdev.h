@@ -63,6 +63,11 @@ struct atomisp_video_pipe {
 	 */
 	spinlock_t irq_lock;
 	unsigned int users;
+	/* ISP mutex protected; retain a final buffer for CSS stop. */
+	bool stopping;
+	/* Protected by irq_lock; reset for each successful STREAMON. */
+	bool use_sof_sequence;
+	u32 sequence;
 
 	struct atomisp_device *isp;
 	struct v4l2_pix_format pix;

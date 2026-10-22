@@ -1,0 +1,256 @@
+{
+  "kernel": "6.14.0-mipad2-integrated-r18",
+  "boot_id": "7f31a0fb-7ff1-4793-8694-9c0e76db6797",
+  "original": [
+    {
+      "input": 0,
+      "node": "/dev/v4l-subdev4",
+      "shape": {
+        "width": 2624,
+        "height": 1956,
+        "code": "0x3007",
+        "crop": [
+          0,
+          0,
+          2624,
+          1956
+        ]
+      },
+      "controls": {
+        "10356993": 40,
+        "9963790": 1650,
+        "9963791": 1633,
+        "9963793": 1976,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 8,
+        "10422531": 0,
+        "10422533": 1024
+      }
+    },
+    {
+      "input": 1,
+      "node": "/dev/v4l-subdev5",
+      "shape": {
+        "width": 3280,
+        "height": 2464,
+        "code": "0x300a",
+        "crop": [
+          0,
+          0,
+          3280,
+          2464
+        ]
+      },
+      "controls": {
+        "10356993": 32,
+        "9963790": 1585,
+        "9963791": 1570,
+        "9963793": 2486,
+        "9963796": 0,
+        "9963797": 0,
+        "10356995": 128,
+        "10422531": 0
+      }
+    }
+  ],
+  "initial_video": {
+    "code": 0,
+    "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1280/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1280\n\tSize Image        : 1384448\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+    "stderr": ""
+  },
+  "cases": [
+    {
+      "requested_width": 1934,
+      "powered_before": "active\n",
+      "set_fmt": {
+        "code": 0,
+        "stdout": "Note: --set-subdev-fmt is only for testing.\nNormally media-ctl is used to configure the video pipeline.\nioctl: VIDIOC_SUBDEV_S_FMT (pad=0,stream=0)\n",
+        "stderr": ""
+      },
+      "after_shape": {
+        "width": 1934,
+        "height": 1456,
+        "code": "0x300a",
+        "crop": [
+          672,
+          504,
+          1936,
+          1456
+        ]
+      },
+      "hblank": {
+        "minimum": 1506,
+        "maximum": 1506,
+        "step": 1,
+        "default": 1506,
+        "value": 1506,
+        "flags": 4
+      },
+      "powered_after": "active\n"
+    },
+    {
+      "requested_width": 1934,
+      "powered_before": "active\n",
+      "set_fmt": {
+        "code": 0,
+        "stdout": "Note: --set-subdev-fmt is only for testing.\nNormally media-ctl is used to configure the video pipeline.\nioctl: VIDIOC_SUBDEV_S_FMT (pad=0,stream=0)\n",
+        "stderr": ""
+      },
+      "after_shape": {
+        "width": 1934,
+        "height": 1456,
+        "code": "0x300a",
+        "crop": [
+          672,
+          504,
+          1936,
+          1456
+        ]
+      },
+      "hblank": {
+        "minimum": 1506,
+        "maximum": 1506,
+        "step": 1,
+        "default": 1506,
+        "value": 1506,
+        "flags": 4
+      },
+      "powered_after": "active\n"
+    },
+    {
+      "requested_width": 1936,
+      "powered_before": "active\n",
+      "set_fmt": {
+        "code": 0,
+        "stdout": "Note: --set-subdev-fmt is only for testing.\nNormally media-ctl is used to configure the video pipeline.\nioctl: VIDIOC_SUBDEV_S_FMT (pad=0,stream=0)\n",
+        "stderr": ""
+      },
+      "after_shape": {
+        "width": 1936,
+        "height": 1456,
+        "code": "0x300a",
+        "crop": [
+          672,
+          504,
+          1936,
+          1456
+        ]
+      },
+      "hblank": {
+        "minimum": 1504,
+        "maximum": 1504,
+        "step": 1,
+        "default": 1504,
+        "value": 1504,
+        "flags": 4
+      },
+      "powered_after": "active\n"
+    }
+  ],
+  "scope": "R18 idle T4 held runtime-active, effective width change/HBLANK fixed range+value, unchanged-width repeat; full mutable scalar snapshot and original PM policy restored. No video stream or full I2C rollback proof.",
+  "device_power_path": "/sys/devices/pci0000:00/808622C1:06/i2c-6/i2c-TOSB0001:01/power",
+  "original_power_policy": "auto\n",
+  "original_runtime_status": "suspended\n",
+  "initial_t4_shape": {
+    "width": 3280,
+    "height": 2464,
+    "code": "0x300a",
+    "crop": [
+      0,
+      0,
+      3280,
+      2464
+    ]
+  },
+  "gui_mode_prepare": {
+    "code": 0,
+    "stdout": "Frame rate set to 30.000 fps\n",
+    "stderr": ""
+  },
+  "probe_base_shape": {
+    "width": 1936,
+    "height": 1456,
+    "code": "0x300a",
+    "crop": [
+      672,
+      504,
+      1936,
+      1456
+    ]
+  },
+  "power_policy_restored": true,
+  "restoration": {
+    "input": {
+      "code": 0,
+      "stdout": "Video input set to 0 (ov5693 6-0036: Camera, ok)\n",
+      "stderr": ""
+    },
+    "video_format": {
+      "code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "sensors": [
+      {
+        "input": 0,
+        "shape": {
+          "width": 2624,
+          "height": 1956,
+          "code": "0x3007",
+          "crop": [
+            0,
+            0,
+            2624,
+            1956
+          ]
+        },
+        "controls": {
+          "10356993": 40,
+          "9963790": 1650,
+          "9963791": 1633,
+          "9963793": 1976,
+          "9963796": 0,
+          "9963797": 0,
+          "10356995": 8,
+          "10422531": 0,
+          "10422533": 1024
+        },
+        "errors": []
+      },
+      {
+        "input": 1,
+        "shape": {
+          "width": 3280,
+          "height": 2464,
+          "code": "0x300a",
+          "crop": [
+            0,
+            0,
+            3280,
+            2464
+          ]
+        },
+        "controls": {
+          "10356993": 32,
+          "9963790": 1585,
+          "9963791": 1570,
+          "9963793": 2486,
+          "9963796": 0,
+          "9963797": 0,
+          "10356995": 128,
+          "10422531": 0
+        },
+        "errors": []
+      }
+    ],
+    "final_video": {
+      "code": 0,
+      "stdout": "Video input : 0 (ov5693 6-0036: ok)\nFormat Video Capture:\n\tWidth/Height      : 1920/720\n\tPixel Format      : 'YU12' (Planar YUV 4:2:0)\n\tField             : None\n\tBytes per Line    : 1920\n\tSize Image        : 2076672\n\tColorspace        : Rec. 709\n\tTransfer Function : Rec. 709\n\tYCbCr/HSV Encoding: Rec. 709\n\tQuantization      : Default (maps to Limited Range)\n\tFlags             : \nStreaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 29.822 (312500/10479)\n\tRead buffers     : 0\n",
+      "stderr": ""
+    },
+    "matched": false
+  },
+  "power_after_restore": "suspended\n",
+  "new_dmesg": ""
+}

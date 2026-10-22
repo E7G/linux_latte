@@ -1,0 +1,91 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
+state=/var/lib/mipad2-test-no-idle
+user_name=user
+uid=$(id -u "$user_name")
+runtime=/run/user/$uid
+bus=unix:path=$runtime/bus
+
+gset() {
+  runuser -u "$user_name" -- env XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="$bus" gsettings "$@"
+}
+
+# The system inhibitor and GNOME settings do not control Denial's native DPMS.
+# Keep one service; delegate only its desktop-owned display timeout setting.
+denial() {
+  backend=/usr/local/libexec/mp2-test-no-idle-denial
+  if [ -x "$backend" ]; then
+    runuser -u "$user_name" -- env XDG_RUNTIME_DIR="$runtime" "$backend" "$1"
+  elif [ -S "$runtime/denial/control.sock" ]; then
+    echo "MISS Denial backend is not installed; native DPMS is unverified" >&2
+    return 1
+  fi
+}
+
+save_once() {
+  [ -f "$state/settings.saved" ] && return
+  {
+    printf 'org.gnome.desktop.session|idle-delay|%s\n' \
+      "$(gset get org.gnome.desktop.session idle-delay)"
+    printf 'org.gnome.settings-daemon.plugins.power|idle-dim|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power idle-dim)"
+    printf 'org.gnome.settings-daemon.plugins.power|sleep-inactive-ac-type|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type)"
+    printf 'org.gnome.settings-daemon.plugins.power|sleep-inactive-battery-type|%s\n' \
+      "$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type)"
+  } > "$state/settings.saved"
+}
+
+case "${1:-status}" in
+  enable)
+    mkdir -p "$state"
+    save_once
+    denial enable
+    gset set org.gnome.desktop.session idle-delay "uint32 0"
+    gset set org.gnome.settings-daemon.plugins.power idle-dim false
+    gset set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type "'nothing'"
+    gset set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type "'nothing'"
+    systemctl enable --now mipad2-test-no-idle.service
+    echo "test no-idle enabled"
+    ;;
+  disable)
+    denial disable
+    systemctl disable --now mipad2-test-no-idle.service || true
+    if [ -f "$state/settings.saved" ]; then
+      while IFS='|' read -r schema key value; do
+        [ -n "$schema" ] || continue
+        gset set "$schema" "$key" "$value"
+      done < "$state/settings.saved"
+      rm -f "$state/settings.saved"
+    fi
+    echo "test no-idle disabled and previous GNOME power settings restored"
+    ;;
+  status)
+    service_state=$(systemctl is-active mipad2-test-no-idle.service 2>/dev/null || true)
+    idle_delay=$(gset get org.gnome.desktop.session idle-delay 2>/dev/null || true)
+    idle_dim=$(gset get org.gnome.settings-daemon.plugins.power idle-dim 2>/dev/null || true)
+    sleep_ac=$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 2>/dev/null || true)
+    sleep_battery=$(gset get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 2>/dev/null || true)
+
+    printf 'inhibitor: %s\n' "${service_state:-unavailable}"
+    printf 'idle-delay: %s\n' "${idle_delay:-unavailable}"
+    printf 'idle-dim: %s\n' "${idle_dim:-unavailable}"
+    printf 'sleep-ac: %s\n' "${sleep_ac:-unavailable}"
+    printf 'sleep-battery: %s\n' "${sleep_battery:-unavailable}"
+
+    if [ "$service_state" != active ] ||
+       [ "$idle_delay" != 'uint32 0' ] ||
+       [ "$idle_dim" != false ] ||
+       [ "$sleep_ac" != "'nothing'" ] ||
+       [ "$sleep_battery" != "'nothing'" ]; then
+      echo "MISS test no-idle is not fully active; run enable and check status again" >&2
+      exit 1
+    fi
+    denial status
+    echo "PASS anti-idle inhibitor active; GNOME idle/sleep disabled"
+    ;;
+  *) echo "Usage: sudo mp2-test-no-idle {enable|disable|status}" >&2; exit 2 ;;
+esac

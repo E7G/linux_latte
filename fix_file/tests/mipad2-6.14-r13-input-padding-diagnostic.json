@@ -1,0 +1,231 @@
+{
+  "padding_restored": true,
+  "sensor_state_restored": true,
+  "rows": [
+    {
+      "padding_w": 16,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 20,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1292,
+          958,
+          40,
+          40
+        ]
+      },
+      "capture_exit": 1,
+      "frames": 0,
+      "error": "multiopen regression: Connection timed out\n"
+    },
+    {
+      "padding_w": 24,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 28,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1284,
+          958,
+          56,
+          40
+        ]
+      },
+      "capture_exit": 1,
+      "frames": 0,
+      "error": "multiopen regression: Connection timed out\n"
+    },
+    {
+      "padding_w": 28,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 32,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1280,
+          958,
+          64,
+          40
+        ]
+      },
+      "capture_exit": 1,
+      "frames": 0,
+      "error": "multiopen regression: Connection timed out\n"
+    },
+    {
+      "padding_w": 30,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 34,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1278,
+          958,
+          68,
+          40
+        ]
+      },
+      "capture_exit": 1,
+      "frames": 0,
+      "error": "multiopen regression: Connection timed out\n"
+    },
+    {
+      "padding_w": 32,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 36,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1276,
+          958,
+          72,
+          40
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "error": ""
+    },
+    {
+      "padding_w": 34,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 38,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1274,
+          958,
+          76,
+          40
+        ]
+      },
+      "capture_exit": 1,
+      "frames": 0,
+      "error": "multiopen regression: Connection timed out\n"
+    },
+    {
+      "padding_w": 36,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 40,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1272,
+          958,
+          80,
+          40
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "error": ""
+    },
+    {
+      "padding_w": 40,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 44,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1268,
+          958,
+          88,
+          40
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "error": ""
+    },
+    {
+      "padding_w": 48,
+      "requested": [
+        4,
+        4
+      ],
+      "selected": [
+        4,
+        4
+      ],
+      "sensor_shape": {
+        "width": 52,
+        "height": 20,
+        "code": "0x3007",
+        "crop": [
+          1260,
+          958,
+          104,
+          40
+        ]
+      },
+      "capture_exit": 0,
+      "frames": 48,
+      "error": ""
+    }
+  ]
+}

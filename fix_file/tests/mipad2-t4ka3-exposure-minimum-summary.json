@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "scope": "OEM-compatible T4KA3 minimum integration and minimum-frame bounds; source and object-build qualification only",
+  "source_sha256": {
+    "drivers/media/i2c/t4ka3.c": "579f5c38849662c3abb8495878b5a28f2a8fe7c4da25be37931ec15ca5cc92f2",
+    "fix_file/tests/mipad2-t4ka3-exposure-range-host-test.py": "afd43e22f5b2a5edb31bbdaa51cb21a1805e467363eb74a962fa4c6e28da8b96",
+    "fix_file/tests/mipad2-sensor-geometry-lock-host-test.py": "2288bb060eaf2141a9c0f4d1bf9bc2146977573f0165e4db6f8ffe33624d4edc"
+  },
+  "android": {
+    "commit": "d2afb1de9a761ff01dafdf9efe4736e521ab71f6",
+    "header_url": "https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/drivers/external_drivers/camera/drivers/media/i2c/micam/t4ka3.h",
+    "header_sha256": "73f95c13b0a2771efb00f47030e91a42edb6337a33964336eb24f4832acfd032",
+    "minimum_integration_lines": 1,
+    "integration_margin_lines": 6
+  },
+  "contracts": {
+    "state": "t4ka3-exposure-minimum-contracts-pass",
+    "tests": [
+      {
+        "label": "normal",
+        "exit_code": 0,
+        "result": {
+          "current": {
+            "cases": 12937,
+            "failed": 0,
+            "minimum_frame_failures": 0,
+            "exposure_minimum_failures": 0,
+            "other_failures": 0,
+            "source_sha256": "579f5c38849662c3abb8495878b5a28f2a8fe7c4da25be37931ec15ca5cc92f2"
+          },
+          "baseline": {
+            "cases": 12937,
+            "failed": 5547,
+            "minimum_frame_failures": 1,
+            "exposure_minimum_failures": 5545,
+            "other_failures": 1,
+            "source_sha256": "b3670bc40d7585d69d5525ed75b6cc310996894ad705200133c263fb7c9babb7"
+          },
+          "baseline_commit": "7b7a30c592c8f7313b6c721ccd2fd4aad690d070",
+          "control_framework_stubbed": true,
+          "hardware_test": false,
+          "physical_exposure_or_optical_parity_proven": false
+        }
+      },
+      {
+        "label": "optimized",
+        "exit_code": 0,
+        "result": {
+          "current": {
+            "cases": 12937,
+            "failed": 0,
+            "minimum_frame_failures": 0,
+            "exposure_minimum_failures": 0,
+            "other_failures": 0,
+            "source_sha256": "579f5c38849662c3abb8495878b5a28f2a8fe7c4da25be37931ec15ca5cc92f2"
+          },
+          "baseline": {
+            "cases": 12937,
+            "failed": 5547,
+            "minimum_frame_failures": 1,
+            "exposure_minimum_failures": 5545,
+            "other_failures": 1,
+            "source_sha256": "b3670bc40d7585d69d5525ed75b6cc310996894ad705200133c263fb7c9babb7"
+          },
+          "baseline_commit": "7b7a30c592c8f7313b6c721ccd2fd4aad690d070",
+          "control_framework_stubbed": true,
+          "hardware_test": false,
+          "physical_exposure_or_optical_parity_proven": false
+        }
+      }
+    ],
+    "adjacent": [
+      {
+        "script": "mipad2-sensor-geometry-lock-host-test.py",
+        "exit_code": 0,
+        "summary": "PASS 3624 actual geometry/TRY/busy/edge/window cases and150000 concurrent callback operations; pthread/control/state stubs, no DMA/I2C/full rollback proof"
+      },
+      {
+        "script": "mipad2-t4ka3-metadata-control-host-test.py",
+        "exit_code": 0,
+        "summary": "PASS 3286 actual HBLANK-registration/core-call_op/T4-callback cases; PM/CCI stubs, genuine exposure errors retained, no hardware/full rollback proof"
+      },
+      {
+        "script": "mipad2-stream-parameter-host-test.py",
+        "exit_code": 0,
+        "summary": "PASS 51 stream-parameter cases; actual AtomISP functions, stubbed subdevices/controls"
+      }
+    ],
+    "hardware_test": false,
+    "kernel_installed": false
+  },
+  "focused_build": {
+    "state": "focused-object-build-pass",
+    "source_parent": "7b7a30c592c8f7313b6c721ccd2fd4aad690d070",
+    "source_sha256": "579f5c38849662c3abb8495878b5a28f2a8fe7c4da25be37931ec15ca5cc92f2",
+    "object_sha256": "f322cfb0ee8a52c16c3783fefa461de9a9cca384947a4f9867d70d1a6dada96b",
+    "object_bytes": 392504,
+    "config_changes": [
+      "CONFIG_LOCALVERSION"
+    ],
+    "new_warning_count": 0,
+    "previous_r26_artifacts_unchanged": true,
+    "user_dirty_preserved": true,
+    "installed": false,
+    "booted": false,
+    "full_kernel_built": false
+  },
+  "actual_scene_or_driver_blackscreen_fix_proven": false,
+  "full_objective_complete": false,
+  "device_changed": false
+}

@@ -1,0 +1,939 @@
+{
+  "kernel_tested": "6.14.0-mipad2-integrated-r15",
+  "candidate_kernel": "6.14.0-mipad2-integrated-r16",
+  "candidate_device_tested": false,
+  "goal_complete": false,
+  "scope": "R15 front geometry/blank boundary diagnostics; no S_PARM/exposure override; unchanged48-frame ownership/restart/takeover/ABI/payload checks; physical minimum/maxrate not proven",
+  "video_and_both_sensor_state_restored": true,
+  "cases": [
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 2125.850 (312500/147)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 28,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 12,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1860.119 (78125/42)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 641.5116346874355,
+        "after-observer-close": 646.336447486719,
+        "ordinary-restart": 643.1244153407807,
+        "remaining-fd-takeover": 647.8591200898244
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 32,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 14,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1750.700 (625000/357)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 656.9125112012657,
+        "after-observer-close": 646.6404091503946,
+        "ordinary-restart": 649.810964082901,
+        "remaining-fd-takeover": 639.981382367029
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 34,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 16,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1653.439 (312500/189)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 636.7214633170483,
+        "after-observer-close": 652.2770398416706,
+        "ordinary-restart": 646.6784244551567,
+        "remaining-fd-takeover": 651.195832342893
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 36,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 20,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1488.095 (31250/21)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 643.0492224860136,
+        "after-observer-close": 642.4483121055862,
+        "ordinary-restart": 635.617704835285,
+        "remaining-fd-takeover": 648.3173218592261
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 40,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1352.814 (312500/231)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 663.3699191997297,
+        "after-observer-close": 641.1003613434191,
+        "ordinary-restart": 650.9646112021568,
+        "remaining-fd-takeover": 650.0029545537578
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 44,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        4,
+        4
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 1144.689 (312500/273)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 651.8518518420149,
+        "after-observer-close": 665.3762400154335,
+        "ordinary-restart": 646.792497210022,
+        "remaining-fd-takeover": 637.3855603251659
+      },
+      "registers": {
+        "width": 36,
+        "height": 20,
+        "hts": 2688,
+        "vts": 52,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 118.103 (156250/1323)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 504,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 12,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 117.173 (312500/2667)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 116.7591894788282,
+        "after-observer-close": 116.86835311259792,
+        "ordinary-restart": 117.37590166051274,
+        "remaining-fd-takeover": 117.47743899160834
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 508,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 14,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 116.713 (125000/1071)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 116.82863363630702,
+        "after-observer-close": 116.60818589464239,
+        "ordinary-restart": 116.78646126415981,
+        "remaining-fd-takeover": 116.5352996016973
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 510,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 16,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 116.257 (78125/672)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 116.21027721462997,
+        "after-observer-close": 116.28644522946773,
+        "ordinary-restart": 116.41197138360774,
+        "remaining-fd-takeover": 116.29996933902899
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 512,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 20,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 115.356 (312500/2709)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 115.21823380911253,
+        "after-observer-close": 115.56442716799006,
+        "ordinary-restart": 115.17962786508373,
+        "remaining-fd-takeover": 115.35113935449463
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 516,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 114.469 (31250/273)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 114.49150160844799,
+        "after-observer-close": 114.47243815873601,
+        "ordinary-restart": 114.50341948854378,
+        "remaining-fd-takeover": 115.01103060325842
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 520,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        640,
+        480
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 112.734 (78125/693)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 112.74997181245905,
+        "after-observer-close": 113.03034350952379,
+        "ordinary-restart": 112.63913493167539,
+        "remaining-fd-takeover": 112.26208093089159
+      },
+      "registers": {
+        "width": 656,
+        "height": 496,
+        "hts": 2688,
+        "vts": 528,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 80.005 (156250/1953)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 744,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 12,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.577 (312500/3927)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 748,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 14,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.365 (5000/63)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 79.50102267223087,
+        "after-observer-close": 79.51711425157956,
+        "ordinary-restart": 79.35935358200896,
+        "remaining-fd-takeover": 79.41836874663838
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 750,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 16,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.154 (78125/987)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 79.1366906474116,
+        "after-observer-close": 79.06786178928708,
+        "ordinary-restart": 78.97986731389005,
+        "remaining-fd-takeover": 78.92433308920629
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 752,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 20,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 78.735 (312500/3969)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 78.75425093973925,
+        "after-observer-close": 78.87170441755066,
+        "ordinary-restart": 78.7796318841952,
+        "remaining-fd-takeover": 78.7570702369738
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 756,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 78.321 (31250/399)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 78.32080200495352,
+        "after-observer-close": 78.23835670990196,
+        "ordinary-restart": 78.46829880735862,
+        "remaining-fd-takeover": 78.38442572710082
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 760,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 77.505 (78125/1008)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 77.53303964743793,
+        "after-observer-close": 77.62988891873786,
+        "ordinary-restart": 77.56474893691536,
+        "remaining-fd-takeover": 77.58061330981481
+      },
+      "registers": {
+        "width": 1296,
+        "height": 736,
+        "hts": 2688,
+        "vts": 768,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 60.492 (156250/2583)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 984,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 12,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 60.247 (312500/5187)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 988,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 14,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 60.125 (125000/2079)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 60.08597757156719,
+        "after-observer-close": 60.08794690419867,
+        "ordinary-restart": 60.12834668914358,
+        "remaining-fd-takeover": 60.20667308876763
+      },
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 990,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 16,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 60.004 (78125/1302)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 59.93766482856718,
+        "after-observer-close": 59.99683653038843,
+        "ordinary-restart": 59.84114894999598,
+        "remaining-fd-takeover": 60.01582235314325
+      },
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 992,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 20,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 59.763 (312500/5229)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 59.78553298791843,
+        "after-observer-close": 59.701492537380624,
+        "ordinary-restart": 59.74786401384853,
+        "remaining-fd-takeover": 59.743969932633725
+      },
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 996,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 59.524 (1250/21)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 59.62059620586566,
+        "after-observer-close": 59.39204146641228,
+        "ordinary-restart": 59.49419120358955,
+        "remaining-fd-takeover": 59.59055868859052
+      },
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 1000,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1280,
+        960
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 59.051 (78125/1323)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 59.21396157554064,
+        "after-observer-close": 59.04708736811576,
+        "ordinary-restart": 59.028075899463445,
+        "remaining-fd-takeover": 59.07562754432222
+      },
+      "registers": {
+        "width": 1296,
+        "height": 976,
+        "hts": 2688,
+        "vts": 1008,
+        "x_step_pair": 12593,
+        "format_pair": 281
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 80.005 (156250/1953)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 744,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 12,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.577 (312500/3927)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 748,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 14,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.365 (5000/63)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 750,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 16,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 79.154 (78125/987)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 752,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 20,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 78.735 (312500/3969)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 756,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 78.321 (31250/399)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 78.2194410866094,
+        "after-observer-close": 78.47949544823777,
+        "ordinary-restart": 78.33753507387648,
+        "remaining-fd-takeover": 78.55627843206258
+      },
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 760,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1298,
+        720
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 77.505 (78125/1008)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 77.59374735477697,
+        "after-observer-close": 77.66606416637511,
+        "ordinary-restart": 77.25044594577378,
+        "remaining-fd-takeover": 77.52812156403
+      },
+      "registers": {
+        "width": 1316,
+        "height": 736,
+        "hts": 2688,
+        "vts": 768,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 8,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.658 (156250/3843)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1464,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 12,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.548 (312500/7707)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1468,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 14,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.492 (125000/3087)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1470,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 16,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.437 (78125/1932)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1472,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 20,
+      "exit": 1,
+      "frames": 0,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.328 (312500/7749)\n\tRead buffers     : 0\n",
+      "measured_fps": {},
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1476,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 24,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.219 (31250/777)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 27.335916163211067,
+        "after-observer-close": 27.351073405289302,
+        "ordinary-restart": 27.34930532764581,
+        "remaining-fd-takeover": 27.334217968016805
+      },
+      "registers": {
+        "width": 2592,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1480,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    },
+    {
+      "requested": [
+        1920,
+        1440
+      ],
+      "blank": 32,
+      "exit": 0,
+      "frames": 48,
+      "reported_period": "Streaming Parameters Video Capture:\n\tCapabilities     : timeperframe\n\tFrames per second: 40.003 (78125/1953)\n\tRead buffers     : 0\n",
+      "measured_fps": {
+        "before-observer-close": 27.22165854141428,
+        "after-observer-close": 27.219907155360573,
+        "ordinary-restart": 27.21249993817676,
+        "remaining-fd-takeover": 27.206240616924195
+      },
+      "registers": {
+        "width": 1936,
+        "height": 1456,
+        "hts": 2688,
+        "vts": 1488,
+        "x_step_pair": 4369,
+        "format_pair": 24
+      }
+    }
+  ],
+  "original_report_sha256": "3f510f880abe464bf6205d93c70c3f03d52e53dbb1f41451f674f03013ba88e1"
+}

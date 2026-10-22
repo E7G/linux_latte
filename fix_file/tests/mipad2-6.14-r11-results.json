@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-11",
+  "source_commit": "544c0902e4d4b8a1135b69ed621437e0bf91fe1a",
+  "release": "6.14.0-mipad2-integrated-r11",
+  "boot_id": "d81f8a6a-8f25-40a5-8145-177ac52695cb",
+  "full_support_complete": false,
+  "build": {
+    "exit_code": 0,
+    "modules": 34,
+    "source_unchanged": true,
+    "r10_artifacts_unchanged": true
+  },
+  "strict_frames": 1956,
+  "cadence_frames": 720,
+  "cadence_tolerance": 0.01,
+  "cadence": [
+    {
+      "input": 0,
+      "rates": [
+        {
+          "requested": 30,
+          "measured": {
+            "before-observer-close": 30.001001728362837,
+            "after-observer-close": 30.00611310982332,
+            "remaining-fd-takeover": 30.001474648753856
+          },
+          "preserve_lines": [
+            "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720",
+            "PRESERVE exposure 1482 -> 1482 format 1280x720 -> 1280x720"
+          ]
+        },
+        {
+          "requested": 15,
+          "measured": {
+            "before-observer-close": 14.99966949880766,
+            "after-observer-close": 14.999577977975557,
+            "remaining-fd-takeover": 15.000962349872779
+          },
+          "preserve_lines": [
+            "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720",
+            "PRESERVE exposure 2970 -> 2970 format 1280x720 -> 1280x720"
+          ]
+        }
+      ]
+    },
+    {
+      "input": 1,
+      "rates": [
+        {
+          "requested": 30,
+          "measured": {
+            "before-observer-close": 30.011806339409205,
+            "after-observer-close": 30.017028304022563,
+            "remaining-fd-takeover": 30.013653668889354
+          },
+          "preserve_lines": [
+            "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720",
+            "PRESERVE exposure 1864 -> 1864 format 1280x720 -> 1280x720"
+          ]
+        },
+        {
+          "requested": 15,
+          "measured": {
+            "before-observer-close": 15.005964234937444,
+            "after-observer-close": 15.00614361693332,
+            "remaining-fd-takeover": 15.006109266857415
+          },
+          "preserve_lines": [
+            "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720",
+            "PRESERVE exposure 3733 -> 3733 format 1280x720 -> 1280x720"
+          ]
+        }
+      ]
+    }
+  ],
+  "all_sensor_restorations_passed": true,
+  "s2idle_seconds": 10,
+  "s0i3_delta_us": 9830112,
+  "silent_electrical_passed": true,
+  "user_heard": true,
+  "ordinary_restart_passed": false,
+  "ordinary_restart_failures": 4,
+  "cached_no_sfmt_initial_capture_passed": true,
+  "pristine_default_fallback_proven": false,
+  "snapshot": {
+    "source_commit": "db794b2fe85c72dd77710880bbc45ca3909ace1a",
+    "user_preview_normal": true,
+    "clean_gdbus_quit_closures": 4,
+    "default_r6_activated": true,
+    "r5_preview_gate_lacked_exit_status": true
+  },
+  "open": [
+    "ordinary STREAMOFF/ON restart",
+    "CREATE_BUFS size contract",
+    "scaling",
+    "ENUM_FRAMEINTERVALS",
+    "full streaming compliance",
+    "AWB/3A",
+    "full camera application regression"
+  ]
+}

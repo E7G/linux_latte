@@ -1,0 +1,460 @@
+{
+  "schema": 1,
+  "date": "2026-10-22",
+  "kernel": "6.14.0-mipad2-integrated-r27",
+  "built_source_commit": "ef89fc60f8d5f1accd221e3c28f7e2ae6678bb72",
+  "full_build": {
+    "exit_code": 0,
+    "localversion_only_config_delta_from_r26": true,
+    "all_build_warnings_absent": false
+  },
+  "identity": {
+    "running_config_exact": true,
+    "loaded_modules_match": {
+      "atomisp": true,
+      "ov5693": true,
+      "t4ka3": true,
+      "snd_soc_sst_cht_bsw_rt5659": true,
+      "brcmfmac": true
+    },
+    "protected_files_unchanged": true,
+    "saved_default_unchanged": true,
+    "next_entry_consumed": true
+  },
+  "first_probe": {
+    "state": "passed",
+    "front_nodes": 1,
+    "rear_nodes": 1,
+    "vcm_nodes": 1,
+    "first_boot_fault_counts": {
+      "t4ka3.*Error reading reg": 0,
+      "t4ka3.*sensor detect failed": 0,
+      "t4ka3.*probe.*failed": 0,
+      "ov5693.*Error reading reg": 0,
+      "(?<!\\w)(?:BUG:|kernel BUG at\\b|kernel BUG!)": 0,
+      "(?<!\\w)WARNING:": 0,
+      "(?<!\\w)Oops:": 0,
+      "(?<!\\w)GPU HANG\\b": 0
+    },
+    "smoke_exit_code": 0,
+    "manual_reprobes": 0,
+    "module_reloads": 0,
+    "boot_kind": "systemctl warm machine reboot with fresh kernel first probe; NOT S5 or removal-of-power cold start",
+    "power_off_cold_boot_proven": false
+  },
+  "normal_path_steps": [
+    {
+      "script": "run_r27_strict_queues_remote.py",
+      "exit_code": 0,
+      "summary": {
+        "cases": [
+          {
+            "input": 0,
+            "diagnostic_code": 0,
+            "long_strict_code": 0,
+            "streamparm_code": 0,
+            "controls_restored": true,
+            "shape_restored": true,
+            "restore_errors": 0
+          },
+          {
+            "input": 1,
+            "diagnostic_code": 0,
+            "long_strict_code": 0,
+            "streamparm_code": 0,
+            "controls_restored": true,
+            "shape_restored": true,
+            "restore_errors": 0
+          }
+        ],
+        "debug_restored": true
+      }
+    },
+    {
+      "script": "run_r27_restart_enum_remote.py",
+      "exit_code": 0,
+      "summary": {
+        "cases": [
+          {
+            "input": 0,
+            "streamparm_code": 0,
+            "controls_restored": true,
+            "shape_restored": true,
+            "cadence": [
+              {
+                "requested_fps": 30,
+                "capture_code": 0,
+                "period_gate": true,
+                "measured_fps": {
+                  "before-observer-close": 30.00409886503142,
+                  "after-observer-close": 30.002618872664172,
+                  "ordinary-restart": 30.000589842105587,
+                  "remaining-fd-takeover": 30.00489232312092
+                }
+              },
+              {
+                "requested_fps": 15,
+                "capture_code": 0,
+                "period_gate": true,
+                "measured_fps": {
+                  "before-observer-close": 15.000973792027537,
+                  "after-observer-close": 15.001107285122387,
+                  "ordinary-restart": 14.99952840465777,
+                  "remaining-fd-takeover": 15.000550443927311
+                }
+              }
+            ]
+          },
+          {
+            "input": 1,
+            "streamparm_code": 0,
+            "controls_restored": true,
+            "shape_restored": true,
+            "cadence": [
+              {
+                "requested_fps": 30,
+                "capture_code": 0,
+                "period_gate": true,
+                "measured_fps": {
+                  "before-observer-close": 30.009928708616442,
+                  "after-observer-close": 30.011577347465554,
+                  "ordinary-restart": 30.011592613486414,
+                  "remaining-fd-takeover": 30.01258493815954
+                }
+              },
+              {
+                "requested_fps": 15,
+                "capture_code": 0,
+                "period_gate": true,
+                "measured_fps": {
+                  "before-observer-close": 15.005410849420688,
+                  "after-observer-close": 15.003724229514381,
+                  "ordinary-restart": 15.006200867409223,
+                  "remaining-fd-takeover": 15.006090183549924
+                }
+              }
+            ]
+          }
+        ],
+        "debug_restored": true
+      }
+    },
+    {
+      "script": "r27_fresh_audio_audit.py",
+      "exit_code": 0,
+      "summary": {
+        "fresh_boot_and_resume_electrical_passed": true,
+        "audible_test": false,
+        "acoustic_verified": false,
+        "taint": 1088,
+        "rtc_code": 0,
+        "smoke_code": 0,
+        "kernel_fault_lines": 0
+      }
+    }
+  ],
+  "exposure": {
+    "state": "passed",
+    "kernel": "6.14.0-mipad2-integrated-r27",
+    "steps": [
+      {
+        "height": 2,
+        "vblank": 5,
+        "exposure_range": {
+          "minimum": 1,
+          "maximum": 1,
+          "step": 1,
+          "default": 1
+        },
+        "range_endpoints_accepted": true
+      },
+      {
+        "height": 2,
+        "vblank": 6,
+        "exposure_range": {
+          "minimum": 1,
+          "maximum": 2,
+          "step": 1,
+          "default": 2
+        },
+        "range_endpoints_accepted": true
+      },
+      {
+        "height": 2,
+        "vblank": 2490,
+        "exposure_range": {
+          "minimum": 1,
+          "maximum": 2486,
+          "step": 1,
+          "default": 2486
+        },
+        "range_endpoints_accepted": true
+      }
+    ],
+    "tiny_mode_streamed": false,
+    "physical_exposure_or_optical_parity_proven": false,
+    "controls_restored": true,
+    "shape_restored": true,
+    "initial_exposure_range": {
+      "minimum": 1,
+      "maximum": 2490,
+      "step": 1,
+      "default": 2490
+    },
+    "zero_request_result": "clamped-to-one-by-legacy-S_CTRL",
+    "zero_exposure_cannot_be_stored": true,
+    "two_line_minimum_vblank": 5,
+    "real_v4l2_control_framework_verified": true,
+    "restore_errors": []
+  },
+  "test_harness_correction": {
+    "initial_test_failed": true,
+    "cause": "Initial harness incorrectly demanded ERANGE for a zero legacy S_CTRL request; actual framework clamps it to one",
+    "driver_changed_to_make_test_pass": false
+  },
+  "power": {
+    "first_audio_rtc_s0i3_delta_us": 9679456,
+    "original_failed_gate": {
+      "s0i3_delta_us": 0,
+      "rtc_exit_code": 0,
+      "functional_resume_passed": true
+    },
+    "fixed_three_samples": {
+      "cohort_size": 3,
+      "settlement_seconds": 20,
+      "samples": [
+        {
+          "index": 0,
+          "rtc_exit_code": 0,
+          "elapsed_boottime": 11.020730703000027,
+          "residency_delta_us": {
+            "S0IR": 0,
+            "S0I1": 0,
+            "S0I2": 0,
+            "S0I3": 0,
+            "S0": 14922016
+          },
+          "s0i3_entered": false,
+          "boot_unchanged": true
+        },
+        {
+          "index": 1,
+          "rtc_exit_code": 0,
+          "elapsed_boottime": 10.995261020000044,
+          "residency_delta_us": {
+            "S0IR": 0,
+            "S0I1": 11392,
+            "S0I2": 128,
+            "S0I3": 9526464,
+            "S0": 5153024
+          },
+          "s0i3_entered": true,
+          "boot_unchanged": true
+        },
+        {
+          "index": 2,
+          "rtc_exit_code": 0,
+          "elapsed_boottime": 10.978812559999938,
+          "residency_delta_us": {
+            "S0IR": 0,
+            "S0I1": 11456,
+            "S0I2": 64,
+            "S0I3": 9491232,
+            "S0": 5180224
+          },
+          "s0i3_entered": true,
+          "boot_unchanged": true
+        }
+      ],
+      "s0i3_passes": 2,
+      "state": "s0i3-unreliable"
+    },
+    "usb_cohort": {
+      "phase_plan": [
+        "bound-before",
+        "unbound",
+        "bound-after"
+      ],
+      "samples_per_phase": 2,
+      "phases": [
+        {
+          "phase": "bound-before",
+          "samples": [
+            {
+              "index": 0,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 10.30692769999996,
+              "residency_delta_us": {
+                "S0IR": 0,
+                "S0I1": 11392,
+                "S0I2": 128,
+                "S0I3": 8869216,
+                "S0": 5351168
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            },
+            {
+              "index": 1,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 10.97345951400007,
+              "residency_delta_us": {
+                "S0IR": 32,
+                "S0I1": 11456,
+                "S0I2": 64,
+                "S0I3": 9500256,
+                "S0": 5143872
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            }
+          ]
+        },
+        {
+          "phase": "unbound",
+          "samples": [
+            {
+              "index": 0,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 10.97294375200022,
+              "residency_delta_us": {
+                "S0IR": 32,
+                "S0I1": 11456,
+                "S0I2": 64,
+                "S0I3": 9270976,
+                "S0": 5368832
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            },
+            {
+              "index": 1,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 11.00072857500004,
+              "residency_delta_us": {
+                "S0IR": 32,
+                "S0I1": 11392,
+                "S0I2": 96,
+                "S0I3": 9573984,
+                "S0": 5098816
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            }
+          ]
+        },
+        {
+          "phase": "bound-after",
+          "samples": [
+            {
+              "index": 0,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 10.968932003999953,
+              "residency_delta_us": {
+                "S0IR": 32,
+                "S0I1": 11424,
+                "S0I2": 96,
+                "S0I3": 9348896,
+                "S0": 5288160
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            },
+            {
+              "index": 1,
+              "rtc_exit_code": 0,
+              "elapsed_boottime": 11.008793247999847,
+              "residency_delta_us": {
+                "S0IR": 32,
+                "S0I1": 11392,
+                "S0I2": 96,
+                "S0I3": 9545856,
+                "S0": 5135360
+              },
+              "s0i3_entered": true,
+              "boot_unchanged": true
+            }
+          ]
+        }
+      ],
+      "usb_binding_restored": true,
+      "debug_unchanged": true,
+      "usb_state": "configured"
+    },
+    "intermittency_resolved": false,
+    "usb_binding_causality_established": false
+  },
+  "package": {
+    "state": "arch-package-built-native-query-pass",
+    "source_commit": "ef89fc60f8d5f1accd221e3c28f7e2ae6678bb72",
+    "bundle_sha256": "f999995d8d7720970dd72eca5899a288ef6e4ff44a1eef329eae2cc261e794ec",
+    "module_cert_sha256": "88aa2d40934dfa974c04f63c162c954b7790b010c3b9d959adbfe7a070e9b879",
+    "crypto_verified_modules": 34,
+    "package_sha256": "c586dfc015ce7aa6ac375cf67751a6c7d145d10947d301cf372eab35eee6fdc7",
+    "package_bytes": 37678071,
+    "original_bundle_files_preserved": 52,
+    "payload_files_verified": 56,
+    "host_or_tablet_install_performed": false
+  },
+  "target_package_query": {
+    "state": "native-target-package-query-pass",
+    "name": "linux-latte-integrated",
+    "version": "6.14.0.r27-1",
+    "architecture": "x86_64",
+    "package_sha256": "c586dfc015ce7aa6ac375cf67751a6c7d145d10947d301cf372eab35eee6fdc7",
+    "installed": false
+  },
+  "final_audit": {
+    "state": "final-runtime-software-and-idle-audit-pass",
+    "protected_files_checked": 274,
+    "protected_files_unchanged": true,
+    "private_aliases_restored": 53,
+    "pm": {
+      "0000:00:03.0": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "i2c-TOSB0001:01": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "i2c-INT33BE:00": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "selected_kernel_error_counts": {
+      "(?<!\\w)(?:BUG:|kernel BUG at\\b|kernel BUG!)": 0,
+      "(?<!\\w)WARNING:": 0,
+      "(?<!\\w)Oops:": 0,
+      "(?<!\\w)GPU HANG\\b": 0,
+      "general protection fault": 0,
+      "SP is not idle": 0,
+      "ISP is not idle": 0,
+      "stop stream timeout": 0,
+      "IUNIT power-.*timeout": 0
+    },
+    "services": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "usb_restored_configured": true,
+    "saved_entry": "mipad2-bqdiag1",
+    "next_entry_empty": true
+  },
+  "no_idle_native": {
+    "backend": "denial",
+    "automatic_dpms_disabled": true,
+    "changed": false,
+    "state": "actual-native-status-pass",
+    "runtime_installed": false,
+    "settings_written": false,
+    "new_service_added": false
+  },
+  "tones_played": false,
+  "new_photographs_or_videos_recorded": false,
+  "raw_diagnostics_published": false,
+  "default_promoted": false,
+  "physical_optical_parity_proven": false,
+  "full_objective_complete": false
+}

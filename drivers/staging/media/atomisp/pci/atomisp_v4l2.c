@@ -399,33 +399,66 @@ static int atomisp_save_iunit_reg(struct atomisp_device *isp)
 static int atomisp_restore_iunit_reg(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
+	int ret;
 
 	dev_dbg(isp->dev, "%s\n", __func__);
 
-	pci_write_config_word(pdev, PCI_COMMAND, isp->saved_regs.pcicmdsts);
-	pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, isp->saved_regs.ispmmadr);
-	pci_write_config_dword(pdev, PCI_MSI_CAPID, isp->saved_regs.msicap);
-	pci_write_config_dword(pdev, PCI_MSI_ADDR, isp->saved_regs.msi_addr);
-	pci_write_config_word(pdev, PCI_MSI_DATA, isp->saved_regs.msi_data);
-	pci_write_config_byte(pdev, PCI_INTERRUPT_LINE, isp->saved_regs.intr);
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, isp->saved_regs.interrupt_control);
-	pci_write_config_dword(pdev, PCI_I_CONTROL, isp->saved_regs.i_control);
+	ret = pci_write_config_word(pdev, PCI_COMMAND, isp->saved_regs.pcicmdsts);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, isp->saved_regs.ispmmadr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_MSI_CAPID, isp->saved_regs.msicap);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_MSI_ADDR, isp->saved_regs.msi_addr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_word(pdev, PCI_MSI_DATA, isp->saved_regs.msi_data);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_byte(pdev, PCI_INTERRUPT_LINE, isp->saved_regs.intr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, isp->saved_regs.interrupt_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, PCI_I_CONTROL, isp->saved_regs.i_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
 
-	pci_write_config_dword(pdev, MRFLD_PCI_PMCS, isp->saved_regs.pmcs);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL,
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_PMCS, isp->saved_regs.pmcs);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL,
 			       isp->saved_regs.csi_access_viol);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL,
 			       isp->saved_regs.csi_rcomp_config);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL,
 			       isp->saved_regs.csi_afe_dly);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
 			       isp->saved_regs.csi_control);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
 			       isp->saved_regs.csi_afe_rcomp_config);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL,
 			       isp->saved_regs.csi_afe_hs_control);
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_write_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
 			       isp->saved_regs.csi_deadline_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
 
 	/*
 	 * for MRFLD, Software/firmware needs to write a 1 to bit0
@@ -442,6 +475,7 @@ static int atomisp_mrfld_pre_power_down(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	u32 irq;
+	int ret;
 	unsigned long flags;
 
 	spin_lock_irqsave(&isp->lock, flags);
@@ -452,11 +486,17 @@ static int atomisp_mrfld_pre_power_down(struct atomisp_device *isp)
 	 * So, here we need to check if there is any pending
 	 * IRQ, if so, waiting for it to be served
 	 */
-	pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq));
+	if (ret)
+		goto out_unlock;
 	irq &= BIT(INTR_IIR);
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq));
+	if (ret)
+		goto out_unlock;
 
-	pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq));
+	if (ret)
+		goto out_unlock;
 	if (!(irq & BIT(INTR_IIR)))
 		goto done;
 
@@ -466,14 +506,20 @@ static int atomisp_mrfld_pre_power_down(struct atomisp_device *isp)
 		dev_err(isp->dev,
 			"%s: fail to clear isp interrupt status reg=0x%x\n",
 			__func__, irq);
-		spin_unlock_irqrestore(&isp->lock, flags);
-		return -EAGAIN;
+		ret = -EAGAIN;
+		goto out_unlock;
 	} else {
-		pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq);
+		ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq));
+		if (ret)
+			goto out_unlock;
 		irq &= BIT(INTR_IIR);
-		pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq);
+		ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq));
+		if (ret)
+			goto out_unlock;
 
-		pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq);
+		ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq));
+		if (ret)
+			goto out_unlock;
 		if (!(irq & BIT(INTR_IIR))) {
 			atomisp_css2_hw_store_32(MRFLD_INTR_ENABLE_REG, 0x0);
 			goto done;
@@ -481,8 +527,8 @@ static int atomisp_mrfld_pre_power_down(struct atomisp_device *isp)
 		dev_err(isp->dev,
 			"%s: error in iunit interrupt. status reg=0x%x\n",
 			__func__, irq);
-		spin_unlock_irqrestore(&isp->lock, flags);
-		return -EAGAIN;
+		ret = -EAGAIN;
+		goto out_unlock;
 	}
 done:
 	/*
@@ -492,15 +538,22 @@ done:
 	 * to IIR. It could block subsequent interrupt messages.
 	 * HW sighting:4568410.
 	 */
-	pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &irq));
+	if (ret)
+		goto out_unlock;
 	irq &= ~BIT(INTR_IER);
-	pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, irq));
+	if (ret)
+		goto out_unlock;
 
-	atomisp_msi_irq_uninit(isp);
+	ret = atomisp_msi_irq_uninit(isp);
+	if (ret)
+		goto out_unlock;
 	atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, true);
+	ret = 0;
+out_unlock:
 	spin_unlock_irqrestore(&isp->lock, flags);
-
-	return 0;
+	return ret;
 }
 
 /*
@@ -525,6 +578,7 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	unsigned long timeout;
+	int ret;
 	u32 val = enable ? MRFLD_ISPSSPM0_IUNIT_POWER_ON :
 			   MRFLD_ISPSSPM0_IUNIT_POWER_OFF;
 
@@ -537,8 +591,12 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 	}
 
 	/* Write to ISPSSPM0 bit[1:0] to power on/off the IUNIT */
-	iosf_mbi_modify(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0,
-			val, MRFLD_ISPSSPM0_ISPSSC_MASK);
+	ret = iosf_mbi_modify(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0,
+			      val, MRFLD_ISPSSPM0_ISPSSC_MASK);
+	if (ret) {
+		dev_err(isp->dev, "IUNIT power request failed: %d\n", ret);
+		return ret;
+	}
 
 	/* WA:Enable DVFS */
 	if (IS_CHT && !enable && !isp->pm_only)
@@ -555,7 +613,12 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 		u32 tmp;
 
 		/* Wait until ISPSSPM0 bit[25:24] shows the right value */
-		iosf_mbi_read(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSPM0, &tmp);
+		ret = iosf_mbi_read(BT_MBI_UNIT_PMC, MBI_REG_READ,
+				    MRFLD_ISPSSPM0, &tmp);
+		if (ret) {
+			dev_err(isp->dev, "IUNIT power status read failed: %d\n", ret);
+			return ret;
+		}
 		tmp = (tmp >> MRFLD_ISPSSPM0_ISPSSS_OFFSET) & MRFLD_ISPSSPM0_ISPSSC_MASK;
 		if (tmp == val) {
 			trace_ipu_cstate(enable);
@@ -582,7 +645,9 @@ int atomisp_power_off(struct device *dev)
 	u32 reg;
 
 	if (isp->pm_only) {
-		pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, 0);
+		ret = pcibios_err_to_errno(pci_write_config_dword(pdev, PCI_INTERRUPT_CTRL, 0));
+		if (ret)
+			return ret;
 	} else {
 		atomisp_css_uninit(isp);
 
@@ -596,13 +661,25 @@ int atomisp_power_off(struct device *dev)
 	 * MRFLD HW design need all CSI ports are disabled before
 	 * powering down the IUNIT.
 	 */
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &reg);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &reg));
+	if (ret)
+		return ret;
 	reg |= MRFLD_ALL_CSI_PORTS_OFF_MASK;
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, reg);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, reg));
+	if (ret)
+		return ret;
 
+	ret = pci_save_state(pdev);
+	if (ret)
+		return ret;
+
+	ret = atomisp_mrfld_power(isp, false);
+	if (ret)
+		return ret;
+
+	/* Keep the latency constraint until power-off is acknowledged. */
 	cpu_latency_qos_update_request(&isp->pm_qos, PM_QOS_DEFAULT_VALUE);
-	pci_save_state(pdev);
-	return atomisp_mrfld_power(isp, false);
+	return 0;
 }
 
 int atomisp_power_on(struct device *dev)
@@ -622,8 +699,13 @@ int atomisp_power_on(struct device *dev)
 		return 0;
 
 	/*restore register values for iUnit and iUnitPHY registers*/
-	if (isp->saved_regs.pcicmdsts)
-		atomisp_restore_iunit_reg(isp);
+	if (isp->saved_regs.pcicmdsts) {
+		ret = atomisp_restore_iunit_reg(isp);
+		if (ret) {
+			dev_err(isp->dev, "Failed to restore IUNIT registers: %d\n", ret);
+			return ret;
+		}
+	}
 
 	atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, true);
 
@@ -1453,7 +1535,8 @@ error_unregister_entities:
 error_uninitialize_modules:
 	atomisp_uninitialize_modules(isp);
 error_irq_uninit:
-	atomisp_msi_irq_uninit(isp);
+	if (atomisp_msi_irq_uninit(isp))
+		dev_warn(isp->dev, "Failed to disable ISP MSI/bus mastering during cleanup\n");
 	pci_free_irq_vectors(pdev);
 error_release_firmware:
 	release_firmware(isp->firmware);
@@ -1477,7 +1560,8 @@ static void atomisp_pci_remove(struct pci_dev *pdev)
 
 	atomisp_unregister_entities(isp);
 	atomisp_uninitialize_modules(isp);
-	atomisp_msi_irq_uninit(isp);
+	if (atomisp_msi_irq_uninit(isp))
+		dev_warn(isp->dev, "Failed to disable ISP MSI/bus mastering during cleanup\n");
 	pci_free_irq_vectors(pdev);
 }
 

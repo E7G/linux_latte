@@ -45,7 +45,7 @@ void atomisp_clear_css_buffer_counters(struct atomisp_sub_device *asd);
 
 /* Interrupt functions */
 void atomisp_msi_irq_init(struct atomisp_device *isp);
-void atomisp_msi_irq_uninit(struct atomisp_device *isp);
+int atomisp_msi_irq_uninit(struct atomisp_device *isp);
 void atomisp_assert_recovery_work(struct work_struct *work);
 irqreturn_t atomisp_isr(int irq, void *dev);
 irqreturn_t atomisp_isr_thread(int irq, void *isp_ptr);

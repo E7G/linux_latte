@@ -165,7 +165,7 @@ static int tfa989x_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_component *component = dai->component;
 	int sr;
 
-    pr_info("tfa989x received sample_rate: %d\n",params_rate(params));
+	dev_dbg(component->dev, "sample rate: %d\n", params_rate(params));
 
 	sr = tfa989x_find_sample_rate(params_rate(params));
 	if (sr < 0)
@@ -184,44 +184,54 @@ static int tfa989x_hw_params(struct snd_pcm_substream *substream,
 static int tfa989x_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 {
 	struct snd_soc_component *component = codec_dai->component;
-	//struct tfa989x *tfa989x = snd_soc_component_get_drvdata(component);
-	u16 val;
+	unsigned int val;
+	int ret;
 
 	pr_debug("\n");
-    pr_info("tfa989x received fmt: %d\n",fmt);
+	dev_dbg(component->dev, "DAI format: %#x\n", fmt);
 
 	/* set master/slave audio interface */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		/* default value */
 		break;
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 	default:
 		/* only supports Slave mode */
 		pr_err("tfa989x: invalid DAI master/slave interface\n");
 		return -EINVAL;
 	}
-	val = snd_soc_component_read(component, TFA989X_I2SREG);
+	/* This driver does not program clock inversion. */
+	if ((fmt & SND_SOC_DAIFMT_INV_MASK) != SND_SOC_DAIFMT_NB_NF)
+		return -EINVAL;
+
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
-		/* default value */
-		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_LSB;
-		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		val &= ~(TFA98XX_FORMAT_MASK);
-		val |= TFA98XX_FORMAT_MSB;
 		break;
 	default:
 		pr_err("tfa989x: invalid DAI interface format\n");
 		return -EINVAL;
 	}
 
-	snd_soc_component_write(component, TFA989X_I2SREG, val);
+	ret = regmap_read(component->regmap, TFA989X_I2SREG, &val);
+	if (ret)
+		return ret;
 
-	return 0;
+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+	case SND_SOC_DAIFMT_RIGHT_J:
+		val = (val & ~TFA98XX_FORMAT_MASK) | TFA98XX_FORMAT_LSB;
+		break;
+	case SND_SOC_DAIFMT_LEFT_J:
+		val = (val & ~TFA98XX_FORMAT_MASK) | TFA98XX_FORMAT_MSB;
+		break;
+	default:
+		/* Preserve the OEM I2S reset format, as before. */
+		break;
+	}
+
+	return regmap_write(component->regmap, TFA989X_I2SREG, val);
 }
 /*****************************************************************************/
 
@@ -370,41 +380,6 @@ static void tfa989x_regulator_disable(void *data)
 }
 
 
-static int my_i2c_read_reg(struct i2c_client *client, u8 reg, u16 *val)
-{
-    int ret = 0;
-    unsigned char reg_buf[4] = {0x00};
-    unsigned char val_buf[4] = {0x00};
-    struct i2c_msg msg[] = 
-    {
-        {
-            .addr = client->addr,
-            .flags = 0,
-            .len = 1,
-            .buf = &reg_buf[0],
-        },
-        {
-            .addr = client->addr,
-            .flags = I2C_M_RD,
-            .len = 2,
-            .buf = &val_buf[0],
-        },
-    };
-
-    reg_buf[0] = reg & 0xFF;
-
-    ret = i2c_transfer(client->adapter,msg,2);
-    pr_debug("my i2c read ret got: %d \n", ret);
-
-    if(ret == 2)
-    {
-        *val = (val_buf[0] << 8) | val_buf[1];
-    }
-    
-    return ret;
-}
-
-
 static int tfa989x_i2c_probe(struct i2c_client *i2c)
 {
 	struct device *dev = &i2c->dev;
@@ -414,41 +389,20 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	unsigned int val;
 	int ret;
 
-    u8 myreg = 0x03;
-	u16 myval = 0x0000;
-	//const struct acpi_device_id *id;
+	dev_dbg(dev, "probing amplifier at I2C address %#x\n", i2c->addr);
 
-    dev_dbg(&i2c->dev, "tfa989x i2c addr is: %x \n",i2c->addr);
+	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C))
+		return dev_err_probe(dev, -EIO, "I2C transfers are not supported\n");
 
-    pr_info("tfa989x test 0 \n");
-
-	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
-		dev_err(&i2c->dev, "tfa989x check_functionality failed\n");
-		return -EIO;
-	}
-    else{
-        pr_info("tfa989x check_functionality OK \n");
-    }
-
-    my_i2c_read_reg(i2c, myreg, &myval);
-    dev_dbg(&i2c->dev, "tfa989x i2c read got: %x \n",myval);
-
-
-	/*
-	 * i2c_get_match_data() 在 device_get_match_data() 返回 NULL 时会回落到
-	 * id_table[].driver_data，因此 ACPI/手工创建的 client 也能拿到 rev。
-	 */
 	rev = i2c_get_match_data(i2c);
-	if (!rev) {
-		dev_err(dev, "unknown device revision\n");
-		return -ENODEV;
-	}
+	if (!rev)
+		return dev_err_probe(dev, -ENODEV, "missing amplifier match data\n");
 
 	tfa989x = devm_kzalloc(dev, sizeof(*tfa989x), GFP_KERNEL);
 	if (!tfa989x)
 		return -ENOMEM;
 
-    pr_info("tfa989x test 1 \n");
+	dev_dbg(dev, "allocated driver data\n");
 
 	tfa989x->rev = rev;
 	i2c_set_clientdata(i2c, tfa989x);
@@ -468,7 +422,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
-    pr_info("tfa989x test 2 \n");
+	dev_dbg(dev, "regmap initialized\n");
 
 	ret = regulator_enable(tfa989x->vddd_supply);
 	if (ret) {
@@ -492,7 +446,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 		return ret;
 	}
 
-    pr_info("tfa989x test 3 \n");
+	dev_dbg(dev, "revision register read\n");
 
 	val &= TFA989X_REVISIONNUMBER_REV_MSK;
 	if (val != rev->rev) {
@@ -501,8 +455,7 @@ static int tfa989x_i2c_probe(struct i2c_client *i2c)
 		return -ENODEV;
 	}
 
-    pr_info("tfa989x revision number, expected %#x, got %#x\n",
-			rev->rev, val);
+	dev_dbg(dev, "revision number %#x verified\n", val);
 
 	ret = regmap_write(regmap, TFA989X_SYS_CTRL, BIT(TFA989X_SYS_CTRL_I2CR));
 	if (ret) {

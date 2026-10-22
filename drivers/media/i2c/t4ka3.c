@@ -13,13 +13,19 @@
 #include <linux/delay.h>
 #include <linux/dev_printk.h>
 #include <linux/device.h>
+#include <linux/dmi.h>
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/gpio/consumer.h>
+#include <linux/gcd.h>
 #include <linux/i2c.h>
+#include <linux/math64.h>
+#include <linux/mod_devicetable.h>
 #include <linux/mutex.h>
+#include <linux/nvmem-provider.h>
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
+#include <linux/string.h>
 #include <linux/types.h>
 
 #include <media/media-entity.h>
@@ -65,6 +71,29 @@
 #define T4KA3_REG_PRODUCT_ID_LOW		CCI_REG8(0x0001)
 #define T4KA3_PRODUCT_ID			0x1490
 
+#define T4KA3_MIPAD2_OTP_ADDR			0x58
+#define T4KA3_MIPAD2_OTP_SIZE			578
+#define T4KA3_MIPAD2_OTP_MODULE_END		15
+#define T4KA3_MIPAD2_OTP_AF_START		16
+#define T4KA3_MIPAD2_OTP_AF_END			31
+#define T4KA3_MIPAD2_OTP_LS1_START		32
+#define T4KA3_MIPAD2_OTP_LS1_END		303
+#define T4KA3_MIPAD2_OTP_LS2_START		304
+#define T4KA3_MIPAD2_OTP_LS2_END		577
+#define T4KA3_MIPAD2_OTP_LS1_AWB_START		0x125
+#define T4KA3_MIPAD2_OTP_LS2_AWB_START		0x235
+
+/* Xiaomi Android's 544-byte AtomISP calibration layout. */
+#define T4KA3_MIPAD2_OTP_CAL_SIZE		544
+#define T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET	20
+#define T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET	273
+#define T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET	526
+#define T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET	528
+#define T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET		542
+#define T4KA3_MIPAD2_OTP_CAL_LSC_MAX_SIZE \
+	(T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET - \
+	 T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET)
+
 #define T4KA3_REG_STREAM			CCI_REG8(0x0100)
 #define T4KA3_REG_IMG_ORIENTATION		CCI_REG8(0x0101)
 #define T4KA3_HFLIP_BIT				BIT(0)
@@ -72,11 +101,18 @@
 #define T4KA3_REG_PARAM_HOLD			CCI_REG8(0x0104)
 #define T4KA3_REG_COARSE_INTEGRATION_TIME	CCI_REG16(0x0202)
 #define T4KA3_COARSE_INTEGRATION_TIME_MARGIN	6
+#define T4KA3_COARSE_INTEGRATION_TIME_MIN	1
 #define T4KA3_REG_DIGGAIN_GREEN_R		CCI_REG16(0x020e)
 #define T4KA3_REG_DIGGAIN_RED			CCI_REG16(0x0210)
 #define T4KA3_REG_DIGGAIN_BLUE			CCI_REG16(0x0212)
 #define T4KA3_REG_DIGGAIN_GREEN_B		CCI_REG16(0x0214)
 #define T4KA3_REG_GLOBAL_GAIN			CCI_REG16(0x0234)
+#define T4KA3_DIGITAL_GAIN_UNITY		0x0100
+#define T4KA3_COLOR_BALANCE_MIN			256
+#define T4KA3_COLOR_BALANCE_MAX			4095
+#define T4KA3_COLOR_BALANCE_UNITY		1024
+#define T4KA3_RED_BALANCE_DEF			1585
+#define T4KA3_BLUE_BALANCE_DEF			1570
 #define T4KA3_MIN_GLOBAL_GAIN_SUPPORTED		0x0080
 #define T4KA3_MAX_GLOBAL_GAIN_SUPPORTED		0x07ff
 #define T4KA3_REG_FRAME_LENGTH_LINES		CCI_REG16(0x0340) /* aka VTS */
@@ -123,6 +159,8 @@ struct t4ka3_ctrls {
 	struct v4l2_ctrl *hblank;
 	struct v4l2_ctrl *exposure;
 	struct v4l2_ctrl *gain;
+	struct v4l2_ctrl *red_balance;
+	struct v4l2_ctrl *blue_balance;
 	struct v4l2_ctrl *test_pattern;
 	struct v4l2_ctrl *link_freq;
 	struct v4l2_ctrl *pixel_rate;
@@ -146,10 +184,317 @@ struct t4ka3_data {
 	struct gpio_desc *reset_gpio;
 	int streaming;
 
+	/* Mi Pad 2 rear-module factory calibration cache. */
+	struct nvmem_device *otp_nvmem;
+	struct nvmem_device *otp_cal_nvmem;
+	u8 otp_data[T4KA3_MIPAD2_OTP_SIZE];
+	u8 otp_cal_data[T4KA3_MIPAD2_OTP_CAL_SIZE];
+	int otp_cal_error;
+	bool otp_cached;
+
 	/* MIPI lane info */
 	u32 link_freq_index;
 	u8 mipi_lanes;
 };
+
+static bool t4ka3_has_mipad2_otp(struct t4ka3_data *sensor)
+{
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       ACPI_COMPANION(sensor->dev);
+}
+
+static u8 t4ka3_mipad2_otp_checksum(const u8 *data, size_t len)
+{
+	u32 sum = 0;
+	size_t i;
+
+	for (i = 0; i < len; i++)
+		sum += data[i];
+
+	return sum % 255;
+}
+
+static int t4ka3_mipad2_validate_otp(struct t4ka3_data *sensor)
+{
+	const u8 *data = sensor->otp_data;
+
+	if (data[0] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[1], 14) !=
+		data[T4KA3_MIPAD2_OTP_MODULE_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_AF_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_AF_START + 1], 14) !=
+		data[T4KA3_MIPAD2_OTP_AF_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_LS1_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_LS1_START + 1], 270) !=
+		data[T4KA3_MIPAD2_OTP_LS1_END])
+		return -EBADMSG;
+
+	if (data[T4KA3_MIPAD2_OTP_LS2_START] != 0x01 ||
+	    t4ka3_mipad2_otp_checksum(&data[T4KA3_MIPAD2_OTP_LS2_START + 1], 272) !=
+		data[T4KA3_MIPAD2_OTP_LS2_END])
+		return -EBADMSG;
+
+	return 0;
+}
+
+static u16 t4ka3_mipad2_otp_crc16(const u8 *data, size_t len)
+{
+	u16 crc = 0;
+	size_t i;
+	int bit;
+
+	for (i = 0; i < len; i++) {
+		crc ^= data[i];
+		for (bit = 0; bit < 8; bit++)
+			crc = (crc >> 1) ^ ((crc & 1) ? 0xa001 : 0);
+	}
+
+	return crc;
+}
+
+/*
+ * Mirror Xiaomi Android's DW9761 dw9761_otp_format() AtomISP calibration ABI.
+ * Keep the raw NVMEM provider available if an unknown LSC grid cannot fit
+ * this fixed-size layout.
+ */
+static int t4ka3_mipad2_parse_otp(struct t4ka3_data *sensor)
+{
+	const u8 *raw = sensor->otp_data;
+	u8 *cal = sensor->otp_cal_data;
+	u8 grid_x = raw[T4KA3_MIPAD2_OTP_LS1_START + 6];
+	u8 grid_y = raw[T4KA3_MIPAD2_OTP_LS1_START + 7];
+	size_t lsc_size = (size_t)grid_x * grid_y * 4 + 1;
+	u16 crc;
+
+	if (!grid_x || !grid_y ||
+	    lsc_size > T4KA3_MIPAD2_OTP_CAL_LSC_MAX_SIZE)
+		return -EOVERFLOW;
+
+	memset(cal, 0, T4KA3_MIPAD2_OTP_CAL_SIZE);
+	cal[0] = raw[T4KA3_MIPAD2_OTP_LS1_START + 1];
+	cal[1] = raw[T4KA3_MIPAD2_OTP_LS1_START + 2];
+	cal[2] = 1;
+	cal[3] = raw[T4KA3_MIPAD2_OTP_AF_START + 1];
+	cal[4] = raw[T4KA3_MIPAD2_OTP_AF_START + 2];
+	cal[5] = raw[T4KA3_MIPAD2_OTP_AF_START + 6];
+	cal[6] = raw[T4KA3_MIPAD2_OTP_AF_START + 5];
+	cal[7] = raw[T4KA3_MIPAD2_OTP_AF_START + 4];
+	cal[8] = raw[T4KA3_MIPAD2_OTP_AF_START + 3];
+	cal[9] = cal[7];
+	cal[10] = cal[8];
+	cal[11] = cal[5];
+	cal[12] = cal[6];
+
+	cal[13] = raw[T4KA3_MIPAD2_OTP_LS1_START + 3];
+	cal[14] = raw[T4KA3_MIPAD2_OTP_LS1_START + 4];
+	cal[15] = raw[T4KA3_MIPAD2_OTP_LS2_START + 4];
+	cal[16] = raw[T4KA3_MIPAD2_OTP_LS1_START + 5];
+	cal[17] = raw[T4KA3_MIPAD2_OTP_LS2_START + 5];
+	cal[18] = grid_x;
+	cal[19] = grid_y;
+	memcpy(&cal[T4KA3_MIPAD2_OTP_CAL_LS1_LSC_OFFSET],
+	       &raw[T4KA3_MIPAD2_OTP_LS1_START + 8], lsc_size);
+	memcpy(&cal[T4KA3_MIPAD2_OTP_CAL_LS2_LSC_OFFSET],
+	       &raw[T4KA3_MIPAD2_OTP_LS2_START + 8], lsc_size);
+
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 1] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 1];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 4] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 2];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 5] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 3];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 8] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 4];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 9] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 5];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 12] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 6];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS1_AWB_OFFSET + 13] =
+		raw[T4KA3_MIPAD2_OTP_LS1_AWB_START + 7];
+
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 1] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 1];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 4] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 2];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 5] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 3];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 8] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 4];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 9] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 5];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 12] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 6];
+	cal[T4KA3_MIPAD2_OTP_CAL_LS2_AWB_OFFSET + 13] =
+		raw[T4KA3_MIPAD2_OTP_LS2_AWB_START + 7];
+
+	crc = t4ka3_mipad2_otp_crc16(cal,
+				     T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET);
+	cal[T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET] = crc & 0xff;
+	cal[T4KA3_MIPAD2_OTP_CAL_CRC_OFFSET + 1] = crc >> 8;
+
+	return 0;
+}
+
+static int t4ka3_mipad2_fetch_otp(struct t4ka3_data *sensor)
+{
+	struct i2c_client *client = to_i2c_client(sensor->dev);
+	u8 addr_buf[2] = { 0x00, 0x00 };
+	struct i2c_msg msgs[] = {
+		{
+			.addr = T4KA3_MIPAD2_OTP_ADDR,
+			.flags = 0,
+			.len = sizeof(addr_buf),
+			.buf = addr_buf,
+		}, {
+			.addr = T4KA3_MIPAD2_OTP_ADDR,
+			.flags = I2C_M_RD,
+			.len = T4KA3_MIPAD2_OTP_SIZE,
+			.buf = sensor->otp_data,
+		},
+	};
+	int ret;
+
+	if (sensor->otp_cached)
+		return 0;
+
+	ret = pm_runtime_resume_and_get(sensor->dev);
+	if (ret < 0)
+		return ret;
+
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	pm_runtime_put(sensor->dev);
+	if (ret != ARRAY_SIZE(msgs))
+		return ret < 0 ? ret : -EIO;
+
+	ret = t4ka3_mipad2_validate_otp(sensor);
+	if (ret) {
+		dev_err(sensor->dev, "invalid Mi Pad 2 rear-camera OTP data\n");
+		return ret;
+	}
+
+	sensor->otp_cal_error = t4ka3_mipad2_parse_otp(sensor);
+	if (sensor->otp_cal_error)
+		dev_warn(sensor->dev,
+			 "cannot repack rear-camera OTP for AtomISP: %d\n",
+			 sensor->otp_cal_error);
+	else
+		dev_info(sensor->dev,
+			 "repacked rear-camera OTP for AtomISP (%ux%u, CRC16/IBM %02x%02x)\n",
+			 sensor->otp_cal_data[18], sensor->otp_cal_data[19],
+			 sensor->otp_cal_data[543], sensor->otp_cal_data[542]);
+
+	sensor->otp_cached = true;
+	dev_info(sensor->dev,
+		 "validated Mi Pad 2 rear-camera OTP (vendor %u, AF %u..%u)\n",
+		 sensor->otp_data[1],
+		 (sensor->otp_data[19] << 8) | sensor->otp_data[20],
+		 (sensor->otp_data[21] << 8) | sensor->otp_data[22]);
+
+	return 0;
+}
+
+static int t4ka3_mipad2_otp_read(void *context, unsigned int offset,
+				 void *val, size_t bytes)
+{
+	struct t4ka3_data *sensor = context;
+	int ret;
+
+	if (offset > T4KA3_MIPAD2_OTP_SIZE ||
+	    bytes > T4KA3_MIPAD2_OTP_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	mutex_lock(&sensor->lock);
+	ret = t4ka3_mipad2_fetch_otp(sensor);
+	if (!ret)
+		memcpy(val, sensor->otp_data + offset, bytes);
+	mutex_unlock(&sensor->lock);
+
+	return ret;
+}
+
+static int t4ka3_mipad2_otp_cal_read(void *context, unsigned int offset,
+				     void *val, size_t bytes)
+{
+	struct t4ka3_data *sensor = context;
+	int ret;
+
+	if (offset > T4KA3_MIPAD2_OTP_CAL_SIZE ||
+	    bytes > T4KA3_MIPAD2_OTP_CAL_SIZE - offset)
+		return -EINVAL;
+	if (!bytes)
+		return 0;
+
+	mutex_lock(&sensor->lock);
+	ret = t4ka3_mipad2_fetch_otp(sensor);
+	if (!ret)
+		ret = sensor->otp_cal_error;
+	if (!ret)
+		memcpy(val, sensor->otp_cal_data + offset, bytes);
+	mutex_unlock(&sensor->lock);
+
+	return ret;
+}
+
+static int t4ka3_register_mipad2_otp(struct t4ka3_data *sensor)
+{
+	struct nvmem_config raw_config = {
+		.dev = sensor->dev,
+		.name = "mipad2-t4ka3-otp",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = t4ka3_mipad2_otp_read,
+		.size = T4KA3_MIPAD2_OTP_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = sensor,
+	};
+	struct nvmem_config cal_config = {
+		.dev = sensor->dev,
+		.name = "mipad2-t4ka3-otp-calibrated",
+		.id = NVMEM_DEVID_NONE,
+		.type = NVMEM_TYPE_OTP,
+		.read_only = true,
+		.root_only = false,
+		.reg_read = t4ka3_mipad2_otp_cal_read,
+		.size = T4KA3_MIPAD2_OTP_CAL_SIZE,
+		.word_size = 1,
+		.stride = 1,
+		.priv = sensor,
+	};
+	int ret;
+
+	if (!t4ka3_has_mipad2_otp(sensor))
+		return 0;
+
+	sensor->otp_nvmem = devm_nvmem_register(sensor->dev, &raw_config);
+	ret = PTR_ERR_OR_ZERO(sensor->otp_nvmem);
+	if (ret)
+		return ret;
+
+	sensor->otp_cal_nvmem = devm_nvmem_register(sensor->dev, &cal_config);
+	if (IS_ERR(sensor->otp_cal_nvmem)) {
+		ret = PTR_ERR(sensor->otp_cal_nvmem);
+		dev_warn(sensor->dev,
+			 "failed to register calibrated OTP NVMEM: %pe\n",
+			 ERR_PTR(ret));
+		sensor->otp_cal_nvmem = NULL;
+	}
+
+	return 0;
+}
 
 /* init settings */
 static const struct cci_reg_sequence t4ka3_init_config[] = {
@@ -304,8 +649,9 @@ static int t4ka3_update_exposure_range(struct t4ka3_data *sensor,
 	int exp_max = fmt->height + sensor->ctrls.vblank->val -
 		      T4KA3_COARSE_INTEGRATION_TIME_MARGIN;
 
-	return __v4l2_ctrl_modify_range(sensor->ctrls.exposure, 0, exp_max,
-					1, exp_max);
+	return __v4l2_ctrl_modify_range(sensor->ctrls.exposure,
+					T4KA3_COARSE_INTEGRATION_TIME_MIN,
+					exp_max, 1, exp_max);
 }
 
 static void t4ka3_fill_format(struct t4ka3_data *sensor,
@@ -358,6 +704,9 @@ static void t4ka3_get_vblank_limits(struct t4ka3_data *sensor,
 	struct v4l2_mbus_framefmt *fmt = v4l2_subdev_state_get_format(state, 0);
 
 	*min = T4KA3_MIN_VBLANK + (sensor->mode.binning - 1) * fmt->height;
+	/* A minimum-size crop must still allow one exposure line + margin. */
+	*min = max(*min, T4KA3_COARSE_INTEGRATION_TIME_MARGIN +
+		   T4KA3_COARSE_INTEGRATION_TIME_MIN - (int)fmt->height);
 	*max = T4KA3_MAX_VBLANK - fmt->height;
 	*def = T4KA3_LINES_PER_FRAME_30FPS - fmt->height;
 }
@@ -368,20 +717,28 @@ static int t4ka3_set_pad_format(struct v4l2_subdev *sd,
 {
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
 	struct v4l2_mbus_framefmt *fmt = &format->format;
-	struct v4l2_rect *crop =
-		v4l2_subdev_state_get_crop(sd_state, format->pad);
+	struct v4l2_rect *crop;
 	unsigned int width, height;
 	int min, max, def, ret = 0;
 
-	/* Limit set_fmt max size to crop width / height */
-	width = clamp_val(ALIGN(format->format.width, 2),
-			  T4KA3_MIN_CROP_WIDTH, crop->width);
-	height = clamp_val(ALIGN(format->format.height, 2),
-			   T4KA3_MIN_CROP_HEIGHT, crop->height);
-	t4ka3_fill_format(sensor, &format->format, width, height);
+	if (format->pad || !sd_state ||
+	    (format->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     format->which != V4L2_SUBDEV_FORMAT_TRY))
+		return -EINVAL;
 
+	/* The core holds the shared state/control lock; do not lock it twice. */
+	lockdep_assert_held(sensor->sd.state_lock);
 	if (format->which == V4L2_SUBDEV_FORMAT_ACTIVE && sensor->streaming)
 		return -EBUSY;
+
+	crop = v4l2_subdev_state_get_crop(sd_state, format->pad);
+
+	/* Limit set_fmt max size to crop width / height */
+	width = ALIGN(clamp_val(format->format.width, T4KA3_MIN_CROP_WIDTH,
+				crop->width), 2);
+	height = ALIGN(clamp_val(format->format.height, T4KA3_MIN_CROP_HEIGHT,
+				 crop->height), 2);
+	t4ka3_fill_format(sensor, &format->format, width, height);
 
 	*v4l2_subdev_state_get_format(sd_state, 0) = format->format;
 
@@ -464,6 +821,30 @@ static int t4ka3_detect(struct t4ka3_data *sensor, u16 *id)
 	return 0;
 }
 
+static int t4ka3_color_gain_configure(struct t4ka3_data *sensor)
+{
+	u32 red_gain;
+	u32 blue_gain;
+	int ret = 0;
+
+	/* RED/BLUE balance controls use a Q10 multiplier, 1024 == 1.0x. */
+	red_gain = DIV_ROUND_CLOSEST(T4KA3_DIGITAL_GAIN_UNITY *
+				     sensor->ctrls.red_balance->val,
+				     T4KA3_COLOR_BALANCE_UNITY);
+	blue_gain = DIV_ROUND_CLOSEST(T4KA3_DIGITAL_GAIN_UNITY *
+				      sensor->ctrls.blue_balance->val,
+				      T4KA3_COLOR_BALANCE_UNITY);
+
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_GREEN_R,
+		  T4KA3_DIGITAL_GAIN_UNITY, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_RED, red_gain, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_BLUE, blue_gain, &ret);
+	cci_write(sensor->regmap, T4KA3_REG_DIGGAIN_GREEN_B,
+		  T4KA3_DIGITAL_GAIN_UNITY, &ret);
+
+	return ret;
+}
+
 static int t4ka3_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct t4ka3_data *sensor = ctrl_to_t4ka3(ctrl);
@@ -508,6 +889,10 @@ static int t4ka3_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ANALOGUE_GAIN:
 		ret = cci_write(sensor->regmap, T4KA3_REG_GLOBAL_GAIN,
 				ctrl->val, NULL);
+		break;
+	case V4L2_CID_RED_BALANCE:
+	case V4L2_CID_BLUE_BALANCE:
+		ret = t4ka3_color_gain_configure(sensor);
 		break;
 	default:
 		ret = -EINVAL;
@@ -566,6 +951,10 @@ static int t4ka3_enable_stream(struct v4l2_subdev *sd,
 		dev_err(sensor->dev, "power-up err.\n");
 		goto error_powerdown;
 	}
+	/* A previous stop may have failed while another PM user held power. */
+	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
+	if (ret)
+		goto error_powerdown;
 
 	cci_multi_reg_write(sensor->regmap, t4ka3_init_config,
 			    ARRAY_SIZE(t4ka3_init_config), &ret);
@@ -613,15 +1002,21 @@ static int t4ka3_disable_stream(struct v4l2_subdev *sd,
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
 	int ret;
 
+	if (!sensor->streaming)
+		return 0;
+
 	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
-	pm_runtime_put(sensor->sd.dev);
 	sensor->streaming = 0;
+	if (ret) {
+		dev_warn(sensor->dev, "stop failed: %d; requesting powerdown\n", ret);
+		ret = pm_runtime_put_sync_suspend(sensor->sd.dev);
+		if (ret && ret != -EBUSY)
+			dev_warn(sensor->dev, "stop powerdown failed: %d\n", ret);
+	} else {
+		pm_runtime_put(sensor->sd.dev);
+	}
 
-	if (ret)
-		dev_err(sensor->dev,
-			"failed to disable stream with return value: %d\n",
-			ret);
-
+	/* Complete pad bookkeeping as well as the legacy s_stream wrapper. */
 	return 0;
 }
 
@@ -659,22 +1054,28 @@ static int t4ka3_set_selection(struct v4l2_subdev *sd,
 	struct v4l2_rect *crop;
 	struct v4l2_rect rect;
 
-	if (sel->target != V4L2_SEL_TGT_CROP)
+	if (sel->target != V4L2_SEL_TGT_CROP || sel->pad || !state ||
+	    (sel->which != V4L2_SUBDEV_FORMAT_ACTIVE &&
+	     sel->which != V4L2_SUBDEV_FORMAT_TRY))
 		return -EINVAL;
+
+	lockdep_assert_held(sensor->sd.state_lock);
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE && sensor->streaming)
+		return -EBUSY;
 
 	/*
 	 * Clamp the boundaries of the crop rectangle to the size of the sensor
 	 * pixel array. Align to multiples of 2 to ensure Bayer pattern isn't
 	 * disrupted.
 	 */
-	rect.left = clamp_val(ALIGN(sel->r.left, 2),
-			      T4KA3_NATIVE_START_LEFT, T4KA3_NATIVE_WIDTH);
-	rect.top = clamp_val(ALIGN(sel->r.top, 2),
-			     T4KA3_NATIVE_START_TOP, T4KA3_NATIVE_HEIGHT);
-	rect.width = clamp_val(ALIGN(sel->r.width, 2), T4KA3_MIN_CROP_WIDTH,
-			       T4KA3_NATIVE_WIDTH - rect.left);
-	rect.height = clamp_val(ALIGN(sel->r.height, 2), T4KA3_MIN_CROP_HEIGHT,
-				T4KA3_NATIVE_HEIGHT - rect.top);
+	rect.left = ALIGN(clamp_val(sel->r.left, T4KA3_NATIVE_START_LEFT,
+				    T4KA3_NATIVE_WIDTH - T4KA3_MIN_CROP_WIDTH), 2);
+	rect.top = ALIGN(clamp_val(sel->r.top, T4KA3_NATIVE_START_TOP,
+				   T4KA3_NATIVE_HEIGHT - T4KA3_MIN_CROP_HEIGHT), 2);
+	rect.width = ALIGN(clamp_val(sel->r.width, T4KA3_MIN_CROP_WIDTH,
+				     T4KA3_NATIVE_WIDTH - rect.left), 2);
+	rect.height = ALIGN(clamp_val(sel->r.height, T4KA3_MIN_CROP_HEIGHT,
+				      T4KA3_NATIVE_HEIGHT - rect.top), 2);
 
 	crop = v4l2_subdev_state_get_crop(state, sel->pad);
 
@@ -686,11 +1087,14 @@ static int t4ka3_set_selection(struct v4l2_subdev *sd,
 		format = v4l2_subdev_state_get_format(state, sel->pad);
 		format->width = rect.width;
 		format->height = rect.height;
-		if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE)
-			t4ka3_calc_mode(sensor, format, crop);
 	}
 
-	sel->r = *crop = rect;
+	/* Position-only changes also require a new window, using the NEW crop. */
+	*crop = rect;
+	if (sel->which == V4L2_SUBDEV_FORMAT_ACTIVE)
+		t4ka3_calc_mode(sensor,
+				v4l2_subdev_state_get_format(state, sel->pad), crop);
+	sel->r = rect;
 
 	return 0;
 }
@@ -744,18 +1148,36 @@ static int t4ka3_check_hwcfg(struct t4ka3_data *sensor)
 	if (ret)
 		return ret;
 
-	ret = v4l2_link_freq_to_bitmap(sensor->dev, bus_cfg.link_frequencies,
-				       bus_cfg.nr_of_link_frequencies,
-				       link_freq_menu_items,
-				       ARRAY_SIZE(link_freq_menu_items),
-				       &link_freq_bitmap);
+	/*
+	 * Mi Pad 2 firmware does not expose link-frequencies for XMCC0003.
+	 * The sensor timing is fixed, so use the driver's known value when
+	 * the IPU software-node property is absent.  Newer firmware may
+	 * provide the property, in which case validate it as usual.
+	 */
+	if (!bus_cfg.nr_of_link_frequencies) {
+		dev_warn(sensor->dev,
+			 "no link frequencies in firmware, using %llu Hz\n",
+			 T4KA3_LINK_FREQ);
+		sensor->link_freq_index = 0;
+		ret = 0;
+	} else {
+		ret = v4l2_link_freq_to_bitmap(sensor->dev,
+					       bus_cfg.link_frequencies,
+					       bus_cfg.nr_of_link_frequencies,
+					       link_freq_menu_items,
+					       ARRAY_SIZE(link_freq_menu_items),
+					       &link_freq_bitmap);
 
-	if (ret < 0)
-		goto out_free_bus_cfg;
+		if (ret < 0)
+			goto out_free_bus_cfg;
 
-	sensor->link_freq_index = ffs(link_freq_bitmap) - 1;
+		sensor->link_freq_index = ffs(link_freq_bitmap) - 1;
+	}
 
-	/* 4 MIPI lanes */
+	/* 4 MIPI lanes; the Mi Pad 2 ACPI endpoint reports zero. */
+	if (!bus_cfg.bus.mipi_csi2.num_data_lanes)
+		bus_cfg.bus.mipi_csi2.num_data_lanes = 4;
+
 	if (bus_cfg.bus.mipi_csi2.num_data_lanes != 4) {
 		ret = dev_err_probe(sensor->dev, -EINVAL,
 				    "number of CSI2 data lanes %u is not supported\n",
@@ -783,6 +1205,57 @@ static int t4ka3_init_state(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int t4ka3_get_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
+	unsigned int frame_size;
+	unsigned int divisor;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
+		return -EINVAL;
+
+	frame_size = T4KA3_PIXELS_PER_LINE *
+		(v4l2_subdev_state_get_format(sd_state, 0)->height + sensor->ctrls.vblank->val);
+	divisor = gcd(frame_size, T4KA3_PIXEL_RATE);
+	interval->interval.numerator = frame_size / divisor;
+	interval->interval.denominator = T4KA3_PIXEL_RATE / divisor;
+
+	return 0;
+}
+
+static int t4ka3_set_frame_interval(struct v4l2_subdev *sd,
+				     struct v4l2_subdev_state *sd_state,
+				     struct v4l2_subdev_frame_interval *interval)
+{
+	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
+	struct v4l2_ctrl *vblank = sensor->ctrls.vblank;
+	u64 numerator, denominator, lines;
+	unsigned int height;
+	int ret;
+
+	if (interval->which != V4L2_SUBDEV_FORMAT_ACTIVE || interval->pad)
+		return -EINVAL;
+
+	height = v4l2_subdev_state_get_format(sd_state, 0)->height;
+	if (!interval->interval.numerator || !interval->interval.denominator) {
+		lines = height + vblank->default_value;
+	} else {
+		numerator = (u64)T4KA3_PIXEL_RATE * interval->interval.numerator;
+		denominator = (u64)T4KA3_PIXELS_PER_LINE * interval->interval.denominator;
+		lines = div64_u64(numerator + denominator / 2, denominator);
+		lines = clamp_t(u64, lines, height + vblank->minimum,
+				height + vblank->maximum);
+	}
+
+	ret = __v4l2_ctrl_s_ctrl(vblank, lines - height);
+	if (ret)
+		return ret;
+
+	return t4ka3_get_frame_interval(sd, sd_state, interval);
+}
+
 static const struct v4l2_ctrl_ops t4ka3_ctrl_ops = {
 	.s_ctrl = t4ka3_s_ctrl,
 };
@@ -798,6 +1271,8 @@ static const struct v4l2_subdev_pad_ops t4ka3_pad_ops = {
 	.set_fmt = t4ka3_set_pad_format,
 	.get_selection = t4ka3_get_selection,
 	.set_selection = t4ka3_set_selection,
+	.get_frame_interval = t4ka3_get_frame_interval,
+	.set_frame_interval = t4ka3_set_frame_interval,
 	.enable_streams = t4ka3_enable_stream,
 	.disable_streams = t4ka3_disable_stream,
 };
@@ -829,7 +1304,7 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 		"Random Data",
 	};
 
-	v4l2_ctrl_handler_init(hdl, 11);
+	v4l2_ctrl_handler_init(hdl, 13);
 
 	hdl->lock = &sensor->lock;
 
@@ -861,24 +1336,44 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 					  min, max, 1, def);
 
 	def = T4KA3_PIXELS_PER_LINE - T4KA3_ACTIVE_WIDTH;
-	ctrls->hblank = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HBLANK,
+	/* Fixed line length: HBLANK is metadata, not a hardware control. */
+	ctrls->hblank = v4l2_ctrl_new_std(hdl, NULL, V4L2_CID_HBLANK,
 					  def, def, 1, def);
 
 	max = T4KA3_LINES_PER_FRAME_30FPS -
 	      T4KA3_COARSE_INTEGRATION_TIME_MARGIN;
 	ctrls->exposure = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_EXPOSURE,
-					    0, max, 1, max);
+					    T4KA3_COARSE_INTEGRATION_TIME_MIN,
+					    max, 1, max);
 
 	ctrls->gain = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_ANALOGUE_GAIN,
 					T4KA3_MIN_GLOBAL_GAIN_SUPPORTED,
 					T4KA3_MAX_GLOBAL_GAIN_SUPPORTED,
 					1, T4KA3_MIN_GLOBAL_GAIN_SUPPORTED);
 
+	ctrls->red_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_RED_BALANCE,
+					      T4KA3_COLOR_BALANCE_MIN,
+					      T4KA3_COLOR_BALANCE_MAX, 1,
+					      T4KA3_RED_BALANCE_DEF);
+	ctrls->blue_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_BLUE_BALANCE,
+					       T4KA3_COLOR_BALANCE_MIN,
+					       T4KA3_COLOR_BALANCE_MAX, 1,
+					       T4KA3_BLUE_BALANCE_DEF);
+
 	ret = v4l2_fwnode_device_parse(sensor->dev, &props);
 	if (ret)
 		return ret;
 
-	v4l2_ctrl_new_fwnode_properties(hdl, ops, &props);
+	/* The sensor is physically clockwise from the Linux display orientation. */
+	if (props.orientation == V4L2_FWNODE_PROPERTY_UNSET)
+		props.orientation = V4L2_FWNODE_ORIENTATION_BACK;
+	if (props.rotation == V4L2_FWNODE_PROPERTY_UNSET &&
+	    ACPI_COMPANION(sensor->dev))
+		props.rotation = 270;
+
+	ret = v4l2_ctrl_new_fwnode_properties(hdl, ops, &props);
+	if (ret)
+		return ret;
 
 	if (hdl->error)
 		return hdl->error;
@@ -897,8 +1392,10 @@ static int t4ka3_pm_suspend(struct device *dev)
 {
 	struct t4ka3_data *sensor = dev_get_drvdata(dev);
 
-	gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
-	gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+	if (sensor->powerdown_gpio)
+		gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
+	if (sensor->reset_gpio)
+		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
 
 	return 0;
 }
@@ -911,8 +1408,24 @@ static int t4ka3_pm_resume(struct device *dev)
 
 	usleep_range(5000, 6000);
 
-	gpiod_set_value_cansleep(sensor->powerdown_gpio, 0);
-	gpiod_set_value_cansleep(sensor->reset_gpio, 0);
+	if (sensor->powerdown_gpio)
+		gpiod_set_value_cansleep(sensor->powerdown_gpio, 0);
+
+	/*
+	 * Mi Pad 2 Android's __power_up() pulses reset after releasing
+	 * powerdown. Both descriptors are active-low on this board, so the
+	 * physical high-low-high pulse is logical 0-1-0. ACPI still owns the
+	 * rails and PMC clock; do not duplicate the legacy GMIN power writes.
+	 */
+	if (sensor->reset_gpio && t4ka3_has_mipad2_otp(sensor)) {
+		fsleep(1000);
+		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
+		fsleep(1000);
+		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+		fsleep(1000);
+	}
+	if (sensor->reset_gpio)
+		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
 
 	/* waiting for the sensor after powering up */
 	fsleep(20000);
@@ -920,8 +1433,10 @@ static int t4ka3_pm_resume(struct device *dev)
 	ret = t4ka3_detect(sensor, &sensor_id);
 	if (ret) {
 		dev_err(sensor->dev, "sensor detect failed\n");
-		gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
-		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+		if (sensor->powerdown_gpio)
+			gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
+		if (sensor->reset_gpio)
+			gpiod_set_value_cansleep(sensor->reset_gpio, 1);
 
 		return ret;
 	}
@@ -975,10 +1490,14 @@ static int t4ka3_probe(struct i2c_client *client)
 
 	sensor->powerdown_gpio = devm_gpiod_get(&client->dev, "powerdown",
 						GPIOD_OUT_HIGH);
-	if (IS_ERR(sensor->powerdown_gpio))
+	if (IS_ERR(sensor->powerdown_gpio)) {
+		/* GPIO lookup tables are installed by the AtomISP bridge. */
+		if (PTR_ERR(sensor->powerdown_gpio) == -ENOENT)
+			return -EPROBE_DEFER;
 		return dev_err_probe(&client->dev,
 				     PTR_ERR(sensor->powerdown_gpio),
 				     "getting powerdown GPIO\n");
+	}
 
 	sensor->reset_gpio = devm_gpiod_get_optional(&client->dev, "reset",
 						     GPIOD_OUT_HIGH);
@@ -997,7 +1516,8 @@ static int t4ka3_probe(struct i2c_client *client)
 	pm_runtime_set_active(&client->dev);
 	pm_runtime_enable(&client->dev);
 
-	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+			    V4L2_SUBDEV_FL_HAS_EVENTS;
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 
@@ -1013,6 +1533,10 @@ static int t4ka3_probe(struct i2c_client *client)
 	}
 
 	ret = t4ka3_init_controls(sensor);
+	if (ret)
+		goto err_controls;
+
+	ret = t4ka3_register_mipad2_otp(sensor);
 	if (ret)
 		goto err_controls;
 
@@ -1041,6 +1565,7 @@ err_pm_disable:
 }
 
 static const struct acpi_device_id t4ka3_acpi_match[] = {
+	{ "TOSB0001" },
 	{ "XMCC0003" },
 	{}
 };

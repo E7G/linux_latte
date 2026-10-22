@@ -1,0 +1,22 @@
+pkgname=mipad2-alsa-ucm
+pkgver=20260830
+pkgrel=7
+pkgdesc="ALSA UCM profile for Xiaomi Mi Pad 2 RT5659 and dual TFA9890"
+arch=(x86_64)
+license=(GPL2)
+source=(
+  'HiFi.conf'
+  'cht-bsw-rt5659.conf'
+  'README'
+)
+sha256sums=(
+  '25b2da2d59b634829b5886889ad713e221a0691571250a8727699ea6a84f13bb'
+  '61df3e84a3f3d7f78a00ef082c34a078dce851bb89b09989fb53fccbbd8e8a81'
+  'd9cabb09eec2bcdf2bff8259cdb23e890210bd6f784c711168a32fbf65c172da'
+)
+
+package() {
+  install -Dm644 "$srcdir/cht-bsw-rt5659.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/cht-bsw-rt5659.conf"
+  install -Dm644 "$srcdir/HiFi.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/HiFi.conf"
+  install -Dm644 "$srcdir/README" "$pkgdir/usr/share/doc/mipad2-alsa-ucm/README"
+}

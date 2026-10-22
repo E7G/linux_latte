@@ -1,0 +1,155 @@
+{
+  "state": "source-port-full-build-and-host-checks-pass-no-hardware-boot",
+  "requested_commit": "9928c7b8d00c500ee97903afa1cc76c1c36ab2bc",
+  "integration_parent": "3fb5c05197364c84097404e72bcac95444354f7e",
+  "resolved_conflict_files": 39,
+  "tests": [
+    {
+      "test": "mipad2-buffer-metadata-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-create-bufs-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-css-restart-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-css-uninit-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-denial-no-idle-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-dwc3-suspend-error-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-frame-interval-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-frame-sequence-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-input-geometry-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-kernel-fault-patterns-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-multiopen-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-ov5693-crop-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-ov5693-timing-policy-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-pci-poweroff-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-pci-restore-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-power-transport-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-preview-warm-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-queue-reconfigure-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-recovery-error-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-reset-params-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-sensor-events-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-sensor-format-error-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-sensor-geometry-lock-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-stop-irq-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-stream-parameter-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-stream-start-unwind-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-stream-stop-order-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-stream-stop-pm-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-t4ka3-exposure-range-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-t4ka3-metadata-control-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-t4ka3-reset-pulse-host-test.py",
+      "exit_code": 0
+    },
+    {
+      "test": "mipad2-t4ka3-start-host-test.py",
+      "exit_code": 0
+    }
+  ],
+  "fallback_core": {
+    "disabled": [
+      "SCHED_BORE",
+      "CACHY",
+      "USER_NS"
+    ],
+    "exit_code": 0
+  },
+  "sensor_format_cases": 160000,
+  "sensor_error_swallow_negative_control_detected": true,
+  "ucm_package_source_hashes_verified": true,
+  "hardware_validated": false,
+  "tablet_or_default_boot_changed": false,
+  "full_build": {
+    "exit_code": 0,
+    "kernel_release": "7.2.0-mipad2-integrated-r1",
+    "module_count": 31,
+    "bzimage_sha256": "50039ed386beaa88e2068ed38e29ee5448755cf930bf6fc87d1831a2cbe07df7"
+  }
+}

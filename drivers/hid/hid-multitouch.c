@@ -34,6 +34,7 @@
 #include <linux/bitmap.h>
 #include <linux/bits.h>
 #include <linux/device.h>
+#include <linux/dmi.h>
 #include <linux/hid.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -1468,6 +1469,40 @@ static int mt_touch_input_configured(struct hid_device *hdev,
 
 #define mt_map_key_clear(c)	hid_map_usage_clear(hi, usage, bit, \
 						    max, EV_KEY, (c))
+
+/* Mi Pad 2 FTSC1000 capacitive navigation-button keyboard chords. */
+static bool mt_is_mipad2_button_keyboard(struct hid_device *hdev)
+{
+	/* This VID:PID is specific to the Mi Pad 2 FTSC1000 controller. */
+	return hdev->vendor == 0x2808 && hdev->product == 0x509c;
+}
+
+static int mt_mipad2_button_mapping(struct hid_device *hdev,
+				    struct hid_input *hi,
+				    struct hid_field *field,
+				    struct hid_usage *usage,
+				    unsigned long **bit, int *max)
+{
+	if (!mt_is_mipad2_button_keyboard(hdev))
+		return 0;
+
+	switch (usage->hid & HID_USAGE) {
+	case 0xe0: /* LeftCtrl modifier bundled with Home */
+	case 0xe3: /* LeftMeta modifier bundled with Menu */
+	case 0x16: /* S: Menu */
+	case 0x29: /* Escape: Home */
+	case 0x2a: /* Backspace/Delete: Back */
+		/*
+		 * Consume the firmware keyboard chord completely. mt_event()
+		 * below emits GNOME-friendly navigation shortcuts instead.
+		 */
+		mt_map_key_clear(KEY_RESERVED);
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 		struct hid_field *field, struct hid_usage *usage,
 		unsigned long **bit, int *max)
@@ -1476,6 +1511,9 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 	struct mt_application *application;
 	struct mt_report_data *rdata;
 	int ret;
+
+	if (mt_mipad2_button_mapping(hdev, hi, field, usage, bit, max) > 0)
+		return 1;
 
 	rdata = mt_find_report_data(td, field->report);
 	if (!rdata) {
@@ -1569,6 +1607,39 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
 {
 	struct mt_device *td = hid_get_drvdata(hid);
 	struct mt_report_data *rdata;
+
+	if (mt_is_mipad2_button_keyboard(hid) && field->hidinput) {
+		struct input_dev *input = field->hidinput->input;
+
+		switch (usage->hid) {
+		case 0x70016: /* Menu: Super+A -> GNOME application view */
+			if (value) {
+				input_event(input, EV_KEY, KEY_LEFTMETA, 1);
+				input_event(input, EV_KEY, KEY_A, 1);
+			} else {
+				input_event(input, EV_KEY, KEY_A, 0);
+				input_event(input, EV_KEY, KEY_LEFTMETA, 0);
+			}
+			return 1;
+		case 0x70029: /* Home: Super -> GNOME overview */
+			input_event(input, EV_KEY, KEY_LEFTMETA, !!value);
+			return 1;
+		case 0x7002a: /* Back: Alt+Left */
+			if (value) {
+				input_event(input, EV_KEY, KEY_LEFTALT, 1);
+				input_event(input, EV_KEY, KEY_LEFT, 1);
+			} else {
+				input_event(input, EV_KEY, KEY_LEFT, 0);
+				input_event(input, EV_KEY, KEY_LEFTALT, 0);
+			}
+			return 1;
+		case 0x700e0: /* Firmware-only Home modifier */
+		case 0x700e3: /* Firmware-only Menu modifier */
+			return 1;
+		default:
+			break;
+		}
+	}
 
 	rdata = mt_find_report_data(td, field->report);
 	if (rdata && rdata->is_mt_collection)
@@ -1946,6 +2017,19 @@ static int mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
 			td->is_haptic_touchpad = false;
 	} else {
 		td->is_haptic_touchpad = false;
+	}
+
+	/*
+	 * Expose only the keys emitted by mt_event() for the Mi Pad 2
+	 * capacitive navigation buttons. The firmware's raw keyboard usages
+	 * are intentionally mapped to KEY_RESERVED above.
+	 */
+	if (mt_is_mipad2_button_keyboard(hdev) &&
+	    hi->application == HID_GD_KEYBOARD) {
+		set_bit(KEY_LEFTMETA, hi->input->keybit);
+		set_bit(KEY_A, hi->input->keybit);
+		set_bit(KEY_LEFTALT, hi->input->keybit);
+		set_bit(KEY_LEFT, hi->input->keybit);
 	}
 
 	list_for_each_entry(report, &hi->reports, hidinput_list) {
