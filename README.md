@@ -8,6 +8,8 @@ and 32 host regressions pass. Full bzImage/modules build also passes;
 hardware qualification remains open.
 The installed tablet and stable GRUB default have not been switched.
 See [7.2 migration status](fix_file/tests/mipad2-7.2-integration.md).
+UCM pkgrel8 now preserves 6.14 rollback by detecting complete amplifier control
+pairs; real ALSA parser/sequence tests pass on two library versions, not hardware.
 The detailed 6.14 evidence below is historical and is not 7.2 hardware validation.
 
 The device defconfig is `arch/x86/configs/xiaomipad2_defconfig`. The `cachyos-mipad2` branch uses the local version suffix `-mipad2-cachyos`.

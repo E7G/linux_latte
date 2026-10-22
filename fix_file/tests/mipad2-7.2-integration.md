@@ -34,8 +34,10 @@ unresolved; passing host teardown tests is not proof of hardware quiescence.
 Audio follows the requested upstream three-stage topology, no_pcm amplifier
 links and board codec_conf prefixes. The cold-boot IF2 DAC_REF DAPM late_probe
 fix remains. RT5659/TFA989x use the new 7.2 ASoC pointer/opaque DAPM APIs.
-**The matching UCM pkgrel7 is required** (`Left Amp Input`/`Right Amp Input`).
-Do not install this profile over the running 6.14 system's unprefixed controls.
+**UCM pkgrel8 supports both kernel families**: it selects a complete prefixed
+`Left Amp Input`/`Right Amp Input` pair or the complete 6.14 legacy pair. Partial
+layouts fail before mixer writes. Real ALSA parser/ctl_ext tests pass on two
+library versions; this is not a physical audio or DAPM qualification.
 
 The touchscreen reset and codec reset/LDO mappings use 7.2 Cherryview GPIO
 secondary software nodes instead of the removed lookup-table integration API.

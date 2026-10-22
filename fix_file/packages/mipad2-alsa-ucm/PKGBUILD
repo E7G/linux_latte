@@ -1,8 +1,9 @@
 pkgname=mipad2-alsa-ucm
 pkgver=20260830
-pkgrel=7
+pkgrel=8
 pkgdesc="ALSA UCM profile for Xiaomi Mi Pad 2 RT5659 and dual TFA9890"
 arch=(x86_64)
+depends=(alsa-lib)
 license=(GPL2)
 source=(
   'HiFi.conf'
@@ -10,9 +11,9 @@ source=(
   'README'
 )
 sha256sums=(
-  '25b2da2d59b634829b5886889ad713e221a0691571250a8727699ea6a84f13bb'
-  '61df3e84a3f3d7f78a00ef082c34a078dce851bb89b09989fb53fccbbd8e8a81'
-  'd9cabb09eec2bcdf2bff8259cdb23e890210bd6f784c711168a32fbf65c172da'
+  '115f9b103c42cff6ecbb67b9ae0a32cc1139d77bf44a3b9ccb727903739e6a22'
+  '9b462faa50a7bebb04409fe4003208574824383e60ed69695d0af88e3e3c420d'
+  '158f126a6832ea9357dc45138e653b677bd7f45618c53f01d34c73bdba46eb22'
 )
 
 package() {

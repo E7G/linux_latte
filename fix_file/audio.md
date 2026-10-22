@@ -131,3 +131,13 @@ Do not reuse the 6.14 profile's unprefixed `Amp Input` / `Amp Input1` names.
 The running 6.14 device and its UCM have not been changed by this source merge.
 Compilation, cold boot, left/right playback, headset and resume checks are still
 required; source integration alone does not qualify the new topology.
+
+## Dual-kernel rollback profile (pkgrel8)
+
+The pkgrel7 warning above describes the earlier prefixed-only package. pkgrel8
+selects a complete control pair at UCM load time and supports both 6.14 legacy
+and 7.2 codec_conf-prefixed names in the same installed profile. Incomplete or
+mixed partial amplifier probes fail before any mixer write; channel selection
+precedes speaker power. Real ALSA 1.2.15.3/1.2.16.1 parser/ctl_ext tests pass for
+both layouts, both-at-once, five missing/partial layouts, and a wrong-channel
+negative control. Physical playback and jack behavior still require hardware.

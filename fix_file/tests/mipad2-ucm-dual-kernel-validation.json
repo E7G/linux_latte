@@ -1,0 +1,159 @@
+{
+  "state": "dual-ALSA-library-real-parser-matrix-pass",
+  "runtimes": [
+    {
+      "state": "real-ALSA-UCM-layout-and-channel-oracles-pass",
+      "cases": [
+        {
+          "layout": "modern",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.16.1: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "legacy",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.16.1: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "both",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.16.1: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "missing_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "legacy_missing_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "missing_left",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "mixed_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "none",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        }
+      ],
+      "wrong_channel_mutation_detected": true,
+      "profile_sha256": {
+        "cht-bsw-rt5659.conf": "9b462faa50a7bebb04409fe4003208574824383e60ed69695d0af88e3e3c420d",
+        "HiFi.conf": "115f9b103c42cff6ecbb67b9ae0a32cc1139d77bf44a3b9ccb727903739e6a22"
+      },
+      "scope": "Real libasound ControlExists/substitution/parser/sequence/ctl_ext APIs with explicitly synthetic controls. No physical PCM, DAPM, jack or acoustic validation.",
+      "hardware_tested": false,
+      "runtime": "isolated-1.2.16.1"
+    },
+    {
+      "state": "real-ALSA-UCM-layout-and-channel-oracles-pass",
+      "cases": [
+        {
+          "layout": "modern",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.15.3: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "legacy",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.15.3: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "both",
+          "exit_code": 0,
+          "passed": true,
+          "mixer_write_count": 126,
+          "sequence_summary": "real ALSA 1.2.15.3: 3x4 enable/disable cycles pass",
+          "partial_or_unknown_rejected_before_writes": false
+        },
+        {
+          "layout": "missing_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "legacy_missing_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "missing_left",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "mixed_right",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        },
+        {
+          "layout": "none",
+          "exit_code": 10,
+          "passed": true,
+          "mixer_write_count": 0,
+          "sequence_summary": "",
+          "partial_or_unknown_rejected_before_writes": true
+        }
+      ],
+      "wrong_channel_mutation_detected": true,
+      "profile_sha256": {
+        "cht-bsw-rt5659.conf": "9b462faa50a7bebb04409fe4003208574824383e60ed69695d0af88e3e3c420d",
+        "HiFi.conf": "115f9b103c42cff6ecbb67b9ae0a32cc1139d77bf44a3b9ccb727903739e6a22"
+      },
+      "scope": "Real libasound ControlExists/substitution/parser/sequence/ctl_ext APIs with explicitly synthetic controls. No physical PCM, DAPM, jack or acoustic validation.",
+      "hardware_tested": false,
+      "runtime": "system-1.2.15.3"
+    }
+  ]
+}

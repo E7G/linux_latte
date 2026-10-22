@@ -1,4 +1,12 @@
 Mi Pad 2 RT5659 UCM profile; devices: Speaker, Headphones, IntMic, HeadsetMic.
 
-7.2 integration: this profile requires codec_conf-prefixed Left/Right Amp Input
-controls. Keep the 6.14 package when booting the old kernel; do not mix profiles.
+pkgrel8 supports both the 6.14 unprefixed Amp Input/Amp Input1 controls and
+the 7.2 codec_conf-prefixed Left Amp Input/Right Amp Input controls. A complete
+prefixed pair is preferred when both layouts exist. Partial/unknown layouts
+are rejected before mixer writes. Both channels are selected before speaker
+power is enabled. This keeps one UCM configuration across kernel rollback.
+
+Real libasound 1.2.15.3/1.2.16.1 parsing and synthetic-control sequence tests:
+  python3 fix_file/tests/mipad2-ucm-real-parser-test.py
+Requires GCC and ALSA development files; --alsa-root accepts an isolated root.
+These tests are not physical audio, DAPM, jack IRQ or acoustic validation.
