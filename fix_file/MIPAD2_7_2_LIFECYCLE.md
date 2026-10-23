@@ -94,3 +94,7 @@ Outstanding gates include normal-app long front/rear MP4/AAC/live pacing,
 AE/AWB/focus and optical quality, actual 7.2 audio, suspend/resume/S0I3/S5,
 failed-reset DMA quiescence, long-freeze attribution and full image qualification.
 The complete kernel/system and Android/Windows parity objective remains active.
+
+## Later actual system sleep cycles
+
+[Two actual s2idle/S0I3 returns and native1080p camera restart after each](MIPAD2_7_2_PM_RESUME.md) add1920frames/64negative ownership checks after real system resume. This does not establish encoded playback, optics/acoustics, failed-reset DMA fencing or long-freeze/OEM qualification.

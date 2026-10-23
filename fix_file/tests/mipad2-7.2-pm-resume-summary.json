@@ -1,0 +1,758 @@
+{
+  "schema": 1,
+  "scope": "Two bounded actual s2idle/S0I3 cycles and post-resume native raw restart/ownership checks; not full system qualification",
+  "kernel": "7.2.0-mipad2-integrated-r3",
+  "kernel_build_source": "20f0304fc024a784dd2e356bd72331c9640d382e",
+  "thermal_guard_source_sha256": "be6131f3bb6d20222e4c1826e2b0936195d9e4eda46dd3242e24eabdc163aa51",
+  "cycles": [
+    {
+      "suspend": {
+        "state": "resume-gates-passed",
+        "terminal": true,
+        "requested_seconds": 12,
+        "raw_data_exported": false,
+        "new_reboots": 0,
+        "usb_serial_monitor_attached": true,
+        "pristine_untethered_sleep": false,
+        "before_pmc": {
+          "S0I1": 0,
+          "S0I2": 0,
+          "S0I3": 0,
+          "S0": 8898091488
+        },
+        "before_pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "rtcwake_exit": 0,
+        "boot_unchanged": true,
+        "after_pmc": {
+          "S0I1": 11424,
+          "S0I2": 96,
+          "S0I3": 12020448,
+          "S0": 8903258048
+        },
+        "s0i3_delta_us": 12020448,
+        "minimum_s0i3_us": 8400000,
+        "boottime_elapsed": 13.187630231001094,
+        "monotonic_awake_elapsed": 1.7258966870012955,
+        "estimated_suspended_seconds": 11.461733543999799,
+        "actual_wakeup_irq": "9",
+        "actual_wakeup_action": "acpi,INT0002",
+        "kernel_fault_delta": {
+          "panic": 0,
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "GPU_HANG": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "stop_timeout": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "reset_failed": 0,
+          "TFA_DSP_timeout": 0
+        },
+        "after_pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "residency_gate": true,
+        "faults_gate": true,
+        "pm_gate": true,
+        "remaining_rtc_alarm": "",
+        "full_oem_suspend_qualification": false,
+        "unit": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "MainPID": "0",
+          "Result": "success",
+          "ExecMainStatus": "0"
+        }
+      },
+      "reopen": {
+        "state": "passed",
+        "cases": [
+          {
+            "camera": "rear",
+            "input": 1,
+            "exit": 0,
+            "result": {
+              "exit": 0,
+              "errno_on_failure": 0,
+              "width": 1920,
+              "height": 1080,
+              "sizeimage": 3112960,
+              "pixel_format": 842094158,
+              "phases": [
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 33058,
+                  "max_interval_us": 33763,
+                  "sum_interval_us": 3965392
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32825,
+                  "max_interval_us": 33981,
+                  "sum_interval_us": 3965387
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32789,
+                  "max_interval_us": 33960,
+                  "sum_interval_us": 3965685
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32837,
+                  "max_interval_us": 33856,
+                  "sum_interval_us": 3965178
+                }
+              ]
+            },
+            "phase_frame_counts": {
+              "0": 120,
+              "1": 120,
+              "2": 120,
+              "3": 120
+            },
+            "shape_before": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_after": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_preserved": true,
+            "sensor_controls_preserved": true,
+            "kernel_fault_delta": {
+              "BUG": 0,
+              "WARNING": 0,
+              "Oops": 0,
+              "DDR": 0,
+              "IUNIT": 0,
+              "CSS_queue": 0,
+              "SP_not_idle": 0,
+              "ISP_not_idle": 0,
+              "stop_timeout": 0,
+              "reset_failed": 0,
+              "recovery_failed": 0
+            },
+            "passed": true
+          },
+          {
+            "camera": "front",
+            "input": 0,
+            "exit": 0,
+            "result": {
+              "exit": 0,
+              "errno_on_failure": 0,
+              "width": 1920,
+              "height": 1080,
+              "sizeimage": 3112960,
+              "pixel_format": 842094158,
+              "phases": [
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32730,
+                  "max_interval_us": 33973,
+                  "sum_interval_us": 3966365
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32827,
+                  "max_interval_us": 33689,
+                  "sum_interval_us": 3966503
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32961,
+                  "max_interval_us": 33660,
+                  "sum_interval_us": 3966461
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 33082,
+                  "max_interval_us": 33689,
+                  "sum_interval_us": 3966939
+                }
+              ]
+            },
+            "phase_frame_counts": {
+              "0": 120,
+              "1": 120,
+              "2": 120,
+              "3": 120
+            },
+            "shape_before": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_after": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_preserved": true,
+            "sensor_controls_preserved": true,
+            "kernel_fault_delta": {
+              "BUG": 0,
+              "WARNING": 0,
+              "Oops": 0,
+              "DDR": 0,
+              "IUNIT": 0,
+              "CSS_queue": 0,
+              "SP_not_idle": 0,
+              "ISP_not_idle": 0,
+              "stop_timeout": 0,
+              "reset_failed": 0,
+              "recovery_failed": 0
+            },
+            "passed": true
+          }
+        ],
+        "original_input_format_controls_restored": true,
+        "restoration_writes": [
+          "original-video-format",
+          "t4ka3-active-crop",
+          "t4ka3-active-format"
+        ],
+        "pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "after_system_s2idle_test": true,
+        "strict_whole_phase_cadence_gate": true,
+        "capture_profile": "1920x1080-NV12",
+        "controller_sets_video_profile_before_capture": true,
+        "sensor_geometry_restored": true,
+        "fixture_compiled_on_host": true,
+        "source_sha256": "21d2778795f0017ca788c6320e2724d13e7b195cb8abde42dfef19d87fa39cca",
+        "binary_sha256": "34d4cfd3268fc65c6e8ed1b4fa46634b68de560fd35ee5835c3ec9afca2a8398",
+        "kernel_fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR": 0,
+          "IUNIT": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "s_fmt_or_s_parm_in_capture_fixture": false,
+        "raw_pixels_copied_or_saved": false,
+        "raw_timestamps_exported": false,
+        "encoded_recording_tested": false,
+        "optical_quality_verified": false,
+        "physical_failed_reset_fault_injected": false,
+        "reboot_issued": false,
+        "existing_profiles_or_launchers_changed": false,
+        "child_live_now": false
+      }
+    },
+    {
+      "suspend": {
+        "state": "resume-gates-passed",
+        "terminal": true,
+        "requested_seconds": 12,
+        "raw_data_exported": false,
+        "new_reboots": 0,
+        "usb_serial_monitor_attached": false,
+        "pristine_untethered_sleep": false,
+        "before_pmc": {
+          "S0I1": 11424,
+          "S0I2": 96,
+          "S0I3": 12020448,
+          "S0": 9324809280
+        },
+        "before_pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "acpi_event_counter_deltas": {
+          "ff_rt_clk": 1
+        },
+        "rtcwake_exit": 0,
+        "boot_unchanged": true,
+        "after_pmc": {
+          "S0I1": 22848,
+          "S0I2": 192,
+          "S0I3": 23610624,
+          "S0": 9330021120
+        },
+        "s0i3_delta_us": 11590176,
+        "minimum_s0i3_us": 8400000,
+        "boottime_elapsed": 12.73603443400134,
+        "monotonic_awake_elapsed": 1.697241944999405,
+        "estimated_suspended_seconds": 11.038792489001935,
+        "actual_wakeup_irq": "9",
+        "actual_wakeup_action": "acpi,INT0002",
+        "kernel_fault_delta": {
+          "panic": 0,
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "GPU_HANG": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "stop_timeout": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "reset_failed": 0,
+          "TFA_DSP_timeout": 0
+        },
+        "after_pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "residency_gate": true,
+        "faults_gate": true,
+        "pm_gate": true,
+        "remaining_rtc_alarm": "",
+        "full_oem_suspend_qualification": false,
+        "unit": {
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "MainPID": "0",
+          "Result": "success",
+          "ExecMainStatus": "0"
+        }
+      },
+      "reopen": {
+        "state": "passed",
+        "cases": [
+          {
+            "camera": "rear",
+            "input": 1,
+            "exit": 0,
+            "result": {
+              "exit": 0,
+              "errno_on_failure": 0,
+              "width": 1920,
+              "height": 1080,
+              "sizeimage": 3112960,
+              "pixel_format": 842094158,
+              "phases": [
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32806,
+                  "max_interval_us": 33889,
+                  "sum_interval_us": 3966035
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32797,
+                  "max_interval_us": 33904,
+                  "sum_interval_us": 3965465
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32869,
+                  "max_interval_us": 33727,
+                  "sum_interval_us": 3965686
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32939,
+                  "max_interval_us": 33744,
+                  "sum_interval_us": 3964497
+                }
+              ]
+            },
+            "phase_frame_counts": {
+              "0": 120,
+              "1": 120,
+              "2": 120,
+              "3": 120
+            },
+            "shape_before": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_after": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_preserved": true,
+            "sensor_controls_preserved": true,
+            "kernel_fault_delta": {
+              "BUG": 0,
+              "WARNING": 0,
+              "Oops": 0,
+              "DDR": 0,
+              "IUNIT": 0,
+              "CSS_queue": 0,
+              "SP_not_idle": 0,
+              "ISP_not_idle": 0,
+              "stop_timeout": 0,
+              "reset_failed": 0,
+              "recovery_failed": 0
+            },
+            "passed": true
+          },
+          {
+            "camera": "front",
+            "input": 0,
+            "exit": 0,
+            "result": {
+              "exit": 0,
+              "errno_on_failure": 0,
+              "width": 1920,
+              "height": 1080,
+              "sizeimage": 3112960,
+              "pixel_format": 842094158,
+              "phases": [
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32890,
+                  "max_interval_us": 33923,
+                  "sum_interval_us": 3965905
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 33003,
+                  "max_interval_us": 33628,
+                  "sum_interval_us": 3966387
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32909,
+                  "max_interval_us": 34098,
+                  "sum_interval_us": 3966469
+                },
+                {
+                  "frames": 120,
+                  "sequence_discontinuities": 0,
+                  "buffer_errors": 0,
+                  "observer_busy_checks": 4,
+                  "min_interval_us": 32835,
+                  "max_interval_us": 33849,
+                  "sum_interval_us": 3966189
+                }
+              ]
+            },
+            "phase_frame_counts": {
+              "0": 120,
+              "1": 120,
+              "2": 120,
+              "3": 120
+            },
+            "shape_before": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_after": {
+              "width": 1920,
+              "height": 1080,
+              "pixel": "NV12",
+              "sizeimage": 3112960,
+              "stride": 1920
+            },
+            "shape_preserved": true,
+            "sensor_controls_preserved": true,
+            "kernel_fault_delta": {
+              "BUG": 0,
+              "WARNING": 0,
+              "Oops": 0,
+              "DDR": 0,
+              "IUNIT": 0,
+              "CSS_queue": 0,
+              "SP_not_idle": 0,
+              "ISP_not_idle": 0,
+              "stop_timeout": 0,
+              "reset_failed": 0,
+              "recovery_failed": 0
+            },
+            "passed": true
+          }
+        ],
+        "original_input_format_controls_restored": true,
+        "restoration_writes": [
+          "original-video-format",
+          "t4ka3-active-crop",
+          "t4ka3-active-format"
+        ],
+        "pm": {
+          "t4ka3": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "ov5693": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          },
+          "isp": {
+            "runtime_status": "suspended",
+            "runtime_usage": "0"
+          }
+        },
+        "after_system_s2idle_test": true,
+        "strict_whole_phase_cadence_gate": true,
+        "capture_profile": "1920x1080-NV12",
+        "controller_sets_video_profile_before_capture": true,
+        "sensor_geometry_restored": true,
+        "fixture_compiled_on_host": true,
+        "source_sha256": "21d2778795f0017ca788c6320e2724d13e7b195cb8abde42dfef19d87fa39cca",
+        "binary_sha256": "34d4cfd3268fc65c6e8ed1b4fa46634b68de560fd35ee5835c3ec9afca2a8398",
+        "kernel_fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR": 0,
+          "IUNIT": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "s_fmt_or_s_parm_in_capture_fixture": false,
+        "raw_pixels_copied_or_saved": false,
+        "raw_timestamps_exported": false,
+        "encoded_recording_tested": false,
+        "optical_quality_verified": false,
+        "physical_failed_reset_fault_injected": false,
+        "reboot_issued": false,
+        "existing_profiles_or_launchers_changed": false,
+        "child_live_now": false
+      }
+    }
+  ],
+  "total_postresume_raw_frames": 1920,
+  "total_nonowner_busy_checks": 64,
+  "physical_failed_reset_fault_injected": false,
+  "encoded_recording_or_optics_retested_after_resume": false,
+  "acoustics_retested_after_resume": false,
+  "native_compositor_control_responsive": true,
+  "display_connector_connected": true,
+  "display_visual_verified": false,
+  "postflight": {
+    "protected_files_checked": 686,
+    "changed_protected_files": [],
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "pm": {
+      "t4ka3": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "ov5693": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "failed_units_count": 0,
+    "thermal_guard_source_matches": true,
+    "ucm8_sources_match": true,
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "camera_clients": {
+      "snapshot": false,
+      "gst-launch-1.0": false
+    },
+    "backlights": [
+      {
+        "brightness": "255",
+        "actual_brightness": "255",
+        "max_brightness": "255",
+        "bl_power": "0"
+      }
+    ],
+    "suspend_units": {
+      "mipad2-suspend-cont17.service": {
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0"
+      },
+      "mipad2-suspend-cont18.service": {
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0"
+      }
+    }
+  },
+  "aliases": {
+    "checked": 35,
+    "byte_identical": true,
+    "user_access_matches_original": true
+  },
+  "serial": {
+    "terminal": true,
+    "received_bytes": 1202,
+    "opens": 2,
+    "error_count": 13,
+    "markers": {
+      "probe": 2,
+      "r3_banner": 0,
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "ddr_failure": 0
+    },
+    "raw_host_file_written": false,
+    "device_serial_input_sent": false,
+    "raw_uploaded_device_private": true
+  },
+  "privacy": {
+    "raw_media_exported": false,
+    "per_frame_timestamps_exported": false,
+    "kernel_serial_or_pointer_traces_exported": false
+  },
+  "pmc_timer_resolution_us": 32,
+  "pmc_and_clock_measurement_windows_differ": true,
+  "first_shared_irq_not_unique_rtc_attribution": true,
+  "second_acpi_rtc_fixed_event_delta": 1,
+  "earlier_recording_failures_preserved": true,
+  "old_hard_freeze_unresolved": true,
+  "failed_reset_dma_quiescence_unresolved": true,
+  "stable_or_oem_promotion": false,
+  "new_kernel_c_patch_or_build": false,
+  "new_reboots": 0
+}
