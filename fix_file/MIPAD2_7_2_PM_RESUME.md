@@ -94,3 +94,7 @@ rejecting exit0 with no residency, changed boot/live unit/child, kernel faults,
 active PM, sequence gaps, wrong native size or failed restoration, nonfinite
 measurements and leftover alarm. They retain explicit shared-IRQ and non-OEM
 scope. These are host oracles, not additional physical suspend/codec tests.
+
+## Later runtime audio application
+
+[Actual running UCM stereo selector correction and resume retention](MIPAD2_AUDIO_RUNTIME_7_2.md) addresses a Left/Left live route despite already-correct profile files. The active built-in tfa989x driver still bypasses vendor DSP; digital-zero flow and register selectors are not OEM/acoustic acceptance. Original premature3s idle failure remains recorded beside later closure and configured5s policy.

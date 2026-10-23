@@ -7,6 +7,11 @@ runtime. No real sound card/PCM, kernel DAPM, jack IRQ or acoustic proof.
 from pathlib import Path
 import argparse,hashlib,json,os,shlex,subprocess,tempfile
 
+def require(value, message):
+    # These are evidence gates, not optional Python debugging assertions.
+    if not value:
+        raise RuntimeError(message)
+
 parser=argparse.ArgumentParser()
 parser.add_argument('--alsa-root',type=Path)
 parser.add_argument('--runtime-lib',type=Path)
@@ -23,7 +28,7 @@ with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as director
     common=['gcc','-g','-O1','-Wall','-Wextra','-Werror','-Wno-misleading-indentation']
     for source,dest,extra in [('mipad2-ucm-ctl-ext.c','libasound_module_ctl_mp2test.so',['-fPIC','-DPIC','-shared']),('mipad2-ucm-sequence-runner.c','runner',[])]:
         q=subprocess.run([*common,*extra,str(fixtures/source),*flags,'-o',str(base/dest)],capture_output=True,text=True)
-        assert q.returncode==0,q.stderr
+        require(q.returncode == 0, q.stderr)
     (base/'alsa.conf').write_text('ctl.hw { @args [ CARD ] @args.CARD { type string } type mp2test }\n')
     ucm=base/'ucm';(ucm/'test').mkdir(parents=True)
     (ucm/'ucm.conf').write_text('Syntax 3\nUseCasePath.test { Directory "test" File "test.conf" }\n')
@@ -41,23 +46,23 @@ with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as director
         left='Amp Input|0' if layout=='legacy' else 'Left Amp Input|0'
         right='Amp Input1|1' if layout=='legacy' else 'Right Amp Input|1'
         if positive:
-            assert q.returncode==0,(layout,q.stderr)
+            require(q.returncode == 0, (layout, q.stderr))
             amps=[x for x in writes if 'Amp Input' in x]
-            assert amps==[left,right]*3,(layout,amps)
+            require(amps == [left, right] * 3, (layout, amps))
             for i,x in enumerate(writes):
-                if x=='Ext Spk Switch|1':assert writes[i-3:i]==[left,right,'Headphone Switch|0'],(layout,i,writes[i-3:i])
-            assert q.stdout.startswith('real ALSA '),q.stdout
+                if x=='Ext Spk Switch|1':require(writes[i - 3:i] == [left, right, 'Headphone Switch|0'], (layout, i, writes[i - 3:i]))
+            require(q.stdout.startswith('real ALSA '), q.stdout)
         else:
-            assert q.returncode==10 and not writes,(layout,q.returncode,writes,q.stderr)
+            require(q.returncode == 10 and (not writes), (layout, q.returncode, writes, q.stderr))
         rows.append(dict(layout=layout,exit_code=q.returncode,passed=True,mixer_write_count=len(writes),sequence_summary=q.stdout.strip(),partial_or_unknown_rejected_before_writes=not positive))
     # Mutate only the temporary configuration to select the left amplifier for
     # both channels. ALSA accepts it, but the independent channel oracle must not.
     wrong=profiles['HiFi.conf'].replace("${var:RightAmpControl}' Right","${var:LeftAmpControl}' Right")
-    assert wrong!=profiles['HiFi.conf']
+    require(wrong != profiles['HiFi.conf'], 'UCM oracle invariant failed at original line 56')
     (ucm/'test/HiFi.conf').write_text(wrong)
     q,writes=run('modern','wrong-channel-negative')
     amps=[x for x in writes if 'Amp Input' in x]
-    assert q.returncode==0 and amps!=['Left Amp Input|0','Right Amp Input|1']*3
-    assert amps==['Left Amp Input|0','Left Amp Input|1']*3,amps
+    require(q.returncode == 0 and amps != ['Left Amp Input|0', 'Right Amp Input|1'] * 3, 'UCM oracle invariant failed at original line 60')
+    require(amps == ['Left Amp Input|0', 'Left Amp Input|1'] * 3, amps)
 result=dict(state='real-ALSA-UCM-layout-and-channel-oracles-pass',cases=rows,wrong_channel_mutation_detected=True,profile_sha256={n:hashlib.sha256(s.encode()).hexdigest() for n,s in profiles.items()},scope='Real libasound ControlExists/substitution/parser/sequence/ctl_ext APIs with explicitly synthetic controls. No physical PCM, DAPM, jack or acoustic validation.',hardware_tested=False)
 print(json.dumps(result,indent=2))

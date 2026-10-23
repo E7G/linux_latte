@@ -1,0 +1,407 @@
+{
+  "schema": 1,
+  "scope": "Actual runtime UCM8 stereo selector correction, one resume retention and bounded digital-zero flow; not acoustic/vendor-DSP acceptance",
+  "kernel": "7.2.0-mipad2-integrated-r3",
+  "kernel_build_source": "20f0304fc024a784dd2e356bd72331c9640d382e",
+  "ucm_source_unchanged": true,
+  "reload": {
+    "state": "ucm8-runtime-route-reloaded-and-verified",
+    "terminal": true,
+    "playback_or_capture_started": false,
+    "raw_data_exported": false,
+    "new_reboots": 0,
+    "before_amp": {
+      "Left Amp Input": {
+        "items": [
+          "Left",
+          "Right"
+        ],
+        "value": 0
+      },
+      "Right Amp Input": {
+        "items": [
+          "Left",
+          "Right"
+        ],
+        "value": 0
+      }
+    },
+    "prior_profile": "HiFi (IntMic, Speaker)",
+    "after_amp": {
+      "Left Amp Input": {
+        "items": [
+          "Left",
+          "Right"
+        ],
+        "value": 0
+      },
+      "Right Amp Input": {
+        "items": [
+          "Left",
+          "Right"
+        ],
+        "value": 1
+      }
+    },
+    "profile_preserved": true,
+    "sink_mute_and_integer_volumes_restored": true,
+    "source_mute_and_integer_volumes_restored": true,
+    "default_sink_preserved": true,
+    "normal_denial_settings_unchanged": true,
+    "wireplumber_pid_changed": true,
+    "wireplumber_active": true,
+    "pcm_closed_after": true,
+    "no_active_audio_streams_after": true,
+    "pipewire_core_restarted": false,
+    "new_ucm_control_error_count": 0,
+    "acoustic_or_electrical_signal_path_qualified": false,
+    "unit": {
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0"
+    }
+  },
+  "resume": {
+    "state": "resume-gates-passed",
+    "terminal": true,
+    "requested_seconds": 12,
+    "raw_data_exported": false,
+    "new_reboots": 0,
+    "usb_serial_monitor_attached": false,
+    "pristine_untethered_sleep": false,
+    "amp_before": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "before_pmc": {
+      "S0I1": 22848,
+      "S0I2": 192,
+      "S0I3": 23610624,
+      "S0": 10919565632
+    },
+    "before_pm": {
+      "t4ka3": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "ov5693": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "amp_after": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "audio_route_preserved": true,
+    "pcm_closed_after": true,
+    "rtcwake_exit": 0,
+    "boot_unchanged": true,
+    "after_pmc": {
+      "S0I1": 34240,
+      "S0I2": 320,
+      "S0I3": 35213600,
+      "S0": 10924785344
+    },
+    "s0i3_delta_us": 11602976,
+    "minimum_s0i3_us": 8400000,
+    "boottime_elapsed": 12.764632241000072,
+    "monotonic_awake_elapsed": 1.6973770700005844,
+    "estimated_suspended_seconds": 11.067255170999488,
+    "actual_wakeup_irq": "9",
+    "actual_wakeup_action": "acpi,INT0002",
+    "kernel_fault_delta": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0,
+      "TFA_DSP_timeout": 0
+    },
+    "after_pm": {
+      "t4ka3": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "ov5693": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "residency_gate": true,
+    "faults_gate": true,
+    "pm_gate": true,
+    "remaining_rtc_alarm": "",
+    "full_oem_suspend_qualification": false,
+    "unit": {
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0"
+    }
+  },
+  "zero_pcm_original": {
+    "state": "digital-zero-playback-check-failed",
+    "terminal": true,
+    "input_waveform": "digital-zero",
+    "audible_tone_requested": false,
+    "playback_started": true,
+    "capture_started": false,
+    "raw_data_exported": false,
+    "new_reboots": 0,
+    "source_frames": 288000,
+    "source_nonzero_bytes": 0,
+    "source_pcm_sha256": "87b70eb78776e7b61f70a6fdbd06bddbfb7e877812b593071945976f73a89269",
+    "before_amp": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "playback_pcm_running_observed": true,
+    "amp_during": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "playback_exit": 0,
+    "child_live_now": false,
+    "after_amp": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "kernel_error_delta": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "DSP_timeout": 0,
+      "regmap_error": 0,
+      "ASoC_error": 0,
+      "xrun": 0
+    },
+    "pcm_closed_after": false,
+    "sink_mute_and_integer_volume_unchanged": true,
+    "acoustic_verified": false,
+    "dsp_firmware_path_tested": false,
+    "active_amplifier_backend": "tfa989x-bypass",
+    "unit": {
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0"
+    }
+  },
+  "same_playback_idle_followup": {
+    "state": "same-playback-idle-followup",
+    "pcm": {
+      "/proc/asound/card0/pcm0c/sub0/status": "closed",
+      "/proc/asound/card0/pcm0p/sub0/status": "closed",
+      "/proc/asound/card0/pcm1p/sub0/status": "closed"
+    },
+    "nodes": [
+      {
+        "id": 51,
+        "state": "suspended",
+        "props": {
+          "node.driver": true,
+          "node.pause-on-idle": false
+        }
+      }
+    ],
+    "policy_matches": [
+      {
+        "file": "/home/user/.config/wireplumber/wireplumber.conf.d/90-mipad2-camera.conf",
+        "lines": [
+          "node.pause-on-idle = true"
+        ]
+      },
+      {
+        "file": "/usr/share/wireplumber/scripts/node/suspend-node.lua",
+        "lines": [
+          "-- honor \"session.suspend-timeout-seconds\" if specified",
+          "tonumber(node.properties[\"session.suspend-timeout-seconds\"]) or 5"
+        ]
+      }
+    ],
+    "playback_repeated": false,
+    "settings_changed": false,
+    "raw_data_exported": false
+  },
+  "driver": {
+    "devices": [
+      {
+        "device": "i2c-tfa9890:00",
+        "driver": "tfa989x",
+        "module": null
+      },
+      {
+        "device": "i2c-tfa9890:01",
+        "driver": "tfa989x",
+        "module": null
+      }
+    ],
+    "config": {
+      "CONFIG_SND_SOC_INTEL_CHT_BSW_RT5659_MACH": "m",
+      "CONFIG_SND_SOC_TFA989X": "y"
+    },
+    "candidate_modules": [],
+    "firmware": [
+      {
+        "name": "tfa98xx.cnt",
+        "bytes": 5133,
+        "sha256": "83709da84f22b5c0ff1f7568478b3ecbfc1c1c29bc3814a8be8a64426f3c2c2a"
+      }
+    ],
+    "module_switch_performed": false,
+    "raw_data_exported": false
+  },
+  "postflight": {
+    "protected_files_checked": 686,
+    "changed_protected_files": [],
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "pm": {
+      "t4ka3": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "ov5693": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "failed_units_count": 0,
+    "thermal_guard_source_matches": true,
+    "ucm8_sources_match": true,
+    "audio_amp_inputs": {
+      "Left Amp Input": 0,
+      "Right Amp Input": 1
+    },
+    "audio_pcm_states": {
+      "/proc/asound/card0/pcm0c/sub0/status": "closed",
+      "/proc/asound/card0/pcm0p/sub0/status": "closed",
+      "/proc/asound/card0/pcm1p/sub0/status": "closed"
+    },
+    "tfa_backend_drivers": [
+      "tfa989x",
+      "tfa989x"
+    ]
+  },
+  "private_aliases_checked": 35,
+  "private_alias_bytes_and_access_unchanged": true,
+  "exact_idle_close_latency_measured": false,
+  "three_second_idle_gate_predates_default_five_second_policy": true,
+  "original_early_failure_retained": true,
+  "on_wire_amp_register_readback": false,
+  "acoustic_verified": false,
+  "vendor_dsp_path_verified": false,
+  "firmware_present_does_not_prove_loaded": true,
+  "active_backend_is_not_oem_dsp_equivalence": true,
+  "new_kernel_c_patch_or_build": false,
+  "new_reboots": 0,
+  "nonzero_test_tone_played": false,
+  "microphone_audio_captured": false,
+  "stable_or_oem_promotion": false,
+  "old_freeze_and_failed_reset_dma_unresolved": true,
+  "raw_kernel_or_pointer_traces_exported": false,
+  "host_oracle_integrity": {
+    "state": "audio-ucm-host-oracle-integrity-verified",
+    "normal_and_optimized_matrix": [
+      {
+        "runtime": "isolated-1.2.16.1",
+        "optimized": false,
+        "exit": 0,
+        "layout_cases": 8,
+        "wrong_channel_negative_detected": true
+      },
+      {
+        "runtime": "isolated-1.2.16.1",
+        "optimized": true,
+        "exit": 0,
+        "layout_cases": 8,
+        "wrong_channel_negative_detected": true
+      },
+      {
+        "runtime": "system-1.2.15.3",
+        "optimized": false,
+        "exit": 0,
+        "layout_cases": 8,
+        "wrong_channel_negative_detected": true
+      },
+      {
+        "runtime": "system-1.2.15.3",
+        "optimized": true,
+        "exit": 0,
+        "layout_cases": 8,
+        "wrong_channel_negative_detected": true
+      }
+    ],
+    "explicit_negative_controls": [
+      {
+        "kind": "right-channel-deliberately-wrong",
+        "optimized": false,
+        "expected_failure_observed": true,
+        "exit": 1
+      },
+      {
+        "kind": "right-channel-deliberately-wrong",
+        "optimized": true,
+        "expected_failure_observed": true,
+        "exit": 1
+      },
+      {
+        "kind": "compiler-deliberately-fails",
+        "optimized": false,
+        "expected_failure_observed": true,
+        "exit": 1
+      },
+      {
+        "kind": "compiler-deliberately-fails",
+        "optimized": true,
+        "expected_failure_observed": true,
+        "exit": 1
+      }
+    ],
+    "historical_optimized_wrong_channel_false_positive_reproduced": true,
+    "hardened_runtime_checks_reject_it_in_both_modes": true,
+    "optional_assertions_removed": 9,
+    "profile_sources_or_driver_runtime_changed": false,
+    "tablet_playback_not_repeated": true,
+    "host_tests_not_hardware_dsp_proof": true
+  }
+}
