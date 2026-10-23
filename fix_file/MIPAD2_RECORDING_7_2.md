@@ -45,3 +45,9 @@ Open gates include attribution/fix of long gaps, normal-app preview/video/audio
 and rear-camera validation with matching plugins, optical AE/AWB/focus quality,
 7.2 acoustic/UCM, resume/S0I3, S5 cold boot, and failed-reset DMA quiescence.
 No complete image, Android/OEM parity or full MiPad2 task completion claimed.
+
+## Later native lifecycle checkpoint
+
+[Measured 7.2 r3 raw-buffer lifecycle and exact scope](MIPAD2_7_2_LIFECYCLE.md)
+adds 720p/default and 1080p/NV12 ownership/restart evidence. It does not close
+the normal-application recording, optical, audio or long-freeze gates.

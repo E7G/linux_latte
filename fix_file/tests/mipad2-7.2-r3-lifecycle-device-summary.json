@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "kernel": "7.2.0-mipad2-integrated-r3",
+  "running_kernel_source_commit": "20f0304fc024a784dd2e356bd72331c9640d382e",
+  "device_fixture_source_sha256": "21d2778795f0017ca788c6320e2724d13e7b195cb8abde42dfef19d87fa39cca",
+  "profiles": {
+    "default-720p": {
+      "original_controller_state": "passed",
+      "cases": [
+        {
+          "camera": "rear",
+          "passed": true,
+          "result": {
+            "exit": 0,
+            "errno_on_failure": 0,
+            "width": 1280,
+            "height": 720,
+            "sizeimage": 1384448,
+            "pixel_format": 842093913,
+            "phases": [
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32659,
+                "max_interval_us": 33982,
+                "sum_interval_us": 3971426
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32911,
+                "max_interval_us": 33752,
+                "sum_interval_us": 3971381
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32727,
+                "max_interval_us": 33935,
+                "sum_interval_us": 3971466
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32739,
+                "max_interval_us": 33983,
+                "sum_interval_us": 3971411
+              }
+            ]
+          }
+        },
+        {
+          "camera": "front",
+          "passed": true,
+          "result": {
+            "exit": 0,
+            "errno_on_failure": 0,
+            "width": 1280,
+            "height": 720,
+            "sizeimage": 1384448,
+            "pixel_format": 842093913,
+            "phases": [
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 33055,
+                "max_interval_us": 33867,
+                "sum_interval_us": 3990234
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 33015,
+                "max_interval_us": 34130,
+                "sum_interval_us": 3990684
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32945,
+                "max_interval_us": 34165,
+                "sum_interval_us": 3990426
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 33056,
+                "max_interval_us": 33920,
+                "sum_interval_us": 3990443
+              }
+            ]
+          }
+        }
+      ],
+      "initial_restored": true
+    },
+    "nv12-1080p": {
+      "original_controller_state": "failed",
+      "cases": [
+        {
+          "camera": "rear",
+          "passed": true,
+          "result": {
+            "exit": 0,
+            "errno_on_failure": 0,
+            "width": 1920,
+            "height": 1080,
+            "sizeimage": 3112960,
+            "pixel_format": 842094158,
+            "phases": [
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32807,
+                "max_interval_us": 33824,
+                "sum_interval_us": 3964996
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32803,
+                "max_interval_us": 33661,
+                "sum_interval_us": 3965004
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32931,
+                "max_interval_us": 33759,
+                "sum_interval_us": 3964752
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32922,
+                "max_interval_us": 33750,
+                "sum_interval_us": 3965381
+              }
+            ]
+          }
+        },
+        {
+          "camera": "front",
+          "passed": true,
+          "result": {
+            "exit": 0,
+            "errno_on_failure": 0,
+            "width": 1920,
+            "height": 1080,
+            "sizeimage": 3112960,
+            "pixel_format": 842094158,
+            "phases": [
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32938,
+                "max_interval_us": 33805,
+                "sum_interval_us": 3966456
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32912,
+                "max_interval_us": 33610,
+                "sum_interval_us": 3966211
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32945,
+                "max_interval_us": 33906,
+                "sum_interval_us": 3966662
+              },
+              {
+                "frames": 120,
+                "sequence_discontinuities": 0,
+                "buffer_errors": 0,
+                "observer_busy_checks": 4,
+                "min_interval_us": 32938,
+                "max_interval_us": 33756,
+                "sum_interval_us": 3966409
+              }
+            ]
+          }
+        }
+      ],
+      "initial_restored": false
+    }
+  },
+  "old_hard_freeze_root_cause_resolved": false,
+  "encoded_recording_cadence_qualified": false,
+  "optical_quality_or_sensor_frame_conservation_proved": false,
+  "physical_failed_reset_dma_fence_proved": false,
+  "ucm8_manual_config_applied": true,
+  "ucm_acoustic_output_verified": false,
+  "raw_media_or_timestamps_exported": false,
+  "nv12_controller_restoration_followup": {
+    "restored_verified": true,
+    "initial_failure_is_test_controller_format_before_crop_order": true,
+    "capture_repeated": false,
+    "captured_controls_and_geometry_restored": true,
+    "all_sensor_controls_independently_snapshotted": false
+  }
+}
