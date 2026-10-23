@@ -59,6 +59,14 @@ See `mipad2-7.2-port-host-results.json` for machine-readable scalar results.
 These tests use explicit mocks: they do not establish optical quality, audio
 output, real firmware timing, S0I3 residency, battery life or Android parity.
 
+## DDR mailbox continuation
+
+The 7.2 continuation fixes the unchecked split DDR DVFS mailbox RMW and validates
+power-on preconditions without abandoning an already submitted power-off ack.
+See [DDR DVFS error-path evidence](mipad2-ddr-dvfs-validation.md). Its host
+interleaving/error tests do not close the physical failed-reset/DMA or S0I3 gate.
+The resulting kernel C change is a new **r2** candidate, not a relabelled r1.
+
 ## Deployment gate
 
 The tablet, stable 6.14 kernel and saved GRUB default are unchanged. Do not replace

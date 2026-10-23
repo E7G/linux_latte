@@ -560,18 +560,11 @@ out_unlock:
  * WA for DDR DVFS enable/disable
  * By default, ISP will force DDR DVFS 1600MHz before disable DVFS
  */
-static void punit_ddr_dvfs_enable(bool enable)
+static int punit_ddr_dvfs_enable(bool enable)
 {
-	int reg;
-
-	iosf_mbi_read(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSDVFS, &reg);
-	if (enable) {
-		reg &= ~(MRFLD_BIT0 | MRFLD_BIT1);
-	} else {
-		reg |= MRFLD_BIT1;
-		reg &= ~(MRFLD_BIT0);
-	}
-	iosf_mbi_write(BT_MBI_UNIT_PMC, MBI_REG_WRITE, MRFLD_ISPSSDVFS, reg);
+	/* Keep the RMW under one mailbox lock and never consume a failed read. */
+	return iosf_mbi_modify(BT_MBI_UNIT_PMC, MBI_REG_READ, MRFLD_ISPSSDVFS,
+			       enable ? 0 : MRFLD_BIT1, MRFLD_BIT0 | MRFLD_BIT1);
 }
 
 static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
@@ -586,7 +579,11 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 
 	/* WA for P-Unit, if DVFS enabled, ISP timeout observed */
 	if (IS_CHT && enable && !isp->pm_only) {
-		punit_ddr_dvfs_enable(false);
+		ret = punit_ddr_dvfs_enable(false);
+		if (ret) {
+			dev_err(isp->dev, "Failed to disable DDR DVFS: %d\n", ret);
+			return ret;
+		}
 		msleep(20);
 	}
 
@@ -599,8 +596,12 @@ static int atomisp_mrfld_power(struct atomisp_device *isp, bool enable)
 	}
 
 	/* WA:Enable DVFS */
-	if (IS_CHT && !enable && !isp->pm_only)
-		punit_ddr_dvfs_enable(true);
+	if (IS_CHT && !enable && !isp->pm_only) {
+		ret = punit_ddr_dvfs_enable(true);
+		if (ret)
+			dev_warn(isp->dev, "Failed to enable DDR DVFS: %d\n", ret);
+		/* The off request is live: still observe its power acknowledgment. */
+	}
 
 	/*
 	 * There should be no IUNIT access while power-down is

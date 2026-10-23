@@ -1,0 +1,32 @@
+{
+  "state": "host-ddr-mailbox-contract-pass-awaiting-r2-build",
+  "source_sha256": {
+    "drivers/staging/media/atomisp/pci/atomisp_v4l2.c": "5297e7e0f78675a5bb229802ba455be75fb892c5ffe8d89e88696ed46b616a56",
+    "arch/x86/platform/intel/iosf_mbi.c": "143e733f5960b4b9ed133646a9e81556fa6956260996653d93f790b4e9b47ace"
+  },
+  "host_regression_scripts": 33,
+  "ddr_cases": 196608,
+  "power_cases": 280,
+  "baseline_failures": {
+    "ddr": 172032,
+    "power": 20
+  },
+  "negative_controls": {
+    "swallow-on-error": {
+      "helper_failed": 0,
+      "power_failed": 10
+    },
+    "split-rmw": {
+      "helper_failed": 8192,
+      "power_failed": 0
+    },
+    "abandon-off-ack": {
+      "helper_failed": 0,
+      "power_failed": 10
+    }
+  },
+  "checkpatch": true,
+  "full_r2_build": false,
+  "hardware_tested": false,
+  "dma_quiescence_proven": false
+}

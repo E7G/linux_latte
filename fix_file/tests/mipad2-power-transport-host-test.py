@@ -21,6 +21,7 @@ common=r'''
 #include <errno.h>
 #define dev_err(...) ((void)0)
 #define dev_dbg(...) ((void)0)
+#define dev_warn(...) ((void)0)
 typedef uint32_t u32;
 struct pci_dev{int current_state;};
 #define PCIBIOS_SUCCESSFUL 0
@@ -72,7 +73,7 @@ power=common+r'''
 #define time_after(a,b) ((long)((b)-(a))<0)
 static unsigned long jiffies;static int modify_error,read_error,read_fail_at,reads,writes,ready_at,trace_calls,dvfs_calls,off_error,on_error,off_calls,on_calls;static u32 requested;
 struct atomisp_device{void*dev;bool pm_only,isp_fatal_error;};
-static void punit_ddr_dvfs_enable(bool b){(void)b;dvfs_calls++;}
+static int punit_ddr_dvfs_enable(bool b){(void)b;dvfs_calls++;return 0;}
 static void msleep(int n){(void)n;}
 static void usleep_range(int a,int b){(void)a;(void)b;jiffies++;}
 #define trace_ipu_cstate(b) do{(void)(b);trace_calls++;}while(0)
