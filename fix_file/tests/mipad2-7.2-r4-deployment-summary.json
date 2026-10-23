@@ -1,0 +1,385 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "status": "permanent-r4-warm-boot-and-two-rtc-clock-cycles-pass",
+  "release": "7.2.0-mipad2-integrated-r4",
+  "image_source_commit": "69bb7d3fbea73093bed7b7bcf060472ecb5bfea0",
+  "full_kernel_build": true,
+  "config_exact_r3": true,
+  "stock_tfa_backend": true,
+  "factory_dsp_enabled": false,
+  "normal_dapm_power_writes": true,
+  "direct_register_writes_requested": false,
+  "calibration_writes_requested": false,
+  "nonzero_pcm_played": false,
+  "acoustic_test_this_turn": false,
+  "s5_poweroff_qualified": false,
+  "android_parity_proven": false,
+  "full_os_image_built": false,
+  "build": {
+    "command": [
+      "make",
+      "O=/root/build-mipad2-7.2-integrated-r4",
+      "LLVM=1",
+      "ARCH=x86_64",
+      "LOCALVERSION=-r4",
+      "W=1",
+      "-j8",
+      "--output-sync=target",
+      "bzImage",
+      "modules"
+    ],
+    "modules": 31,
+    "artifacts_sha256": {
+      "arch/x86/boot/bzImage": "f4e4695fcfa6865a67942d8ad76b7577d9238c16bfc04410dcece971fa921183",
+      ".config": "9cfab9199eaf53f24286f1cbe5815baa4c2556a1764ce5691ecc7a885ca2e7b6",
+      "System.map": "0b925e5bfbdda00b032c368e35a3bf885465818bb596482d56421aad2358f2c7",
+      "certs/signing_key.x509": "d2db9d084ee3aa044faf868ff8f587282407f7952d12c08a3d1ec1541f55f0a7",
+      "Module.symvers": "af5ca6e9b8a515ca673a669d7beb345eb11153f301b70ebed7e291efc4ff0fdd",
+      "vmlinux": "394a1dc944c7ee15e28a8a6e8b9b84909c6e3bcfb7173182038b805ebcb801d3",
+      "include/config/kernel.release": "01930d4a0bb877ce92fe563daf9d3a2a9ae5bd0657e8fa67cb54c942b7fd4485"
+    },
+    "prior_r3_artifacts_preserved": true,
+    "warnings": [
+      "ld.lld: warning: linux_latte-7.2-integrated/drivers/staging/media/atomisp/pci/sh_css_params.c:3055:0: stack frame size (1128) exceeds limit (1024) in function 'sh_css_param_update_isp_params'",
+      "ld.lld: warning: linux_latte-7.2-integrated/fs/select.c:976:0: stack frame size (1064) exceeds limit (1024) in function 'do_sys_poll'",
+      "ld.lld: warning: linux_latte-7.2-integrated/lib/zstd/compress/huf_compress.c:291:0: stack frame size (1352) exceeds limit (1024) in function 'HUF_readCTable'"
+    ]
+  },
+  "package": {
+    "sha256": "56dc8aef0284e6d751874398aa5c221f5f35ee3b9037caf8ba75efe6e0c8898e",
+    "bytes": 39094428,
+    "module_cms_signatures_verified": 31,
+    "local_pgp_signed": false,
+    "native_alpm_query": true,
+    "read_only_preflight": true,
+    "installed_through_pacman": false
+  },
+  "staged_kernel_sha256": "f4e4695fcfa6865a67942d8ad76b7577d9238c16bfc04410dcece971fa921183",
+  "early_serial_initrd_sha256": "def5ffa4de7e225fb1aabbca8b52e2467a9495e9c69ee6f328982aa6a4f38cbe",
+  "protected_files": 2163,
+  "changed_protected_files": [],
+  "loaded_modules": {
+    "atomisp": {
+      "payload_match": true,
+      "loaded": true,
+      "loaded_srcversion_match": true
+    },
+    "ov5693": {
+      "payload_match": true,
+      "loaded": true,
+      "loaded_srcversion_match": true
+    },
+    "t4ka3": {
+      "payload_match": true,
+      "loaded": true,
+      "loaded_srcversion_match": true
+    },
+    "brcmfmac": {
+      "payload_match": true,
+      "loaded": true,
+      "loaded_srcversion_match": true
+    },
+    "snd_soc_sst_cht_bsw_rt5659": {
+      "payload_match": true,
+      "loaded": true,
+      "loaded_srcversion_match": true
+    }
+  },
+  "smoke_checks": 51,
+  "initial_zero_pcm_hardware": {
+    "rt5659_0x65": 64,
+    "rt5659_0x80": 16384,
+    "tfa_status": [
+      55391,
+      55391
+    ]
+  },
+  "cycles": [
+    {
+      "label": "audio-pm",
+      "requested_seconds": 12,
+      "s0i3_delta_us": 11738176,
+      "estimated_suspended_seconds": 11.535453304000015,
+      "hardware": {
+        "before": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        },
+        "after": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        },
+        "active": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        }
+      },
+      "kernel_fault_delta": {
+        "panic": 0,
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "reset_failed": 0,
+        "TFA_DSP_timeout": 0
+      },
+      "trace_overruns": 0,
+      "ordered_clock_transitions": [
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 32768
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S1",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S2",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "PLL",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 16384
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 64
+        }
+      ],
+      "diagnostic_unloaded": true,
+      "pcm_closed": true,
+      "rtc_cleared": true,
+      "usb_attached": true,
+      "pristine_untethered": false
+    },
+    {
+      "label": "audio-pm-repeat",
+      "requested_seconds": 12,
+      "s0i3_delta_us": 12070080,
+      "estimated_suspended_seconds": 11.859881482999981,
+      "hardware": {
+        "before": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        },
+        "after": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        },
+        "active": {
+          "rt5659_0x65": 64,
+          "rt5659_0x80": 16384,
+          "tfa_status": [
+            55391,
+            55391
+          ]
+        }
+      },
+      "kernel_fault_delta": {
+        "panic": 0,
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "reset_failed": 0,
+        "TFA_DSP_timeout": 0
+      },
+      "trace_overruns": 0,
+      "ordered_clock_transitions": [
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 32768
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S1",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S2",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "PLL",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 16384
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 64
+        }
+      ],
+      "diagnostic_unloaded": true,
+      "pcm_closed": true,
+      "rtc_cleared": true,
+      "usb_attached": true,
+      "pristine_untethered": false
+    }
+  ],
+  "temporary_route_overlays_present": false,
+  "raw_trace_exported": false,
+  "raw_serial_host_written": false,
+  "serial_fault_markers": {
+    "panic": 0,
+    "BUG": 0,
+    "WARNING": 0,
+    "ddr_failure": 0
+  },
+  "serial_linux_banner_count": 0,
+  "serial_late_console_note": "Exact running image established by SSH/proc config/module identity, not an absent early UART banner.",
+  "taint_before_readonly": 1088,
+  "taint_after_readonly": 13376,
+  "known_cached_hardware_difference": {
+    "register": "RT5659 0x82",
+    "cache": 12288,
+    "hardware": 12289
+  },
+  "grubenv": {
+    "saved_entry": "mipad2-bqdiag1",
+    "next_entry": ""
+  },
+  "idle_preferences": {
+    "idleLockEnabled": false,
+    "idleDpmsEnabled": false,
+    "idleSuspendEnabled": false
+  },
+  "guards": {
+    "mipad2-test-no-idle.service": "active",
+    "mipad2-thermal-guard.service": "active"
+  },
+  "final_faults": {
+    "panic": 0,
+    "BUG": 0,
+    "WARNING": 0,
+    "Oops": 0,
+    "GPU_HANG": 0,
+    "DDR_failure": 0,
+    "IUNIT_timeout": 0,
+    "stop_timeout": 0,
+    "SP_not_idle": 0,
+    "ISP_not_idle": 0,
+    "reset_failed": 0
+  },
+  "failed_units": 0,
+  "root_free_bytes": 2316132352,
+  "full_acoustic_camera_thermal_dma_oem_qualification": false
+}
