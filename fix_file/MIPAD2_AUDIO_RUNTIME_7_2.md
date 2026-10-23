@@ -88,3 +88,7 @@ retroactively. New normal/optimized tests include forced compiler and wrong-chan
 negative cases. This is test-harness hardening, not new audio-driver DSP support.
 
 Validation reproduced the old optimized wrong-channel false positive. New explicit checks reject that same malformed route and a deliberately failing compiler in both normal/-O modes; both ALSA1.2.16.1 and1.2.15.3 complete8layouts in both modes (32positive/negative layout scenarios). Profile files and pinned package inputs remain byte-identical; no package-release bump or automatic service hook.
+
+## Factory candidate source port
+
+[Actual7.2 API/build/board-ABI/per-device-control/Kconfig port](MIPAD2_FACTORY_DSP_7_2.md) now builds a factory candidate and retains explicit unresolved UCM/lifecycle/hardware gates. The tablet and default bypass backend described above are unchanged; compilation is not DSP playback or OEM acceptance.

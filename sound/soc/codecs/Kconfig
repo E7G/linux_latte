@@ -2295,7 +2295,8 @@ config SND_SOC_TFA989X
 config SND_SOC_TFA98XX_XIAOMI
 	tristate "Xiaomi Mi Pad 2 factory TFA9890 CoolFlux DSP"
 	depends on I2C
-	depends on !SND_SOC_TFA989X
+	# A tristate negation still permits both drivers to be modules.
+	depends on SND_SOC_TFA989X = n
 	select REGMAP_I2C
 	help
 	  Enable the Xiaomi/Intel Cherry Trail era NXP TFA9890 compatibility

@@ -47,8 +47,6 @@
 #define PLL_SYNC_RETRIES	10
 #define MTPB_RETRIES		5
 
-#define MAX_CONTROL_NAME	32
-
 /* SNDRV_PCM_RATE_KNOT -> 12000, 24000 Hz, limit with constraint list */
 #define TFA98XX_RATES (SNDRV_PCM_RATE_8000_48000 | SNDRV_PCM_RATE_KNOT)
 #define TFA98XX_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE)
@@ -259,10 +257,10 @@ static int tfa98xx_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 
 	/* set master/slave audio interface */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		/* default value */
 		break;
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 	default:
 		/* only supports Slave mode */
 		pr_err("tfa98xx: invalid DAI master/slave interface\n");
@@ -427,14 +425,10 @@ static int tfa98xx_trigger(struct snd_pcm_substream *substream, int cmd,
  * ASOC controls
  */
 
-static const struct snd_soc_dapm_widget tfa98xx_left_dapm_widgets[] = {
+/* The machine supplies Left/Right name_prefix; keep codec names local. */
+static const struct snd_soc_dapm_widget tfa98xx_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_OUTPUT("OUT Left"),
-};
-
-static const struct snd_soc_dapm_widget tfa98xx_right_dapm_widgets[] = {
-	SND_SOC_DAPM_MIXER("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_OUTPUT("OUT Right"),
+	SND_SOC_DAPM_OUTPUT("OUT"),
 };
 
 
@@ -444,7 +438,7 @@ static const struct snd_soc_dapm_widget tfa98xx_right_dapm_widgets[] = {
 static int tfa98xx_get_profile_ctl(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] = tfa98xx->profile_ctl;
@@ -457,7 +451,7 @@ static int tfa98xx_get_profile_ctl(struct snd_kcontrol *kcontrol,
 static int tfa98xx_set_profile_ctl(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	struct tfaprofile *profiles =
 				(struct tfaprofile *)kcontrol->private_value;
@@ -509,7 +503,7 @@ static int tfa98xx_info_profile_ctl(struct snd_kcontrol *kcontrol,
 {
 	struct tfaprofile *profiles =
 				(struct tfaprofile *)kcontrol->private_value;
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 
 	if (!profiles || !tfa98xx->profile_count) {
@@ -539,7 +533,7 @@ static int tfa98xx_get_vol_ctl(struct snd_kcontrol *kcontrol,
 {
 	struct tfaprofile *profiles =
 				(struct tfaprofile *)kcontrol->private_value;
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	int index = tfa98xx->profile_ctl;
 	struct tfaprofile *prof;
@@ -562,7 +556,7 @@ static int tfa98xx_set_vol_ctl(struct snd_kcontrol *kcontrol,
 {
 	struct tfaprofile *profiles =
 				(struct tfaprofile *)kcontrol->private_value;
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	int index = tfa98xx->profile_ctl;
 	struct tfaprofile *prof;
@@ -597,7 +591,7 @@ static int tfa98xx_info_vol_ctl(struct snd_kcontrol *kcontrol,
 {
 	struct tfaprofile *profiles =
 				(struct tfaprofile *)kcontrol->private_value;
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	int index = tfa98xx->profile_ctl;
 	struct tfaprofile *prof;
@@ -621,7 +615,7 @@ static int tfa98xx_info_vol_ctl(struct snd_kcontrol *kcontrol,
 static int tfa98xx_get_stop_ctl(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 
 	ucontrol->value.integer.value[0] =
@@ -632,7 +626,7 @@ static int tfa98xx_get_stop_ctl(struct snd_kcontrol *kcontrol,
 static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	long requested = ucontrol->value.integer.value[0];
 	int ret;
@@ -645,28 +639,25 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	return ret ? ret : 1;
 }
 
-static char prof_name[MAX_CONTROL_NAME];
-static char vol_name[MAX_CONTROL_NAME];
-static char stop_name[MAX_CONTROL_NAME];
-
-static struct snd_kcontrol_new tfa98xx_controls[] = {
+/* Per-component name_prefix distinguishes the two instances. */
+static const struct snd_kcontrol_new tfa98xx_controls[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name = prof_name,
+		.name = "Profile",
 		.info = tfa98xx_info_profile_ctl,
 		.get = tfa98xx_get_profile_ctl,
 		.put = tfa98xx_set_profile_ctl,
 	},
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name = vol_name,
+		.name = "Master Volume",
 		.info = tfa98xx_info_vol_ctl,
 		.get = tfa98xx_get_vol_ctl,
 		.put = tfa98xx_set_vol_ctl,
 	},
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name = stop_name,
+		.name = "Stop",
 		.info = snd_soc_info_bool_ext,
 		.get = tfa98xx_get_stop_ctl,
 		.put = tfa98xx_set_stop_ctl,
@@ -701,9 +692,7 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 {
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	struct snd_soc_dapm_route dapm_routes[2] = { };
-	const struct snd_soc_dapm_widget *dapm_widgets;
-	const char *output_name;
-	unsigned int num_dapm_widgets;
+	struct snd_kcontrol_new *controls;
 	int ret;
 	u16 rev;
 
@@ -730,33 +719,26 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 		 "factory container ready: %s profiles=%d defer_dsp_start=%d\n",
 		 tfa98xx->fw.name, tfa98xx->profile_count, defer_dsp_start);
 
-	/* Mi Pad 2 uses address 0x34 for left and 0x37 for right amplifier. */
-	if (tfa98xx->i2c->addr == 0x37) {
-		dapm_widgets = tfa98xx_right_dapm_widgets;
-		num_dapm_widgets = ARRAY_SIZE(tfa98xx_right_dapm_widgets);
-		output_name = "OUT Right";
-	} else if (tfa98xx->i2c->addr == 0x34) {
-		dapm_widgets = tfa98xx_left_dapm_widgets;
-		num_dapm_widgets = ARRAY_SIZE(tfa98xx_left_dapm_widgets);
-		output_name = "OUT Left";
-	} else {
+	/* Only these two factory container devices are supported. */
+	if (tfa98xx->i2c->addr != 0x34 && tfa98xx->i2c->addr != 0x37) {
 		dev_err(component->dev, "unsupported TFA9890 address 0x%02x\n",
 			tfa98xx->i2c->addr);
 		return -EINVAL;
 	}
 
-	ret = snd_soc_dapm_new_controls(snd_soc_component_get_dapm(component),
-					dapm_widgets, num_dapm_widgets);
+	ret = snd_soc_dapm_new_controls(snd_soc_component_to_dapm(component),
+				      tfa98xx_dapm_widgets,
+				      ARRAY_SIZE(tfa98xx_dapm_widgets));
 	if (ret)
 		return ret;
 
 	dapm_routes[0].sink = "NXP Output Mixer";
 	dapm_routes[0].control = NULL;
 	dapm_routes[0].source = tfa98xx->playback_stream_name;
-	dapm_routes[1].sink = output_name;
+	dapm_routes[1].sink = "OUT";
 	dapm_routes[1].control = NULL;
 	dapm_routes[1].source = "NXP Output Mixer";
-	ret = snd_soc_dapm_add_routes(snd_soc_component_get_dapm(component),
+	ret = snd_soc_dapm_add_routes(snd_soc_component_to_dapm(component),
 				      dapm_routes, ARRAY_SIZE(dapm_routes));
 	if (ret)
 		return ret;
@@ -766,16 +748,18 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 	tfa98xx->profile_ctl = 0;
 	tfa98xx->vstep_ctl = 0;
 
-	/* Overwrite kcontrol values that need container information */
-	tfa98xx_controls[0].private_value = (unsigned long)tfa98xx->profiles,
-	tfa98xx_controls[1].private_value = (unsigned long)tfa98xx->profiles,
-	scnprintf(prof_name, MAX_CONTROL_NAME, "%s Profile", tfa98xx->fw.name);
-	scnprintf(vol_name, MAX_CONTROL_NAME, "%s Master Volume",
-		  tfa98xx->fw.name);
-	scnprintf(stop_name, MAX_CONTROL_NAME, "%s Stop", tfa98xx->fw.name);
+	/* Never publish one amplifier's profile pointer through a shared template. */
+	controls = devm_kmemdup(component->dev, tfa98xx_controls,
+			       sizeof(tfa98xx_controls), GFP_KERNEL);
+	if (!controls)
+		return -ENOMEM;
+	controls[0].private_value = (unsigned long)tfa98xx->profiles;
+	controls[1].private_value = (unsigned long)tfa98xx->profiles;
 
-	snd_soc_add_component_controls(component, tfa98xx_controls,
-				   ARRAY_SIZE(tfa98xx_controls));
+	ret = snd_soc_add_component_controls(component, controls,
+					     ARRAY_SIZE(tfa98xx_controls));
+	if (ret)
+		return ret;
 
 	dev_dbg(component->dev, "tfa98xx component(%s) registered",
 		dev_name(&tfa98xx->i2c->dev));
@@ -1083,9 +1067,9 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c)
 	}
 
 	*dai_drv = tfa98xx_dai;
-	scnprintf(tfa98xx->playback_stream_name,
-		  sizeof(tfa98xx->playback_stream_name), "%s Playback",
-		  dev_name(&i2c->dev));
+	/* Resolves to Left/Right HiFi Playback through codec_conf prefixes. */
+	strscpy(tfa98xx->playback_stream_name, "HiFi Playback",
+		sizeof(tfa98xx->playback_stream_name));
 	dai_drv->playback.stream_name = tfa98xx->playback_stream_name;
 
 	ret = devm_snd_soc_register_component(&i2c->dev, &tfa98xx_soc_component,
@@ -1178,3 +1162,5 @@ module_i2c_driver(tfa98xx_i2c_driver);
 MODULE_DESCRIPTION("ASoC tfa98xx component driver");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("NXP");
+
+MODULE_FIRMWARE("tfa98xx.cnt");

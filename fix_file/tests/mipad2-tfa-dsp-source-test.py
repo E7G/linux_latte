@@ -65,20 +65,27 @@ assert "return tfa98xx_set_running(tfa98xx, !mute);" in function_body(codec, "tf
 assert "tfa98xx_set_running(tfa98xx, !requested);" in function_body(codec, "tfa98xx_set_stop_ctl")
 assert ".mute_stream\t= tfa98xx_mute_stream" in codec
 
-# Each physical amp must expose the machine driver's board-facing output pin;
-# an unconnected mixer can bind successfully while silently powering no path.
-assert 'SND_SOC_DAPM_OUTPUT("OUT Left")' in codec
-assert 'SND_SOC_DAPM_OUTPUT("OUT Right")' in codec
+# The current board already supplies Left/Right name_prefix. Codec pins must
+# stay local, otherwise OUT Left becomes Left OUT Left and misses Left OUT.
+assert 'SND_SOC_DAPM_OUTPUT("OUT")' in codec
+assert 'SND_SOC_DAPM_OUTPUT("OUT Left")' not in codec
+assert 'SND_SOC_DAPM_OUTPUT("OUT Right")' not in codec
 probe = function_body(codec, "tfa98xx_probe")
-assert "tfa98xx->i2c->addr == 0x37" in probe
-assert "tfa98xx->i2c->addr == 0x34" in probe
-assert 'output_name = "OUT Right"' in probe
-assert 'output_name = "OUT Left"' in probe
+assert "tfa98xx->i2c->addr != 0x34" in probe
+assert "tfa98xx->i2c->addr != 0x37" in probe
+assert 'dapm_routes[1].sink = "OUT"' in probe
 assert "dapm_routes[0].source = tfa98xx->playback_stream_name;" in probe
 assert 'dapm_routes[1].source = "NXP Output Mixer";' in probe
 assert "if (ret)\n\t\treturn ret;" in probe
+assert "ret = snd_soc_add_component_controls(" in probe
+assert "controls = devm_kmemdup(component->dev, tfa98xx_controls," in probe
+assert "if (!controls)\n\t\treturn -ENOMEM;" in probe
+assert "static const struct snd_kcontrol_new tfa98xx_controls[]" in codec
+assert '.name = "Profile"' in codec and '.name = "Master Volume"' in codec and '.name = "Stop"' in codec
 i2c_probe = function_body(codec, "tfa98xx_i2c_probe")
+assert 'strscpy(tfa98xx->playback_stream_name, "HiFi Playback",' in i2c_probe
 assert "dai_drv->playback.stream_name = tfa98xx->playback_stream_name;" in i2c_probe
+assert 'MODULE_FIRMWARE("tfa98xx.cnt")' in CODEC.read_text()
 
 monitor = function_body(codec, "tfa98xx_monitor")
 assert monitor.count("READ_ONCE(tfa98xx->monitor_status)") == 2, \

@@ -34,7 +34,7 @@ for text in texts:
 
 needed = set(re.findall(r"\b(?:SND_SOC_DAIFMT|TFA98XX|TFA989X)_\w+", callback))
 needed.update("SND_SOC_DAIFMT_" + suffix for suffix in (
-    "DSP_A", "DSP_B", "NB_IF", "IB_NF", "IB_IF", "CBS_CFM", "CBM_CFS"))
+    "DSP_A", "DSP_B", "NB_IF", "IB_NF", "IB_IF", "CBC_CFP", "CBP_CFC"))
 defines = []
 seen = set()
 
@@ -82,14 +82,14 @@ static int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
 harness = r"""
 int main(void)
 {
-    const unsigned int base = SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_NB_NF;
+    const unsigned int base = SND_SOC_DAIFMT_CBC_CFC | SND_SOC_DAIFMT_NB_NF;
     const unsigned int formats[] = {
         SND_SOC_DAIFMT_I2S, SND_SOC_DAIFMT_RIGHT_J, SND_SOC_DAIFMT_LEFT_J
     };
     const unsigned int invalid[] = {
-        SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_I2S,
-        SND_SOC_DAIFMT_CBS_CFM | SND_SOC_DAIFMT_I2S,
-        SND_SOC_DAIFMT_CBM_CFS | SND_SOC_DAIFMT_I2S,
+        SND_SOC_DAIFMT_CBP_CFP | SND_SOC_DAIFMT_I2S,
+        SND_SOC_DAIFMT_CBC_CFP | SND_SOC_DAIFMT_I2S,
+        SND_SOC_DAIFMT_CBP_CFC | SND_SOC_DAIFMT_I2S,
         SND_SOC_DAIFMT_I2S,
         base | SND_SOC_DAIFMT_NB_IF | SND_SOC_DAIFMT_I2S,
         base | SND_SOC_DAIFMT_IB_NF | SND_SOC_DAIFMT_I2S,

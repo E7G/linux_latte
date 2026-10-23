@@ -68,7 +68,7 @@ static struct tfa98xx *amp;
 static int starts, stops, cancel_monitor, cancel_init, queued_monitor;
 static int start_error, stop_error, powered;
 static void *snd_soc_component_get_drvdata(struct snd_soc_component *c) { return c->priv; }
-static struct snd_soc_component *snd_soc_kcontrol_component(struct snd_kcontrol *k)
+static struct snd_soc_component *snd_kcontrol_chip(struct snd_kcontrol *k)
 { return k->component; }
 static void mutex_lock(struct mutex *lock) { assert(!lock->held); lock->held = 1; }
 static void mutex_unlock(struct mutex *lock) { assert(lock->held); lock->held = 0; }

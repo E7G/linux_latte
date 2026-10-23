@@ -1,0 +1,275 @@
+{
+  "schema": 1,
+  "scope": "Actual factory-driver 7.2 compile/probe-ABI/control isolation/Kconfig port, NOT active hardware DSP",
+  "base_commit": "c0dec882c918703bcb01a647ef71b7d32d4b7077",
+  "running_kernel_build_source": "20f0304fc024a784dd2e356bd72331c9640d382e",
+  "verification": {
+    "state": "actual-DSP-port-host-and-build-gates-passed",
+    "tests": [
+      {
+        "test": "source-guard",
+        "exit": 0,
+        "log_sha256": "a62fb46aea11c391b5ec9cea78bc2d8195968d85dd832be8a12af6eaaf2cadad"
+      },
+      {
+        "test": "mute-worker",
+        "exit": 0,
+        "log_sha256": "c275c202759af452c3016b68ddcf3dcd2c8a89cb6ebe519c999ef8fc3ee4b78d"
+      },
+      {
+        "test": "dsp-start",
+        "exit": 0,
+        "log_sha256": "9eeff9ad2fafaa9a4394326e81f6e355883f66e92db52c56594dbc84bca4837b"
+      },
+      {
+        "test": "stock-format",
+        "exit": 0,
+        "log_sha256": "8c1be6779b437f52ae724af1ae68d3292d5171b74536ad4d49eb974e0c4d9146"
+      },
+      {
+        "test": "actual-probe",
+        "exit": 0,
+        "log_sha256": "3810a65533dd77d7ff3d68f79b3e933e1bc23c9e742cbc856545ace270168682"
+      },
+      {
+        "test": "baseline-ABI-negative",
+        "exit": 0,
+        "log_sha256": "1b9b33a8f0bd41f343da1415d7768d86df8d79ee6f2ca593c1f6a7ac691e0cd7"
+      },
+      {
+        "test": "actual-probe-O",
+        "exit": 0,
+        "log_sha256": "3810a65533dd77d7ff3d68f79b3e933e1bc23c9e742cbc856545ace270168682"
+      },
+      {
+        "test": "baseline-ABI-negative-O",
+        "exit": 0,
+        "log_sha256": "1b9b33a8f0bd41f343da1415d7768d86df8d79ee6f2ca593c1f6a7ac691e0cd7"
+      }
+    ],
+    "source_module_manifest": {
+      "Makefile": "69c0466856077db7a5cbafd5f8c9c270229d21f8e7b9c348ad7fc1cd76f39692",
+      "include/sound/tfa98xx.h": "5a2ce4555736cff5e750ff0f4be4164173bf06d890e9a801eeb92308ee337a64",
+      "tfa98xx-core.h": "51ff0de917e2e1ca302a11fdc935f8366b9ff098f457be4c1e0e6faf9a192bb4",
+      "tfa98xx-regs.h": "9ce5cca3fa35965218a78de51efe4765bc0f3e262eac25ac2ae79b1e10d31689",
+      "tfa98xx.c": "790ab7c5cb871843925080c595661048869f6398cb9a9056dd20a31d01a2dfbe",
+      "tfa_container.c": "73e172baf023223bf1ff6c4a2232db4b864a0e5253916bde35b946d9114f067f",
+      "tfa_container.h": "0d6d5f7cd7b615295a9cd689db15742cff0d325326b4fcfa956f8f12220d6e1f",
+      "tfa_dsp.c": "833a374f429018c67d4a4acbd3ff12ffcf23de8d5e45948a7fd83116d763c48c",
+      "tfa_dsp.h": "1a4b87fc7b66c7b45020528b8edacb80cae134ae64c553379779b465ae0fb2d1"
+    },
+    "final_ko_sha256": "b21af433e6d37da814cbead99cb5c76bc1b477d578632eb74268e51721590808",
+    "full_W1_module_build_passed": true,
+    "original_r3_build_artifacts_unchanged": true,
+    "three_choice_Kconfig_cases_passed": true,
+    "actual_Android_or_Windows_audio_equivalence": false,
+    "module_loaded_on_tablet": false,
+    "real_DAPM_or_DSP_hardware_tested": false,
+    "UCM8_supports_this_new_DSP_backend": false
+  },
+  "baseline_compile": {
+    "exit": 2,
+    "log_sha256": "a59dc46112527573115aa121cf07abe1d2b9b377167cd1cce6ba3c2a5c90b065",
+    "removed_api_categories": [
+      "codec clock consumer/provider constants",
+      "ordinary kcontrol component accessor",
+      "component DAPM accessor"
+    ]
+  },
+  "final_build": {
+    "exit": 0,
+    "modules": [
+      {
+        "name": "snd-soc-tfa98xx-xiaomi.ko",
+        "sha256": "b21af433e6d37da814cbead99cb5c76bc1b477d578632eb74268e51721590808",
+        "bytes": 1282640,
+        "modinfo_exit": 0,
+        "metadata": "filename:       /root/mipad2-tfa-7.2-dsp-cont20-controls1/snd-soc-tfa98xx-xiaomi.ko\ndescription:    ASoC tfa98xx component driver\nlicense:        GPL\nauthor:         NXP\nfirmware:       tfa98xx.cnt\nname:           snd_soc_tfa98xx_xiaomi\ndepends:        \nalias:          acpi*:TFA98xx:*\nalias:          acpi*:NXP9890:*\nalias:          i2c:tfa98xx\nalias:          i2c:tfa9890\nalias:          i2c:i2c-NXP9890:00\nalias:          i2c:i2c-NXP9890:01\nsrcversion:     51D231CEF953BDAE207937E\nvermagic:       7.2.0-mipad2-integrated-r3 SMP preempt mod_unload modversions \nretpoline:      Y\nparm:           coldboot:int\nparm:           aec_output:enable TFA I2S/AEC data output; keep disabled on shared Mi Pad 2 bus (bool)\nparm:           filename:charp\nparm:           defer_dsp_start:defer CoolFlux DSP start for safe probe/bring-up (bool)\n"
+      }
+    ],
+    "original_build_hashes": {
+      ".config": "9cfab9199eaf53f24286f1cbe5815baa4c2556a1764ce5691ecc7a885ca2e7b6",
+      "Module.symvers": "af5ca6e9b8a515ca673a669d7beb345eb11153f301b70ebed7e291efc4ff0fdd",
+      "vmlinux": "cf4dc076052d4ccf2e6825eeba54b2dc19bc1d962cc749cde4245babe05ac03d",
+      "arch/x86/boot/bzImage": "82edc85bab0631d310f74981720baba93aedeae2e06c168420e346f9b41bfe52",
+      "include/config/kernel.release": "8f69369bf45be5cfc898c55fcf29c1d11a1acfca4b9a5c2069dfbb9f6dd45fc0"
+    },
+    "original_build_artifacts_unchanged": true,
+    "module_not_loaded": true,
+    "hardware_or_Kconfig_qualification": false,
+    "log_sha256": "9b745d073b58936f7efe70ec8c8274b49cd07776841592d1411ef03b0346fce7"
+  },
+  "old_both_module_choice": {
+    "state": "baseline-tristate-choice-observed",
+    "stock": "m",
+    "factory": "m",
+    "original_r3_build_unchanged": true,
+    "tabletoriginal_kernel_unchanged": true
+  },
+  "new_exclusive_driver_matrix": {
+    "state": "mutually-exclusive-driver-Kconfig-matrix-passed",
+    "baseline_both_module_reproduced": true,
+    "cases": [
+      {
+        "requested_stock": "m",
+        "requested_factory": "m",
+        "resolved_stock": "m",
+        "resolved_factory": "n",
+        "config_sha256": "149a2831c52b73b2903d8dbd6d9ed6af23c1328b1b0fda3959cdcec22614cc0d",
+        "localversion": "\"-mipad2-integrated\"",
+        "candidate_config_only": false
+      },
+      {
+        "requested_stock": "y",
+        "requested_factory": "m",
+        "resolved_stock": "y",
+        "resolved_factory": "n",
+        "config_sha256": "fb2e6be5072ccdd2b2735bbc3060c7f363a508bffb66f49de0d6a2d742772a38",
+        "localversion": "\"-mipad2-integrated\"",
+        "candidate_config_only": false
+      },
+      {
+        "requested_stock": "n",
+        "requested_factory": "m",
+        "resolved_stock": "n",
+        "resolved_factory": "m",
+        "config_sha256": "14f3246d920cfa8c51b6156dcc870bd4d090131f75444b13fbe4b5e3530023a3",
+        "localversion": "\"-mipad2-factory-dsp-r4\"",
+        "candidate_config_only": true
+      }
+    ],
+    "original_r3_build_unchanged": true,
+    "default_config_or_tablet_changed": false,
+    "full_kernel_image_built": false
+  },
+  "android_vendor": {
+    "android_source_head": "d2afb1de9a761ff01dafdf9efe4736e521ab71f6",
+    "android_tfa_files": [
+      "include/sound/tfa98xx.h",
+      "sound/soc/codecs/tfa98xx-core.h",
+      "sound/soc/codecs/tfa98xx-regs.h",
+      "sound/soc/codecs/tfa98xx.c",
+      "sound/soc/codecs/tfa_container.c",
+      "sound/soc/codecs/tfa_container.h",
+      "sound/soc/codecs/tfa_debug.c",
+      "sound/soc/codecs/tfa_dsp.c",
+      "sound/soc/codecs/tfa_dsp.h",
+      "sound/soc/codecs/tfa_dummy.c"
+    ],
+    "android_source_is_intel_latte_not_arm_reference": true,
+    "firmware": {
+      "bytes": 5133,
+      "sha256": "83709da84f22b5c0ff1f7568478b3ecbfc1c1c29bc3814a8be8a64426f3c2c2a",
+      "declared_size": 5133,
+      "crc_verified": true,
+      "devices": [
+        {
+          "index": 0,
+          "name": "left",
+          "address_7bit": 52,
+          "bus": 1,
+          "function": 0,
+          "descriptor_count": 14,
+          "descriptor_type": 0
+        },
+        {
+          "index": 1,
+          "name": "right",
+          "address_7bit": 55,
+          "bus": 1,
+          "function": 0,
+          "descriptor_count": 14,
+          "descriptor_type": 0
+        }
+      ],
+      "header_profile_count": 6
+    },
+    "windows_inf_references": [],
+    "windows_firmware_or_dsp_equivalence_claimed": false,
+    "firmware_written_to_tablet": false,
+    "all_inspection_readonly": true
+  },
+  "windows": {
+    "original_parts_unchanged": true,
+    "temporary_joined_copy_removed": true,
+    "source_parts": [
+      {
+        "name": "win10_drivers.7z.001",
+        "bytes": 41943040,
+        "sha256": "10c5b7dfa4c229f6e46a0473e131dd37832973a0b2945e85365998049906b7c3"
+      },
+      {
+        "name": "win10_drivers.7z.002",
+        "bytes": 41943040,
+        "sha256": "8445601afb505de97d23d4f2da25ccab3bb9ff091b73a227ac2b06f182b9198a"
+      },
+      {
+        "name": "win10_drivers.7z.003",
+        "bytes": 41943040,
+        "sha256": "884b82c033fb87cde6a3df9d190eb6197e49f1ebf12cf0bb129803578bd0ada6"
+      },
+      {
+        "name": "win10_drivers.7z.004",
+        "bytes": 2951288,
+        "sha256": "190004e186e0b6aefa4f29778f9affeebe85f3605e6433c799d2daf8456e4c22"
+      }
+    ],
+    "inf_references": [
+      {
+        "path": "win10_drivers/MEDIA/Intel SST Audio Device (WDM)/oem27.inf",
+        "sha256": "87ffa1e93d23c7fad1177c9c6dbdd68593c1a9bb1718f094823888b382602822",
+        "relevant_lines": [
+          "Provider=%INTC%",
+          "DriverVer=12/11/2015,604.10135.3202.10118",
+          "%IntelSSTAudio.DeviceDesc%=IntelSSTAudio_1D721502,          ACPI\\VEN_8086&DEV_22A8&SUBSYS_1D721502 ; Xiaomi A3, TDM loopback, No playback effect (enable offload pin)"
+        ]
+      },
+      {
+        "path": "win10_drivers/MEDIA/Realtek I2S Audio Codec/oem26.inf",
+        "sha256": "e9617bb610242f811eaac3b6af8518a96329cd58650b0f70e53ae445dfb49983",
+        "relevant_lines": [
+          "Provider    = %REALTEK%",
+          "DriverVer=12/21/2015,6.2.9600.4366"
+        ]
+      }
+    ],
+    "binaries_executed": false,
+    "firmware_or_DSP_equivalence_claimed": false
+  },
+  "control_names_when_selected": [
+    "Left Profile",
+    "Right Profile",
+    "Left Master Volume",
+    "Right Master Volume",
+    "Left Stop",
+    "Right Stop"
+  ],
+  "UCM8_AmpInput_scheme_compatible": false,
+  "defer_dsp_start_default_kept_true": true,
+  "stock_default_kept": true,
+  "full_candidate_kernel_built": false,
+  "firmware_on_chip_executed": false,
+  "acoustics_or_real_DAPM_power_tested": false,
+  "new_reboots": 0,
+  "tablets_active_backend": [
+    "tfa989x",
+    "tfa989x"
+  ],
+  "postflight_protected_files_checked": 686,
+  "postflight_changed_protected_files": [],
+  "postflight_kernel_faults": {
+    "panic": 0,
+    "BUG": 0,
+    "WARNING": 0,
+    "Oops": 0,
+    "GPU_HANG": 0,
+    "DDR_failure": 0,
+    "IUNIT_timeout": 0,
+    "stop_timeout": 0,
+    "SP_not_idle": 0,
+    "ISP_not_idle": 0,
+    "reset_failed": 0
+  },
+  "private_aliases_checked": 35,
+  "private_aliases_and_access_unchanged": true
+}
