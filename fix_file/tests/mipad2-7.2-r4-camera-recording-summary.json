@@ -1,0 +1,611 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "status": "r4-normal-encoded-recording-and-post-recording-resume-regression-pass",
+  "release": "7.2.0-mipad2-integrated-r4",
+  "image_source_commit": "69bb7d3fbea73093bed7b7bcf060472ecb5bfea0",
+  "snapshot_runtime_build": "0a7ce87affa9",
+  "kernel_rebuilt_or_rebooted_this_followup": false,
+  "new_production_driver_changes": false,
+  "stock_tfa_backend": true,
+  "factory_dsp_enabled": false,
+  "nonzero_pcm_played": false,
+  "acoustic_quality_verified": false,
+  "native_lifecycle": [
+    {
+      "label": "before-normal-recording",
+      "cases": [
+        {
+          "camera": "rear",
+          "frames": 480,
+          "phase_fps": [
+            30.012716312239185,
+            30.01102085387659,
+            30.009416400070407,
+            30.01309478891967
+          ],
+          "max_interval_us": 33955,
+          "phases": [
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32926,
+              "max_interval_us": 33726,
+              "sum_interval_us": 3964986
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32943,
+              "max_interval_us": 33955,
+              "sum_interval_us": 3965210
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 33008,
+              "max_interval_us": 33762,
+              "sum_interval_us": 3965422
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32966,
+              "max_interval_us": 33664,
+              "sum_interval_us": 3964936
+            }
+          ]
+        },
+        {
+          "camera": "front",
+          "frames": 480,
+          "phase_fps": [
+            30.001252993507375,
+            29.999558830017207,
+            29.99876475674531,
+            29.998537886388732
+          ],
+          "max_interval_us": 33858,
+          "phases": [
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32868,
+              "max_interval_us": 33604,
+              "sum_interval_us": 3966501
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32972,
+              "max_interval_us": 33823,
+              "sum_interval_us": 3966725
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32890,
+              "max_interval_us": 33759,
+              "sum_interval_us": 3966830
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32555,
+              "max_interval_us": 33858,
+              "sum_interval_us": 3966860
+            }
+          ]
+        }
+      ],
+      "source_sha256": "cef5d4d282a8249a9a50da0085b68f1f9bd8e7f062f77d4fd350129cebc24492",
+      "binary_sha256": "b9a9faf837a70d59db97c7c28755e35827835bd78142d451c1136c7f90894f18",
+      "geometry_format_captured_controls_restored": true,
+      "pm_suspended": true,
+      "kernel_faults": 0,
+      "physical_failed_reset_fault_injected": false
+    },
+    {
+      "label": "after-normal-recording-and-RTC",
+      "cases": [
+        {
+          "camera": "rear",
+          "frames": 480,
+          "phase_fps": [
+            30.002039634459184,
+            30.0036054752798,
+            30.013465705327793,
+            30.01684979467466
+          ],
+          "max_interval_us": 33786,
+          "phases": [
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32878,
+              "max_interval_us": 33786,
+              "sum_interval_us": 3966397
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32912,
+              "max_interval_us": 33767,
+              "sum_interval_us": 3966190
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32859,
+              "max_interval_us": 33770,
+              "sum_interval_us": 3964887
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32935,
+              "max_interval_us": 33641,
+              "sum_interval_us": 3964440
+            }
+          ]
+        },
+        {
+          "camera": "front",
+          "frames": 480,
+          "phase_fps": [
+            30.00211527518621,
+            30.000118487862935,
+            29.999626895396595,
+            29.997554821161636
+          ],
+          "max_interval_us": 33859,
+          "phases": [
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32883,
+              "max_interval_us": 33859,
+              "sum_interval_us": 3966387
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32858,
+              "max_interval_us": 33599,
+              "sum_interval_us": 3966651
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32774,
+              "max_interval_us": 33755,
+              "sum_interval_us": 3966716
+            },
+            {
+              "frames": 120,
+              "sequence_discontinuities": 0,
+              "buffer_errors": 0,
+              "observer_busy_checks": 4,
+              "min_interval_us": 32771,
+              "max_interval_us": 33840,
+              "sum_interval_us": 3966990
+            }
+          ]
+        }
+      ],
+      "source_sha256": "cef5d4d282a8249a9a50da0085b68f1f9bd8e7f062f77d4fd350129cebc24492",
+      "binary_sha256": "b9a9faf837a70d59db97c7c28755e35827835bd78142d451c1136c7f90894f18",
+      "geometry_format_captured_controls_restored": true,
+      "pm_suspended": true,
+      "kernel_faults": 0,
+      "physical_failed_reset_fault_injected": false
+    }
+  ],
+  "normal_recordings": [
+    {
+      "camera": "front",
+      "requested_seconds": 30,
+      "metrics": {
+        "packets": 984,
+        "fps": 30.001831240970965,
+        "pts_span_seconds": 32.76466666666666,
+        "max_pts_gap_seconds": 0.04533333333333334,
+        "min_pts_gap_seconds": 0.025,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 0,
+        "gaps_above100ms": 0,
+        "cadence_gate": true,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14719217,
+        "actual_audio_bitrate": 192131,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "bytes": 61142884,
+      "decoded_frames": 984,
+      "adjacent_exact_decoded_repeats": 0,
+      "video_audio_decode_pass": true,
+      "process_video_engine_delta_ns": 14979144400,
+      "fixed_va_and_i965_mapped": true,
+      "exact_encoder_factory_independently_observed": false,
+      "normal_foreground_keyboard_start_stop": true,
+      "diagnostic_actions": false,
+      "background_capture": false,
+      "max_temperature_millicelsius": 75000,
+      "observed_cpu_limits_khz": [
+        1600000
+      ],
+      "original_geometry_format_controls_and_settings_restored": true,
+      "kernel_faults": 0,
+      "source_frame_conservation_measured": false,
+      "optical_scene_controlled": false
+    },
+    {
+      "camera": "rear",
+      "requested_seconds": 30,
+      "metrics": {
+        "packets": 992,
+        "fps": 30.01181090439224,
+        "pts_span_seconds": 33.02033333333333,
+        "max_pts_gap_seconds": 0.034666666666666665,
+        "min_pts_gap_seconds": 0.032,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 0,
+        "gaps_above100ms": 0,
+        "cadence_gate": true,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14904814,
+        "actual_audio_bitrate": 192060,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "bytes": 62390033,
+      "decoded_frames": 992,
+      "adjacent_exact_decoded_repeats": 0,
+      "video_audio_decode_pass": true,
+      "process_video_engine_delta_ns": 15776248800,
+      "fixed_va_and_i965_mapped": true,
+      "exact_encoder_factory_independently_observed": false,
+      "normal_foreground_keyboard_start_stop": true,
+      "diagnostic_actions": false,
+      "background_capture": false,
+      "max_temperature_millicelsius": 78000,
+      "observed_cpu_limits_khz": [
+        1600000
+      ],
+      "original_geometry_format_controls_and_settings_restored": true,
+      "kernel_faults": 0,
+      "source_frame_conservation_measured": false,
+      "optical_scene_controlled": false
+    }
+  ],
+  "post_recording_suspend": {
+    "requested_seconds": 12,
+    "s0i3_delta_us": 12321568,
+    "estimated_suspended_seconds": 11.746915274000457,
+    "boot_unchanged": true,
+    "kernel_fault_delta": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0,
+      "TFA_DSP_timeout": 0
+    },
+    "hardware": {
+      "after": {
+        "rt5659_0x65": 64,
+        "tfa_status": [
+          55391,
+          55391
+        ]
+      },
+      "active": {
+        "rt5659_0x65": 64,
+        "tfa_status": [
+          55391,
+          55391
+        ]
+      }
+    },
+    "ordered_clock_transitions": [
+      {
+        "kind": "snd_soc_dapm_widget_power",
+        "widget": "Platform Clock",
+        "value": 0
+      },
+      {
+        "kind": "snd_soc_dapm_widget_event_start",
+        "widget": "Platform Clock",
+        "value": 8
+      },
+      {
+        "kind": "codec_register_write",
+        "register": 128,
+        "value": 32768
+      },
+      {
+        "kind": "snd_soc_dapm_widget_event_done",
+        "widget": "Platform Clock",
+        "value": 8
+      },
+      {
+        "kind": "codec_register_write",
+        "register": 101,
+        "value": 0
+      },
+      {
+        "kind": "snd_soc_dapm_widget_power",
+        "widget": "I2S1",
+        "value": 1
+      },
+      {
+        "kind": "snd_soc_dapm_widget_power",
+        "widget": "I2S2",
+        "value": 1
+      },
+      {
+        "kind": "snd_soc_dapm_widget_power",
+        "widget": "Platform Clock",
+        "value": 1
+      },
+      {
+        "kind": "snd_soc_dapm_widget_power",
+        "widget": "PLL",
+        "value": 1
+      },
+      {
+        "kind": "snd_soc_dapm_widget_event_start",
+        "widget": "Platform Clock",
+        "value": 1
+      },
+      {
+        "kind": "codec_register_write",
+        "register": 128,
+        "value": 16384
+      },
+      {
+        "kind": "snd_soc_dapm_widget_event_done",
+        "widget": "Platform Clock",
+        "value": 1
+      },
+      {
+        "kind": "codec_register_write",
+        "register": 101,
+        "value": 64
+      }
+    ],
+    "trace_overruns": 0,
+    "raw_trace_exported": false,
+    "usb_attached": true,
+    "pristine_untethered": false
+  },
+  "uncontrolled_audio_levels": {
+    "state": "private-aac-levels-observed",
+    "rows": [
+      {
+        "camera": "front",
+        "audio_channels": [
+          {
+            "samples": 1560064,
+            "rms_dbfs": -78.01732438005087,
+            "peak_dbfs": -54.453629116349674,
+            "dc_mean": -1.5078536199585043e-05,
+            "nonzero_fraction": 1.0,
+            "clipped_fraction": 0.0
+          },
+          {
+            "samples": 1560064,
+            "rms_dbfs": -75.03598174497975,
+            "peak_dbfs": -55.41524836243227,
+            "dc_mean": -1.5144081533219848e-05,
+            "nonzero_fraction": 1.0,
+            "clipped_fraction": 0.0
+          }
+        ],
+        "decoded_audio_seconds": 32.501333333333335,
+        "video_display_rotation": [],
+        "audio_capture_muted_or_heard_independently_verified": false,
+        "controlled_acoustic_stimulus": false,
+        "raw_pcm_saved": false,
+        "raw_pcm_exported": false
+      },
+      {
+        "camera": "rear",
+        "audio_channels": [
+          {
+            "samples": 1580704,
+            "rms_dbfs": -78.47295652122901,
+            "peak_dbfs": -53.831613500358564,
+            "dc_mean": -1.4915592275852855e-05,
+            "nonzero_fraction": 1.0,
+            "clipped_fraction": 0.0
+          },
+          {
+            "samples": 1580704,
+            "rms_dbfs": -75.67147715906279,
+            "peak_dbfs": -57.05521219412134,
+            "dc_mean": -1.4962333801489577e-05,
+            "nonzero_fraction": 1.0,
+            "clipped_fraction": 0.0
+          }
+        ],
+        "decoded_audio_seconds": 32.931333333333335,
+        "video_display_rotation": [],
+        "audio_capture_muted_or_heard_independently_verified": false,
+        "controlled_acoustic_stimulus": false,
+        "raw_pcm_saved": false,
+        "raw_pcm_exported": false
+      }
+    ],
+    "scope": "Uncontrolled ambient signal levels only; not microphone acoustic/SNR/stereo-channel quality qualification.",
+    "new_recordings": 0,
+    "nonzero_pcm_played": false
+  },
+  "post_test_source_selection": {
+    "state": "default-audio-source-readonly-observed",
+    "default_source": "alsa_input.platform-cht-bsw-rt5659.HiFi__IntMic__source",
+    "source_is_monitor": false,
+    "mute": false,
+    "active_port": "[In] IntMic",
+    "volume_percent": {
+      "front-left": "100%",
+      "front-right": "100%"
+    },
+    "source_state": "SUSPENDED",
+    "levels_changed": false,
+    "new_capture": false,
+    "nonzero_pcm_played": false,
+    "microphone_acoustic_quality_verified": false
+  },
+  "cleanup": {
+    "only_superseded_test_caches": true,
+    "directories": [
+      "mipad2-camera-async-front-cont14",
+      "mipad2-camera-async-rear-cont14",
+      "mipad2-camera-async-rear-cont16",
+      "mipad2-camera-va-rate-cont8",
+      "mipad2-camera-va-rate-probe-a-cont9",
+      "mipad2-camera-va-rate-probe-b-cont9",
+      "mipad2-camera-va-rate-traced-cont8"
+    ],
+    "logical_bytes": 28102319,
+    "media_logs_kernels_deleted": 0
+  },
+  "final": {
+    "protected_files": 2163,
+    "protected_hashes_unchanged": true,
+    "private_aliases_unchanged": 35,
+    "deep_restoration": {
+      "front": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      },
+      "rear": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      }
+    },
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "root_free_bytes": 2193387520,
+    "max_temperature_millicelsius": 50000,
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "all_pcm_closed": true,
+    "camera_isp_pm": {
+      "ov5693": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "t4ka3": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "all_test_units_terminal": true
+  },
+  "limitations": {
+    "exact_encoder_factory_identity": false,
+    "source_to_encoded_frame_conservation": false,
+    "controlled_optical_or_rotation_scene": false,
+    "controlled_microphone_SNR": false,
+    "long_run_thermal_or_DMA_hang_qualification": false,
+    "s5_poweroff_reliability": false,
+    "full_os_image_built": false,
+    "android_windows_parity_proven": false
+  },
+  "raw_media_kernel_uart_per_frame_data_exported": false
+}
