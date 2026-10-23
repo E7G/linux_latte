@@ -37,7 +37,13 @@ require(stream is not None,'Production stream initializer missing')
 for prefix in ('Left','Right'):
     require(f'.name_prefix = "{prefix}"' in board,'Machine prefix changed')
     require(f'{{"Ext Spk", NULL, "{prefix} OUT"}}' in board,'Machine output ABI changed')
-    require(f'{{"{prefix} HiFi Playback", NULL, "AIF2 Playback"}}' in board,'Machine stream ABI changed')
+require('SND_SOC_DAILINK_REG(rt5659_aif2_cpu, spk_codecs)' in board,
+        'Machine must use the physical AIF2-to-amplifier C2C link')
+require('COMP_CPU("rt5659-aif2")' in board and 'SND_SOC_DAIFMT_CBC_CFC' in board,
+        'Amplifiers must consume clocks from the AIF2 transmitter')
+for index in ('00', '01'):
+    require(f'COMP_CODEC("i2c-tfa9890:{index}", "tfa989x-hifi")' in board,
+            'Both actual amplifier receivers must participate in the C2C link')
 
 shim=r"""
 #include <errno.h>

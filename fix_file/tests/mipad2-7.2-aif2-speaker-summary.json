@@ -1,0 +1,464 @@
+{
+  "schema": 1,
+  "status": "source-candidate-host-validated-not-booted",
+  "date": "2026-10-24",
+  "base_commit": "7183298b4514d5881f653784320e3b43ea4fdd34",
+  "running_release": "7.2.0-mipad2-integrated-r4",
+  "new_candidate_booted": false,
+  "full_candidate_image_built": false,
+  "device_controls_or_graph_changed": false,
+  "actual_power_savings_measured": false,
+  "acoustic_test_performed": false,
+  "stock_tfa_backend_unchanged_on_device": true,
+  "factory_dsp_enabled": false,
+  "calibration_MTP_writes_requested": false,
+  "observed_idle_cycle": {
+    "state": "connected-c2c-dac-ref-cycle-proven-at-idle",
+    "cycle": [
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "AIF1 Playback",
+        "power": "AIF1 Playback: On  in 1 out 19",
+        "widget_type": "dai_in"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "AIF1RX",
+        "power": "AIF1RX: On  in 1 out 19",
+        "widget_type": "aif_in"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "IF1 DAC1",
+        "power": "IF1 DAC1: On  in 1 out 19",
+        "widget_type": "pga"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "IF1 DAC1 L",
+        "power": "IF1 DAC1 L: On  in 1 out 9",
+        "widget_type": "pga"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "DAC L1 Mux",
+        "power": "DAC L1 Mux: On  in 1 out 9",
+        "widget_type": "mux"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "DAC1 MIXL",
+        "power": "DAC1 MIXL: On  in 1 out 9",
+        "widget_type": "mixer"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "DAC_REF",
+        "power": "DAC_REF: On  in 2 out 9",
+        "widget_type": "pga"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "IF2 ADC Mux",
+        "power": "IF2 ADC Mux: On  in 2 out 1",
+        "widget_type": "mux"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "IF2 ADC",
+        "power": "IF2 ADC: On  in 2 out 1",
+        "widget_type": "pga"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "IF2 ADC Swap Mux",
+        "power": "IF2 ADC Swap Mux: On  in 2 out 1",
+        "widget_type": "mux"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "AIF2TX",
+        "power": "AIF2TX: On  in 2 out 1",
+        "widget_type": "aif_out"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "AIF2 Capture",
+        "power": "AIF2 Capture: On  in 2 out 1",
+        "widget_type": "dai_out"
+      },
+      {
+        "component": "cht-bsw-rt5659",
+        "widget": "Codec AIF2 Port-capture",
+        "power": "Codec AIF2 Port-capture: On  in 2 out 1",
+        "widget_type": "dai_link"
+      },
+      {
+        "component": "i2c-10EC5659:01",
+        "widget": "AIF1 Playback",
+        "power": "AIF1 Playback: On  in 1 out 19",
+        "widget_type": "dai_in"
+      }
+    ],
+    "dai_stream_states": {
+      "AIF1 Playback": "inactive",
+      "AIF2 Capture": "inactive",
+      "AIF1 Capture": "inactive",
+      "AIF2 Playback": "inactive"
+    },
+    "all_public_pcm_closed": true,
+    "dapm_graph_changed": false,
+    "controls_changed": false,
+    "hardware_register_writes_requested": false,
+    "raw_graph_exported": false
+  },
+  "observed_dai_widgets": [
+    {
+      "component": "cht-bsw-rt5659",
+      "widget": "Codec AIF2 Port-capture",
+      "power": "Codec AIF2 Port-capture: On  in 2 out 1"
+    },
+    {
+      "component": "cht-bsw-rt5659",
+      "widget": "Codec AIF2 Port-playback",
+      "power": "Codec AIF2 Port-playback: On  in 24 out 2"
+    },
+    {
+      "component": "cht-bsw-rt5659",
+      "widget": "Ext Spk",
+      "power": "Ext Spk: On  in 48 out 1"
+    },
+    {
+      "component": "cht-bsw-rt5659",
+      "widget": "Int Mic",
+      "power": "Int Mic: On  in 1 out 32"
+    },
+    {
+      "component": "cht-bsw-rt5659",
+      "widget": "Platform Clock",
+      "power": "Platform Clock: On  in 0 out 0"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "AIF1 Capture",
+      "power": "AIF1 Capture: On  in 24 out 2"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "AIF1 Playback",
+      "power": "AIF1 Playback: On  in 1 out 19"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "AIF2 Capture",
+      "power": "AIF2 Capture: On  in 2 out 1"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "AIF2 Playback",
+      "power": "AIF2 Playback: On  in 24 out 2"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "I2S1",
+      "power": "I2S1: On  in 0 out 0 - R97(0x61) mask 0x8000"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "I2S2",
+      "power": "I2S2: On  in 0 out 0 - R97(0x61) mask 0x4000"
+    },
+    {
+      "component": "i2c-10EC5659:01",
+      "widget": "PLL",
+      "power": "PLL: On  in 0 out 0 - R101(0x65) mask 0x40"
+    }
+  ],
+  "candidate": {
+    "physical_link": "rt5659-aif2 Capture/TX -> both TFA Playback/RX",
+    "playback_only": true,
+    "amp_bus": "48000 Hz S16_LE stereo; amps consume BCLK/LRCLK",
+    "ssp_aif1_format_preserved": "S24_LE",
+    "codec_and_board_PLL_dependencies_preserved": true,
+    "forced_register_writes": false,
+    "resume_script_installed": false
+  },
+  "compiled_machine": {
+    "module_sha256": "fa5f68cda22c7b5f29b1ca81af3109a841881345d824b98cfe382881083ed41a",
+    "bytes": 387048,
+    "source_hashes": {
+      "sound/soc/intel/boards/cht_bsw_rt5659.c": "919b2b7988cf10bbd6c730aeb84b6733b3ced70a1152cb708ead70822472c4dd",
+      "sound/soc/codecs/rt5659.h": "c3b17825330eaab96a9292a2bc055a3183edd5fdd80d1adf1a90ba0f2bca2563",
+      "sound/soc/intel/atom/sst-atom-controls.h": "a82b84651f38eeec771e93c3a95846d0e056e1285a727e9d5c53dbde7f66fe30",
+      "sound/soc/intel/common/soc-intel-quirks.h": "060978860ee69bcea1b017ef7057f6e3a9b8eacb375b3c01e57ed771e0cd426c"
+    },
+    "W1_Clang21_thinLTO_modpost": true,
+    "loaded": false,
+    "prior_r4_build_preserved": true
+  },
+  "compiled_factory": {
+    "module_sha256": "e3ec620159138ff171c6d52c4e896cbdc209934d14283788b4e9c0b14e8ef29b",
+    "bytes": 1285800,
+    "three_objects_rebuilt": true,
+    "W1_Clang21_thinLTO_modpost": true,
+    "loaded": false,
+    "default_deferred_probe_preserved": true,
+    "full_alternative_Kconfig_runtime_qualified": false
+  },
+  "host_tests": {
+    "state": "host-tests-pass",
+    "positive": 18,
+    "intended_negative": 4,
+    "results": [
+      {
+        "test": "mipad2-aif2-speaker-graph-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-probe-topology-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dapm-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-rt5659-i2s-pll-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-board-pll-pm-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-mute-worker-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-start-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-format-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dsp-source-test.py",
+        "optimized": false,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-aif2-speaker-graph-test.py",
+        "optimized": false,
+        "negative": true,
+        "prior_commit": "7183298b4514d5881f653784320e3b43ea4fdd34",
+        "exit_code": 1,
+        "expected_failure": "unexpected-idle-cycle-power",
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dapm-test.py",
+        "optimized": false,
+        "negative": true,
+        "prior_commit": "7183298b4514d5881f653784320e3b43ea4fdd34",
+        "exit_code": 1,
+        "expected_failure": "CHECK failed",
+        "passed": true
+      },
+      {
+        "test": "mipad2-aif2-speaker-graph-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-probe-topology-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dapm-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-rt5659-i2s-pll-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-board-pll-pm-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-mute-worker-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-start-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-format-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dsp-source-test.py",
+        "optimized": true,
+        "negative": false,
+        "exit_code": 0,
+        "passed": true
+      },
+      {
+        "test": "mipad2-aif2-speaker-graph-test.py",
+        "optimized": true,
+        "negative": true,
+        "prior_commit": "7183298b4514d5881f653784320e3b43ea4fdd34",
+        "exit_code": 1,
+        "expected_failure": "unexpected-idle-cycle-power",
+        "passed": true
+      },
+      {
+        "test": "mipad2-tfa-dapm-test.py",
+        "optimized": true,
+        "negative": true,
+        "prior_commit": "7183298b4514d5881f653784320e3b43ea4fdd34",
+        "exit_code": 1,
+        "expected_failure": "CHECK failed",
+        "passed": true
+      }
+    ],
+    "hardware_tested": false,
+    "raw_device_logs_exported": false,
+    "initial_shim_compile_and_baseline_failures_retained": true
+  },
+  "negative_failure_intent": {
+    "state": "negative-intent-verified",
+    "results": [
+      {
+        "prior_source": "machine",
+        "optimized": false,
+        "intended_failure_signature": "unexpected-idle-cycle-power",
+        "verified": true
+      },
+      {
+        "prior_source": "factory",
+        "optimized": false,
+        "intended_failure_signature": "CHECK failed: t==amp && clocks && t->dsp_init_lock.held && !queued",
+        "verified": true
+      },
+      {
+        "prior_source": "machine",
+        "optimized": true,
+        "intended_failure_signature": "unexpected-idle-cycle-power",
+        "verified": true
+      },
+      {
+        "prior_source": "factory",
+        "optimized": true,
+        "intended_failure_signature": "CHECK failed: t==amp && clocks && t->dsp_init_lock.held && !queued",
+        "verified": true
+      }
+    ],
+    "unique_controls": 4
+  },
+  "extracted_production_core_functions": {
+    "dapm_is_connected_ep": "0dbedb63ff11fd0467e8db0e120f1c40d987a07c6eb2620a8af436e4d077e208",
+    "dapm_is_connected_output_ep": "019b09de1a0fc6f66c82772b9927f555bd3e0740b50bc8a09f3290a005cc1e38",
+    "dapm_is_connected_input_ep": "61cffde153f5f045ff9c70b301c6c0e86fdcfe960ecb7577b5d5ffe42bbe8c95",
+    "dapm_generic_check_power": "d52d545ec7d99a6c6fc6b6453990b55a27b67fd2ab88dc11511138241c8be8d5",
+    "dapm_dai_link_event_pre_pmu": "573aa3d42441881e2bf6bb9ae3c4a55a6b9b9a6f01070d4b319bad52bca4fbe0",
+    "snd_soc_get_stream_cpu": "a7c84bbf2e098995eba978bfc2b5ae6a1b8daf122b70a9452c6b118a64fe1d54"
+  },
+  "reference": {
+    "android_board_path": "sound/soc/intel/board/cht_bl_dpcm_rt5659.c",
+    "android_commit": "d2afb1de9a761ff01dafdf9efe4736e521ab71f6",
+    "android_board_sha256": "56fb1810ef6a7f90d4d1c110af3a45f318c38e52bb814647a574eaedcb26753e",
+    "android_public_repo": "https://github.com/latte-dev/android_kernel_xiaomi_latte",
+    "windows_references": [],
+    "windows_implementation_source_available": false,
+    "windows_equivalence_claimed": false,
+    "upstream_codec2codec_doc": "https://www.kernel.org/doc/html/latest/sound/soc/codec-to-codec.html"
+  },
+  "initial_fixture_failures_retained": true,
+  "raw_kernel_graph_uart_or_media_exported": false,
+  "final_device": {
+    "release": "7.2.0-mipad2-integrated-r4",
+    "all_pcm_closed": true,
+    "faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "reset_failed": 0
+    },
+    "guards": {
+      "mipad2-test-no-idle": "active",
+      "mipad2-thermal-guard": "active"
+    },
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "root_free": 2193264640,
+    "battery": [
+      31
+    ],
+    "max_temp": 50000,
+    "new_reboots": 0,
+    "actual_new_topology_applied": false
+  }
+}

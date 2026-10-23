@@ -192,14 +192,10 @@ static const struct snd_soc_dapm_route cht_audio_map[] = {
 	{"Ext Spk", NULL, "Left OUT"},
 	{"Ext Spk", NULL, "Right OUT"},
 	/*
-	 * 功放的 DAI widget 接到 rt5659 的 AIF2 上：扬声器的数据由 rt5659 内部
-	 * 回环（aif1 -> aif2）后经硬件 I2S 引脚送出。功放自身不再承载 PCM
-	 * （见 Dummy-TFA989x Speaker L/R 的 no_pcm），因此它的电源不再被
-	 * 播放流绑死，插孔事件可以自由控制。
-	 * 名字里的 Left/Right 来自 codec_conf 的 name_prefix。
+	 * The AIF2 transmitter is linked to both amplifier receivers by the
+	 * physical codec-to-codec DAI link below.  Do not connect the amps to
+	 * AIF2 Playback (the codec's serial receiver) with manual DAPM routes.
 	 */
-	{"Left HiFi Playback", NULL, "AIF2 Playback"},
-	{"Right HiFi Playback", NULL, "AIF2 Playback"},
 	/*
 	 * Platform Clock 是 DAPM supply，负责开关编解码器 MCLK（pmc_plt_clk_3）。
 	 * 它必须挂在真实存在的 widget 上：原来挂到 "AIF1 Playback"/"AIF1 Capture"，
@@ -578,28 +574,18 @@ SND_SOC_DAILINK_DEF(platform,
 	DAILINK_COMP_ARRAY(COMP_PLATFORM("sst-mfld-platform")));
 
 /*
- * 三段式布线（与厂商 / Android 侧一致）：
- *
- *   rt5659 aif1 --c2c--> rt5659 aif2   数据在 codec 内部回环，
- *                                      最终由硬件 I2S 引脚送到功放
- *   Dummy-BE(no_pcm) 挂功放          让功放留在 DAPM 图里，但不绑定任何 PCM
- *
- * 这样做的好处是功放的电源不再被“有播放流”绑死：
- * 耳机模式下可以让 rt5659 不再往 AIF2 送数据，功放自然静音。
+ * DAC_REF is an internal RT5659 path from AIF1 RX to AIF2 TX, not an
+ * external AIF1/AIF2 wire.  A codec-to-codec link between those two DAIs
+ * creates the reverse AIF2 Capture -> AIF1 Playback edge and closes a
+ * signal cycle.  DAPM then sees connected endpoints even with all PCMs
+ * stopped.  Model the actual external I2S bus instead: AIF2 Capture
+ * (codec transmitter / CPU side) -> left and right amplifier Playback.
  */
-SND_SOC_DAILINK_DEF(rt5659_aif1_cpu,
-	DAILINK_COMP_ARRAY(COMP_CPU("rt5659-aif1")));
-SND_SOC_DAILINK_DEF(rt5659_aif2_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC(RT5659_I2C_NAME,
-					  "rt5659-aif2")));
-
-SND_SOC_DAILINK_DEF(spk_l_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("i2c-tfa9890:00",
-					  "tfa989x-hifi")));
-
-SND_SOC_DAILINK_DEF(spk_r_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC("i2c-tfa9890:01",
-					  "tfa989x-hifi")));
+SND_SOC_DAILINK_DEF(rt5659_aif2_cpu,
+	DAILINK_COMP_ARRAY(COMP_CPU("rt5659-aif2")));
+SND_SOC_DAILINK_DEF(spk_codecs,
+	DAILINK_COMP_ARRAY(COMP_CODEC("i2c-tfa9890:00", "tfa989x-hifi"),
+			  COMP_CODEC("i2c-tfa9890:01", "tfa989x-hifi")));
 
 static const struct snd_soc_pcm_stream nxp_tfa989x_params[] = {
 	{
@@ -647,41 +633,15 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.ignore_pmdown_time = 1,
 	},
 	{
-		/*
-		 * rt5659 内部 aif1 -> aif2 回环：数据由 codec 自己从 aif1 收到、
-		 * 从 aif2 输出，再经硬件 I2S 引脚送到 TFA9890。
-		 *
-		 * 与厂商驱动一致：不用 c2c_params，这样它是普通 PCM 链路，
-		 * dailink 的 .ops 才会被调用（c2c 的 hw_params 走 DAPM，绕过 ops）。
-		 * 时钟方向 CBM_CFM：由 codec 自己产生 BCLK/LRCK。
-		 */
-		.name = "Codec AIF2 Port",
-		.stream_name = "rt5659 AIF2 Playback",
-		SND_SOC_DAILINK_REG(rt5659_aif1_cpu, rt5659_aif2_codec),
+		.name = "RT5659 AIF2 Speakers",
+		.stream_name = "RT5659 AIF2 Speaker Playback",
+		.playback_only = 1,
+		SND_SOC_DAILINK_REG(rt5659_aif2_cpu, spk_codecs),
+		/* Amplifiers consume BCLK/LRCLK; AIF2 provides both clocks. */
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-			SND_SOC_DAIFMT_CBP_CFP,
-		/*
-		 * c2c_params 是必需的：snd_soc_dai_link_event_pre_pmu() 会
-		 * 用它构造 hw_params，缺了直接返回 -EINVAL，AIF2 回环不会启动，
-		 * 功放就收不到数据（播放无报错但无声）。
-		 */
+			SND_SOC_DAIFMT_CBC_CFC,
 		.c2c_params = nxp_tfa989x_params,
 		.num_c2c_params = 1,
-	}, {
-		/*
-		 * 功放本身不承载 PCM（no_pcm）：只为让它留在 DAPM 图里，
-		 * 同时避免 POWER widget 被播放流长时间点亮——耳机模式下
-		 * 功放电源因此可以由插孔事件自由控制。
-		 */
-		.name = "Dummy-TFA989x Speaker L",
-		.no_pcm = 1,
-		.ignore_suspend = 1,
-		SND_SOC_DAILINK_REG(dummy, spk_l_codec),
-	}, {
-		.name = "Dummy-TFA989x Speaker R",
-		.no_pcm = 1,
-		.ignore_suspend = 1,
-		SND_SOC_DAILINK_REG(dummy, spk_r_codec),
 	},
 };
 

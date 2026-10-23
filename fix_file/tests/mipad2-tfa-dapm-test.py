@@ -35,10 +35,12 @@ for direction in ('up', 'down'):
     for clock in ('dai_in', 'dai_out', 'aif_in', 'aif_out', 'dai_link', 'supply', 'clock_supply'):
         require((seq[clock] < seq['mixer']) if direction == 'up' else (seq['mixer'] < seq[clock]),
                 direction+' mixer/clock ordering changed: '+clock)
-for side in ('L', 'R'):
-    link = re.search(r'\.name = "Dummy-TFA989x Speaker '+side+r'",(.*?)SND_SOC_DAILINK_REG', board, re.S)
-    require(link is not None and '.no_pcm = 1' in link[1] and 'c2c_params' not in link[1],
-            'Machine amp link no longer uses the tested graph-only topology')
+require('SND_SOC_DAILINK_REG(rt5659_aif2_cpu, spk_codecs)' in board and
+        '.playback_only = 1' in board and 'SND_SOC_DAIFMT_CBC_CFC' in board,
+        'Machine no longer uses the tested physical AIF2 speaker link')
+for index in ('00', '01'):
+    require(f'COMP_CODEC("i2c-tfa9890:{index}", "tfa989x-hifi")' in board,
+            'Missing real C2C receiver')
 
 shim = r'''
 #include <stdbool.h>
@@ -47,6 +49,9 @@ shim = r'''
 #include <errno.h>
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"CHECK failed: %s line %d\n",#x,__LINE__); exit(89); } } while (0)
 #define WRITE_ONCE(x,v) ((x)=(v))
+#define pr_debug(...) ((void)0)
+#define SNDRV_PCM_STREAM_PLAYBACK 0
+#define SNDRV_PCM_STREAM_CAPTURE 1
 #define SND_SOC_DAPM_POST_PMU 2
 #define SND_SOC_DAPM_PRE_PMD 4
 #define TFA98XX_DSP_INIT_PENDING 0
@@ -63,6 +68,7 @@ struct tfa98xx {
 };
 struct snd_soc_component { struct tfa98xx *data; };
 struct snd_soc_dapm_context { struct snd_soc_component *component; };
+struct snd_soc_dai { struct snd_soc_component *component; };
 struct snd_soc_dapm_widget { struct snd_soc_dapm_context *dapm; };
 struct snd_kcontrol { int unused; };
 static bool defer_dsp_start, queued, clocks;
@@ -97,6 +103,13 @@ int main(void) {
     struct snd_soc_dapm_widget w={.dapm=&d};
     /* Safe probe: neither power edge performs register/workqueue operations. */
     defer_dsp_start=true;clocks=false;
+    struct snd_soc_dai dai={.component=&c};
+    /* Actual C2C callbacks must be passive too, including PRE_PMD mute. */
+    CHECK(!tfa98xx_mute_stream(&dai,0,SNDRV_PCM_STREAM_PLAYBACK));
+    CHECK(!tfa98xx_mute_stream(&dai,1,SNDRV_PCM_STREAM_PLAYBACK));
+    CHECK(!tfa98xx_mute_stream(&dai,1,SNDRV_PCM_STREAM_CAPTURE));
+    CHECK(!stops && !cancels && !queues && !a.desired_running);
+
     CHECK(!tfa98xx_output_event(&w,NULL,SND_SOC_DAPM_POST_PMU));
     CHECK(!tfa98xx_output_event(&w,NULL,SND_SOC_DAPM_PRE_PMD));
     CHECK(!stops && !cancels && !queues && !a.desired_running);
@@ -113,13 +126,21 @@ int main(void) {
     CHECK(!queued && stops==2 && cancels==4 && !a.desired_running);
     CHECK(tfa98xx_output_event(&w,NULL,999)==-EINVAL);
     CHECK(stops==2 && queues==2 && cancels==4 && !a.dsp_init_lock.held);
-    puts("PASS: production DAPM events, passive probe, rapid stop, reopen, error propagation; actual core order checked");
+    /* New real C2C and output-mixer callbacks can both occur in one walk. */
+    stop_error=0;
+    CHECK(!tfa98xx_mute_stream(&dai,0,SNDRV_PCM_STREAM_PLAYBACK));
+    CHECK(!tfa98xx_output_event(&w,NULL,SND_SOC_DAPM_POST_PMU));
+    CHECK(!tfa98xx_output_event(&w,NULL,SND_SOC_DAPM_PRE_PMD));
+    CHECK(!tfa98xx_mute_stream(&dai,1,SNDRV_PCM_STREAM_PLAYBACK));
+    CHECK(!queued && !a.desired_running && !a.monitor_status && !a.dsp_init_lock.held);
+    CHECK(stops==4 && queues==4 && cancels==8);
+    puts("PASS: actual C2C mute plus mixer events, passive probe, rapid stop/reopen, error propagation and worker drain; hardware/DSP not tested");
     return 0;
 }
 '''
 with tempfile.TemporaryDirectory(prefix='mipad2-tfa-dapm-') as tmp:
     p = Path(tmp); c = p/'test.c'; binary = p/'test'
-    c.write_text(shim+function('tfa98xx_set_running')+'\n'+function('tfa98xx_output_event')+main)
+    c.write_text(shim+function('tfa98xx_set_running')+'\n'+function('tfa98xx_digital_mute')+'\n'+function('tfa98xx_mute_stream')+'\n'+function('tfa98xx_output_event')+main)
     cmd = shlex.split(os.environ.get('CC', 'clang'))+['-std=c11','-Wall','-Wextra','-Werror','-Wno-unused-parameter',
             '-fsanitize=address,undefined','-fno-omit-frame-pointer','-g',str(c),'-o',str(binary)]
     subprocess.run(cmd, check=True)

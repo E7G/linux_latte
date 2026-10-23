@@ -354,6 +354,10 @@ static int tfa98xx_digital_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(dai->component);
 
+	/* Real C2C links invoke mute_stream even in deferred safe-probe mode. */
+	if (defer_dsp_start)
+		return 0;
+
 	pr_debug("state: %d\n", mute);
 	return tfa98xx_set_running(tfa98xx, !mute);
 }
