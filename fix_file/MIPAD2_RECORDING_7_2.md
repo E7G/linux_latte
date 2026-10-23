@@ -55,3 +55,9 @@ the normal-application recording, optical, audio or long-freeze gates.
 ## Later normal copied-async checkpoint (7.2 r3)
 
 [Normal front 60-second sample and incomplete rear](https://github.com/E7G/snapshot/blob/511510be29522db307025e6cafa3c5252f302611/MIPAD2_NORMAL_ASYNC_LONG_7_2.md): front1944frames/30.00154fps/max38ms; rear441frames/14.6603s, **requested60s not completed**, stop condition unlabelled. No diagnostic/background/trace capture; no default promotion or new kernel C/build. Previous hard-freeze recovery completed and7.2 restarted; root cause and failed-reset DMA quiescence remain open. Earlier negative recordings are not erased.
+
+## Later rear completion and independent thermal correction
+
+[Normal rear63.841s/1917frames whole-file cadence sample](https://github.com/E7G/snapshot/blob/5124a85963e6ce3b0b95a2d7ea967a5d3883355d/MIPAD2_NORMAL_REAR_LONG_7_2.md) passes30.01206fps/max34.333ms/fullA-Vdecode with no diagnostic/background/trace flags. Prior interrupted rear and556ms normal failure retained; no default promotion or optical/live-preview/Android-parity proof.
+
+[Independent production thermal guard correction](https://github.com/E7G/xiaomi-latte-flash_tools/blob/3806e95ffcf9edcaf3002ece7c8e979b3c9d525f/kernel/THERMAL_GUARD_7_2.md) removes one-state-per-poll upward delay while preserving existing thresholds/ceilings/cooling hysteresis.164hosttests normally/-O; exactsource installed and cool-state checked, not a measured real hot-transition fix. Rearpass predates that change, so cannot be attributed to it. No new kernel C/build/reboot. Previous freeze and failed-reset DMA quiescence stay open.
