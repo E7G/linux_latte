@@ -1,0 +1,85 @@
+{
+  "state": "source-fix-host-validated-not-built",
+  "upstream_commit": "9928c7b8d00c500ee97903afa1cc76c1c36ab2bc",
+  "fixed_source_sha256": "efa564cf4e656a8aa721c1f3f1b86103536037b5caa7b68902ffc51a37499cc3",
+  "actual_r2_warm_boot": true,
+  "r2_default_camera_capture_bytes": 0,
+  "r2_quarantined": true,
+  "stable_rollback_verified": true,
+  "r3_built": false,
+  "r3_booted": false,
+  "baseline": {
+    "state": "fail",
+    "cases": [
+      {
+        "case": "qbuf",
+        "exit_code": 12,
+        "passed": false,
+        "sanitizer_fault": false
+      },
+      {
+        "case": "dqbuf",
+        "exit_code": 1,
+        "passed": false,
+        "sanitizer_fault": true
+      },
+      {
+        "case": "mode",
+        "exit_code": 1,
+        "passed": false,
+        "sanitizer_fault": true
+      },
+      {
+        "case": "metadata",
+        "exit_code": 1,
+        "passed": false,
+        "sanitizer_fault": true
+      }
+    ],
+    "source_sha256": {
+      "drivers/media/v4l2-core/v4l2-ioctl.c": "90253a23714f3fa165a4f304ca008665c4318e53e5be7dfa3436b15b3a1d6a2e",
+      "drivers/media/common/videobuf2/videobuf2-v4l2.c": "60b388cd10837ae13187f9047f7e5c9b03af46a1116485789fef57a7ba682844",
+      "include/media/videobuf2-v4l2.h": "35c2a1d147de60b5e8b90978a8c507ebefac439ed5daef116c9adc0bb70a0237",
+      "drivers/staging/media/atomisp/pci/atomisp_ioctl.c": "7ddafb2681041b004c99887f0ad9f8f7f5cbbc0490dc5800e48bc28f21608326"
+    },
+    "baseline_commit": "0f929d4ed76d3f6994a9bbb52ef62d2e14210ea9",
+    "scope": "Actual V4L2 NULL reqbuf/qbuf/dqbuf dispatch, VB2 ownership helpers, AtomISP wrappers and complete AtomISP private dispatcher. Core default NULL callsite inspected; rejected legacy bodies are inert stubs. Allocation/MMIO/DMA/IRQ/locks are synthetic, not physical hardware."
+  },
+  "fixed": {
+    "state": "pass",
+    "cases": [
+      {
+        "case": "qbuf",
+        "exit_code": 0,
+        "passed": true,
+        "sanitizer_fault": false
+      },
+      {
+        "case": "dqbuf",
+        "exit_code": 0,
+        "passed": true,
+        "sanitizer_fault": false
+      },
+      {
+        "case": "mode",
+        "exit_code": 0,
+        "passed": true,
+        "sanitizer_fault": false
+      },
+      {
+        "case": "metadata",
+        "exit_code": 0,
+        "passed": true,
+        "sanitizer_fault": false
+      }
+    ],
+    "source_sha256": {
+      "drivers/media/v4l2-core/v4l2-ioctl.c": "90253a23714f3fa165a4f304ca008665c4318e53e5be7dfa3436b15b3a1d6a2e",
+      "drivers/media/common/videobuf2/videobuf2-v4l2.c": "60b388cd10837ae13187f9047f7e5c9b03af46a1116485789fef57a7ba682844",
+      "include/media/videobuf2-v4l2.h": "35c2a1d147de60b5e8b90978a8c507ebefac439ed5daef116c9adc0bb70a0237",
+      "drivers/staging/media/atomisp/pci/atomisp_ioctl.c": "efa564cf4e656a8aa721c1f3f1b86103536037b5caa7b68902ffc51a37499cc3"
+    },
+    "baseline_commit": null,
+    "scope": "Actual V4L2 NULL reqbuf/qbuf/dqbuf dispatch, VB2 ownership helpers, AtomISP wrappers and complete AtomISP private dispatcher. Core default NULL callsite inspected; rejected legacy bodies are inert stubs. Allocation/MMIO/DMA/IRQ/locks are synthetic, not physical hardware."
+  }
+}

@@ -751,6 +751,9 @@ error:
 }
 
 /*
+ * V4L2 passes NULL as the callback private argument. Derive per-file state
+ * from file->private_data, just like the VB2 queue ownership helpers do.
+ *
  * Standard handles leave VB2's reserved fields intact. Legacy clients may
  * explicitly select the old raw exp_id layout, or Android's exp_id << 16
  * layout, before allocating buffers. Modern 3A clients use the typed query.
@@ -759,12 +762,12 @@ static int atomisp_qbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer 
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(vdev);
-	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_fh *afh = atomisp_to_fh(file->private_data);
 	unsigned long flags;
 	u32 old_config;
 	int ret;
 
-	if (vdev->queue->owner && vdev->queue->owner != fh)
+	if (vb2_queue_is_busy(vdev->queue, file))
 		return -EBUSY;
 	if (buf->index >= vb2_get_num_buffers(vdev->queue) ||
 	    buf->index >= VIDEO_MAX_FRAME)
@@ -794,7 +797,7 @@ static int atomisp_dqbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(vdev);
-	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_fh *afh = atomisp_to_fh(file->private_data);
 	struct atomisp_frame_metadata metadata = { };
 	struct ia_css_frame *frame;
 	struct vb2_buffer *vb;
@@ -830,10 +833,10 @@ static int atomisp_dqbuf_wrapper(struct file *file, void *fh, struct v4l2_buffer
 	return 0;
 }
 
-static int atomisp_set_buffer_metadata_mode(struct file *file, void *fh, u32 mode)
+static int atomisp_set_buffer_metadata_mode(struct file *file, u32 mode)
 {
 	struct atomisp_video_pipe *pipe = atomisp_to_video_pipe(video_devdata(file));
-	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_fh *afh = atomisp_to_fh(file->private_data);
 	int ret = 0;
 
 	if (mode > ATOMISP_BUFFER_METADATA_ANDROID)
@@ -850,9 +853,10 @@ static int atomisp_set_buffer_metadata_mode(struct file *file, void *fh, u32 mod
 	return ret;
 }
 
-static int atomisp_get_frame_metadata(void *fh, struct atomisp_frame_metadata *metadata)
+static int atomisp_get_frame_metadata(struct file *file,
+				      struct atomisp_frame_metadata *metadata)
 {
-	struct atomisp_fh *afh = atomisp_to_fh(fh);
+	struct atomisp_fh *afh = atomisp_to_fh(file->private_data);
 	struct atomisp_metadata_record *record;
 	unsigned long flags;
 	int ret = 0;
@@ -1530,9 +1534,9 @@ static long atomisp_vidioc_default(struct file *file, void *fh,
 	case ATOMISP_IOC_S_BUFFER_METADATA_MODE:
 		if (!valid_prio)
 			return -EBUSY;
-		return atomisp_set_buffer_metadata_mode(file, fh, *(u32 *)arg);
+		return atomisp_set_buffer_metadata_mode(file, *(u32 *)arg);
 	case ATOMISP_IOC_G_FRAME_METADATA:
-		return atomisp_get_frame_metadata(fh, arg);
+		return atomisp_get_frame_metadata(file, arg);
 	case ATOMISP_IOC_G_XNR:
 		err = atomisp_xnr(asd, 0, arg);
 		break;

@@ -73,3 +73,10 @@ The tablet, stable 6.14 kernel and saved GRUB default are unchanged. Do not repl
 the stable entry with this candidate. First complete full link/module checks,
 prepare the matching userspace profiles, preserve boot diagnostics and recovery,
 then use an isolated one-shot entry for actual hardware qualification.
+
+## R2 physical camera regression / r3 continuation
+
+R2 booted, but actual default rear QBUF failed with zero frames. It is quarantined
+and stable 6.14 restored. R3 fixes the V4L2 NULL callback/file-context boundary.
+See [evidence and scope](mipad2-7.2-null-fh-validation.md); host tests are not
+physical camera qualification. The requested upstream remains exact 9928c7b8.
