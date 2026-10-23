@@ -70,3 +70,13 @@ reset/DMA quarantine design, an SP quiescence proof, an S0I3 fix or Android pari
 Normal final-frame/CSS/sensor sequencing is untouched. Host checks cannot prove
 that hardware stops accessing CSS/VB2 buffers after a failed power fence.
 No tablet install, reboot, suspend or physical fault injection was performed.
+
+## Completed r2 artifact gate (not a boot result)
+
+`7.2.0-mipad2-integrated-r2`, built from `7ea46f47b5dca725b4b1481a718983ae83e1202e`,
+completed bzImage and all 31 modules. Actual module CMS verification, embedded
+config equality, config policy audit and native makepkg/pacman input checks pass.
+Existing r1 image/config/System.map/certificate are unchanged. Three existing
+ThinLTO frame-size warnings remain (AtomISP parameters, do_sys_poll, HUF_readCTable);
+this is not a zero-warning or hardware-qualified build. Exact hashes and warning
+text are in `mipad2-ddr-dvfs-validation-summary.json`.

@@ -1,5 +1,5 @@
 {
-  "state": "host-ddr-mailbox-contract-pass-awaiting-r2-build",
+  "state": "r2-build-and-native-package-pass-hardware-unqualified",
   "source_sha256": {
     "drivers/staging/media/atomisp/pci/atomisp_v4l2.c": "5297e7e0f78675a5bb229802ba455be75fb892c5ffe8d89e88696ed46b616a56",
     "arch/x86/platform/intel/iosf_mbi.c": "143e733f5960b4b9ed133646a9e81556fa6956260996653d93f790b4e9b47ace"
@@ -26,7 +26,20 @@
     }
   },
   "checkpatch": true,
-  "full_r2_build": false,
+  "full_r2_build": true,
   "hardware_tested": false,
-  "dma_quiescence_proven": false
+  "dma_quiescence_proven": false,
+  "build_source_commit": "7ea46f47b5dca725b4b1481a718983ae83e1202e",
+  "kernelrelease": "7.2.0-mipad2-integrated-r2",
+  "build_seconds": 542.15,
+  "bzimage_sha256": "952718955b3dd4bc5eb2e305aceea78d33fb41fcc7ef255ccce2b4b3cedfbecb",
+  "bundle_sha256": "dd08926c0ebbd1014ff28daa1223da316bcbe484fe750d9f1c9ed222f90167a2",
+  "native_package_sha256": "d9ea223305432b00274de110d466832573160fbfbb8f8af70b789cd8aa60913b",
+  "modules_cms_verified": 31,
+  "old_r1_artifacts_unchanged": true,
+  "build_warnings": [
+    "ld.lld: warning: linux_latte-7.2-integrated/drivers/staging/media/atomisp/pci/sh_css_params.c:3055:0: stack frame size (1128) exceeds limit (1024) in function 'sh_css_param_update_isp_params'",
+    "ld.lld: warning: linux_latte-7.2-integrated/fs/select.c:976:0: stack frame size (1064) exceeds limit (1024) in function 'do_sys_poll'",
+    "ld.lld: warning: linux_latte-7.2-integrated/lib/zstd/compress/huf_compress.c:291:0: stack frame size (1352) exceeds limit (1024) in function 'HUF_readCTable'"
+  ]
 }
