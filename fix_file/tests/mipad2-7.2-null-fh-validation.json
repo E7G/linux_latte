@@ -1,13 +1,13 @@
 {
-  "state": "source-fix-host-validated-not-built",
+  "state": "r3-warm-boot-camera-transport-and-metadata-pass-open-qualification",
   "upstream_commit": "9928c7b8d00c500ee97903afa1cc76c1c36ab2bc",
   "fixed_source_sha256": "efa564cf4e656a8aa721c1f3f1b86103536037b5caa7b68902ffc51a37499cc3",
   "actual_r2_warm_boot": true,
   "r2_default_camera_capture_bytes": 0,
   "r2_quarantined": true,
   "stable_rollback_verified": true,
-  "r3_built": false,
-  "r3_booted": false,
+  "r3_built": true,
+  "r3_booted": true,
   "baseline": {
     "state": "fail",
     "cases": [
@@ -81,5 +81,251 @@
     },
     "baseline_commit": null,
     "scope": "Actual V4L2 NULL reqbuf/qbuf/dqbuf dispatch, VB2 ownership helpers, AtomISP wrappers and complete AtomISP private dispatcher. Core default NULL callsite inspected; rejected legacy bodies are inert stubs. Allocation/MMIO/DMA/IRQ/locks are synthetic, not physical hardware."
+  },
+  "build_source_commit": "20f0304fc024a784dd2e356bd72331c9640d382e",
+  "kernelrelease": "7.2.0-mipad2-integrated-r3",
+  "bzimage_sha256": "82edc85bab0631d310f74981720baba93aedeae2e06c168420e346f9b41bfe52",
+  "bundle_sha256": "cd13256b368c2e69a73777214d614d0e5350245316578edda58ad36509b9c0a1",
+  "native_package_sha256": "3f2ce1bcae82756cca2a9d1a493327f452862e0d7fc2d2e874428b1651aa2f0c",
+  "modules_cms_verified": 31,
+  "build_seconds": 566.48,
+  "build_warnings": [
+    "ld.lld: warning: linux_latte-7.2-integrated/drivers/staging/media/atomisp/pci/sh_css_params.c:3055:0: stack frame size (1128) exceeds limit (1024) in function 'sh_css_param_update_isp_params'",
+    "ld.lld: warning: linux_latte-7.2-integrated/fs/select.c:976:0: stack frame size (1064) exceeds limit (1024) in function 'do_sys_poll'",
+    "ld.lld: warning: linux_latte-7.2-integrated/lib/zstd/compress/huf_compress.c:291:0: stack frame size (1352) exceeds limit (1024) in function 'HUF_readCTable'"
+  ],
+  "old_r2_artifacts_unchanged": true,
+  "kernel_host_scripts": 34,
+  "flash_host_tests": 149,
+  "hardware": {
+    "first_probe_checks": 51,
+    "default_mode_frames_per_sensor": 4,
+    "default_s_fmt_writes": 0,
+    "default_s_parm_writes": 0,
+    "sensor_control_writes": 0,
+    "idle_metadata_checks": 14,
+    "owner_and_metadata_frames": 288,
+    "owner_metadata_cases": [
+      {
+        "camera": "rear",
+        "mode": 0,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.71
+      },
+      {
+        "camera": "rear",
+        "mode": 1,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.79
+      },
+      {
+        "camera": "rear",
+        "mode": 2,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.77
+      },
+      {
+        "camera": "front",
+        "mode": 0,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.79
+      },
+      {
+        "camera": "front",
+        "mode": 1,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.69
+      },
+      {
+        "camera": "front",
+        "mode": 2,
+        "exit_code": 0,
+        "phase_frame_counts": {
+          "before-observer-close": 12,
+          "after-observer-close": 12,
+          "ordinary-restart": 12,
+          "remaining-fd-takeover": 12
+        },
+        "total_frames": 48,
+        "format_preserved": true,
+        "fault_delta": {
+          "BUG": 0,
+          "WARNING": 0,
+          "Oops": 0,
+          "DDR_failure": 0,
+          "IUNIT_timeout": 0,
+          "IUNIT_transport": 0,
+          "CSS_queue": 0,
+          "SP_not_idle": 0,
+          "ISP_not_idle": 0,
+          "stop_timeout": 0,
+          "reset_failed": 0,
+          "recovery_failed": 0
+        },
+        "passed": true,
+        "seconds": 2.57
+      }
+    ],
+    "runtime_pm": {
+      "rear": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "front": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      },
+      "isp": {
+        "runtime_status": "suspended",
+        "runtime_usage": "0"
+      }
+    },
+    "protected_software_files_unchanged": 686,
+    "private_aliases_and_bytes_preserved": 35,
+    "stable_default_preserved": true,
+    "serial_kernel_runtime_marker": true,
+    "full_early_boot_serial_capture_proven": false,
+    "raw_traces_exported": false,
+    "post_test_kernel_faults": {
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "IUNIT_transport": 0,
+      "CSS_queue": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "stop_timeout": 0,
+      "reset_failed": 0,
+      "recovery_failed": 0
+    },
+    "acoustic_tested": false,
+    "scene_optical_quality_tested": false,
+    "application_encoder_cadence_tested": false,
+    "suspend_s0i3_tested": false,
+    "failed_reset_dma_quiescence_proven": false
+  },
+  "device_probe": {
+    "original_source_sha256": "67876bcb0e97e8581b8cbff20369c9c8a9932d76a7191ab06edefbe0def9e14f",
+    "adapted_source_sha256": "842a95604248751705295da7585dc0c02d50dfd1d4dfb87740b3601ca552ac35",
+    "adaptation": "Only release guard and usage string changed from tracked default-format probe",
+    "compiled_static_on_host_because_device_has_no_cc": true
   }
 }
