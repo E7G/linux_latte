@@ -211,6 +211,15 @@ static const struct snd_soc_dapm_route cht_audio_map[] = {
 	{"Headset Mic", NULL, "Platform Clock"},
 	{"Int Mic", NULL, "Platform Clock"},
 	{"Ext Spk", NULL, "Platform Clock"},
+	/*
+	 * Every active board path uses PLL1.  Do not make this dependency
+	 * conditional on GLB_CLK: it still selects RC during the resume
+	 * power walk, before platform_clock_control(PRE_PMU) selects PLL1.
+	 * The codec's conditional I2S routes alone would leave PLL off.
+	 * Tie PLL to the board clock supply, not a forced-on pin, so both
+	 * supplies can power down when the audio endpoints are inactive.
+	 */
+	{"Platform Clock", NULL, "PLL"},
 };
 
 static const struct snd_soc_dapm_route cht_audio_ssp0_map[] = {

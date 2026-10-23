@@ -1,0 +1,400 @@
+{
+  "status": "board-PLL-resume-dependency-runtime-validated",
+  "base_commit": "13abdd804e493b301a2a1115f664632063107c62",
+  "release": "7.2.0-mipad2-integrated-r3",
+  "kernel_image_unchanged": true,
+  "full_integrated_kernel_built": false,
+  "new_kernel_booted": false,
+  "acoustic_test_this_turn": false,
+  "stock_tfa_backend": true,
+  "factory_dsp_enabled": false,
+  "calibration_writes_requested": false,
+  "direct_register_writes_requested": false,
+  "normal_dapm_power_writes": true,
+  "trace_summaries": [
+    {
+      "label": "audio-pm",
+      "expected_audio_clock_ready": false,
+      "registers": {
+        "before": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        },
+        "after": {
+          "pll_power": 0,
+          "sysclk": 16384,
+          "amp_status": [
+            2653,
+            2653
+          ],
+          "ready": false
+        },
+        "active": {
+          "pll_power": 0,
+          "sysclk": 16384,
+          "amp_status": [
+            2653,
+            2653
+          ],
+          "ready": false
+        }
+      },
+      "s0i3_delta_us": 11850144,
+      "estimated_suspended_seconds": 11.327995794999879,
+      "faults": 0,
+      "trace_overruns": 0,
+      "trace_instance_removed": true,
+      "readonly_module_unloaded": true,
+      "pcm_closed": true,
+      "ordered_clock_transitions": [
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 32768
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S1",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S2",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 16384
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "label": "board-pll-pm",
+      "expected_audio_clock_ready": true,
+      "registers": {
+        "before": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        },
+        "after": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        },
+        "active": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        }
+      },
+      "s0i3_delta_us": 11713056,
+      "estimated_suspended_seconds": 11.176291834002768,
+      "faults": 0,
+      "trace_overruns": 0,
+      "trace_instance_removed": true,
+      "readonly_module_unloaded": true,
+      "pcm_closed": true,
+      "ordered_clock_transitions": [
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 32768
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S1",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S2",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "PLL",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 16384
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 64
+        }
+      ]
+    },
+    {
+      "label": "board-pll-pm-repeat",
+      "expected_audio_clock_ready": true,
+      "registers": {
+        "before": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        },
+        "after": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        },
+        "active": {
+          "pll_power": 64,
+          "sysclk": 16384,
+          "amp_status": [
+            55391,
+            55391
+          ],
+          "ready": true
+        }
+      },
+      "s0i3_delta_us": 11590976,
+      "estimated_suspended_seconds": 11.005618103001325,
+      "faults": 0,
+      "trace_overruns": 0,
+      "trace_instance_removed": true,
+      "readonly_module_unloaded": true,
+      "pcm_closed": true,
+      "ordered_clock_transitions": [
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 32768
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 8
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 0
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S1",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "I2S2",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_power",
+          "widget": "PLL",
+          "value": 1
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_start",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 128,
+          "value": 16384
+        },
+        {
+          "kind": "snd_soc_dapm_widget_event_done",
+          "widget": "Platform Clock",
+          "value": 1
+        },
+        {
+          "kind": "codec_register_write",
+          "register": 101,
+          "value": 64
+        }
+      ]
+    }
+  ],
+  "machine_build": {
+    "state": "production-machine-module-built",
+    "module_sha256": "68f310e3da7bd67ccfac536c0633939291f7734b34fa0cf053daf4d6fd8cbf62",
+    "bytes": 388992,
+    "source_hashes": {
+      "sound/soc/intel/boards/cht_bsw_rt5659.c": "1e3d89b3cb7d3b500c5517bf65505e1588740f516f30d4de36071ab7ffdad335",
+      "sound/soc/codecs/rt5659.h": "c3b17825330eaab96a9292a2bc055a3183edd5fdd80d1adf1a90ba0f2bca2563",
+      "sound/soc/intel/atom/sst-atom-controls.h": "a82b84651f38eeec771e93c3a95846d0e056e1285a727e9d5c53dbde7f66fe30",
+      "sound/soc/intel/common/soc-intel-quirks.h": "060978860ee69bcea1b017ef7057f6e3a9b8eacb375b3c01e57ed771e0cd426c"
+    },
+    "original_build_artifacts_unchanged": true,
+    "installed": false
+  },
+  "overlay_build": {
+    "state": "board-pll-overlay-built",
+    "module_sha256": "2c0f2599343bbc6e3c22397ce1cd8594cd40a586cfce69b2509729751ba22771",
+    "bytes": 343104,
+    "source_sha256": "2cbee7c87eb2b4d6589c9d94c5a6a5a6f6098a185a3d38d9159ca95c4674a0cb",
+    "machine_source_sha256": "1e3d89b3cb7d3b500c5517bf65505e1588740f516f30d4de36071ab7ffdad335",
+    "original_build_artifacts_unchanged": true,
+    "original_build_hashes": {
+      ".config": "9cfab9199eaf53f24286f1cbe5815baa4c2556a1764ce5691ecc7a885ca2e7b6",
+      "Module.symvers": "af5ca6e9b8a515ca673a669d7beb345eb11153f301b70ebed7e291efc4ff0fdd",
+      "vmlinux": "cf4dc076052d4ccf2e6825eeba54b2dc19bc1d962cc749cde4245babe05ac03d",
+      "arch/x86/boot/bzImage": "82edc85bab0631d310f74981720baba93aedeae2e06c168420e346f9b41bfe52",
+      "include/config/kernel.release": "8f69369bf45be5cfc898c55fcf29c1d11a1acfca4b9a5c2069dfbb9f6dd45fc0"
+    },
+    "installed": false
+  },
+  "host_tests": {
+    "state": "host-fixtures-passed",
+    "results": [
+      {
+        "optimized": false,
+        "negative_control": false,
+        "exit_code": 0,
+        "expected_result": true,
+        "output": "PASS: actual supply traversal and PLL predicate; RC-before-PRE_PMU regression; 100 off/on walks; 4 endpoint routes",
+        "expected_failure": null
+      },
+      {
+        "optimized": false,
+        "negative_control": true,
+        "exit_code": 1,
+        "expected_result": true,
+        "output": "",
+        "expected_failure": "missing-board-dependency"
+      },
+      {
+        "optimized": true,
+        "negative_control": false,
+        "exit_code": 0,
+        "expected_result": true,
+        "output": "PASS: actual supply traversal and PLL predicate; RC-before-PRE_PMU regression; 100 off/on walks; 4 endpoint routes",
+        "expected_failure": null
+      },
+      {
+        "optimized": true,
+        "negative_control": true,
+        "exit_code": 1,
+        "expected_result": true,
+        "output": "",
+        "expected_failure": "missing-board-dependency"
+      }
+    ],
+    "hardware_proof": false
+  },
+  "retained_overlays": [
+    "mp2_pll_route",
+    "mp2_board_pll"
+  ],
+  "boot_persistence": false,
+  "raw_trace_exported": false
+}
