@@ -78,6 +78,7 @@ struct snd_soc_dapm_route { const char *sink,*control,*source; };
 struct snd_kcontrol_new { int iface; const char *name; void *info,*get,*put; unsigned long private_value; };
 #define SNDRV_CTL_ELEM_IFACE_MIXER 1
 #define SND_SOC_DAPM_MIXER(n,...) { .name=(n) }
+#define SND_SOC_DAPM_MIXER_E(n,...) { .name=(n) }
 #define SND_SOC_DAPM_OUTPUT(n) { .name=(n) }
 static char prof_name[32],vol_name[32],stop_name[32];
 static struct snd_kcontrol_new control_copies[8][3];static int allocation_count,allocation_error;

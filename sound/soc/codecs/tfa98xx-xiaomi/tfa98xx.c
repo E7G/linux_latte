@@ -425,9 +425,40 @@ static int tfa98xx_trigger(struct snd_pcm_substream *substream, int cmd,
  * ASOC controls
  */
 
+/*
+ * The MiPad2 amplifier links are no_pcm graph anchors, not the codec-to-codec
+ * link that powers RT5659 AIF2. Neither their PCM trigger nor mute_stream is
+ * called when that separate link powers up. Follow the actual speaker path.
+ *
+ * DAPM powers the AIF/DAI and C2C clock path before this mixer, and powers this
+ * mixer down before them. Drain DSP work and stop the amp while BCLK is still
+ * available. Do not add a supply event: supplies power up before the clock DAI.
+ */
+static int tfa98xx_output_event(struct snd_soc_dapm_widget *w,
+			      struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_component *component = snd_soc_dapm_to_component(w->dapm);
+	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
+
+	/* Safe-probe mode must not start DSP work or write stop registers. */
+	if (defer_dsp_start)
+		return 0;
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		return tfa98xx_set_running(tfa98xx, true);
+	case SND_SOC_DAPM_PRE_PMD:
+		return tfa98xx_set_running(tfa98xx, false);
+	default:
+		return -EINVAL;
+	}
+}
+
 /* The machine supplies Left/Right name_prefix; keep codec names local. */
 static const struct snd_soc_dapm_widget tfa98xx_dapm_widgets[] = {
-	SND_SOC_DAPM_MIXER("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER_E("NXP Output Mixer", SND_SOC_NOPM, 0, 0, NULL, 0,
+			     tfa98xx_output_event,
+			     SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
 	SND_SOC_DAPM_OUTPUT("OUT"),
 };
 

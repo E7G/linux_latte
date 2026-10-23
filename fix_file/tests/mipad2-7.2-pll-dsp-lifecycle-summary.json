@@ -1,0 +1,83 @@
+{
+  "state": "runtime-sound-restored-with-temporary-PLL-route-production-patch-compiled",
+  "running_release": "7.2.0-mipad2-integrated-r3",
+  "boot_id": "e41b808f-b6f2-4a53-a3b0-8d5eb1046bf6",
+  "live_amp_backend": "stock-tfa989x-DSP-bypass",
+  "factory_DSP_active": false,
+  "human_same_waveform_comparison": {
+    "state": "human-confirmed-sound-restored-after-PLL-route",
+    "before": {
+      "receipt": "mipad2-72-tone-cont21.json",
+      "human_answer": "都没听到",
+      "audible": false
+    },
+    "after": {
+      "receipt": "mipad2-72-tone-after-pll-cont21.json",
+      "human_answer": "两次都听到了",
+      "audible": true
+    },
+    "same_waveform": true,
+    "same_sink_levels": true,
+    "same_stream_volume": true,
+    "same_boot": true,
+    "temporary_pll_route_overlay": true,
+    "factory_dsp_qualified": false,
+    "stereo_separation_not_measured": true,
+    "post_resume_acoustics_not_yet_confirmed": true
+  },
+  "baseline_pll_power_register": 0,
+  "overlay_pll_power_register": 64,
+  "baseline_amp_status": 2653,
+  "overlay_amp_status": 55391,
+  "cache_hardware_mismatches_before": 0,
+  "temporary_module": "mp2_pll_route",
+  "temporary_overlay_retained": true,
+  "automatic_persistence_installed": false,
+  "r3_boot_image_unchanged": true,
+  "new_boots": 0,
+  "diagnostic_module_unloaded": true,
+  "kernel_taint_before_readonly_probe": 1088,
+  "kernel_taint_after_unsigned_external_diagnostic": 13376,
+  "post_resume_hardware_clock_gate_pass": false,
+  "post_resume_human_hearing_confirmed": false,
+  "overlay_reapplied_once_after_preserved_resume_failure": true,
+  "current_reapplied_hardware_clock_ready": true,
+  "s0i3_delta_us": 12205376,
+  "estimated_suspended_seconds": 11.640283558001101,
+  "kernel_fault_delta": {
+    "panic": 0,
+    "BUG": 0,
+    "WARNING": 0,
+    "Oops": 0,
+    "GPU_HANG": 0,
+    "DDR_failure": 0,
+    "IUNIT_timeout": 0,
+    "stop_timeout": 0,
+    "SP_not_idle": 0,
+    "ISP_not_idle": 0,
+    "reset_failed": 0,
+    "TFA_DSP_timeout": 0
+  },
+  "factory_candidate_module_sha256": "55fc45a47f76f356e86250ca4aa5fb82ddddd822e85a68810406b3a52a7ef26b",
+  "production_rt5659_module_sha256": "e2e274e402ac544b8c12619204aa7eea9f2d6143786d8f590ec8f2f7d8f0c27a",
+  "production_rt5659_source_sha256": "4227e2c56606a14d3de416b06feaf0b7abedab6e4b6b2935ebe457c6477084d6",
+  "host_positive_commands": 10,
+  "host_intended_negative_commands": 4,
+  "factory_profiles": {
+    "left": [
+      "musicL",
+      "speechL",
+      "bypassL"
+    ],
+    "right": [
+      "musicR",
+      "speechR",
+      "bypassR"
+    ]
+  },
+  "firmware_unchanged": true,
+  "mtp_calibration_writes_requested": false,
+  "full_candidate_kernel_built": false,
+  "full_OEM_audio_qualification": false,
+  "full_goal_complete": false
+}

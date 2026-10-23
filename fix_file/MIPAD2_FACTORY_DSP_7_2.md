@@ -1,5 +1,7 @@
 # Factory CoolFlux candidate: real 7.2 code port, not hardware activation
 
+Latest: [real runtime PLL sound correction and factory lifecycle patch](MIPAD2_PLL_DSP_LIFECYCLE_7_2.md). The original port below is the CONT20 snapshot.
+
 This advances beyond the [observed active bypass backend](MIPAD2_AUDIO_RUNTIME_7_2.md).
 The default/current tablet remains7.2r3 with built-in tfa989x. No module unbind,
 firmware write, reboot, audible/nonzero PCM, calibration or device-config change.
