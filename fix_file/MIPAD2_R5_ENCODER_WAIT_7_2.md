@@ -1,5 +1,14 @@
 # MiPad2 7.2 r5: encoder submission stalls and capture backpressure
 
+## 2026-10-25 correction: actual H.264 backend measured
+
+Later private-driver counters show the legacy Gen8 AVC post-pack loop below
+was **not selected**. Gen8/CherryView H.264 delegates to the Gen9 AVC backend.
+The selected VME run stage, not resource allocation, dominates measured encoder
+wall time. Cadence still fails. See [actual backend, failed first coverage guard,
+corrected measurements and limits](MIPAD2_R5_SELECTED_VME_7_2.md).
+The historical source lead below must not be read as measured BRC re-encoding.
+
 ## CONT28, 2026-10-24: localization evidence, NOT a performance fix
 
 Three distinct diagnostic windows keep foreground preview, 1080p H.264 around
