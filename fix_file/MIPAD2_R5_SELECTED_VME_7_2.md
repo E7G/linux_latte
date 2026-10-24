@@ -1,5 +1,90 @@
 # r5 recording: selected H.264 VME execution path
 
+## CONT31: first short same-binary front-camera A/B
+
+**Experimental only: not a deployed driver or full recording qualification.**
+One private ABI5 binary is loaded through an isolated process-only DRI path for
+both cases. Mode0 leaves callback ordering unchanged; mode1 prepares the exact
+MBEnc context's IDRT before the shared-CURBE BRC submission. A new pointer is
+reset each frame. Mode1 requires a matching producer PID, valid aggregate file
+and explicit opt-in; missing/wrong/stale/mode-mismatched contexts fall back OFF.
+Defaults, installed driver and normal launcher remain unchanged.
+
+| Same binary, requested10 s | Frames | MP4 span | fps | Maximum PTS gap | Gaps >50 ms |
+|---|---:|---:|---:|---:|---:|
+| OFF |415|14.112333 s|29.336042|65.667 ms|14|
+| ON |425|14.132667 s|30.001415|34.000 ms|0|
+
+Both are real foreground1080p H.264/AAC recordings with full quality, visible
+preview, no injected/duplicated frames or timestamp rewriting introduced by
+this patch. Video/audio decode fully, adjacent exact decoded repeats0. The
+header confirms modeOFF/early-preparations0 versus modeON/425 actual early
+preparations, matching425 encoder calls. All26 phase counts match their415/425
+calls; one load, no errors, no remaining driver mapping, aggregates preserved
+privately before removing tmpfs files. This is one OFF-then-ON front-camera
+pair, not a sustained30-second or reverse-order/repeated/dual-camera study.
+
+### Waiting moved; overall encoder CPU-call latency did not improve
+
+| Mean inclusive wall per frame | OFF | ON |
+|---|---:|---:|
+| `encoder_end` | 26.204934 ms | 26.286242 ms |
+| `run_brc_update` | 0.853130 ms | 10.571878 ms |
+| `run_mbenc` | 20.644420 ms | 11.315165 ms |
+| `mbenc_const_data` | 3.556597 ms | 10.492344 ms |
+| `mbenc_idrt` | 16.419454 ms | 0.011771 ms |
+
+Late IDRT preparation falls from6.814073 s to0.005003 s in aggregate, but BRC
+update grows0.354049->4.493048 s and constant-data preparation grows
+1.475988->4.459246 s. Total encoder wall is10.875047 s/415 versus11.171653 s/425:
+about26.21 versus26.29 ms per frame, **not an overall mean latency reduction**.
+Do not describe this as eliminating all GPU waits or making every call faster.
+Improved output cadence in this pair needs sustained/source-identity follow-up.
+
+Both starts were50 C. OFF peaked77 C with1.6 GHz limit; ON peaked79 C with
+1.6 and1.33 GHz limits observed. The thermal guard was not changed and clocks
+were not forced. These were not identical thermal/frequency or controlled-scene
+conditions, so no broad causal speedup/Android-parity claim is made. Per-stage
+elapsed time is not direct GPU execution or syscall-wait accounting. End-to-end
+sensor/SOF-to-MP4 conservation remains unproved.
+
+### Source-order tests and bounded validation
+
+The real pinned BRC, MBEnc, run, final and pipeline functions were compiled in
+a paired host harness:8,192 frame pairs,2,175 expected one-descriptor
+relocations,6,017 fallbacks,313,362 mocked callback events. After removing only
+that intentional relocation, every remaining event/argument/order, return,
+errno and modeled buffer output matches. Context reuse/reopen, CQP, FEI,
+decoupled CURBE, distortion passes and mocked pipeline early errors2/3 covered;
+this is not actual GPU/BO-allocation fault injection or exhaustive configurations.
+Four broken controls are rejected: no frame reset, wrong-context skip, missing
+FEI guard and no real early relocation. Five same-private-binary host scenarios
+each cover8,192 pairs:OFF,ON,flag-without-file,wrong-PID,stale-file. Loader reload
+and mode-mismatch refusal preserve counters. Existing unused parameters are
+suppressed only for the original final function; new diagnostic code Werror
+passes. Full driver builds retain the same one pre-existing HEVC warning.
+
+### Cleanup, restoration and next gates
+
+Only two obsolete r26/r27 package-query input archives were removed,75,366,855
+bytes, after verifying exact host backups;2,255 protected hashes and35 aliases
+unchanged. Installed kernels, payloads, logs, media and current failed samples
+were not deleted. Independent postflight verifies2,214 installed protected files
+plus48 payloads,35 aliases, both captured geometry/control/input/format states,
+closed PCM, suspended sensors/ISP, all ten units ended, private drivers unmapped,
+tmpfs aggregates removed and global driver environment clean. No-lock/DPMS/
+auto-suspend settings and guards retained. No reboot or nonzero playback.
+
+Next: reverse/repeat the same-binary pair, qualify full30-second normal front
+and rear recording, correlate source/encoder/output identities, then exercise
+resume/reopen/long-run behavior before considering deployment. Actual free
+space after this pair is2,165,764,096 bytes; retain the2 GiB floor and reclaim
+only independently verified obsolete test artifacts before more recording.
+
+[Whitelisted scalar evidence](tests/mipad2-7.2-r5-idrt-ab-summary.json).
+The pure two-file patch is published only as a separately documented experimental
+artifact in the flash-tools repository; no installer applies it automatically.
+
 ## CONT30: measured MBEnc IDRT hotspot; candidate NOT deployed
 
 Two more10-second requested, full-quality visible-foreground diagnostics ended

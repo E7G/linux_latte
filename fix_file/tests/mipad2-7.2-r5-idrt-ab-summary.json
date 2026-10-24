@@ -1,0 +1,962 @@
+{
+  "schema": 1,
+  "date": "2026-10-25",
+  "status": "first-short-same-binary-front-on-cadence-pass-not-deployment-qualification",
+  "kernel_release": "7.2.0-mipad2-integrated-r5",
+  "image_source_commit": "8bc6bf83ae3f3104a5649036c013bac4a0155bdd",
+  "driver_source_commit": "0b648be50cd80e16469c135c76ff61bbd2f2d12b",
+  "same_private_binary_sha256": "b46cf9fed0438c4d4329ffaa25f0502ab5961ee52308fc7fb3c8ccc96eaddd93",
+  "experimental_pure_patch_sha256": "e3f697ddcc50abb3ca155a228d8d624b2dc756543b42d8849ef0adb824c7c3f0",
+  "hardware_order": [
+    "OFF",
+    "ON"
+  ],
+  "tests": [
+    {
+      "mode": "OFF",
+      "requested_seconds": 10,
+      "metrics": {
+        "packets": 415,
+        "fps": 29.336041760162505,
+        "pts_span_seconds": 14.112333333333334,
+        "max_pts_gap_seconds": 0.06566666666666666,
+        "min_pts_gap_seconds": 0.024333333333333332,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 14,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 15260169,
+        "actual_audio_bitrate": 195019,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 415,
+      "adjacent_exact_decoded_repeats": 0,
+      "actual_phase_aggregate": {
+        "version": 5,
+        "early_idrt_enabled": false,
+        "early_preparations": 0,
+        "coverage": {
+          "regular_encoder_observed": true,
+          "selected_vme_observed": true,
+          "phase_counts_match": true,
+          "early_mode_matches": true,
+          "early_preparations_match": true,
+          "reserved_histogram_unused": true
+        },
+        "coverage_pass": true,
+        "loads": 1,
+        "active_maps": 0,
+        "phases": [
+          {
+            "name": "encoder_end",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 10875047433,
+            "wall_max_ns": 85399037,
+            "cpu_total_ns": 2100362150,
+            "cpu_max_ns": 39778554,
+            "above33ms": 34,
+            "above50ms": 6
+          },
+          {
+            "name": "sanity_check",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 8155511,
+            "wall_max_ns": 592293,
+            "cpu_total_ns": 5453349,
+            "cpu_max_ns": 167900,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "brc_prepare",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 3644262,
+            "wall_max_ns": 51626,
+            "cpu_total_ns": 1589791,
+            "cpu_max_ns": 21863,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "vme_pipeline",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 10644589497,
+            "wall_max_ns": 75199643,
+            "cpu_total_ns": 1912339867,
+            "cpu_max_ns": 30456968,
+            "above33ms": 31,
+            "above50ms": 5
+          },
+          {
+            "name": "mfc_pipeline",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 206151268,
+            "wall_max_ns": 13319035,
+            "cpu_total_ns": 163513690,
+            "cpu_max_ns": 9528963,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_update_check",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 62312922,
+            "wall_max_ns": 55229347,
+            "cpu_total_ns": 22171595,
+            "cpu_max_ns": 17756381,
+            "above33ms": 1,
+            "above50ms": 1
+          },
+          {
+            "name": "avc_vme_allocate_resources",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 608047688,
+            "wall_max_ns": 15426592,
+            "cpu_total_ns": 555863934,
+            "cpu_max_ns": 8748862,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_prepare",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 16422458,
+            "wall_max_ns": 321666,
+            "cpu_total_ns": 13787201,
+            "cpu_max_ns": 315613,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_init",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 4057888,
+            "wall_max_ns": 527317,
+            "cpu_total_ns": 1544584,
+            "cpu_max_ns": 26400,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_run",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 9937948895,
+            "wall_max_ns": 59283422,
+            "cpu_total_ns": 1295207762,
+            "cpu_max_ns": 16964337,
+            "above33ms": 29,
+            "above50ms": 3
+          },
+          {
+            "name": "avc_vme_kernel_final",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 3821899,
+            "wall_max_ns": 152864,
+            "cpu_total_ns": 1587124,
+            "cpu_max_ns": 44287,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_brc_init",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 7770864,
+            "wall_max_ns": 3675934,
+            "cpu_total_ns": 4334956,
+            "cpu_max_ns": 2545776,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_scaling",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 553837042,
+            "wall_max_ns": 7606370,
+            "cpu_total_ns": 364463370,
+            "cpu_max_ns": 6027262,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_hme",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 433669681,
+            "wall_max_ns": 9832466,
+            "cpu_total_ns": 333246995,
+            "cpu_max_ns": 8022487,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_sfd",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 4720769,
+            "wall_max_ns": 535392,
+            "cpu_total_ns": 1639600,
+            "cpu_max_ns": 49675,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_brc_update",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 354048976,
+            "wall_max_ns": 8986920,
+            "cpu_total_ns": 223733010,
+            "cpu_max_ns": 7700587,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_weighted_prediction",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 4376604,
+            "wall_max_ns": 554367,
+            "cpu_total_ns": 1605842,
+            "cpu_max_ns": 21738,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_mbenc",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 8567434246,
+            "wall_max_ns": 57308230,
+            "cpu_total_ns": 339327397,
+            "cpu_max_ns": 3956298,
+            "above33ms": 23,
+            "above50ms": 2
+          },
+          {
+            "name": "mbenc_context_reset",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 14357987,
+            "wall_max_ns": 845933,
+            "cpu_total_ns": 10046870,
+            "cpu_max_ns": 321663,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_curbe",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 4177297,
+            "wall_max_ns": 604619,
+            "cpu_total_ns": 1535646,
+            "cpu_max_ns": 27712,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_const_data",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 1475987590,
+            "wall_max_ns": 32036371,
+            "cpu_total_ns": 55216436,
+            "cpu_max_ns": 338237,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_mad_clear",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 5006023,
+            "wall_max_ns": 689318,
+            "cpu_total_ns": 1885530,
+            "cpu_max_ns": 48200,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_surfaces",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 76367292,
+            "wall_max_ns": 1385712,
+            "cpu_total_ns": 66790432,
+            "cpu_max_ns": 299550,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_idrt",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 6814073337,
+            "wall_max_ns": 51981243,
+            "cpu_total_ns": 48622416,
+            "cpu_max_ns": 1511560,
+            "above33ms": 15,
+            "above50ms": 1
+          },
+          {
+            "name": "mbenc_walker_prepare",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 5113548,
+            "wall_max_ns": 758782,
+            "cpu_total_ns": 2052862,
+            "cpu_max_ns": 54175,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_submit",
+            "calls": 415,
+            "nonzero_results": 0,
+            "wall_total_ns": 156875455,
+            "wall_max_ns": 3628146,
+            "cpu_total_ns": 119255757,
+            "cpu_max_ns": 3342838,
+            "above33ms": 0,
+            "above50ms": 0
+          }
+        ]
+      },
+      "mean_phase_wall_ms": {
+        "encoder_end": 26.204933573493975,
+        "sanity_check": 0.01965183373493976,
+        "brc_prepare": 0.00878135421686747,
+        "vme_pipeline": 25.649613245783133,
+        "mfc_pipeline": 0.496750043373494,
+        "avc_vme_update_check": 0.15015161927710843,
+        "avc_vme_allocate_resources": 1.465175151807229,
+        "avc_vme_kernel_prepare": 0.03957218795180723,
+        "avc_vme_kernel_init": 0.009778043373493975,
+        "avc_vme_kernel_run": 23.946864807228916,
+        "avc_vme_kernel_final": 0.009209395180722892,
+        "run_brc_init": 0.018724973493975904,
+        "run_scaling": 1.3345470891566265,
+        "run_hme": 1.0449871831325301,
+        "run_sfd": 0.011375346987951807,
+        "run_brc_update": 0.8531300626506024,
+        "run_weighted_prediction": 0.01054603373493976,
+        "run_mbenc": 20.644419869879517,
+        "mbenc_context_reset": 0.03459755903614458,
+        "mbenc_curbe": 0.010065775903614458,
+        "mbenc_const_data": 3.5565966024096385,
+        "mbenc_mad_clear": 0.012062706024096386,
+        "mbenc_surfaces": 0.18401757108433733,
+        "mbenc_idrt": 16.419453824096387,
+        "mbenc_walker_prepare": 0.012321802409638554,
+        "mbenc_submit": 0.37801314457831325
+      },
+      "prelaunch_max_temp": 50000,
+      "max_temp": 77000,
+      "cpu_limits": [
+        1600000
+      ],
+      "decode_pass": true,
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      }
+    },
+    {
+      "mode": "ON",
+      "requested_seconds": 10,
+      "metrics": {
+        "packets": 425,
+        "fps": 30.001415161092503,
+        "pts_span_seconds": 14.132666666666667,
+        "max_pts_gap_seconds": 0.034,
+        "min_pts_gap_seconds": 0.03266666666666666,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 0,
+        "gaps_above100ms": 0,
+        "cadence_gate": true,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 15626017,
+        "actual_audio_bitrate": 191570,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 425,
+      "adjacent_exact_decoded_repeats": 0,
+      "actual_phase_aggregate": {
+        "version": 5,
+        "early_idrt_enabled": true,
+        "early_preparations": 425,
+        "coverage": {
+          "regular_encoder_observed": true,
+          "selected_vme_observed": true,
+          "phase_counts_match": true,
+          "early_mode_matches": true,
+          "early_preparations_match": true,
+          "reserved_histogram_unused": true
+        },
+        "coverage_pass": true,
+        "loads": 1,
+        "active_maps": 0,
+        "phases": [
+          {
+            "name": "encoder_end",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 11171652641,
+            "wall_max_ns": 95825431,
+            "cpu_total_ns": 2107526772,
+            "cpu_max_ns": 42882708,
+            "above33ms": 84,
+            "above50ms": 16
+          },
+          {
+            "name": "sanity_check",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 9575667,
+            "wall_max_ns": 1246637,
+            "cpu_total_ns": 5681300,
+            "cpu_max_ns": 111988,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "brc_prepare",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 5082369,
+            "wall_max_ns": 737169,
+            "cpu_total_ns": 1790575,
+            "cpu_max_ns": 81213,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "vme_pipeline",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 10912475590,
+            "wall_max_ns": 95340064,
+            "cpu_total_ns": 1908742568,
+            "cpu_max_ns": 33054283,
+            "above33ms": 83,
+            "above50ms": 16
+          },
+          {
+            "name": "mfc_pipeline",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 229564459,
+            "wall_max_ns": 12156439,
+            "cpu_total_ns": 172953906,
+            "cpu_max_ns": 9655501,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_update_check",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 7933366,
+            "wall_max_ns": 931696,
+            "cpu_total_ns": 4304884,
+            "cpu_max_ns": 79237,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_allocate_resources",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 543165753,
+            "wall_max_ns": 10484598,
+            "cpu_total_ns": 465603003,
+            "cpu_max_ns": 7394887,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_prepare",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 17960006,
+            "wall_max_ns": 580043,
+            "cpu_total_ns": 14226916,
+            "cpu_max_ns": 272438,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_init",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 3835509,
+            "wall_max_ns": 228614,
+            "cpu_total_ns": 1593410,
+            "cpu_max_ns": 17100,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "avc_vme_kernel_run",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 10323897157,
+            "wall_max_ns": 93752674,
+            "cpu_total_ns": 1397913597,
+            "cpu_max_ns": 25888133,
+            "above33ms": 80,
+            "above50ms": 10
+          },
+          {
+            "name": "avc_vme_kernel_final",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4233518,
+            "wall_max_ns": 163652,
+            "cpu_total_ns": 1797472,
+            "cpu_max_ns": 34387,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_brc_init",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 9715434,
+            "wall_max_ns": 6086906,
+            "cpu_total_ns": 5382614,
+            "cpu_max_ns": 3802388,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_scaling",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 546033356,
+            "wall_max_ns": 11326730,
+            "cpu_total_ns": 347292156,
+            "cpu_max_ns": 8872365,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_hme",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 434929980,
+            "wall_max_ns": 7785710,
+            "cpu_total_ns": 320923439,
+            "cpu_max_ns": 5153463,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_sfd",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 5575288,
+            "wall_max_ns": 881983,
+            "cpu_total_ns": 1787825,
+            "cpu_max_ns": 42350,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_brc_update",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4493048095,
+            "wall_max_ns": 49554224,
+            "cpu_total_ns": 340499370,
+            "cpu_max_ns": 10614189,
+            "above33ms": 27,
+            "above50ms": 0
+          },
+          {
+            "name": "run_weighted_prediction",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 5300984,
+            "wall_max_ns": 344454,
+            "cpu_total_ns": 1965529,
+            "cpu_max_ns": 24487,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "run_mbenc",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4808945279,
+            "wall_max_ns": 46873787,
+            "cpu_total_ns": 349590908,
+            "cpu_max_ns": 3865712,
+            "above33ms": 2,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_context_reset",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 15318810,
+            "wall_max_ns": 908733,
+            "cpu_total_ns": 11410184,
+            "cpu_max_ns": 437600,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_curbe",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4384035,
+            "wall_max_ns": 120151,
+            "cpu_total_ns": 1825244,
+            "cpu_max_ns": 63950,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_const_data",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4459246211,
+            "wall_max_ns": 44806780,
+            "cpu_total_ns": 70218070,
+            "cpu_max_ns": 360625,
+            "above33ms": 2,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_mad_clear",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4891909,
+            "wall_max_ns": 231465,
+            "cpu_total_ns": 2218594,
+            "cpu_max_ns": 91862,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_surfaces",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 91219405,
+            "wall_max_ns": 2214483,
+            "cpu_total_ns": 77641194,
+            "cpu_max_ns": 494475,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_idrt",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 5002876,
+            "wall_max_ns": 933559,
+            "cpu_total_ns": 1798765,
+            "cpu_max_ns": 35538,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_walker_prepare",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 4154010,
+            "wall_max_ns": 71176,
+            "cpu_total_ns": 1881055,
+            "cpu_max_ns": 23650,
+            "above33ms": 0,
+            "above50ms": 0
+          },
+          {
+            "name": "mbenc_submit",
+            "calls": 425,
+            "nonzero_results": 0,
+            "wall_total_ns": 208709948,
+            "wall_max_ns": 6061682,
+            "cpu_total_ns": 146883862,
+            "cpu_max_ns": 3433612,
+            "above33ms": 0,
+            "above50ms": 0
+          }
+        ]
+      },
+      "mean_phase_wall_ms": {
+        "encoder_end": 26.286241508235296,
+        "sanity_check": 0.022530981176470587,
+        "brc_prepare": 0.011958515294117648,
+        "vme_pipeline": 25.676413152941176,
+        "mfc_pipeline": 0.5401516682352941,
+        "avc_vme_update_check": 0.018666743529411764,
+        "avc_vme_allocate_resources": 1.2780370658823528,
+        "avc_vme_kernel_prepare": 0.042258837647058824,
+        "avc_vme_kernel_init": 0.009024727058823529,
+        "avc_vme_kernel_run": 24.29152272235294,
+        "avc_vme_kernel_final": 0.009961218823529412,
+        "run_brc_init": 0.02285984470588235,
+        "run_scaling": 1.2847843670588235,
+        "run_hme": 1.0233646588235294,
+        "run_sfd": 0.013118324705882353,
+        "run_brc_update": 10.571877870588235,
+        "run_weighted_prediction": 0.012472903529411763,
+        "run_mbenc": 11.315165362352941,
+        "mbenc_context_reset": 0.03604425882352941,
+        "mbenc_curbe": 0.010315376470588234,
+        "mbenc_const_data": 10.492344025882351,
+        "mbenc_mad_clear": 0.011510374117647059,
+        "mbenc_surfaces": 0.21463389411764705,
+        "mbenc_idrt": 0.011771472941176472,
+        "mbenc_walker_prepare": 0.009774141176470588,
+        "mbenc_submit": 0.4910822305882353
+      },
+      "prelaunch_max_temp": 50000,
+      "max_temp": 79000,
+      "cpu_limits": [
+        1330000,
+        1600000
+      ],
+      "decode_pass": true,
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      }
+    }
+  ],
+  "host_order_tests": {
+    "state": "actual-brc-mbenc-pipeline-order-tests-pass",
+    "paired_frames": 8192,
+    "early_relocation_frames": 2175,
+    "fallback_frames": 6017,
+    "mock_callback_events": 313362,
+    "normalized_digest": "414edfd46ab819f3",
+    "source": {
+      "baseline": {
+        "sha256": "ad43b90c33505293386f53ff7f5ec44eee28c6e1392915a6b0583bf6354e4f82"
+      },
+      "candidate": {
+        "sha256": "e0c9d6ded8ccf8a2a7b75139e1f1fd6557b990807928a00a32eab68395d22ef2"
+      }
+    },
+    "functions": [
+      "gen9_avc_kernel_brc_frame_update",
+      "gen9_avc_kernel_mbenc",
+      "gen9_avc_vme_gpe_kernel_final",
+      "gen9_avc_vme_gpe_kernel_run",
+      "gen9_avc_vme_pipeline"
+    ],
+    "all_non_relocated_callback_events_and_outputs_equal": true,
+    "exact_one_idrt_relocation_checked": true,
+    "real_bo_or_gpu_errors_injected": false,
+    "mocked_pipeline_early_error_stages": [
+      2,
+      3
+    ],
+    "cqp_fei_decoupled_distortion_reopen_contexts_exercised": true,
+    "host_werror": true,
+    "existing_final_function_unused_parameters_suppressed": true,
+    "hardware_access": false,
+    "all_possible_configurations_exhaustive": false
+  },
+  "host_negative_controls": [
+    {
+      "mutation": "missing-frame-reset",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong-context-skip",
+      "rejected": true
+    },
+    {
+      "mutation": "missing-fei-guard",
+      "rejected": true
+    },
+    {
+      "mutation": "no-early-relocation",
+      "rejected": true
+    }
+  ],
+  "host_pid_file_mode_scope_tests": {
+    "state": "same-private-idrt-ab-v5-host-tests-pass",
+    "cases": [
+      {
+        "case": "off",
+        "paired_frames": 8192,
+        "early_relocations": 0,
+        "callback_events": 313362,
+        "scope_guards_pass": true
+      },
+      {
+        "case": "on",
+        "paired_frames": 8192,
+        "early_relocations": 2175,
+        "callback_events": 313362,
+        "scope_guards_pass": true
+      },
+      {
+        "case": "flag-without-file",
+        "paired_frames": 8192,
+        "early_relocations": 0,
+        "callback_events": 313362,
+        "scope_guards_pass": true
+      },
+      {
+        "case": "wrong-producer",
+        "paired_frames": 8192,
+        "early_relocations": 0,
+        "callback_events": 313362,
+        "scope_guards_pass": true
+      },
+      {
+        "case": "stale-file",
+        "paired_frames": 8192,
+        "early_relocations": 0,
+        "callback_events": 313362,
+        "scope_guards_pass": true
+      }
+    ],
+    "same_binary_on_off": true,
+    "loader_reload_and_mode_mismatch_refusal": true,
+    "loader_final_loads": 2,
+    "loader_final_active": 0,
+    "loader_early_count": 2,
+    "existing_final_function_unused_parameters_suppressed": true,
+    "new_diag_code_werror": true,
+    "hardware_access": false,
+    "gpu_faults_injected": false
+  },
+  "cpu_and_temperature_conditions_identical": false,
+  "scene_controlled": false,
+  "waiting_eliminated": false,
+  "overall_encoder_mean_latency_reduced": false,
+  "waits_redistributed_to_brc_and_const_data": true,
+  "whole_30_second_recording_qualified": false,
+  "rear_camera_qualified": false,
+  "suspend_and_long_run_qualified": false,
+  "full_sensor_to_mp4_conservation_proven": false,
+  "android_parity_proven": false,
+  "production_driver_replaced": false,
+  "cleanup": {
+    "only_obsolete_package_query_archives_removed": 2,
+    "bytes": 75366855,
+    "exact_local_backups_preserved": true,
+    "protected_files": 2255,
+    "protected_hashes_unchanged": true,
+    "private_aliases_unchanged": 35,
+    "media_logs_and_installed_kernels_removed": false
+  },
+  "postflight": {
+    "protected_files_checked": 2214,
+    "candidate_payload_files_verified": 48,
+    "private_aliases_unchanged": 35,
+    "deep_restoration": {
+      "cont31": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      },
+      "cont31b": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      }
+    },
+    "all_camera_pm_suspended": true,
+    "all_pcm_closed": true,
+    "private_driver_mapped_process_count": 0,
+    "private_driver_aggregates_tmpfs_removed": true,
+    "system_driver_unchanged": true,
+    "global_driver_override_absent": true,
+    "free_bytes": 2165764096,
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    }
+  },
+  "raw_media_packets_logs_addresses_or_thread_ids_exported": false,
+  "new_reboots": 0,
+  "nonzero_playback": false
+}
