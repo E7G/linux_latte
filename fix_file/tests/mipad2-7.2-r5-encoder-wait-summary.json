@@ -1,0 +1,655 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "status": "r5-recording-cadence-fails-encoder-backpressure-localized-no-fix",
+  "image_source_commit": "8bc6bf83ae3f3104a5649036c013bac4a0155bdd",
+  "kernel_release": "7.2.0-mipad2-integrated-r5",
+  "diagnostic_windows_not_full_qualification": true,
+  "full_quality_unchanged": true,
+  "hidden_preview_or_artificial_frames": false,
+  "tests": [
+    {
+      "diagnostic": "cont28",
+      "requested_seconds": 20,
+      "actual_metrics": {
+        "packets": 721,
+        "fps": 29.310789355841123,
+        "pts_span_seconds": 24.564333333333334,
+        "max_pts_gap_seconds": 0.074,
+        "min_pts_gap_seconds": 0.022333333333333334,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 22,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14733481,
+        "actual_audio_bitrate": 192002,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 721,
+      "kernel_fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "max_thermal_millicelsius": 78000,
+      "controls_restored": true,
+      "normal_settings_unchanged": true,
+      "qualification": false
+    },
+    {
+      "diagnostic": "cont28b",
+      "requested_seconds": 20,
+      "actual_metrics": {
+        "packets": 735,
+        "fps": 29.358825646974122,
+        "pts_span_seconds": 25.001,
+        "max_pts_gap_seconds": 0.06566666666666666,
+        "min_pts_gap_seconds": 0.022333333333333334,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 20,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14631784,
+        "actual_audio_bitrate": 191989,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 735,
+      "kernel_fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "max_thermal_millicelsius": 75000,
+      "controls_restored": true,
+      "normal_settings_unchanged": true,
+      "qualification": false
+    },
+    {
+      "diagnostic": "cont28c",
+      "requested_seconds": 20,
+      "actual_metrics": {
+        "packets": 731,
+        "fps": 29.041241214693013,
+        "pts_span_seconds": 25.136666666666667,
+        "max_pts_gap_seconds": 0.079,
+        "min_pts_gap_seconds": 0.022333333333333334,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 22,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14478443,
+        "actual_audio_bitrate": 192609,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 731,
+      "kernel_fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "max_thermal_millicelsius": 75000,
+      "controls_restored": true,
+      "normal_settings_unchanged": true,
+      "qualification": false
+    }
+  ],
+  "capture_trace": {
+    "events": {
+      "vb2_buf_done": 989,
+      "vb2_dqbuf": 985,
+      "v4l2_dqbuf": 985,
+      "vb2_qbuf": 985,
+      "v4l2_qbuf": 985
+    },
+    "trace_overruns": 0,
+    "record_marker_span_seconds": 24.904362,
+    "window_camera_dq": 726,
+    "window_driver_done": 730,
+    "join_timestamp_precision_ns": 1000,
+    "v4l2_sequence_discontinuities": 0,
+    "buffer_error_events": 0,
+    "driver_done_interval": {
+      "count": 729,
+      "min_ms": 22.258,
+      "median_ms": 33.304,
+      "p95_ms": 47.761,
+      "p99_ms": 54.257,
+      "max_ms": 74.145,
+      "above50ms": 23,
+      "above100ms": 0
+    },
+    "driver_done_to_ioctl_dq": {
+      "count": 726,
+      "min_ms": 0.08,
+      "median_ms": 102.414,
+      "p95_ms": 128.534,
+      "p99_ms": 153.705,
+      "max_ms": 185.332,
+      "above50ms": 651,
+      "above100ms": 490
+    },
+    "ioctl_dq_to_requeue": {
+      "count": 726,
+      "min_ms": 1.575,
+      "median_ms": 3.761,
+      "p95_ms": 8.741,
+      "p99_ms": 14.74,
+      "max_ms": 40.011,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "owned_by_driver_after_done": {
+      "3": 73,
+      "2": 9,
+      "1": 69,
+      "0": 579
+    },
+    "long_driver_gap_depth_histogram": {
+      "(0, 0, 4, 4)": 19,
+      "(0, 1, 4, 4)": 3,
+      "(0, 0, 4, 3)": 1
+    }
+  },
+  "pad_trace": {
+    "records": 212069,
+    "objects": 176,
+    "overflow": 0,
+    "incomplete": 0,
+    "total_unmatched_pre_hooks": 21,
+    "total_unmatched_post_hooks": 0,
+    "unmatched_window_buffer_calls": 0,
+    "identity_window": {
+      "in_window_encoder_inputs": 730,
+      "unique_exact_native_pts_offset_matches": 730,
+      "unique_exact_encoded_output_pts_matches": 0,
+      "input_offsets_consecutive": true,
+      "no_native_source_to_encoder_input_drop_in_this_window": true,
+      "encoder_output_timestamp_rebase_unresolved": true,
+      "encoder_output_conservation_proven": false,
+      "all_sensor_sof_frames_accounted_for": false,
+      "final_mp4_packet_mapping_independently_proven": false
+    },
+    "selected_aggregate": [
+      {
+        "pad": "GstQueue\tGstQueue:mipad2-native-raw-queue.GstPad:src",
+        "operation": "push",
+        "inclusive_elapsed": {
+          "count": 734,
+          "min_ms": 0.119619,
+          "median_ms": 33.010956,
+          "p95_ms": 50.52205,
+          "p99_ms": 64.104045,
+          "max_ms": 125.033203,
+          "sum_ms": 25196.431293,
+          "above33ms": 323,
+          "above50ms": 39
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 734
+        }
+      },
+      {
+        "pad": "GstVideoConvert\tGstVideoConvert:videoconvert2.GstPad:sink",
+        "operation": "chain",
+        "inclusive_elapsed": {
+          "count": 729,
+          "min_ms": 18.157577,
+          "median_ms": 32.99097,
+          "p95_ms": 50.372478,
+          "p99_ms": 61.324246,
+          "max_ms": 111.00186,
+          "sum_ms": 25070.282232,
+          "above33ms": 318,
+          "above50ms": 38
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 729
+        },
+        "exclusive_sync_transform_cost": {
+          "count": 729,
+          "min_ms": 0.004801,
+          "median_ms": 0.006925,
+          "p95_ms": 0.009426,
+          "p99_ms": 0.037264,
+          "max_ms": 1.954415,
+          "sum_ms": 7.607282,
+          "above33ms": 0,
+          "above50ms": 0
+        }
+      },
+      {
+        "pad": "GstVideoConvert\tGstVideoConvert:videoconvert2.GstPad:src",
+        "operation": "push",
+        "inclusive_elapsed": {
+          "count": 729,
+          "min_ms": 18.149376,
+          "median_ms": 32.982395,
+          "p95_ms": 50.365252,
+          "p99_ms": 61.315433,
+          "max_ms": 110.99266,
+          "sum_ms": 25062.67495,
+          "above33ms": 316,
+          "above50ms": 38
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 729
+        }
+      },
+      {
+        "pad": "GstVideoScale\tGstVideoScale:videoscale1.GstPad:sink",
+        "operation": "chain",
+        "inclusive_elapsed": {
+          "count": 729,
+          "min_ms": 18.145076,
+          "median_ms": 32.978482,
+          "p95_ms": 50.362339,
+          "p99_ms": 61.311733,
+          "max_ms": 110.989785,
+          "sum_ms": 25059.929724,
+          "above33ms": 315,
+          "above50ms": 38
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 729
+        },
+        "exclusive_sync_transform_cost": {
+          "count": 729,
+          "min_ms": 0.004037,
+          "median_ms": 0.005775,
+          "p95_ms": 0.007438,
+          "p99_ms": 0.009088,
+          "max_ms": 0.039477,
+          "sum_ms": 4.326629,
+          "above33ms": 0,
+          "above50ms": 0
+        }
+      },
+      {
+        "pad": "GstVideoScale\tGstVideoScale:videoscale1.GstPad:src",
+        "operation": "push",
+        "inclusive_elapsed": {
+          "count": 729,
+          "min_ms": 18.138038,
+          "median_ms": 32.972217,
+          "p95_ms": 50.356452,
+          "p99_ms": 61.305783,
+          "max_ms": 110.985297,
+          "sum_ms": 25055.603095,
+          "above33ms": 312,
+          "above50ms": 38
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 729
+        }
+      },
+      {
+        "pad": "GstVaH264Enc\tGstVaH264Enc:vah264enc0.GstPad:sink",
+        "operation": "chain",
+        "inclusive_elapsed": {
+          "count": 729,
+          "min_ms": 18.107924,
+          "median_ms": 32.949268,
+          "p95_ms": 50.334875,
+          "p99_ms": 61.284932,
+          "max_ms": 110.965659,
+          "sum_ms": 25036.478525,
+          "above33ms": 311,
+          "above50ms": 38
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 729
+        }
+      },
+      {
+        "pad": "GstQueue\tGstQueue:mipad2-native-raw-queue.GstPad:sink",
+        "operation": "chain",
+        "inclusive_elapsed": {
+          "count": 739,
+          "min_ms": 0.005325,
+          "median_ms": 28.411258,
+          "p95_ms": 43.988058,
+          "p99_ms": 54.879624,
+          "max_ms": 66.768083,
+          "sum_ms": 20336.425152,
+          "above33ms": 78,
+          "above50ms": 14
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 739
+        }
+      },
+      {
+        "pad": "GstQueue\tGstQueue:viewfinderbin-queue.GstPad:src",
+        "operation": "push",
+        "inclusive_elapsed": {
+          "count": 733,
+          "min_ms": 10.133767,
+          "median_ms": 13.116179,
+          "p95_ms": 16.742302,
+          "p99_ms": 18.752833,
+          "max_ms": 22.060511,
+          "sum_ms": 9819.403743,
+          "above33ms": 0,
+          "above50ms": 0
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 733
+        }
+      },
+      {
+        "pad": "GstVaH264Enc\tGstVaH264Enc:vah264enc0.GstPad:src",
+        "operation": "push",
+        "inclusive_elapsed": {
+          "count": 727,
+          "min_ms": 0.16796,
+          "median_ms": 0.372634,
+          "p95_ms": 1.129253,
+          "p99_ms": 2.129425,
+          "max_ms": 37.011496,
+          "sum_ms": 387.981498,
+          "above33ms": 1,
+          "above50ms": 0
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 727
+        }
+      },
+      {
+        "pad": "GstQueue\tGstQueue:viewfinderbin-queue.GstPad:sink",
+        "operation": "chain",
+        "inclusive_elapsed": {
+          "count": 735,
+          "min_ms": 0.004287,
+          "median_ms": 0.038765,
+          "p95_ms": 0.351533,
+          "p99_ms": 2.394477,
+          "max_ms": 3.74593,
+          "sum_ms": 91.384758,
+          "above33ms": 0,
+          "above50ms": 0
+        },
+        "distinct_threads": 1,
+        "result_histogram": {
+          "0": 735
+        }
+      }
+    ],
+    "encoder_class_observed": "GstVaH264Enc",
+    "element_name_observed": "vah264enc0"
+  },
+  "va_api_aggregate": {
+    "complete": true,
+    "payloads_inspected": false,
+    "per_frame_io": false,
+    "api": [
+      {
+        "name": "vaSyncSurface",
+        "calls": 1462,
+        "errors": 0,
+        "wall_total_ns": 119610468,
+        "wall_max_ns": 61962407,
+        "cpu_total_ns": 40754755,
+        "cpu_max_ns": 5875138,
+        "above33ms": 1,
+        "above50ms": 1
+      },
+      {
+        "name": "vaMapBuffer",
+        "calls": 0,
+        "errors": 0,
+        "wall_total_ns": 0,
+        "wall_max_ns": 0,
+        "cpu_total_ns": 0,
+        "cpu_max_ns": 0,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaUnmapBuffer",
+        "calls": 1462,
+        "errors": 0,
+        "wall_total_ns": 39746615,
+        "wall_max_ns": 556000,
+        "cpu_total_ns": 24855389,
+        "cpu_max_ns": 122163,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaBeginPicture",
+        "calls": 738,
+        "errors": 0,
+        "wall_total_ns": 12474196,
+        "wall_max_ns": 270081,
+        "cpu_total_ns": 9745519,
+        "cpu_max_ns": 51725,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaRenderPicture",
+        "calls": 745,
+        "errors": 0,
+        "wall_total_ns": 12028429,
+        "wall_max_ns": 1597386,
+        "cpu_total_ns": 7048995,
+        "cpu_max_ns": 119200,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaEndPicture",
+        "calls": 738,
+        "errors": 0,
+        "wall_total_ns": 19056363566,
+        "wall_max_ns": 65880125,
+        "cpu_total_ns": 3162753741,
+        "cpu_max_ns": 37392149,
+        "above33ms": 57,
+        "above50ms": 10
+      },
+      {
+        "name": "vaQuerySurfaceStatus",
+        "calls": 1488,
+        "errors": 0,
+        "wall_total_ns": 34161642,
+        "wall_max_ns": 468497,
+        "cpu_total_ns": 25635576,
+        "cpu_max_ns": 122925,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaDeriveImage",
+        "calls": 733,
+        "errors": 0,
+        "wall_total_ns": 12383083,
+        "wall_max_ns": 829543,
+        "cpu_total_ns": 7781997,
+        "cpu_max_ns": 75862,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaGetImage",
+        "calls": 0,
+        "errors": 0,
+        "wall_total_ns": 0,
+        "wall_max_ns": 0,
+        "cpu_total_ns": 0,
+        "cpu_max_ns": 0,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaPutImage",
+        "calls": 0,
+        "errors": 0,
+        "wall_total_ns": 0,
+        "wall_max_ns": 0,
+        "cpu_total_ns": 0,
+        "cpu_max_ns": 0,
+        "above33ms": 0,
+        "above50ms": 0
+      },
+      {
+        "name": "vaCreateBuffer",
+        "calls": 3908,
+        "errors": 0,
+        "wall_total_ns": 133195545,
+        "wall_max_ns": 13889456,
+        "cpu_total_ns": 95088175,
+        "cpu_max_ns": 6831450,
+        "above33ms": 0,
+        "above50ms": 0
+      }
+    ]
+  },
+  "va_diagnostic_build": {
+    "source_sha256": "daa6e0585e6d92e6ae675b0bb1ce085bfc58c8cce8c0b01ebfabbf2280f2bdfc",
+    "binary_sha256": "6cf3a415cbeb3a06e026887512d0e36111df96c88116f51483a98397f52aca17",
+    "wrappers": 11,
+    "forwarding_positive_tests": 3,
+    "existing_output_refused": true,
+    "build_warnings": 0
+  },
+  "va_all_apis_covered": false,
+  "va_mapbuffer2_included": false,
+  "va_driver_reference": {
+    "state": "installed-version-public-source-reference-pinned",
+    "repository": "irql-notlessorequal/intel-vaapi-driver",
+    "tag": "2.4.5",
+    "commit": "0b648be50cd80e16469c135c76ff61bbd2f2d12b",
+    "files": [
+      {
+        "path": "VERSION",
+        "git_blob": "59aa62c1fa4c234af19118ff8d8572c1d50437fd",
+        "sha256": "5d038a6af9998b1157a49314369f525e6ef8dc34201a1b596b175de1df722a7d",
+        "bytes": 6
+      },
+      {
+        "path": "src/i965_encoder.c",
+        "git_blob": "649c35c32c93a22d6c075875ce4e2dab463b6a86",
+        "sha256": "405ca6383352f3d8edfcb444124ea6aba579a3b541bc8f7746d7cb56c83f3fbc",
+        "bytes": 57311
+      },
+      {
+        "path": "src/gen8_mfc.c",
+        "git_blob": "3673e6743511da3ceca1edf40d1512a02b6c8d58",
+        "sha256": "0c153082725a89389390db2691753541b4769761a319fb2a35a3eee72e71231a",
+        "bytes": 169464
+      },
+      {
+        "path": "src/i965_drv_video.c",
+        "git_blob": "5e75428f0c4339e62cffa2c7a15b15fdb5037eba",
+        "sha256": "7c6df216e10c50a36d611de625bb6e2223ed5179a93414c07b48193183657354",
+        "bytes": 238816
+      }
+    ],
+    "installed_package": "libva-intel-driver-irql 2.4.5-1",
+    "installed_driver_sha256": "1361f2012ea99c1af184aa86e159efac22cfbf5e766165377202a796e89422ad",
+    "reproduced_installed_binary": false,
+    "production_driver_changed": false
+  },
+  "rootcause_fixed": false,
+  "exact_gpu_wait_or_brc_reencode_count_measured": false,
+  "instrumentation_perturbation_excluded": false,
+  "full_sensor_to_mp4_frame_conservation_proven": false,
+  "cleanup": {
+    "successful_obsolete_test_clips_removed": 2,
+    "logical_bytes": 117892149,
+    "protected_aliases_unchanged": 35,
+    "current_failed_clips_and_r4_reference_retained": true
+  },
+  "postflight": {
+    "protected_files_checked": 2214,
+    "current_payload_files_verified": 48,
+    "private_aliases_unchanged": 35,
+    "deep_restoration_pass": true,
+    "all_pcm_closed": true,
+    "all_camera_pm_suspended": true,
+    "all_test_units_terminal": true,
+    "diagnostic_libraries_unmapped": true,
+    "global_environment_unchanged": true,
+    "free_bytes": 2202046464,
+    "max_thermal_millicelsius": 53000,
+    "faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    }
+  },
+  "raw_media_trace_packets_pointers_thread_ids_exported": false,
+  "nonzero_playback": false,
+  "new_reboots": 0,
+  "android_parity_proven": false
+}

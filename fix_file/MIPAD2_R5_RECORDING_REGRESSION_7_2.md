@@ -58,3 +58,5 @@ remain open. No Android/Windows parity or complete-system claim.
 
 [Scalar failure evidence](tests/mipad2-7.2-r5-recording-regression-summary.json).
 [Earlier bounded r5 electrical/native qualification](MIPAD2_R5_DEPLOYMENT_7_2.md).
+
+[Later encoder/backpressure localization, not a fix](MIPAD2_R5_ENCODER_WAIT_7_2.md).
