@@ -1,12 +1,16 @@
 # MiPad2 7.2: correct the AIF2 speaker transport graph
 
-## Status (2026-10-24, CONT25): candidate, NOT booted
+## Status update (2026-10-24, CONT27): r5 deployed; bounded electrical tests pass
 
-The tablet still runs the unchanged r4 image. The idle defect below was observed
-on that real device. The new machine topology and factory safe-probe change
-compile and pass host fixtures, but no new image, live graph modification,
-acoustic test or measured power saving has yet validated the candidate. Do not
-describe it as a deployed power fix or full OEM-equivalence result.
+The complete stock-backend r5 image now validates idle/playback/mic-only/duplex
+hardware gating and two RTC cycles, without runtime route overlays or register
+replay. Native dual-camera 960-frame regression and final protected-file audit
+also pass. See [r5 deployment and limits](MIPAD2_R5_DEPLOYMENT_7_2.md).
+No fresh acoustic, measured wall-power, factory-DSP or full OEM-parity claim.
+
+The root-cause and candidate/build sections below preserve their CONT25 scope;
+their historical "not booted/not installed" statements describe that checkpoint,
+not the subsequent CONT27 r5 deployment. Remaining tests below are not all done.
 
 ## Observed defect and references
 

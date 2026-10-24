@@ -1,0 +1,514 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "status": "r5-stock-aif2-gating-two-rtc-native-camera-regression-pass",
+  "release": "7.2.0-mipad2-integrated-r5",
+  "image_source_commit": "8bc6bf83ae3f3104a5649036c013bac4a0155bdd",
+  "full_kernel_build": true,
+  "config_exact_r4": true,
+  "stock_tfa_backend": true,
+  "factory_dsp_enabled": false,
+  "image_sha256": "30b0aa7b5f4c76b57693280d420445f0879b5446c126d05ff3635153a0215bce",
+  "serial_initrd_sha256": "9fb4c0c53e455421bef1a19942fd5a062a4dbb21ed7eeccb5279c2661433bc5a",
+  "build": {
+    "modules": 31,
+    "warnings": [
+      "ld.lld: warning: linux_latte-7.2-integrated/drivers/staging/media/atomisp/pci/sh_css_params.c:3055:0: stack frame size (1128) exceeds limit (1024) in function 'sh_css_param_update_isp_params'",
+      "ld.lld: warning: linux_latte-7.2-integrated/fs/select.c:976:0: stack frame size (1064) exceeds limit (1024) in function 'do_sys_poll'",
+      "ld.lld: warning: linux_latte-7.2-integrated/lib/zstd/compress/huf_compress.c:291:0: stack frame size (1352) exceeds limit (1024) in function 'HUF_readCTable'"
+    ],
+    "prior_r4_artifacts_unchanged": true
+  },
+  "package": {
+    "sha256": "d1b9538826bc4eb89e8f81adca1e4fd7331642c3fdee69c17b77d3fd2aaf189e",
+    "bytes": 39091220,
+    "module_cms_signatures_verified": 31,
+    "local_pgp_signed": false,
+    "native_alpm_query": true,
+    "read_only_preflight": true,
+    "installed_through_pacman": false
+  },
+  "exactly_one_warm_reboot": true,
+  "s5_cold_start_qualified": false,
+  "private_aliases_checked": 35,
+  "private_alias_bytes_unchanged": true,
+  "protected_files_checked": 2214,
+  "changed_protected_files": [],
+  "current_manifest_payload_files_verified": 48,
+  "smoke_checks": 51,
+  "initial_hardware": {
+    "idle": {
+      "rt5659_0x65": 0,
+      "rt5659_0x61": 0,
+      "tfa": [
+        {
+          "status": 2653,
+          "sys_ctrl": 33281
+        },
+        {
+          "status": 2653,
+          "sys_ctrl": 33281
+        }
+      ]
+    },
+    "active": {
+      "rt5659_0x65": 64,
+      "rt5659_0x61": 49280,
+      "tfa": [
+        {
+          "status": 55391,
+          "sys_ctrl": 33288
+        },
+        {
+          "status": 55391,
+          "sys_ctrl": 33288
+        }
+      ]
+    },
+    "settled": {
+      "rt5659_0x65": 0,
+      "rt5659_0x61": 0,
+      "tfa": [
+        {
+          "status": 2653,
+          "sys_ctrl": 33281
+        },
+        {
+          "status": 2653,
+          "sys_ctrl": 33281
+        }
+      ]
+    }
+  },
+  "microphone_duplex": {
+    "phases": {
+      "idle": {
+        "pll_on": false,
+        "amps_down": true,
+        "amps_ready": false,
+        "i2s2_on": false
+      },
+      "mic-only": {
+        "pll_on": true,
+        "amps_down": true,
+        "amps_ready": false,
+        "i2s2_on": false
+      },
+      "duplex": {
+        "pll_on": true,
+        "amps_down": false,
+        "amps_ready": true,
+        "i2s2_on": true
+      },
+      "mic-after-playback": {
+        "pll_on": true,
+        "amps_down": true,
+        "amps_ready": false,
+        "i2s2_on": false
+      },
+      "final-idle": {
+        "pll_on": false,
+        "amps_down": true,
+        "amps_ready": false,
+        "i2s2_on": false
+      }
+    },
+    "all_gates_passed": true,
+    "samples_discarded": true,
+    "source_settings_unchanged": true,
+    "microphone_acoustic_quality_measured": false
+  },
+  "rtc_cycles": [
+    {
+      "label": "audio-pm",
+      "requested_seconds": 12,
+      "s0i3_delta_us": 12088000,
+      "estimated_suspended_seconds": 11.474777256000039,
+      "hardware": {
+        "before": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        },
+        "after": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        },
+        "active": {
+          "rt5659_0x65": 64,
+          "rt5659_0x61": 49280,
+          "tfa": [
+            {
+              "status": 55391,
+              "sys_ctrl": 33288
+            },
+            {
+              "status": 55391,
+              "sys_ctrl": 33288
+            }
+          ]
+        },
+        "settled": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        }
+      },
+      "trace_overruns": 0,
+      "all_terminal_cleanup": true,
+      "kernel_fault_delta": {
+        "panic": 0,
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "reset_failed": 0,
+        "TFA_DSP_timeout": 0
+      },
+      "usb_attached": true,
+      "pristine_untethered": false,
+      "wake_irq_shared": true
+    },
+    {
+      "label": "audio-pm-repeat",
+      "requested_seconds": 12,
+      "s0i3_delta_us": 12176896,
+      "estimated_suspended_seconds": 11.520012606000023,
+      "hardware": {
+        "before": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        },
+        "after": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        },
+        "active": {
+          "rt5659_0x65": 64,
+          "rt5659_0x61": 49280,
+          "tfa": [
+            {
+              "status": 55391,
+              "sys_ctrl": 33288
+            },
+            {
+              "status": 55391,
+              "sys_ctrl": 33288
+            }
+          ]
+        },
+        "settled": {
+          "rt5659_0x65": 0,
+          "rt5659_0x61": 0,
+          "tfa": [
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            },
+            {
+              "status": 2653,
+              "sys_ctrl": 33281
+            }
+          ]
+        }
+      },
+      "trace_overruns": 0,
+      "all_terminal_cleanup": true,
+      "kernel_fault_delta": {
+        "panic": 0,
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "reset_failed": 0,
+        "TFA_DSP_timeout": 0
+      },
+      "usb_attached": true,
+      "pristine_untethered": false,
+      "wake_irq_shared": true
+    }
+  ],
+  "native_camera_cases": [
+    {
+      "camera": "rear",
+      "width": 1920,
+      "height": 1080,
+      "format": "NV12",
+      "phases": [
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32788,
+          "max_interval_us": 33759,
+          "sum_interval_us": 3961405
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32833,
+          "max_interval_us": 33853,
+          "sum_interval_us": 3961797
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32917,
+          "max_interval_us": 33874,
+          "sum_interval_us": 3962771
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32806,
+          "max_interval_us": 33895,
+          "sum_interval_us": 3963138
+        }
+      ],
+      "total_frames": 480
+    },
+    {
+      "camera": "front",
+      "width": 1920,
+      "height": 1080,
+      "format": "NV12",
+      "phases": [
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32751,
+          "max_interval_us": 33679,
+          "sum_interval_us": 3964846
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32895,
+          "max_interval_us": 33730,
+          "sum_interval_us": 3965449
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32919,
+          "max_interval_us": 33771,
+          "sum_interval_us": 3965320
+        },
+        {
+          "frames": 120,
+          "sequence_discontinuities": 0,
+          "buffer_errors": 0,
+          "observer_busy_checks": 4,
+          "min_interval_us": 32744,
+          "max_interval_us": 34061,
+          "sum_interval_us": 3965313
+        }
+      ],
+      "total_frames": 480
+    }
+  ],
+  "native_frames_total": 960,
+  "native_owner_reopen_and_busy_checks": true,
+  "post_second_resume_defaults": [
+    {
+      "camera": "rear",
+      "frames": 4,
+      "shape": {
+        "width": 1280,
+        "height": 720,
+        "pixel": "YU12",
+        "stride": 1280,
+        "sizeimage": 1384448
+      },
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "IUNIT_transport": 0,
+        "CSS_queue": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "stop_timeout": 0,
+        "reset_failed": 0,
+        "recovery_failed": 0
+      }
+    },
+    {
+      "camera": "front",
+      "frames": 4,
+      "shape": {
+        "width": 1280,
+        "height": 720,
+        "pixel": "YU12",
+        "stride": 1280,
+        "sizeimage": 1384448
+      },
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "IUNIT_transport": 0,
+        "CSS_queue": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0,
+        "stop_timeout": 0,
+        "reset_failed": 0,
+        "recovery_failed": 0
+      }
+    }
+  ],
+  "encoded_application_recording_tested_on_r5": false,
+  "optical_quality_qualified": false,
+  "source_frame_conservation_qualified": false,
+  "physical_failed_reset_fault_injected": false,
+  "normal_dapm_power_writes": true,
+  "direct_register_writes_requested": false,
+  "cache_replay_requested": false,
+  "calibration_mtp_writes_requested": false,
+  "temporary_route_overlays_present": false,
+  "nonzero_pcm_played": false,
+  "human_acoustic_test_this_turn": false,
+  "known_volatile_differences": [
+    {
+      "register": "RT5659 0x82 active",
+      "cache": 12288,
+      "hardware": 12289
+    },
+    {
+      "register": "TFA idle status",
+      "cache": 2141,
+      "hardware": 2653
+    }
+  ],
+  "taint_before_readonly": 1088,
+  "taint_after_readonly": 13376,
+  "taint_final": 13376,
+  "serial": {
+    "raw_bytes_kept_tablet_private": 66762,
+    "raw_host_file_written": false,
+    "input_sent": false,
+    "r5_banner_count": 0,
+    "fault_markers": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "ddr_failure": 0
+    },
+    "identity_independently_verified": true
+  },
+  "final": {
+    "faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "failed_units": 0,
+    "all_test_units_terminal": true,
+    "all_pcm_closed": true,
+    "all_camera_pm_suspended": true,
+    "readonly_probe_unloaded": true,
+    "task_traces_removed": true,
+    "rtc_cleared": true,
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "free_bytes": 2363027456,
+    "max_thermal_zone_millicelsius": 52000
+  },
+  "full_os_image_built": false,
+  "android_windows_parity_proven": false,
+  "factory_dsp_mtp_lifecycle_qualified": false
+}
