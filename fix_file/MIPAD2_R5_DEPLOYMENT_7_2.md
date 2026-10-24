@@ -9,6 +9,13 @@ the complete stock-backend image, not a runtime route overlay. Both permanent
 codec and board PLL dependencies remain. No generic ASoC-core graph hack,
 register replay, force-on clock, resume-repair script or factory-DSP activation.
 
+## Later recording result: cadence FAILED, not full video qualification
+
+Subsequent normal foreground 1080p recordings completed and decoded, but front
+and rear failed the existing cadence gate (26 and 12 gaps >50 ms). Earlier
+electrical/native tests below do not qualify encoded recording. See
+[preserved failure and investigation scope](MIPAD2_R5_RECORDING_REGRESSION_7_2.md).
+
 ## Build and protected deployment
 
 W=1, Clang21, thin LTO built bzImage and 31 modules, using the exact r4 config;

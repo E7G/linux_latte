@@ -1,0 +1,259 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "status": "r5-normal-encoded-video-cadence-failed-preserved",
+  "image_source_commit": "8bc6bf83ae3f3104a5649036c013bac4a0155bdd",
+  "release": "7.2.0-mipad2-integrated-r5",
+  "app_binary_sha256": "16bd4d3ea2d4347a7c049784760b0c305150c666241700671032e9e211bf13d9",
+  "va_plugin_sha256": "ff5e4d0af2e339c5e4eeb0fc94bea0faf352bfbed994fd8b89fdbd9342e62cb1",
+  "quality_unchanged": true,
+  "runs": [
+    {
+      "camera": "front",
+      "requested_seconds": 30,
+      "kernel": "7.2.0-mipad2-integrated-r5",
+      "metrics": {
+        "packets": 964,
+        "fps": 29.35170227681429,
+        "pts_span_seconds": 32.809,
+        "max_pts_gap_seconds": 0.08566666666666667,
+        "min_pts_gap_seconds": 0.02266666666666667,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 26,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14921606,
+        "actual_audio_bitrate": 192160,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "bytes": 62062926,
+      "decoded_frames": 964,
+      "adjacent_exact_decoded_repeats": 0,
+      "video_and_audio_decode_pass": true,
+      "diagnostic_actions": false,
+      "background_capture": false,
+      "normal_settings_unchanged": true,
+      "controls_restored": true,
+      "max_temp": 79000,
+      "kernel_fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "pm": {
+        "ov5693": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        },
+        "t4ka3": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        },
+        "isp": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        }
+      },
+      "raw_data_exported": false,
+      "optical_scene_controlled": false,
+      "source_frame_conservation_measured": false,
+      "hardware_encoder_factory_independently_observed": false,
+      "fixed_va_and_i965_mapped": true,
+      "process_video_engine_delta_ns": 14014075920,
+      "observed_cpu_limits": [
+        1600000
+      ]
+    },
+    {
+      "camera": "rear",
+      "requested_seconds": 30,
+      "kernel": "7.2.0-mipad2-integrated-r5",
+      "metrics": {
+        "packets": 974,
+        "fps": 29.766275085658346,
+        "pts_span_seconds": 32.688,
+        "max_pts_gap_seconds": 0.07166666666666667,
+        "min_pts_gap_seconds": 0.022,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 12,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14894922,
+        "actual_audio_bitrate": 191991,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "bytes": 61722863,
+      "decoded_frames": 974,
+      "adjacent_exact_decoded_repeats": 0,
+      "video_and_audio_decode_pass": true,
+      "diagnostic_actions": false,
+      "background_capture": false,
+      "normal_settings_unchanged": true,
+      "controls_restored": true,
+      "max_temp": 78000,
+      "kernel_fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "pm": {
+        "ov5693": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        },
+        "t4ka3": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        },
+        "isp": {
+          "runtime_status": "suspended",
+          "runtime_usage": "0"
+        }
+      },
+      "raw_data_exported": false,
+      "optical_scene_controlled": false,
+      "source_frame_conservation_measured": false,
+      "hardware_encoder_factory_independently_observed": false,
+      "fixed_va_and_i965_mapped": true,
+      "process_video_engine_delta_ns": 15068794960,
+      "observed_cpu_limits": [
+        1600000
+      ]
+    }
+  ],
+  "front_prior_r4_comparison": {
+    "packets": 984,
+    "fps": 30.001831240970965,
+    "pts_span_seconds": 32.76466666666666,
+    "max_pts_gap_seconds": 0.04533333333333334,
+    "min_pts_gap_seconds": 0.025,
+    "nonpositive_pts_intervals": 0,
+    "gaps_above50ms": 0,
+    "gaps_above100ms": 0,
+    "cadence_gate": true,
+    "stream_time_base": "1/3000",
+    "guessed_r_frame_rate_used": false,
+    "actual_video_bitrate": 14719217,
+    "actual_audio_bitrate": 192131,
+    "video_size": [
+      1920,
+      1080
+    ],
+    "audio_hz": 48000,
+    "audio_channels": 2
+  },
+  "front_r5_gap_buckets": [
+    {
+      "start_seconds": 0,
+      "intervals": 150,
+      "gaps_above50ms": 0,
+      "max_gap_ms": 49.0
+    },
+    {
+      "start_seconds": 5,
+      "intervals": 147,
+      "gaps_above50ms": 3,
+      "max_gap_ms": 58.0
+    },
+    {
+      "start_seconds": 10,
+      "intervals": 147,
+      "gaps_above50ms": 5,
+      "max_gap_ms": 69.0
+    },
+    {
+      "start_seconds": 15,
+      "intervals": 147,
+      "gaps_above50ms": 4,
+      "max_gap_ms": 59.333333333333336
+    },
+    {
+      "start_seconds": 20,
+      "intervals": 147,
+      "gaps_above50ms": 4,
+      "max_gap_ms": 57.0
+    },
+    {
+      "start_seconds": 25,
+      "intervals": 146,
+      "gaps_above50ms": 5,
+      "max_gap_ms": 72.66666666666667
+    },
+    {
+      "start_seconds": 30,
+      "intervals": 79,
+      "gaps_above50ms": 5,
+      "max_gap_ms": 85.66666666666667
+    }
+  ],
+  "causality_established": false,
+  "controlled_kernel_ab": false,
+  "source_frames_conservation_proven": false,
+  "rootcause_fixed": false,
+  "failing_media_retained_tablet_private": true,
+  "raw_media_packets_logs_exported": false,
+  "nonzero_pcm_playback_requested": false,
+  "new_reboots": 0,
+  "postflight": {
+    "protected_files_checked": 2214,
+    "candidate_payload_files_verified": 48,
+    "private_aliases_unchanged": 35,
+    "deep_restoration_pass": true,
+    "all_pcm_closed": true,
+    "all_camera_pm_suspended": true,
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    },
+    "failed_units": 0,
+    "free_bytes": 2233487360,
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    }
+  }
+}
