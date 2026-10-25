@@ -1,0 +1,693 @@
+{
+  "schema": 1,
+  "date": "2026-10-25",
+  "status": "instrumented-full-front-cadence-pass-rear-thermal-abort",
+  "kernel_release": "7.2.0-mipad2-integrated-r5",
+  "image_source_commit": "8bc6bf83ae3f3104a5649036c013bac4a0155bdd",
+  "driver_source_commit": "0b648be50cd80e16469c135c76ff61bbd2f2d12b",
+  "same_private_driver_sha256": "b46cf9fed0438c4d4329ffaa25f0502ab5961ee52308fc7fb3c8ccc96eaddd93",
+  "recordings": [
+    {
+      "camera": "front",
+      "requested_seconds": 30,
+      "recording_completed_requested_interval": true,
+      "metrics": {
+        "packets": 963,
+        "fps": 30.001871218579122,
+        "pts_span_seconds": 32.06466666666667,
+        "max_pts_gap_seconds": 0.034,
+        "min_pts_gap_seconds": 0.03233333333333333,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 0,
+        "gaps_above100ms": 0,
+        "cadence_gate": true,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 14966780,
+        "actual_audio_bitrate": 194049,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 963,
+      "decode_pass": true,
+      "adjacent_exact_decoded_repeats": 0,
+      "max_temp": 77000,
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "actual_early_preparations": 963
+    },
+    {
+      "camera": "rear",
+      "requested_seconds": 30,
+      "recording_completed_requested_interval": false,
+      "metrics": {
+        "packets": 126,
+        "fps": 30.014406915319352,
+        "pts_span_seconds": 4.164666666666666,
+        "max_pts_gap_seconds": 0.033666666666666664,
+        "min_pts_gap_seconds": 0.033,
+        "nonpositive_pts_intervals": 0,
+        "gaps_above50ms": 0,
+        "gaps_above100ms": 0,
+        "cadence_gate": false,
+        "stream_time_base": "1/3000",
+        "guessed_r_frame_rate_used": false,
+        "actual_video_bitrate": 15989362,
+        "actual_audio_bitrate": 190761,
+        "video_size": [
+          1920,
+          1080
+        ],
+        "audio_hz": 48000,
+        "audio_channels": 2
+      },
+      "decoded_frames": 126,
+      "decode_pass": true,
+      "adjacent_exact_decoded_repeats": 0,
+      "max_temp": 80000,
+      "fault_delta": {
+        "BUG": 0,
+        "WARNING": 0,
+        "Oops": 0,
+        "GPU_HANG": 0,
+        "DDR_failure": 0,
+        "IUNIT_timeout": 0,
+        "stop_timeout": 0,
+        "SP_not_idle": 0,
+        "ISP_not_idle": 0
+      },
+      "actual_early_preparations": 126
+    }
+  ],
+  "front_clip_metadata": {
+    "encoder_inputs": 963,
+    "encoder_outputs": 963,
+    "mp4_packets": 963,
+    "observed_native_encoder_mp4_metadata_conservation_proven": true,
+    "all_sensor_sof_frames_accounted_for": false,
+    "pixel_payloads_compared": false,
+    "invalid_input_pts": 0,
+    "invalid_output_pts": 0,
+    "first_encoded_pts_matches_source_minimum": true,
+    "source_derived_rebase_unique_matches": 963,
+    "unmatched_encoded_outputs": 0,
+    "duplicate_encoded_to_input_matches": 0,
+    "unencoded_inputs": 0,
+    "unique_native_pts_offset_matches": 963,
+    "input_offsets_consecutive": true,
+    "source_absolute_monotonic_order_preserved": true,
+    "native_buffers_inside_selected_source_time_window": 963,
+    "all_observed_native_encoder_frames_joined": true,
+    "mp4_time_base": "1/3000",
+    "mp4_packet_sequence_unique_within_one_tick": true,
+    "mp4_matched_packets": 963,
+    "nearest_rounding_model_matched_packets": 963,
+    "max_normalized_packet_pts_error_ticks": 0.499336,
+    "state": "tested-private-clip-metadata-identity-analysis",
+    "case": "cont32",
+    "historical_unfixed_data": false,
+    "current_idrt_candidate_data": true,
+    "trace_complete": true,
+    "trace_records": 234909,
+    "trace_overflow": 0,
+    "trace_incomplete": 0,
+    "compressed_and_raw_sha_verified": true,
+    "source_rule": "VA H264 requests1000h minPTS; GstVideoEncoder adjustment=minPTS-first clipped PTS; qtmux rounds track timescale",
+    "source_rule_version": "GStreamer1.28.7",
+    "module_sha256": "8696859e7ff5fe91562119509ec60455703ae2b43116da660be348b7c18de840",
+    "real_metadata_negative_controls": {
+      "encoder_drop_rejected": true,
+      "packet_duplicate_rejected": true,
+      "source_rule_wrong_shift_rejected": true
+    },
+    "raw_perframe_pts_offsets_media_or_addresses_exported": false,
+    "new_capture_started": false,
+    "original_trace_or_media_changed": false,
+    "video_decode_frames": 963
+  },
+  "historical_clip_metadata": {
+    "encoder_inputs": 735,
+    "encoder_outputs": 735,
+    "mp4_packets": 735,
+    "observed_native_encoder_mp4_metadata_conservation_proven": true,
+    "all_sensor_sof_frames_accounted_for": false,
+    "pixel_payloads_compared": false,
+    "invalid_input_pts": 0,
+    "invalid_output_pts": 0,
+    "first_encoded_pts_matches_source_minimum": true,
+    "source_derived_rebase_unique_matches": 735,
+    "unmatched_encoded_outputs": 0,
+    "duplicate_encoded_to_input_matches": 0,
+    "unencoded_inputs": 0,
+    "unique_native_pts_offset_matches": 735,
+    "input_offsets_consecutive": true,
+    "source_absolute_monotonic_order_preserved": true,
+    "native_buffers_inside_selected_source_time_window": 735,
+    "all_observed_native_encoder_frames_joined": true,
+    "mp4_time_base": "1/3000",
+    "mp4_packet_sequence_unique_within_one_tick": true,
+    "mp4_matched_packets": 735,
+    "nearest_rounding_model_matched_packets": 735,
+    "max_normalized_packet_pts_error_ticks": 0.49975,
+    "state": "tested-private-clip-metadata-identity-analysis",
+    "case": "cont28b",
+    "historical_unfixed_data": true,
+    "current_idrt_candidate_data": false,
+    "trace_complete": true,
+    "trace_records": 212069,
+    "trace_overflow": 0,
+    "trace_incomplete": 0,
+    "compressed_and_raw_sha_verified": true,
+    "source_rule": "VA H264 requests1000h minPTS; GstVideoEncoder adjustment=minPTS-first clipped PTS; qtmux rounds track timescale",
+    "source_rule_version": "GStreamer1.28.7",
+    "module_sha256": "8696859e7ff5fe91562119509ec60455703ae2b43116da660be348b7c18de840",
+    "real_metadata_negative_controls": {
+      "encoder_drop_rejected": true,
+      "packet_duplicate_rejected": true,
+      "source_rule_wrong_shift_rejected": true
+    },
+    "raw_perframe_pts_offsets_media_or_addresses_exported": false,
+    "new_capture_started": false,
+    "original_trace_or_media_changed": false,
+    "video_decode_frames": 735
+  },
+  "metadata_host_tests": {
+    "state": "pad-clip-metadata-identity-host-tests-pass",
+    "positive_frames": 1000,
+    "negative_controls": [
+      {
+        "case": "encoded-frame-drop",
+        "rejected": true
+      },
+      {
+        "case": "encoded-frame-duplicate",
+        "rejected": true
+      },
+      {
+        "case": "encoded-frame-reorder",
+        "rejected": true
+      },
+      {
+        "case": "native-frame-missing",
+        "rejected": true
+      },
+      {
+        "case": "native-frame-duplicate",
+        "rejected": true
+      },
+      {
+        "case": "wrong-source-rebase",
+        "rejected": true
+      },
+      {
+        "case": "mp4-packet-drop",
+        "rejected": true
+      },
+      {
+        "case": "mp4-packet-duplicate",
+        "rejected": true
+      },
+      {
+        "case": "mp4-packet-reorder",
+        "rejected": true
+      },
+      {
+        "case": "mp4-pts-outside-quantization-bound",
+        "rejected": true
+      },
+      {
+        "case": "input-offset-gap",
+        "rejected": true
+      }
+    ],
+    "source_rebase_not_fitted_to_output": true,
+    "one_tick_quantization_bound": true,
+    "physical_native_event_time_window": true,
+    "old_stream_offset_reuse_outside_window_supported": true,
+    "module_sha256": "8696859e7ff5fe91562119509ec60455703ae2b43116da660be348b7c18de840",
+    "sensor_sof_or_pixel_payload_proof": false,
+    "hardware_access": false
+  },
+  "front_kernel_queue_aggregate": {
+    "state": "private-capture-trace-aggregate-analyzed",
+    "events": {
+      "vb2_buf_done": 1220,
+      "vb2_dqbuf": 1216,
+      "v4l2_dqbuf": 1216,
+      "vb2_qbuf": 1216,
+      "v4l2_qbuf": 1216
+    },
+    "trace_overruns": 0,
+    "record_marker_span_seconds": 32.179028,
+    "window_camera_dq": 966,
+    "window_driver_done": 966,
+    "camera_queue_owners": 1,
+    "join_timestamp_precision_ns": 1000,
+    "v4l2_sequence_discontinuities": 0,
+    "v4l2_sequence_delta_histogram": {
+      "1": 965
+    },
+    "buffer_error_events": 0,
+    "driver_done_interval": {
+      "count": 965,
+      "min_ms": 32.634,
+      "median_ms": 33.335,
+      "p95_ms": 33.711,
+      "p99_ms": 33.879,
+      "max_ms": 34.061,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "v4l2_dq_delivery_interval": {
+      "count": 965,
+      "min_ms": 29.613,
+      "median_ms": 33.334,
+      "p95_ms": 33.968,
+      "p99_ms": 34.502,
+      "max_ms": 36.748,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "v4l2_buffer_timestamp_interval": {
+      "count": 965,
+      "min_ms": 32.638,
+      "median_ms": 33.335,
+      "p95_ms": 33.714,
+      "p99_ms": 33.878,
+      "max_ms": 34.063,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "driver_done_to_ioctl_dq": {
+      "count": 966,
+      "min_ms": 0.069,
+      "median_ms": 0.211,
+      "p95_ms": 0.765,
+      "p99_ms": 1.667,
+      "max_ms": 3.901,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "ioctl_dq_to_requeue": {
+      "count": 966,
+      "min_ms": 1.616,
+      "median_ms": 3.184,
+      "p95_ms": 12.531,
+      "p99_ms": 16.361,
+      "max_ms": 23.297,
+      "above50ms": 0,
+      "above100ms": 0
+    },
+    "unmatched_camera_dq": 0,
+    "owned_by_driver_after_done": {
+      "3": 966
+    },
+    "queued_at_done": {
+      "4": 966
+    },
+    "requeue_match": "first same-index QBUF after DQBUF; QBUF timestamp may be zero",
+    "long_driver_gap_depth_histogram": {},
+    "encoded_metrics": {
+      "packets": 963,
+      "fps": 30.001871218579122,
+      "pts_span_seconds": 32.06466666666667,
+      "max_pts_gap_seconds": 0.034,
+      "min_pts_gap_seconds": 0.03233333333333333,
+      "nonpositive_pts_intervals": 0,
+      "gaps_above50ms": 0,
+      "gaps_above100ms": 0,
+      "cadence_gate": true,
+      "stream_time_base": "1/3000",
+      "guessed_r_frame_rate_used": false,
+      "actual_video_bitrate": 14966780,
+      "actual_audio_bitrate": 194049,
+      "video_size": [
+        1920,
+        1080
+      ],
+      "audio_hz": 48000,
+      "audio_channels": 2
+    },
+    "raw_trace_media_perframe_exported": false,
+    "causality_proven": false,
+    "source_frame_conservation_proven": false,
+    "new_recordings": 0
+  },
+  "preview_only_followup": {
+    "state": "preview-lifecycle-observed",
+    "error": null,
+    "restoration_pass": true,
+    "camera_unowned": true,
+    "recording_started": false,
+    "nonzero_playback": false,
+    "temperature_stop_millicelsius": 78000,
+    "thermal_policy_changed": false,
+    "source_caps_lowered": false,
+    "private_driver_staged": false,
+    "shapes": {
+      "front": {
+        "video0": {
+          "width": 1280,
+          "height": 720,
+          "input": 0
+        },
+        "v4l-subdev4": {
+          "width": 1296,
+          "height": 736
+        },
+        "v4l-subdev5": {
+          "width": 1296,
+          "height": 736
+        }
+      },
+      "rear": {
+        "video0": {
+          "width": 1920,
+          "height": 1080,
+          "input": 1
+        },
+        "v4l-subdev4": {
+          "width": 1936,
+          "height": 1096
+        },
+        "v4l-subdev5": {
+          "width": 1936,
+          "height": 1096
+        }
+      }
+    },
+    "stages": [
+      {
+        "stage": "idle",
+        "samples": 5,
+        "observed_seconds": 4.12732992599922,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31200,
+          "soc_dts0": 44000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 47000,
+          "PNIT": 41000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31300,
+          "soc_dts0": 44000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 47000,
+          "PNIT": 49000
+        },
+        "process_cpu_cores_mean": null,
+        "process_gpu_engine_delta_ns": {},
+        "cpu_limits": [
+          2240000
+        ]
+      },
+      {
+        "stage": "launch-front",
+        "samples": 9,
+        "observed_seconds": 8.18926217599801,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31200,
+          "soc_dts0": 44000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 46000,
+          "PNIT": 45000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31900,
+          "soc_dts0": 47000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 49000,
+          "PNIT": 55000
+        },
+        "process_cpu_cores_mean": null,
+        "process_gpu_engine_delta_ns": {},
+        "cpu_limits": [
+          2240000
+        ]
+      },
+      {
+        "stage": "front-preview",
+        "samples": 12,
+        "observed_seconds": 11.460048752000148,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31300,
+          "soc_dts0": 47000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 49000,
+          "PNIT": 48000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32300,
+          "soc_dts0": 56000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 60000,
+          "PNIT": 63000
+        },
+        "process_cpu_cores_mean": 0.9773082333567943,
+        "process_gpu_engine_delta_ns": {
+          "render": 2597451265,
+          "video": 0,
+          "video-enhance": 0,
+          "copy": 0
+        },
+        "cpu_limits": [
+          2240000
+        ]
+      },
+      {
+        "stage": "switch-rear",
+        "samples": 10,
+        "observed_seconds": 9.336759883997729,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 31900,
+          "soc_dts0": 56000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 59000,
+          "PNIT": 58000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32700,
+          "soc_dts0": 59000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 64000,
+          "PNIT": 67000
+        },
+        "process_cpu_cores_mean": 0.9896366742638883,
+        "process_gpu_engine_delta_ns": {
+          "render": 3490366668,
+          "video": 0,
+          "video-enhance": 0,
+          "copy": 0
+        },
+        "cpu_limits": [
+          2240000
+        ]
+      },
+      {
+        "stage": "rear-preview",
+        "samples": 19,
+        "observed_seconds": 18.820816876999743,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32600,
+          "soc_dts0": 59000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 64000,
+          "PNIT": 62000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 33500,
+          "soc_dts0": 62000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 68000,
+          "PNIT": 71000
+        },
+        "process_cpu_cores_mean": 0.9771095548181954,
+        "process_gpu_engine_delta_ns": {
+          "render": 7874069120,
+          "video": 0,
+          "video-enhance": 0,
+          "copy": 0
+        },
+        "cpu_limits": [
+          1840000,
+          2240000
+        ]
+      },
+      {
+        "stage": "restore",
+        "samples": 3,
+        "observed_seconds": 2.0963239789998624,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32900,
+          "soc_dts0": 60000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 63000,
+          "PNIT": 61000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 33600,
+          "soc_dts0": 62000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 68000,
+          "PNIT": 68000
+        },
+        "process_cpu_cores_mean": 0.6863827713790875,
+        "process_gpu_engine_delta_ns": {
+          "render": 264771008,
+          "video": 0,
+          "video-enhance": 0,
+          "copy": 0
+        },
+        "cpu_limits": [
+          1840000
+        ]
+      },
+      {
+        "stage": "post-idle",
+        "samples": 5,
+        "observed_seconds": 4.15481857299892,
+        "zone_min": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32900,
+          "soc_dts0": 53000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 61000,
+          "PNIT": 50000
+        },
+        "zone_max": {
+          "INT3400 Thermal": 20000,
+          "bq27520-0": 32900,
+          "soc_dts0": 58000,
+          "bq25890-charger-0": 38000,
+          "soc_dts1": 63000,
+          "PNIT": 61000
+        },
+        "process_cpu_cores_mean": null,
+        "process_gpu_engine_delta_ns": {},
+        "cpu_limits": [
+          1840000,
+          2240000
+        ]
+      }
+    ],
+    "raw_logs_exported": false
+  },
+  "front_result_has_kernel_and_pad_instrumentation": true,
+  "rear_abort_reason": "temperature-guard-stop: 80000",
+  "rear_sustained_recording_qualified": false,
+  "all_sensor_sof_frames_accounted_for": false,
+  "pixel_payloads_compared": false,
+  "waiting_eliminated": false,
+  "overall_encoder_mean_latency_reduced": false,
+  "android_parity_proven": false,
+  "default_driver_changed": false,
+  "production_release_qualified": false,
+  "new_reboots": 0,
+  "nonzero_playback": false,
+  "postflight": {
+    "protected_files_checked": 2214,
+    "candidate_payload_files_verified": 48,
+    "private_aliases_unchanged": 35,
+    "deep_restoration": {
+      "cont32": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      },
+      "cont32b": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      },
+      "cont33b": {
+        "input_restored": true,
+        "video_format_restored": true,
+        "sensors": {
+          "ov5693": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          },
+          "t4ka3": {
+            "geometry_restored": true,
+            "captured_controls_restored": true
+          }
+        }
+      }
+    },
+    "all_camera_pm_suspended": true,
+    "all_pcm_closed": true,
+    "private_driver_mapped_process_count": 0,
+    "system_driver_unchanged": true,
+    "global_driver_override_absent": true,
+    "idle_preferences": {
+      "idleLockEnabled": false,
+      "idleDpmsEnabled": false,
+      "idleSuspendEnabled": false
+    },
+    "guards": {
+      "mipad2-test-no-idle.service": "active",
+      "mipad2-thermal-guard.service": "active"
+    },
+    "grubenv": {
+      "saved_entry": "mipad2-bqdiag1",
+      "next_entry": ""
+    },
+    "kernel_faults": {
+      "panic": 0,
+      "BUG": 0,
+      "WARNING": 0,
+      "Oops": 0,
+      "GPU_HANG": 0,
+      "DDR_failure": 0,
+      "IUNIT_timeout": 0,
+      "stop_timeout": 0,
+      "SP_not_idle": 0,
+      "ISP_not_idle": 0,
+      "reset_failed": 0
+    }
+  },
+  "raw_media_logs_perframe_timestamps_or_addresses_exported": false
+}

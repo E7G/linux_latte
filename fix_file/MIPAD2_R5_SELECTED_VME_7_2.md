@@ -1,5 +1,96 @@
 # r5 recording: selected H.264 VME execution path
 
+## CONT32/33: full front interval and bounded metadata closure; rear thermal abort
+
+**Still experimental, not deployed or Android-parity qualified.** Same private
+ABI5 ON binary and unchanged full1080p H.264/AAC profile; no clock forcing,
+quality reduction, synthetic frames or timestamp change introduced by the patch.
+
+| Requested30 s | Decoded frames | MP4 PTS span | fps | Max PTS gap | Gaps >50 ms | Result |
+|---|---:|---:|---:|---:|---:|---|
+| Front |963|32.064667 s|30.001871|34 ms|0|Full requested interval completed|
+| Rear |126|4.164667 s|30.014407|33.667 ms|0|Interrupted at80 C; NOT a30-second pass|
+
+Both clips decode video/audio fully, no adjacent exact decoded repeats, no new
+kernel/GPU/ISP fault. Front peak77 C,963 actual early preparations and all26
+phase counts963. Kernel/pad instrumentation enabled for front; not an
+uninstrumented production qualification. Rear instrumentation is driver-phase
+only,126 early preparations. Its first health sample reached80 C and the
+existing recording guard stopped it; the>850-call full-window coverage gates
+correctly fail. Keep this failure and its clip; do not infer sustained rear
+cadence from its4-second fragment. No thermal threshold is relaxed.
+
+### Existing timestamp rule, not a new timestamp repair
+
+The pinned GStreamer1.28.7 VA H264 encoder requests a1000-hour minimum PTS.
+GstVideoEncoder applies its source-derived initial adjustment; qtmux quantizes
+to the MP4 track timescale. Comparing raw input and output PTS for exact equality
+was therefore the wrong historical join. No empirical fitted offset or newly
+retimed media is used here. Primary source:
+[VA H264](https://github.com/GStreamer/gstreamer/blob/1.28.7/subprojects/gst-plugins-bad/sys/va/gstvah264enc.c),
+[encoder base](https://github.com/GStreamer/gstreamer/blob/1.28.7/subprojects/gst-plugins-base/gst-libs/gst/video/gstvideoencoder.c),
+[qtmux](https://github.com/GStreamer/gstreamer/blob/1.28.7/subprojects/gst-plugins-good/gst/isomp4/gstqtmux.c).
+
+The observed front clip has963 unique native-buffer(PTS,offset), encoder-input,
+encoder-output and MP4-packet associations, consecutive source offsets and no
+unjoined frames inside the selected absolute-monotonic native event window.
+All963 packet timestamps also match nearest track rounding; largest error
+0.499336 ticks at1/3000 s. Old pre-fix CONT28b trace similarly joins735 frames;
+this is not evidence the old cadence passed. The reusable host model passes
+1000 synthetic frames and11 drop/duplicate/reorder/rebase/tick/offset negatives;
+three real-metadata mutations are rejected too. Compressed traces are verified
+byte-exact before analysis. Raw per-frame data/media stays tablet-private.
+
+This establishes **observed clip metadata conservation only**, not pixel
+payload identity, absence of losses before observed native buffers, or accounting
+for every physical sensor SOF. Do not call it complete sensor-to-MP4 proof.
+
+### Capture queue no longer starved in this measured front window
+
+A32.179028-second marker window has966 matched completions/dequeues; it is a
+different window from the963-frame MP4. No trace overflow, buffer error,
+sequence gap or unmatched dequeue. Completion-to-DQ median0.211 ms/max3.901 ms;
+driver completion max interval34.061 ms, DQ delivery max36.748 ms. Every966
+completion still leaves three driver-owned buffers out of four queued.
+This is healthy measured queue pacing, not proof of universal GPU-wait removal
+or complete hardware SOF coverage. Prior same-binary A/B still shows waiting
+redistributed into BRC/constant-data work, not lower overall mean encoder time.
+
+### Preview-only thermal follow-up, not an encoder benchmark
+
+A fresh bounded normal-preview lifecycle sampled temperatures before launch,
+then front12 s, the normal switch, rear20 s and normal Quit/restoration. No
+recording, encoder-driver override or clock/policy/quality change. A stricter
+78 C diagnostic stop was not reached. Front live video shape1280x720; rear
+1920x1080 with1936x1096 sensor formats, not an observed full8MP stream.
+Application CPU is approximately0.98 cores in both stages. Process render
+engine time is2.597 s/11.460 s front versus7.874 s/18.821 s rear; video engine
+time is zero. PNIT peaks63 C front/71 C rear; soc_dts1 peaks60/68 C. Thus
+substantial heating/render activity occurs before recording and without the
+experimental encoder loaded. This does NOT establish its root cause, steady
+state temperature, an equal-resolution camera comparison or Android parity.
+Front/rear resolutions and stage durations differ. Inspect actual preview
+conversion/copy/render work before blaming a sensor power table or changing
+thermal thresholds. All raw1-second samples remain private.
+
+The first preview attempt stopped at the inherited recording-space reservation
+before launch. Its failure is retained; the fresh preview-only case uses64 MiB
+extra above the unchanged2 GiB floor because it produces no video. No recording
+space gate was reduced. Empty failed-test directory retained, no media removed.
+
+### Restoration and remaining gates
+
+Independent postflight verifies2214 protected files,48 payload files and35
+private aliases unchanged, captured sensor geometry/controls/video/input states
+restored, camera/ISP suspended, PCM closed, private driver unmapped, global
+environment clean and no-lock/guards unchanged. No reboot or audible playback.
+Rear thermal root cause, repeated/reverse-order pairs, uninstrumented full
+dual-camera recording, resume/long-run behavior, optics and Android parity
+remain open. The separately published experimental patch is still not installed
+or applied automatically. This report is not part of the isolated RT5659 PR.
+
+[Whitelisted scalar evidence](tests/mipad2-7.2-r5-full-front-summary.json).
+
 ## CONT31: first short same-binary front-camera A/B
 
 **Experimental only: not a deployed driver or full recording qualification.**
