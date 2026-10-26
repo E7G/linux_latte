@@ -1,0 +1,30 @@
+{
+  "state": "preview-only-kernel-Gst-identity-diagnostic-not-recording-qualification",
+  "kernelrelease": "7.2.0-mipad2-integrated-r6",
+  "plugin_source_version": "1.28.7",
+  "compiled_Gst_headers": "1.28.4",
+  "actual_tablet_Gst": "1.28.7",
+  "plugin_sha256": "7af3c0f369b8000755cc479347c19f61d92a66dbfe2fae8f415869addbf69be9",
+  "observer_capacity": 4096,
+  "observer_record_bytes": 88,
+  "actual_source_records": 490,
+  "kernel_exact_native_matches": 490,
+  "source_fps": 30.007133597711114,
+  "ISYS_EOF_events": 241,
+  "EOF_to_kernel_to_Gst_unique_subset_chains": 241,
+  "EOF_matching_completion_after_sample_end": 2,
+  "output_minus_raw_offset_histogram": {
+    "0": 1,
+    "1": 489
+  },
+  "kernel_payload": 3112960,
+  "Gst_payload": 3110400,
+  "payload_equality_claimed": false,
+  "normal_UI_Quit_and_actual_control_restoration_pass": true,
+  "trace_loss": 0,
+  "raw_data_published": false,
+  "failed_previous_stale_guard_attempt_preserved": true,
+  "new_kernel_functional_fix": false,
+  "recording_or_OEM_gate_qualified": false,
+  "physical_sensor_SOF_accounting_proved": false
+}
