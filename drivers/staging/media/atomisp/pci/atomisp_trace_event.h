@@ -12,6 +12,48 @@
 
 #include <linux/tracepoint.h>
 #include <linux/string.h>
+
+/*
+ * Associate CSS exposure IDs with completed vb2 buffers. Exposure IDs identify
+ * accepted ISYS frames, not every physical sensor frame. Error/flush completions
+ * can carry stale or zero exposure IDs and must be distinguished by state.
+ */
+TRACE_EVENT(atomisp_buffer_done,
+	    TP_PROTO(int minor, unsigned int index, unsigned int sequence,
+		     unsigned int exp_id, unsigned int isp_config_id, int state,
+		     u64 timestamp_ns, unsigned long bytesused),
+
+	    TP_ARGS(minor, index, sequence, exp_id, isp_config_id, state,
+		    timestamp_ns, bytesused),
+
+	    TP_STRUCT__entry(
+		__field(int, minor)
+		__field(unsigned int, index)
+		__field(unsigned int, sequence)
+		__field(unsigned int, exp_id)
+		__field(unsigned int, isp_config_id)
+		__field(int, state)
+		__field(u64, timestamp_ns)
+		__field(unsigned long, bytesused)
+	),
+
+	    TP_fast_assign(
+		__entry->minor = minor;
+		__entry->index = index;
+		__entry->sequence = sequence;
+		__entry->exp_id = exp_id;
+		__entry->isp_config_id = isp_config_id;
+		__entry->state = state;
+		__entry->timestamp_ns = timestamp_ns;
+		__entry->bytesused = bytesused;
+	),
+
+	    TP_printk("minor=%d index=%u sequence=%u exp_id=%u isp_config_id=%u state=%d timestamp_ns=%llu bytesused=%lu",
+		      __entry->minor, __entry->index, __entry->sequence,
+		      __entry->exp_id, __entry->isp_config_id, __entry->state,
+		      (unsigned long long)__entry->timestamp_ns, __entry->bytesused)
+);
+
 TRACE_EVENT(camera_meminfo,
 
 	    TP_PROTO(const char *name, int uptr_size, int counter, int sys_size,

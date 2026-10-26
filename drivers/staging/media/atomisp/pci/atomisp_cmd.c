@@ -606,6 +606,10 @@ void atomisp_buffer_done(struct ia_css_frame *frame, enum vb2_buffer_state state
 	list_del(&frame->queue);
 	if (state == VB2_BUF_STATE_DONE)
 		vb2_set_plane_payload(&frame->vb.vb2_buf, 0, pipe->pix.sizeimage);
+	trace_atomisp_buffer_done(pipe->vdev.minor, frame->vb.vb2_buf.index,
+				  frame->vb.sequence, frame->exp_id, frame->isp_config_id,
+				  state, frame->vb.vb2_buf.timestamp,
+				  vb2_get_plane_payload(&frame->vb.vb2_buf, 0));
 	vb2_buffer_done(&frame->vb.vb2_buf, state);
 }
 
