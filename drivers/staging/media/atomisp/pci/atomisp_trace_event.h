@@ -15,8 +15,9 @@
 
 /*
  * Associate CSS exposure IDs with completed vb2 buffers. Exposure IDs identify
- * accepted ISYS frames, not every physical sensor frame. Error/flush completions
- * can carry stale or zero exposure IDs and must be distinguished by state.
+ * accepted ISYS frames, not every physical sensor frame. Stream-start DONE
+ * buffers can have exposure ID zero; error/flush completions may carry stale
+ * IDs. Consumers must distinguish completion state and stream epoch.
  */
 TRACE_EVENT(atomisp_buffer_done,
 	    TP_PROTO(int minor, unsigned int index, unsigned int sequence,

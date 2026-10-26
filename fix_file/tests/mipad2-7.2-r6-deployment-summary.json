@@ -1,0 +1,66 @@
+{
+  "state": "r6-deployment-and-native-metadata-qualified-not-OEM-parity",
+  "kernelrelease": "7.2.0-mipad2-integrated-r6",
+  "built_source_commit": "f562bb45b47612dddea30ad2e62ac737fabccf83",
+  "image_sha256": "07e13d53bcaff15160b5f3bac5f276c7a7c34b11e4d470c73be4a651b7b76370",
+  "modules": 31,
+  "matching_module_vermagic": true,
+  "signed_modules_verified": true,
+  "config_matches_r5": true,
+  "one_shot_boot_observed": true,
+  "saved_recovery_default_unchanged": true,
+  "tracepoint_default_disabled": true,
+  "old_protected_files_verified": 2590,
+  "untraced_native": {
+    "cameras": 2,
+    "phases_each": 4,
+    "frames_each_phase": 120,
+    "width": 1920,
+    "height": 1080,
+    "pixelformat": "NV12",
+    "sequence_discontinuities": 0,
+    "buffer_errors": 0,
+    "controls_and_runtime_PM_restored": true
+  },
+  "diagnostic_native_trace": {
+    "events": 992,
+    "DONE": 960,
+    "ERROR_flush": 32,
+    "trace_loss": 0,
+    "exact_native_identity_matches": 960,
+    "nonzero_CSS_ID_matches": 952,
+    "zero_CSS_ID_matches": 8,
+    "zero_CSS_ID_scope": "sequence0, once per camera/stream phase",
+    "full_CSS_ID_correspondence_proved": false,
+    "original_nonzero_ID_parser_failure_retained": true
+  },
+  "tethered_RTC_resume": {
+    "requested_seconds": 12,
+    "S0I3_delta_us": 12535808,
+    "boottime_minus_monotonic_seconds": 11.954035385999987,
+    "fault_delta": 0,
+    "RTC_alarm_cleared": true
+  },
+  "tested_parser": {
+    "valid_exact_join": 1,
+    "negative_controls_rejected": 8,
+    "float_timestamps_used": false,
+    "raw_media_access": false,
+    "zero_CSS_id_retained_without_CSS_correspondence_claim": true
+  },
+  "raw_media_or_per_event_logs_in_repo": false,
+  "physical_all_frame_conservation_proved": false,
+  "encoder_to_MP4_identity_proved": false,
+  "original_recording_cadence_gate_relaxed": false,
+  "OEM_parity_proved": false,
+  "post_resume_native_lifecycle": {
+    "cameras": 2,
+    "phases_each": 4,
+    "frames_each_phase": 120,
+    "total_buffers": 960,
+    "sequence_discontinuities": 0,
+    "buffer_errors": 0,
+    "controls_and_runtime_PM_restored": true
+  },
+  "canonical_CLI_checked_on_same_private_data": true
+}

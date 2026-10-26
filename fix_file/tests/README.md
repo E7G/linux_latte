@@ -290,3 +290,9 @@ cc -O2 -Wall -Wextra -Werror -static \
 `EINVAL`；已公布的 `YU12` 尺寸须仍可枚举。默认不流摄像头、不改设置。
 6.14 r4 真机基线明确失败：第二路 `reserved[1]=1`，无效格式被接受；
 修复后必须重跑并确认双摄采流未退化。
+
+## r6 native buffer completion tracing
+
+See [r6 deployment and limitations](../MIPAD2_R6_DEPLOYMENT_7_2.md).
+`mipad2-atomisp-buffer-trace-join.py --selftest` covers exact metadata joins,
+including stream-start zero CSS IDs without fabricating ISYS correspondence.
