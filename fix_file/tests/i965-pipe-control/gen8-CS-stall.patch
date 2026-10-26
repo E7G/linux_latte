@@ -1,0 +1,6 @@
+diff --git a/src/i965_gpe_utils.c b/src/i965_gpe_utils.c
+--- a/src/i965_gpe_utils.c
++++ b/src/i965_gpe_utils.c
+@@ -2501 +2501 @@
+-	int cs_stall_enable = !param->disable_cs_stall;
++	int cs_stall_enable = param->disable_cs_stall ? 0 : CMD_PIPE_CONTROL_CS_STALL;
