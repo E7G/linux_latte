@@ -1,0 +1,15 @@
+diff --git a/src/i965_avc_encoder.c b/src/i965_avc_encoder.c
+--- a/src/i965_avc_encoder.c
++++ b/src/i965_avc_encoder.c
+@@ -3505,2 +3505,2 @@
+-						   (avc_state->ftq_skip_threshold_lut[i] << 16) |
+-						   (avc_state->ftq_skip_threshold_lut[i] << 24));
++						   ((uint32_t)avc_state->ftq_skip_threshold_lut[i] << 16) |
++						   ((uint32_t)avc_state->ftq_skip_threshold_lut[i] << 24));
+@@ -3508,3 +3508,3 @@
+-						   (avc_state->ftq_skip_threshold_lut[i] << 8) |
+-						   (avc_state->ftq_skip_threshold_lut[i] << 16) |
+-						   (avc_state->ftq_skip_threshold_lut[i] << 24));
++						   ((uint32_t)avc_state->ftq_skip_threshold_lut[i] << 8) |
++						   ((uint32_t)avc_state->ftq_skip_threshold_lut[i] << 16) |
++						   ((uint32_t)avc_state->ftq_skip_threshold_lut[i] << 24));
