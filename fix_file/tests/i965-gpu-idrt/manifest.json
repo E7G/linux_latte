@@ -1,0 +1,43 @@
+{
+  "public_repository": "https://github.com/irql-notlessorequal/intel-vaapi-driver",
+  "public_base_commit": "0b648be50cd80e16469c135c76ff61bbd2f2d12b",
+  "public_archive_SHA256": "5f619b42ae3f7db887d6d04cd012f009137e8b20f7eaea865c92199b061ca135",
+  "public_tree_matches_cached_baseline": true,
+  "public_tree_regular_files": 1079,
+  "baseline_files_SHA256": {
+    "src/i965_avc_encoder.c": "ad43b90c33505293386f53ff7f5ec44eee28c6e1392915a6b0583bf6354e4f82",
+    "src/i965_avc_encoder_common.h": "405de06b8cc5aac264edbd14d9b2972ef2d2ae1b0ae20d4184698aab99c6c67f",
+    "src/i965_encoder.c": "405ca6383352f3d8edfcb444124ea6aba579a3b541bc8f7746d7cb56c83f3fbc",
+    "src/i965_gpe_utils.c": "95622c7b837a91f8da51463f00860c088c2e9e2918a48b1c6b6f3c7529cadf60",
+    "src/i965_gpe_utils.h": "584c26617ad9f204da39f0210dd6fe420c0cde36d31ff96618c1583b36cf529c",
+    "src/meson.build": "9b0627e9e9ff67693df348d333cd2b7ae2625b3bc2847a0b58fa5a855607e490",
+    "src/mp2_i965_diag.c": null,
+    "src/mp2_i965_diag.h": null
+  },
+  "candidate_files_SHA256": {
+    "src/i965_avc_encoder.c": "861030557884edfc07d6c3ceead5eccfd5dd4ab9b53f7e31546a64022687b1d3",
+    "src/i965_avc_encoder_common.h": "a6a3c3c2c9e6334be38fa5776cf97968de60478c0955310acd3fa909b5e33855",
+    "src/i965_encoder.c": "1b4e3a0b200eed09a18185e4619313e85a47ffd76b0d146587fccb95893059ee",
+    "src/i965_gpe_utils.c": "4b349e24392d443c454f0b389733a15315ac02af344c5ed154f4abfd8c4bb1c1",
+    "src/i965_gpe_utils.h": "0723bdfe61191e2de86445a2f75f7f2f6758b406358be5cba2021143b5d8b9f7",
+    "src/meson.build": "44aa4c69829f7aa45d7ce3489a2799c10874acbd019331a6c1a3ac15690130a7",
+    "src/mp2_i965_diag.c": "34740b5337a7286dc243ae6147b095595ce47cdbb25873a2322127adc3ed13f6",
+    "src/mp2_i965_diag.h": "1b324725cfb56d730cab0a4e806844acc08f33f1a396989a2f05102d8a6ebf79"
+  },
+  "changed_sources_SHA256": {
+    "i965_avc_encoder.c": "861030557884edfc07d6c3ceead5eccfd5dd4ab9b53f7e31546a64022687b1d3",
+    "i965_avc_encoder_common.h": "a6a3c3c2c9e6334be38fa5776cf97968de60478c0955310acd3fa909b5e33855",
+    "i965_encoder.c": "1b4e3a0b200eed09a18185e4619313e85a47ffd76b0d146587fccb95893059ee",
+    "i965_gpe_utils.c": "4b349e24392d443c454f0b389733a15315ac02af344c5ed154f4abfd8c4bb1c1",
+    "i965_gpe_utils.h": "0723bdfe61191e2de86445a2f75f7f2f6758b406358be5cba2021143b5d8b9f7",
+    "meson.build": "44aa4c69829f7aa45d7ce3489a2799c10874acbd019331a6c1a3ac15690130a7",
+    "mp2_i965_diag.c": "34740b5337a7286dc243ae6147b095595ce47cdbb25873a2322127adc3ed13f6",
+    "mp2_i965_diag.h": "1b324725cfb56d730cab0a4e806844acc08f33f1a396989a2f05102d8a6ebf79"
+  },
+  "patch_SHA256": "7198c230c8215b00bd42cb94d6ea4d5efaf0f4c59a96bceacbe4718ca2dc3167",
+  "default_enabled": false,
+  "requires_explicit_PID_scoped_aggregate_diagnostic": true,
+  "EARLY_experiment_must_be_disabled": true,
+  "installed_driver_or_kernel_changed": false,
+  "patch_context_lines": 0
+}

@@ -1,0 +1,58 @@
+{
+  "state": "source-only-experiment-off-by-default",
+  "public_base_commit": "0b648be50cd80e16469c135c76ff61bbd2f2d12b",
+  "fresh_public_archive_files": 1079,
+  "full_patched_tree_files": 1081,
+  "all_source_bytes_equal_hardware_tested_candidate": true,
+  "offline": {
+    "packet_tests": 8,
+    "packet_parameter_cases_per_build": 4096,
+    "invalid_layout_cases": 22,
+    "packet_build_modes": [
+      "normal",
+      "NDEBUG",
+      "UBSan"
+    ],
+    "required_old_mask_negative_control": true,
+    "snapshot_tests": 20,
+    "source_preparation_tests": 10,
+    "normal_and_optimized_Python": true,
+    "full_driver_build_pass": true,
+    "VA_init_ABI": "1_24",
+    "ldd_r_pass": true,
+    "preexisting_HEVC_array_bounds_warnings": 1
+  },
+  "hardware": {
+    "front_OFF": {
+      "packets": 935,
+      "fps": 28.856254248,
+      "gaps_over50ms": 18
+    },
+    "front_ON": {
+      "packets": 987,
+      "fps": 29.992091335,
+      "gaps_over50ms": 0
+    },
+    "rear_ON": {
+      "packets": 970,
+      "fps": 30.011149653,
+      "gaps_over50ms": 0
+    },
+    "camera_clips_requested_seconds": 30,
+    "native_size": [
+      1920,
+      1080
+    ],
+    "requested_H264_kbps": 15000,
+    "requested_AAC_kbps": 192,
+    "owned_BO_full_4096_byte_matches": 16,
+    "generated_static_checkers_frames_per_mode": 180,
+    "generated_static_decoded_pixel_and_NAL_identity": true
+  },
+  "default_enabled": false,
+  "rebuilt_binary_hardware_tested": false,
+  "all_recording_latency_removed": false,
+  "full_source_to_MP4_payload_identity_proven": false,
+  "Android_or_OEM_parity_proven": false,
+  "raw_media_or_traces_included": false
+}

@@ -1,0 +1,422 @@
+diff --git a/src/i965_avc_encoder.c b/src/i965_avc_encoder.c
+--- a/src/i965_avc_encoder.c
++++ b/src/i965_avc_encoder.c
+@@ -0,0 +1 @@
++#include "mp2_i965_diag.h"
+@@ -1531,0 +1533 @@
++	struct avc_enc_state *avc_state = (struct avc_enc_state *)vme_context->private_enc_state;
+@@ -1549,0 +1552,10 @@
++    if (avc_state->mbenc_gpu_idrt_pending == gpe_context) {
++        avc_state->mbenc_gpu_idrt_pending = NULL;
++        if (mp2_gen8_gpu_idrt_upload(ctx, gpe_context, batch)) {
++            mp2_diag_gpu_idrt_event(1);
++        } else {
++            /* A changed/unsupported context falls back before any GPU write. */
++            gpe->setup_interface_data(ctx, gpe_context);
++            mp2_diag_gpu_idrt_event(2);
++        }
++    }
+@@ -3137,0 +3150,13 @@
++
++	/* IDRT and CURBE share the dynamic-state BO. Populate the descriptor
++	 * before BRC writes CURBE, avoiding a later CPU write map of a busy BO.
++	 * FEI selects a different MBEnc context and keeps the ordinary setup.
++	 */
++	if (avc_state->mbenc_curbe_set_in_brc_update && !encoder_context->fei_enabled &&
++		mp2_diag_early_idrt_enabled()) {
++		gpe->setup_interface_data(ctx, gpe_context);
++		avc_state->mbenc_idrt_prepared = gpe_context;
++		mp2_diag_record_early_idrt();
++	}
++
++
+@@ -5325,0 +5351,2 @@
++	struct mp2_stamp mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
++
+@@ -5331,0 +5359,2 @@
++	mp2_diag_end(MP2_MB_CONTEXT_RESET, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5336,0 +5366,2 @@
++	mp2_diag_end(MP2_MB_CURBE, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5345,0 +5377,2 @@
++	mp2_diag_end(MP2_MB_CONST_DATA, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5349,0 +5383,2 @@
++	mp2_diag_end(MP2_MB_MAD_CLEAR, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5353,2 +5388,16 @@
+-	gpe->setup_interface_data(ctx, gpe_context);
+-
++	mp2_diag_end(MP2_MB_SURFACES, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
++	if (avc_state->mbenc_idrt_prepared != gpe_context) {
++        if (!i_frame_dist_in_use && IS_CHERRYVIEW(i965->intel.device_info) &&
++            !encoder_context->fei_enabled &&
++            avc_state->mbenc_curbe_set_in_brc_update &&
++            mp2_diag_gpu_idrt_enabled() && mp2_gen8_gpu_idrt_eligible(gpe_context)) {
++            avc_state->mbenc_gpu_idrt_pending = gpe_context;
++            mp2_diag_gpu_idrt_event(0);
++        } else {
++            gpe->setup_interface_data(ctx, gpe_context);
++        }
++    }
++
++	mp2_diag_end(MP2_MB_IDRT, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5384,0 +5434,2 @@
++	mp2_diag_end(MP2_MB_WALKER_PREPARE, mp2_mb, 0);
++	mp2_mb = i_frame_dist_in_use ? (struct mp2_stamp){0,0} : mp2_diag_start();
+@@ -5388,0 +5440 @@
++	mp2_diag_end(MP2_MB_SUBMIT, mp2_mb, 0);
+@@ -8634 +8686,4 @@
+-
++	avc_state->mbenc_idrt_prepared = NULL;
++	avc_state->mbenc_gpu_idrt_pending = NULL;
++
++	struct mp2_stamp mp2_group = mp2_diag_start();
+@@ -8639,0 +8695,2 @@
++	mp2_diag_end(MP2_RUN_BRC_INIT, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8650,0 +8708,2 @@
++	mp2_diag_end(MP2_RUN_SCALING, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8661,0 +8721,2 @@
++	mp2_diag_end(MP2_RUN_HME, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8668,0 +8730,2 @@
++	mp2_diag_end(MP2_RUN_SFD, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8680,0 +8744,2 @@
++	mp2_diag_end(MP2_RUN_BRC_UPDATE, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8704,0 +8770,2 @@
++	mp2_diag_end(MP2_RUN_WP, mp2_group, 0);
++	mp2_group = mp2_diag_start();
+@@ -8706,0 +8774,2 @@
++
++	mp2_diag_end(MP2_RUN_MBENC, mp2_group, 0);
+@@ -8719,0 +8789 @@
++	struct mp2_stamp mp2_stage = mp2_diag_start();
+@@ -8723,0 +8794 @@
++	mp2_diag_end(MP2_VME_UPDATE_CHECK, mp2_stage, va_status);
+@@ -8726,0 +8798 @@
++	mp2_stage = mp2_diag_start();
+@@ -8727,0 +8800 @@
++	mp2_diag_end(MP2_VME_ALLOCATE, mp2_stage, va_status);
+@@ -8730,0 +8804 @@
++	mp2_stage = mp2_diag_start();
+@@ -8731,0 +8806 @@
++	mp2_diag_end(MP2_VME_PREPARE, mp2_stage, va_status);
+@@ -8734,0 +8810 @@
++	mp2_stage = mp2_diag_start();
+@@ -8735,0 +8812 @@
++	mp2_diag_end(MP2_VME_INIT, mp2_stage, va_status);
+@@ -8738,0 +8816 @@
++	mp2_stage = mp2_diag_start();
+@@ -8739,0 +8818 @@
++	mp2_diag_end(MP2_VME_RUN, mp2_stage, va_status);
+@@ -8742,0 +8822 @@
++	mp2_stage = mp2_diag_start();
+@@ -8743,0 +8824 @@
++	mp2_diag_end(MP2_VME_FINAL, mp2_stage, 0);
+diff --git a/src/i965_avc_encoder_common.h b/src/i965_avc_encoder_common.h
+--- a/src/i965_avc_encoder_common.h
++++ b/src/i965_avc_encoder_common.h
+@@ -340,0 +341,4 @@
++	/* CPU-side descriptor preparation is valid for this frame/context only. */
++	struct i965_gpe_context *mbenc_idrt_prepared;
++	/* Non-owning pointer: consumed synchronously by this frame's walker. */
++	struct i965_gpe_context *mbenc_gpu_idrt_pending;
+diff --git a/src/i965_encoder.c b/src/i965_encoder.c
+--- a/src/i965_encoder.c
++++ b/src/i965_encoder.c
+@@ -0,0 +1 @@
++#include "mp2_i965_diag.h"
+@@ -1469,0 +1471,2 @@
++	struct mp2_stamp mp2_total = mp2_diag_start();
++	struct mp2_stamp mp2_stage = mp2_diag_start();
+@@ -1472,2 +1475,4 @@
+-
+-	if (vaStatus != VA_STATUS_SUCCESS)
++	mp2_diag_end(MP2_SANITY, mp2_stage, vaStatus);
++
++	if (vaStatus != VA_STATUS_SUCCESS) {
++		mp2_diag_end(MP2_ENCODER, mp2_total, vaStatus);
+@@ -1475 +1480,3 @@
+-
++	}
++
++	mp2_stage = mp2_diag_start();
+@@ -1476,0 +1484 @@
++	mp2_diag_end(MP2_BRC_PREPARE, mp2_stage, 0);
+@@ -1495,0 +1504 @@
++		mp2_stage = mp2_diag_start();
+@@ -1497 +1506,3 @@
+-		if (vaStatus != VA_STATUS_SUCCESS)
++		mp2_diag_end(MP2_VME, mp2_stage, vaStatus);
++		if (vaStatus != VA_STATUS_SUCCESS) {
++			mp2_diag_end(MP2_ENCODER, mp2_total, vaStatus);
+@@ -1498,0 +1510 @@
++		}
+@@ -1501,0 +1514 @@
++	mp2_stage = mp2_diag_start();
+@@ -1502,0 +1516 @@
++	mp2_diag_end(MP2_MFC, mp2_stage, 0);
+@@ -1510,0 +1525 @@
++	mp2_diag_end(MP2_ENCODER, mp2_total, 0);
+diff --git a/src/i965_gpe_utils.c b/src/i965_gpe_utils.c
+--- a/src/i965_gpe_utils.c
++++ b/src/i965_gpe_utils.c
+@@ -1716,0 +1717,68 @@
++}
++
++/* SPDX-License-Identifier: MIT */
++/* Private CHV experiment: do not map a BRC-owned dynamic-state BO on the CPU.
++ * PIPE_CONTROL post-sync writes with CS_STALL, not unsynchronized MI stores.
++ * Eligibility is deliberately narrower than the ordinary CPU implementation. */
++int
++mp2_gen8_gpu_idrt_eligible(const struct i965_gpe_context *g)
++{
++    if (!g || !g->idrt.bo || g->num_kernels != 1 ||
++        g->idrt.max_entries != 1 || g->idrt.entry_size != 64 ||
++        g->dynamic_state.bo != g->idrt.bo || g->curbe.bo != g->idrt.bo ||
++        g->dynamic_state.bo_size <= 0 || !g->curbe.length ||
++        g->sampler.max_entries || g->sampler.entry_size ||
++        (g->idrt.offset & 63) || (g->kernels[0].kernel_offset & 63))
++        return 0;
++    const uint64_t end = (uint64_t)g->idrt.offset + g->idrt.entry_size;
++    return (uint64_t)g->curbe.offset + g->curbe.length <= g->idrt.offset &&
++        end <= (uint64_t)g->dynamic_state.bo_size &&
++        (uint64_t)g->dynamic_state.bo_size <= g->idrt.bo->size;
++}
++
++int
++mp2_gen8_gpu_idrt_upload(VADriverContextP ctx,
++                         struct i965_gpe_context *g,
++                         struct intel_batchbuffer *batch)
++{
++    struct gen8_interface_descriptor_data desc;
++    struct gpe_pipe_control_parameter p;
++    uint32_t words[8];
++    unsigned i;
++
++    if (!batch || !mp2_gen8_gpu_idrt_eligible(g))
++        return 0;
++
++    /* Match gen8_gpe_setup_interface_data byte-for-byte, including zero bits. */
++    memset(&desc, 0, sizeof(desc));
++    desc.desc0.kernel_start_pointer = g->kernels[0].kernel_offset >> 6;
++    desc.desc3.sampler_count = 0;
++    desc.desc3.sampler_state_pointer = g->sampler.offset >> 5;
++    desc.desc4.binding_table_entry_count = 0;
++    desc.desc4.binding_table_pointer =
++        g->surface_state_binding_table.binding_table_offset >> 5;
++    desc.desc5.constant_urb_entry_read_offset = 0;
++    desc.desc5.constant_urb_entry_read_length = ALIGN(g->curbe.length, 32) >> 5;
++    _Static_assert(sizeof(desc) == sizeof(words), "Gen8 IDRT is 32 bytes");
++    memcpy(words, &desc, sizeof(words));
++
++    /* Vol7 p19: CS_STALL + flushed write caches + immediate post-sync write.
++     * Each command retains a writable relocation to the same dynamic-state BO.
++     * Earlier BRC batches remain dependencies; the caller retains its existing
++     * preamble flush and atomic batch reservation before entering this helper. */
++    memset(&p, 0, sizeof(p));
++    p.bo = g->idrt.bo;
++    p.flush_mode = PIPE_CONTROL_FLUSH_WRITE_CACHE;
++    for (i = 0; i < 4; i++) {
++        p.offset = g->idrt.offset + 8 * i;
++        p.dw0 = words[2 * i];
++        p.dw1 = words[2 * i + 1];
++        gen8_gpe_pipe_control(ctx, batch, &p);
++    }
++
++    /* Last post-sync completion precedes this top-of-pipe invalidation, and
++     * both precede STATE_BASE_ADDRESS / CURBE_LOAD / INTERFACE_LOAD. */
++    memset(&p, 0, sizeof(p));
++    p.flush_mode = PIPE_CONTROL_FLUSH_READ_CACHE;
++    gen8_gpe_pipe_control(ctx, batch, &p);
++    return 1;
+@@ -2501 +2569 @@
+-	int cs_stall_enable = !param->disable_cs_stall;
++	int cs_stall_enable = param->disable_cs_stall ? 0 : CMD_PIPE_CONTROL_CS_STALL;
+diff --git a/src/i965_gpe_utils.h b/src/i965_gpe_utils.h
+--- a/src/i965_gpe_utils.h
++++ b/src/i965_gpe_utils.h
+@@ -464,0 +465,3 @@
++int mp2_gen8_gpu_idrt_eligible(const struct i965_gpe_context *g);
++int mp2_gen8_gpu_idrt_upload(VADriverContextP ctx, struct i965_gpe_context *g, struct intel_batchbuffer *batch);
++
+diff --git a/src/meson.build b/src/meson.build
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -41,0 +42 @@
++  'mp2_i965_diag.c',
+diff --git a/src/mp2_i965_diag.c b/src/mp2_i965_diag.c
+--- /dev/null
++++ b/src/mp2_i965_diag.c
+@@ -0,0 +1,138 @@
++/* SPDX-License-Identifier: MIT */
++/* Private aggregates only. Optional, PID-scoped; never reads frame payloads.
++ * Mapped tmpfs aggregates survive VA driver unload/reload; no per-frame I/O. */
++#define _GNU_SOURCE
++#include "mp2_i965_diag.h"
++#include <stdatomic.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <time.h>
++#include <unistd.h>
++#include <stdlib.h>
++#include <string.h>
++#include <errno.h>
++struct mp2_stats {
++ _Atomic uint64_t calls, nonzero_results, wall_total, wall_max;
++ _Atomic uint64_t cpu_total, cpu_max, over33, over50;
++};
++struct mp2_data {
++ char magic[8]; uint32_t version, phases;
++ uint64_t pid, start_ns;
++ _Atomic uint64_t loads, active_loads;
++ uint64_t early_enabled;
++ _Atomic uint64_t early_preparations;
++ struct mp2_stats phase[MP2_PHASES];
++ _Atomic uint64_t iteration_histogram[16];
++ uint64_t gpu_enabled;
++ _Atomic uint64_t gpu_preparations, gpu_command_uploads, gpu_fallbacks;
++};
++_Static_assert(sizeof(struct mp2_stats)==64,"stats ABI");
++_Static_assert(sizeof(struct mp2_data)==1888,"file ABI");
++static struct mp2_data *data;
++static uint64_t clock_ns(clockid_t id) {
++ struct timespec t;
++ if (clock_gettime(id,&t)) return 0;
++ return (uint64_t)t.tv_sec*1000000000ULL+(uint64_t)t.tv_nsec;
++}
++static void max_value(_Atomic uint64_t *p,uint64_t value) {
++ uint64_t old=atomic_load_explicit(p,memory_order_relaxed);
++ while (old<value && !atomic_compare_exchange_weak_explicit(p,&old,value,
++          memory_order_relaxed,memory_order_relaxed)) {}
++}
++struct mp2_stamp mp2_diag_start(void) {
++ int saved=errno;struct mp2_stamp r={0,0};
++ if (data && data->pid==(uint64_t)getpid()) {
++  r.wall=clock_ns(CLOCK_MONOTONIC);r.cpu=clock_ns(CLOCK_THREAD_CPUTIME_ID);
++ }
++ errno=saved;return r;
++}
++void mp2_diag_end(enum mp2_phase id,struct mp2_stamp begin,int result) {
++ int saved=errno;
++ if (!data || !begin.wall || !begin.cpu || id>=MP2_PHASES) {errno=saved;return;}
++ uint64_t cpu=clock_ns(CLOCK_THREAD_CPUTIME_ID),wall=clock_ns(CLOCK_MONOTONIC);
++ if (cpu<begin.cpu || wall<begin.wall) {errno=saved;return;}
++ cpu-=begin.cpu;wall-=begin.wall;
++ struct mp2_stats *s=&data->phase[id];
++ atomic_fetch_add_explicit(&s->calls,1,memory_order_relaxed);
++ atomic_fetch_add_explicit(&s->nonzero_results,result!=0,memory_order_relaxed);
++ atomic_fetch_add_explicit(&s->wall_total,wall,memory_order_relaxed);
++ atomic_fetch_add_explicit(&s->cpu_total,cpu,memory_order_relaxed);
++ atomic_fetch_add_explicit(&s->over33,wall>33333333,memory_order_relaxed);
++ atomic_fetch_add_explicit(&s->over50,wall>50000000,memory_order_relaxed);
++ max_value(&s->wall_max,wall);max_value(&s->cpu_max,cpu);
++ errno=saved;
++}
++void mp2_diag_frame_iterations(unsigned n) {
++ if (data && data->pid==(uint64_t)getpid())
++  atomic_fetch_add_explicit(&data->iteration_histogram[n<15?n:15],1,memory_order_relaxed);
++}
++__attribute__((constructor)) static void mp2_diag_initialize(void) {
++ int saved=errno;
++ const char *p=getenv("MP2_I965_DIAG_FILE"),*pid=getenv("MP2_I965_DIAG_PID");
++ const char *gf=getenv("MP2_I965_GPU_MBENC_IDRT"),*ef=getenv("MP2_I965_EARLY_MBENC_IDRT");
++ uint64_t gpu_enabled=gf && !strcmp(gf,"1");
++ if (gpu_enabled && ef && !strcmp(ef,"1")) goto finish;
++ if (!p || p[0]!='/' || !pid || strtoull(pid,NULL,10)!=(uint64_t)getpid()) goto finish;
++ int created=1,fd=open(p,O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW,0600);
++ if (fd<0 && errno==EEXIST) {created=0;fd=open(p,O_RDWR|O_CLOEXEC|O_NOFOLLOW);}
++ if (fd<0) goto finish;
++ struct stat st;
++ if (fstat(fd,&st) || !S_ISREG(st.st_mode) || st.st_uid!=geteuid() || st.st_nlink!=1 || (st.st_mode&077)) {close(fd);goto finish;}
++ if (created && ftruncate(fd,sizeof(struct mp2_data))) {close(fd);goto finish;}
++ if (!created && st.st_size!=sizeof(struct mp2_data)) {close(fd);goto finish;}
++ void *map=mmap(NULL,sizeof(struct mp2_data),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);close(fd);
++ if (map==MAP_FAILED) goto finish;
++ struct mp2_data *d=map;
++ const char *flag=getenv("MP2_I965_EARLY_MBENC_IDRT");
++ uint64_t enabled=flag && !strcmp(flag,"1");
++ if (created) {
++  memset(d,0,sizeof(*d));d->version=6;d->phases=MP2_PHASES;d->pid=(uint64_t)getpid();d->start_ns=clock_ns(CLOCK_MONOTONIC);
++  atomic_init(&d->loads,0);atomic_init(&d->active_loads,0);
++  d->early_enabled=enabled;atomic_init(&d->early_preparations,0);
++  d->gpu_enabled=gpu_enabled;atomic_init(&d->gpu_preparations,0);atomic_init(&d->gpu_command_uploads,0);atomic_init(&d->gpu_fallbacks,0);
++  for (unsigned i=0;i<MP2_PHASES;i++) {
++#define INIT(F) atomic_init(&d->phase[i].F,0)
++   INIT(calls);INIT(nonzero_results);INIT(wall_total);INIT(wall_max);INIT(cpu_total);INIT(cpu_max);INIT(over33);INIT(over50);
++#undef INIT
++  }
++  for (unsigned i=0;i<16;i++) atomic_init(&d->iteration_histogram[i],0);
++  memcpy(d->magic,"MP2I9656",8);
++ }
++ if (memcmp(d->magic,"MP2I9656",8) || d->version!=6 || d->phases!=MP2_PHASES || d->pid!=(uint64_t)getpid() || d->early_enabled!=enabled || d->gpu_enabled!=gpu_enabled || !atomic_is_lock_free(&d->loads)) {munmap(d,sizeof(*d));goto finish;}
++ data=d;atomic_fetch_add_explicit(&d->loads,1,memory_order_relaxed);atomic_fetch_add_explicit(&d->active_loads,1,memory_order_relaxed);
++finish:
++ errno=saved;
++}
++__attribute__((destructor)) static void mp2_diag_finish(void) {
++ int saved=errno;
++ if (data) {atomic_fetch_sub_explicit(&data->active_loads,1,memory_order_relaxed);munmap(data,sizeof(*data));data=NULL;}
++ errno=saved;
++}
++
++int mp2_diag_early_idrt_enabled(void) {
++ int saved=errno;
++ int enabled=data && data->pid==(uint64_t)getpid() && data->early_enabled==1;
++ errno=saved;return enabled;
++}
++void mp2_diag_record_early_idrt(void) {
++ int saved=errno;
++ if (mp2_diag_early_idrt_enabled())
++  atomic_fetch_add_explicit(&data->early_preparations,1,memory_order_relaxed);
++ errno=saved;
++}
++
++int mp2_diag_gpu_idrt_enabled(void) {
++ int saved=errno;
++ int enabled=data && data->pid==(uint64_t)getpid() && data->gpu_enabled==1 && !data->early_enabled;
++ errno=saved;return enabled;
++}
++void mp2_diag_gpu_idrt_event(unsigned event) {
++ int saved=errno;
++ if (mp2_diag_gpu_idrt_enabled()) {
++  if (event==0) atomic_fetch_add_explicit(&data->gpu_preparations,1,memory_order_relaxed);
++  else if (event==1) atomic_fetch_add_explicit(&data->gpu_command_uploads,1,memory_order_relaxed);
++  else if (event==2) atomic_fetch_add_explicit(&data->gpu_fallbacks,1,memory_order_relaxed);
++ }
++ errno=saved;
++}
+diff --git a/src/mp2_i965_diag.h b/src/mp2_i965_diag.h
+--- /dev/null
++++ b/src/mp2_i965_diag.h
+@@ -0,0 +1,22 @@
++/* SPDX-License-Identifier: MIT */
++#ifndef MP2_I965_DIAG_H
++#define MP2_I965_DIAG_H
++#include <stdint.h>
++enum mp2_phase {
++ MP2_ENCODER, MP2_SANITY, MP2_BRC_PREPARE, MP2_VME, MP2_MFC,
++ MP2_VME_UPDATE_CHECK, MP2_VME_ALLOCATE, MP2_VME_PREPARE, MP2_VME_INIT,
++ MP2_VME_RUN, MP2_VME_FINAL,
++ MP2_RUN_BRC_INIT, MP2_RUN_SCALING, MP2_RUN_HME, MP2_RUN_SFD,
++ MP2_RUN_BRC_UPDATE, MP2_RUN_WP, MP2_RUN_MBENC,
++ MP2_MB_CONTEXT_RESET, MP2_MB_CURBE, MP2_MB_CONST_DATA, MP2_MB_MAD_CLEAR,
++ MP2_MB_SURFACES, MP2_MB_IDRT, MP2_MB_WALKER_PREPARE, MP2_MB_SUBMIT, MP2_PHASES
++};
++struct mp2_stamp { uint64_t wall, cpu; };
++struct mp2_stamp mp2_diag_start(void);
++void mp2_diag_end(enum mp2_phase, struct mp2_stamp, int);
++void mp2_diag_frame_iterations(unsigned);
++int mp2_diag_early_idrt_enabled(void);
++void mp2_diag_record_early_idrt(void);
++int mp2_diag_gpu_idrt_enabled(void);
++void mp2_diag_gpu_idrt_event(unsigned event);
++#endif
