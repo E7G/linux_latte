@@ -226,7 +226,8 @@ static int load_and_flush(ia_css_ptr virt, void *data, unsigned int bytes)
 		void *src = bo->vmap_addr;
 
 		src += (virt - bo->start);
-		memcpy(data, src, bytes);
+		if (data)
+			memcpy(data, src, bytes);
 		if (bo->status & HMM_BO_VMAPED_CACHED)
 			clflush_cache_range(src, bytes);
 	} else {
@@ -238,7 +239,8 @@ static int load_and_flush(ia_css_ptr virt, void *data, unsigned int bytes)
 		else
 			vptr = vptr + (virt - bo->start);
 
-		memcpy(data, vptr, bytes);
+		if (data)
+			memcpy(data, vptr, bytes);
 		clflush_cache_range(vptr, bytes);
 		hmm_bo_vunmap(bo);
 	}
