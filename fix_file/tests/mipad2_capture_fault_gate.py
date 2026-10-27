@@ -10,7 +10,7 @@ PATTERNS={
  'WARNING':r'(?<!\w)WARNING:',
  'DDR':r'Failed to (?:disable|enable) DDR DVFS',
  'IUNIT':r'IUNIT power-(?:on|off) timeout',
- 'CSS_queue':r'css q fails',
+ 'CSS_queue':r'css q fails|invalid PSYS event type',
  'SP_not_idle':r'SP is not idle',
  'ISP_not_idle':r'ISP is not idle',
  'stop_timeout':r'stop stream timeout',
@@ -39,14 +39,14 @@ def selftest():
  require(check(base+assertion,base+assertion+'[ 3.000] ready\n',errored_source_frames=0)['pass_gate'],'Historical fault treated as new')
  require(not check(base,'[ 3.000] rotated\n',errored_source_frames=0)['pass_gate'],'Log rotation accepted')
  require(check(base,base+assertion,errored_source_frames=1)['new_fault_counts']['FW_ASSERT']==1,'Assertion count lost')
- for name,example in [('GPU_HANG','GPU HANG'),('panic','Kernel panic'),('BUG','BUG:'),('Oops','Oops:'),('WARNING','WARNING:'),('DDR','Failed to enable DDR DVFS'),('IUNIT','IUNIT power-off timeout'),('CSS_queue','css q fails'),('SP_not_idle','SP is not idle'),('ISP_not_idle','ISP is not idle'),('stop_timeout','stop stream timeout'),('recovery_failed','Stream recovery failed')]:
+ for name,example in [('GPU_HANG','GPU HANG'),('panic','Kernel panic'),('BUG','BUG:'),('Oops','Oops:'),('WARNING','WARNING:'),('DDR','Failed to enable DDR DVFS'),('IUNIT','IUNIT power-off timeout'),('CSS_queue','css q fails'),('CSS_queue','Invalid PSYS event type 255'),('CSS_queue','ISP returned an invalid PSYS event type'),('SP_not_idle','SP is not idle'),('ISP_not_idle','ISP is not idle'),('stop_timeout','stop stream timeout'),('recovery_failed','Stream recovery failed')]:
   r=check(base,base+example+'\n',errored_source_frames=0);require(not r['pass_gate'] and r['new_fault_counts'][name]==1,'Fault accepted '+name)
  rejected=0
  for value in [-1,True,None,1.0]:
   try:check(base,base,errored_source_frames=value)
   except ValueError:rejected+=1;continue
   raise AssertionError('Invalid source count accepted')
- return dict(tests=22,all_new_FW_assertions_and_source_errors_fail=True,log_rotation_not_treated_as_clean=True,malformed_negative_controls=rejected)
+ return dict(tests=24,all_new_FW_assertions_and_source_errors_fail=True,log_rotation_not_treated_as_clean=True,malformed_negative_controls=rejected)
 if __name__=='__main__':
  import argparse,json,sys
  from pathlib import Path

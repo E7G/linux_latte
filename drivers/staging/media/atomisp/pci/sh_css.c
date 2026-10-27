@@ -3848,6 +3848,12 @@ static enum ia_css_event_type convert_event_sp_to_host_domain[] = {
 	0,					/* error if sp passes  SH_CSS_SP_EVENT_NR_OF_TYPES as a valid event. */
 };
 
+static bool ia_css_is_valid_psys_event(u8 event_type)
+{
+	return event_type < ARRAY_SIZE(convert_event_sp_to_host_domain) &&
+	       convert_event_sp_to_host_domain[event_type];
+}
+
 int
 ia_css_dequeue_psys_event(struct ia_css_event *event)
 {
@@ -3887,6 +3893,10 @@ ia_css_dequeue_psys_event(struct ia_css_event *event)
 	 * contains the sp event type. This is converted to a host enum.
 	 * TODO: can this enum conversion be eliminated
 	 */
+	if (!ia_css_is_valid_psys_event(payload[0])) {
+		IA_CSS_ERROR("Invalid PSYS event type %u", payload[0]);
+		return -EPROTO;
+	}
 	event->type = convert_event_sp_to_host_domain[payload[0]];
 	/* Some sane default values since not all events use all fields. */
 	event->pipe = NULL;
@@ -3920,6 +3930,10 @@ ia_css_dequeue_psys_event(struct ia_css_event *event)
 		}
 		ia_css_bufq_enqueue_psys_event(
 		    IA_CSS_PSYS_SW_EVENT_EVENT_DEQUEUED, 0, 0, 0);
+		if (!ia_css_is_valid_psys_event(payload[0])) {
+			IA_CSS_ERROR("Invalid PSYS event type %u", payload[0]);
+			return -EPROTO;
+		}
 		event->type = convert_event_sp_to_host_domain[payload[0]];
 		/* It's a timer */
 		if (event->type == IA_CSS_EVENT_TYPE_TIMER) {

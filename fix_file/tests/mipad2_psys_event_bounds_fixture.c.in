@@ -1,0 +1,169 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Actual decoder/caller bodies inserted from pinned kernel sources. Only device,
+ * queue transport, logging and buffer-delivery dependencies below are stubs. */
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint32_t clock_value_t;
+#define BIT(n) (1U << (n))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define CHECK(c) do { if (!(c)) { fprintf(stderr,"CHECK %d: %s\n",__LINE__,#c); exit(2); } } while (0)
+@SP_ENUM@
+@HOST_ENUM@
+@WARNING_ENUM@
+enum ia_css_pipe_id { PIPE_DUMMY };
+enum mipi_port_id { MIPI_PORT0_ID };
+#define IA_CSS_PIPE_MODE_CAPTURE 1
+struct ia_css_pipe;
+struct ia_css_stream { unsigned int num_pipes; struct ia_css_pipe **pipes; };
+struct ia_css_pipe { struct { int mode; } config; struct ia_css_stream *stream; int pipeline; };
+@EVENT_STRUCT@
+static unsigned int errors, warnings, acknowledgments, dequeues, deliveries, recoveries, device_errors;
+static bool running;
+static u32 queue_data[4];
+static unsigned int queue_length, queue_index;
+static struct ia_css_pipe pipe;
+static struct ia_css_pipe *pipes[] = { &pipe };
+static struct ia_css_stream stream = { 1, pipes };
+static void fake_log(const char *format, ...) { (void)format; }
+#define IA_CSS_LOG(...) fake_log(__VA_ARGS__)
+#define IA_CSS_LEAVE(...) fake_log(__VA_ARGS__)
+#define IA_CSS_ERROR(...) do { errors++; fake_log(__VA_ARGS__); } while (0)
+#define IA_CSS_WARNING(...) do { warnings++; fake_log(__VA_ARGS__); } while (0)
+#define IA_CSS_DEBUG_TRACE_PRIVATE 0
+#define ia_css_debug_dtrace(level,...) fake_log(__VA_ARGS__)
+@EVENT_DECODE@
+static bool sh_css_sp_is_running(void) { return running; }
+static int ia_css_bufq_dequeue_psys_event(u8 *payload)
+{
+ dequeues++;
+ if (queue_index == queue_length) return -ENODATA;
+ ia_css_event_decode(queue_data[queue_index++],payload);
+ return 0;
+}
+#define IA_CSS_PSYS_SW_EVENT_EVENT_DEQUEUED 1
+static void ia_css_bufq_enqueue_psys_event(int type,int a,int b,int c)
+{ (void)type; (void)a; (void)b; (void)c; acknowledgments++; }
+static struct ia_css_pipe *find_pipe_by_num(u8 number) { (void)number; return &pipe; }
+static int ia_css_pipeline_get_fw_from_stage(int *p,u32 stage,u32 *handle)
+{ (void)p; *handle=stage; return 0; }
+@TABLE@
+@HELPER@
+@DEQUEUE_BASELINE@
+@DEQUEUE_CANDIDATE@
+static int (*selected_dequeue)(struct ia_css_event *) = candidate_dequeue;
+static int ia_css_dequeue_psys_event(struct ia_css_event *event) { return selected_dequeue(event); }
+enum atomisp_input_stream_id { STREAM_MAIN };
+struct atomisp_css_event { struct ia_css_event event; int pipe; };
+struct atomisp_device { int mutex, asd, assert_recovery_work; void *dev; };
+static void *system_long_wq;
+#define lockdep_assert_held(p) ((void)(p))
+static void fake_dev_log(void *dev,const char *format,...) { (void)dev; (void)format; }
+static void fake_dev_err(void *dev,const char *format,...) { (void)dev; (void)format; device_errors++; }
+#define dev_dbg(dev,...) fake_dev_log(dev,__VA_ARGS__)
+#define dev_warn(dev,...) fake_dev_log(dev,__VA_ARGS__)
+#define dev_err(dev,...) fake_dev_err(dev,__VA_ARGS__)
+static int queue_work(void *queue,int *work) { (void)queue; (void)work; recoveries++; return 1; }
+static bool atomisp_css_isr_get_stream_id(struct ia_css_pipe *p,struct atomisp_device *isp,enum atomisp_input_stream_id *id)
+{ (void)isp; *id=STREAM_MAIN; return p != NULL; }
+static void atomisp_css_temp_pipe_to_pipe_id(int *asd,struct atomisp_css_event *e) { (void)asd; e->pipe=3; }
+enum { IA_CSS_BUFFER_TYPE_OUTPUT_FRAME,IA_CSS_BUFFER_TYPE_SEC_OUTPUT_FRAME,IA_CSS_BUFFER_TYPE_3A_STATISTICS,
+ IA_CSS_BUFFER_TYPE_METADATA,IA_CSS_BUFFER_TYPE_VF_OUTPUT_FRAME,IA_CSS_BUFFER_TYPE_SEC_VF_OUTPUT_FRAME,IA_CSS_BUFFER_TYPE_DIS_STATISTICS };
+static void atomisp_buf_done(int *asd,int a,int type,int p,bool valid,enum atomisp_input_stream_id id)
+{ (void)asd; (void)a; (void)type; (void)p; (void)valid; (void)id; deliveries++; }
+@CALLER_BASELINE@
+@CALLER_CANDIDATE@
+static u32 wire(unsigned int type,unsigned int a,unsigned int b,unsigned int c)
+{ return (u32)type|((u32)a<<8)|((u32)b<<16)|((u32)c<<24); }
+static void reset(void)
+{
+ errors=warnings=acknowledgments=dequeues=deliveries=recoveries=device_errors=0;
+ queue_length=queue_index=0; running=true; memset(queue_data,0,sizeof(queue_data));
+ pipe.config.mode=IA_CSS_PIPE_MODE_CAPTURE; pipe.stream=&stream;
+}
+static void push(u32 value) { CHECK(queue_length<ARRAY_SIZE(queue_data)); queue_data[queue_length++]=value; }
+struct observation {
+ int ret; unsigned int errors,warnings,acks,dequeues,consumed; struct ia_css_event event;
+};
+static struct observation observe(int (*fn)(struct ia_css_event *),u32 first,u32 second,bool two)
+{
+ struct observation r; memset(&r,0,sizeof(r)); memset(&r.event,0xa5,sizeof(r.event));
+ reset(); push(first); if (two)push(second); r.ret=fn(&r.event);
+ r.errors=errors; r.warnings=warnings; r.acks=acknowledgments; r.dequeues=dequeues; r.consumed=queue_index;
+ return r;
+}
+static void equivalent(u32 first,u32 second,bool two)
+{
+ struct observation a=observe(baseline_dequeue,first,second,two);
+ struct observation b=observe(candidate_dequeue,first,second,two);
+ CHECK(memcmp(&a,&b,sizeof(a))==0);
+}
+static int run_caller(bool candidate,u32 first,u32 second,bool two)
+{
+ struct atomisp_device isp={0}; reset(); push(first); if(two)push(second);
+ selected_dequeue=candidate?candidate_dequeue:baseline_dequeue;
+ return candidate?candidate_isr(&isp):baseline_isr(&isp);
+}
+int main(int argc,char **argv)
+{
+ struct ia_css_event event;
+ unsigned int valid_cases=0,first_invalid=0,second_invalid=0,caller_cases=0,line_cases=0;
+ if(argc==2 && strcmp(argv[1],"old-first-oob")==0) {
+  reset(); push(wire(17,0,0,0)); return baseline_dequeue(&event);
+ }
+ if(argc==2 && strcmp(argv[1],"old-second-oob")==0) {
+  reset(); push(wire(SH_CSS_SP_EVENT_TIMER,1,2,3)); push(wire(17,0,0,0)); return baseline_dequeue(&event);
+ }
+ CHECK(SH_CSS_SP_EVENT_NR_OF_TYPES==16 && ARRAY_SIZE(convert_event_sp_to_host_domain)==17);
+ for(unsigned int type=0;type<256;type++) {
+  CHECK(ia_css_is_valid_psys_event((u8)type)==(type<16));
+  reset(); push(wire(type,0,1,0x23));
+  if(type==SH_CSS_SP_EVENT_TIMER)push(wire(SH_CSS_SP_EVENT_TIMER,2,3,4));
+  int ret=candidate_dequeue(&event);
+  if(type>=16) { CHECK(ret==-EPROTO && acknowledgments==1 && errors==1); first_invalid++; }
+  else CHECK(ret==0);
+  reset(); push(wire(SH_CSS_SP_EVENT_TIMER,0x34,9,0x12)); push(wire(type,0x78,1,0x56));
+  ret=candidate_dequeue(&event);
+  if(type>=16) { CHECK(ret==-EPROTO && acknowledgments==2 && errors==1); second_invalid++; }
+  else CHECK(ret==0);
+  if(type>=16) {
+   ret=run_caller(true,wire(type,0,0,0),0,false);
+   CHECK(ret==-EPROTO && recoveries==1 && deliveries==0 && device_errors==1); caller_cases++;
+   ret=run_caller(true,wire(SH_CSS_SP_EVENT_TIMER,1,2,3),wire(type,0,0,0),true);
+   CHECK(ret==-EPROTO && recoveries==1 && deliveries==0 && device_errors==1 && acknowledgments==2); caller_cases++;
+  }
+ }
+ const unsigned int patterns[][3]={{0,0,0},{255,255,255},{255,1,0x23},{1,2,3}};
+ for(unsigned int type=0;type<16;type++)for(unsigned int k=0;k<ARRAY_SIZE(patterns);k++) {
+  u32 v=wire(type,patterns[k][0],patterns[k][1],patterns[k][2]);
+  equivalent(v,wire(SH_CSS_SP_EVENT_TIMER,0x78,3,0x56),type==SH_CSS_SP_EVENT_TIMER); valid_cases++;
+  equivalent(wire(SH_CSS_SP_EVENT_TIMER,0x34,9,0x12),v,true); valid_cases++;
+  int a=run_caller(false,v,wire(SH_CSS_SP_EVENT_TIMER,2,3,4),type==SH_CSS_SP_EVENT_TIMER);
+  unsigned int old_deliveries=deliveries,old_recoveries=recoveries,old_acks=acknowledgments;
+  int c=run_caller(true,v,wire(SH_CSS_SP_EVENT_TIMER,2,3,4),type==SH_CSS_SP_EVENT_TIMER);
+  CHECK(a==c && old_deliveries==deliveries && old_recoveries==recoveries && old_acks==acknowledgments); caller_cases++;
+ }
+ for(unsigned int module=0;module<2;module++)for(unsigned int line=0;line<65536;line++) {
+  u32 v=wire(SH_CSS_SP_EVENT_FW_ASSERT,module?255:0,line>>8,line&255);
+  equivalent(v,0,false);
+  CHECK(candidate_dequeue(NULL)==-EINVAL);
+  struct observation r=observe(candidate_dequeue,v,0,false);
+  CHECK(r.ret==0 && r.event.type==IA_CSS_EVENT_TYPE_FW_ASSERT && r.event.fw_assert_module_id==(module?255:0) && r.event.fw_assert_line_no==line);
+  line_cases++;
+ }
+ reset(); running=false; CHECK(candidate_dequeue(&event)==-EBUSY && acknowledgments==0);
+ reset(); CHECK(candidate_dequeue(&event)==-ENODATA && acknowledgments==0);
+ equivalent(wire(SH_CSS_SP_EVENT_TIMER,1,2,3),0,false);
+ CHECK(run_caller(true,wire(SH_CSS_SP_EVENT_FW_ASSERT,255,1,0x23),0,false)==-EINVAL && recoveries==1 && deliveries==0);
+ struct observation timer=observe(candidate_dequeue,wire(SH_CSS_SP_EVENT_TIMER,0x34,9,0x12),wire(SH_CSS_SP_EVENT_TIMER,0x78,10,0x56),true);
+ CHECK(timer.ret==0 && timer.event.timer_data==0x56781234U && timer.event.timer_code==9 && timer.event.timer_subcode==10 && timer.acks==2);
+ printf("{\"invalid_first_rejected\":%u,\"invalid_second_TIMER_rejected\":%u,\"sampled_valid_decode_equivalence_cases\":%u,\"FW_ASSERT_line_module_equivalence_cases\":%u,\"caller_recovery_and_valid_cases\":%u,\"FW_ASSERT_255_291_preserved\":true,\"sanitizer_matrix_pass\":true}\n",first_invalid,second_invalid,valid_cases,line_cases,caller_cases);
+ return 0;
+}

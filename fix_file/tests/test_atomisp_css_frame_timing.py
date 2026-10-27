@@ -24,10 +24,15 @@ class TimingTrace(unittest.TestCase):
   for field in ['eof_tick','start_tick','end_tick']:self.assertIn('__field(u32, '+field+')',e)
   self.assertNotIn('__string',e);self.assertNotIn('__array',e);self.assertNotIn('320',CALL_BLOCK);self.assertNotIn('ktime_get',CALL_BLOCK)
 class CaptureFaultGate(unittest.TestCase):
- def test_all_negative_controls(self):self.assertEqual(gate.selftest()['tests'],22)
+ def test_all_negative_controls(self):self.assertEqual(gate.selftest()['tests'],24)
  def test_corrupt_source_without_kernel_warning_fails(self):self.assertFalse(gate.check('boot\n','boot\n',errored_source_frames=1)['pass_gate'])
  def test_FWassert_is_not_a_successful_decode(self):
   r=gate.check('boot\n','boot\nISP reports FW_ASSERT event! fw_assert_module_id 255 fw_assert_line_no 291\n',errored_source_frames=0);self.assertFalse(r['pass_gate']);self.assertEqual(r['new_fault_counts']['FW_ASSERT'],1)
+ def test_invalid_psys_protocol_is_fatal(self):
+  for text in ['Invalid PSYS event type 255','ISP returned an invalid PSYS event type']:
+   r=gate.check('boot\n','boot\n'+text+'\n',errored_source_frames=0);self.assertFalse(r['pass_gate']);self.assertEqual(r['new_fault_counts']['CSS_queue'],1)
+ def test_historical_protocol_error_is_not_new(self):
+  before='boot\nInvalid PSYS event type 255\n';r=gate.check(before,before+'ready\n',errored_source_frames=0);self.assertTrue(r['pass_gate']);self.assertEqual(r['new_fault_counts']['CSS_queue'],0)
  def test_command_line_failure_and_clean_exit(self):
   with tempfile.TemporaryDirectory() as d:
    a=Path(d)/'before';b=Path(d)/'after';a.write_text('boot\n');b.write_text('boot\nFW_ASSERT event!\n');script=Path(__file__).with_name('mipad2_capture_fault_gate.py')

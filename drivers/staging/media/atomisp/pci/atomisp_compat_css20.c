@@ -3214,10 +3214,11 @@ int atomisp_css_isr_thread(struct atomisp_device *isp)
 {
 	enum atomisp_input_stream_id stream_id = 0;
 	struct atomisp_css_event current_event;
+	int ret;
 
 	lockdep_assert_held(&isp->mutex);
 
-	while (!ia_css_dequeue_psys_event(&current_event.event)) {
+	while (!(ret = ia_css_dequeue_psys_event(&current_event.event))) {
 		if (current_event.event.type ==
 		    IA_CSS_EVENT_TYPE_FW_ASSERT) {
 			/*
@@ -3306,6 +3307,12 @@ int atomisp_css_isr_thread(struct atomisp_device *isp)
 				current_event.event.type);
 			break;
 		}
+	}
+
+	if (ret == -EPROTO) {
+		dev_err(isp->dev, "ISP returned an invalid PSYS event type\n");
+		queue_work(system_long_wq, &isp->assert_recovery_work);
+		return ret;
 	}
 
 	return 0;
