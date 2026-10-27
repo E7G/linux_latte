@@ -55,6 +55,49 @@ TRACE_EVENT(atomisp_buffer_done,
 		      (unsigned long long)__entry->timestamp_ns, __entry->bytesused)
 );
 
+/*
+ * Raw firmware timing for the exact dequeued image buffer. These 32-bit CSS
+ * clock ticks are not nanoseconds; consumers must establish clock rate, wrap
+ * and stream-reset behavior before converting them. No V4L2 timestamp changes.
+ * Only OUTPUT_FRAME and VF_OUTPUT_FRAME carry the EOF field in the CSS API.
+ */
+TRACE_EVENT(atomisp_css_frame_timing,
+	    TP_PROTO(int minor, unsigned int index, unsigned int buf_type,
+		     unsigned int exp_id, unsigned int isp_config_id,
+		     u32 eof_tick, u32 start_tick, u32 end_tick),
+
+	    TP_ARGS(minor, index, buf_type, exp_id, isp_config_id,
+		    eof_tick, start_tick, end_tick),
+
+	    TP_STRUCT__entry(
+		__field(int, minor)
+		__field(unsigned int, index)
+		__field(unsigned int, buf_type)
+		__field(unsigned int, exp_id)
+		__field(unsigned int, isp_config_id)
+		__field(u32, eof_tick)
+		__field(u32, start_tick)
+		__field(u32, end_tick)
+	    ),
+
+	    TP_fast_assign(
+		__entry->minor = minor;
+		__entry->index = index;
+		__entry->buf_type = buf_type;
+		__entry->exp_id = exp_id;
+		__entry->isp_config_id = isp_config_id;
+		__entry->eof_tick = eof_tick;
+		__entry->start_tick = start_tick;
+		__entry->end_tick = end_tick;
+	    ),
+
+	    TP_printk("minor=%d index=%u buf_type=%u exp_id=%u isp_config_id=%u "
+		      "eof_tick=%u start_tick=%u end_tick=%u",
+		      __entry->minor, __entry->index, __entry->buf_type,
+		      __entry->exp_id, __entry->isp_config_id, __entry->eof_tick,
+		      __entry->start_tick, __entry->end_tick)
+);
+
 TRACE_EVENT(camera_meminfo,
 
 	    TP_PROTO(const char *name, int uptr_size, int counter, int sys_size,

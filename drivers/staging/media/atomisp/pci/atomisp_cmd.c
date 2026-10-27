@@ -864,6 +864,14 @@ void atomisp_buf_done(struct atomisp_sub_device *asd, int error,
 	}
 	if (frame) {
 		spin_lock_irqsave(&pipe->irq_lock, irqflags);
+		if (buf_type == IA_CSS_BUFFER_TYPE_OUTPUT_FRAME ||
+		    buf_type == IA_CSS_BUFFER_TYPE_VF_OUTPUT_FRAME)
+			trace_atomisp_css_frame_timing(pipe->vdev.minor,
+				frame->vb.vb2_buf.index, buf_type, frame->exp_id,
+				frame->isp_config_id,
+				buffer.css_buffer.isys_eof_clock_tick.ticks,
+				buffer.css_buffer.timing_data.start_timer_value,
+				buffer.css_buffer.timing_data.end_timer_value);
 		atomisp_buffer_done(frame, error ? VB2_BUF_STATE_ERROR : VB2_BUF_STATE_DONE);
 		/*
 		 * Buffered-sensor CSS disables receiver SOF interrupts. Count
