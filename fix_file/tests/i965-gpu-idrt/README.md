@@ -88,7 +88,7 @@ command-path coverage, not GPU completion, sensor payload identity or cadence.
   `debug:` boot line was separately corrected as a diagnostic false positive,
   without overwriting the original receipt or hiding a hardware fault.
 
-Remaining: counterbalanced repeats, moving-input quality, post-camera suspend
+Remaining: counterbalanced repeats, additional moving scenes, post-camera suspend
 and record, long recordings, thermal/battery/power behavior and broad OEM
 comparison. Ordinary CPU constant-data upload waits can remain or move later;
 do not infer that every encoder latency is fixed from the cadence results.
@@ -107,3 +107,67 @@ Cherryview/i915 before allocating its own BOs. The GPU submission and 5-second
 completion wait are checked, followed by ordinary synchronized CPU readback.
 It neither installs a driver nor changes cache policy. No hardware test is run
 by the Python offline tests or source preparation commands.
+
+## Native moving-input identity observation
+
+`strided_input.py` validates actual native 1920x1080 NV12 visible plane bytes
+using explicit GstVideoMeta offsets/strides, not an assumed tightly packed
+allocation. The observed 3,133,440-byte allocation contains a full 3,110,400-byte
+visible image: Y at 0, UV at 2,088,960, both strides 1,920. Padding is hashed
+separately, never zeroed, discarded from the storage digest, or modified.
+Invalid dimensions, bounds, overlap, plane count, strides, incomplete frame
+counts, static fixtures and changed input intervals are rejected.
+
+Live generators have a real, measured first PTS. Validation checks every
+original timestamp against that origin plus the exact frame-count cadence.
+Relative coordinates are used only when comparing separate runs' hash
+sequences; no GstBuffer timestamp is rewritten. Absolute origins are retained.
+
+`input_probe.c` provides a private read-only C pad probe for an **owned**
+GstPipeline. The caller supplies its actual PyGObject capsule pointer, not a
+guessed buffer address. The probe retains object references, always forwards
+buffers, uses ordinary GST_MAP_READ, copies the complete mapped allocation
+once into bounded private CPU scratch, and hashes all visible and storage
+bytes. It removes its probe and frees scratch/references only after NULL.
+No preload, global hook, raw-image persistence or synchronization bypass.
+
+Why native observation: converting a mapped 3 MB buffer to Python bytes took
+about 116 ms per access on this device. Repeated reads directly from the
+mapped allocation also cost more than hashing cacheable CPU memory. The
+complete ordinary copy avoids repeated mapped-memory reads; it does not
+change driver cache policy. This instrumentation is still intentionally
+expensive and **must not be used as a real-time recording FPS benchmark**.
+
+```sh
+python3 -m unittest -v test_strided_input
+python3 -O -m unittest -v test_strided_input
+
+# Additional native-observer dependencies: GStreamer/video development headers,
+# pkg-config, OpenSSL development files, PyGObject and GStreamer introspection.
+cc -std=gnu11 -O2 -fPIC -shared -Wall -Wextra -Werror input_probe.c -o "$NEW_BUILD/libinput_probe.so" $(pkg-config --cflags --libs gstreamer-1.0 gstreamer-video-1.0 openssl)
+python3 test_input_probe.py --library "$NEW_BUILD/libinput_probe.so"
+python3 -O test_input_probe.py --library "$NEW_BUILD/libinput_probe.so"
+```
+
+Thirty-three strict Python tests also run under `-O`. The native suite checks
+32 varied layouts against an independent Python hash implementation, rejects
+invalid layouts before reading, preserves data/canaries, and checks owned
+GObject attach/NULL-detach without streaming or opening a GPU. Normal and
+NDEBUG/UBSan builds are tested separately; no installed file is changed.
+
+Additional actual-device evidence: two generated moving-ball runs, 180 frames
+each, native 1080p NV12, declared 30/1 input cadence, same private driver and
+15 Mbps/ref1/b0/CBR settings, GPU IDRT OFF versus ON. All 180 input visible
+hashes were distinct in each run; visible pixels, complete allocation bytes
+including padding, decoded-frame sequences and extracted H.264 NAL streams
+were identical between runs. All 180 ON frames used the GPU path with zero
+fallback. Original source origins differed naturally; relative input cadence
+and muxed timestamps were verified, with no buffer retiming.
+
+Both actors took about 39 seconds because of payload observation, producing
+six seconds of timestamped video. They passed the unchanged 40-second
+diagnostic deadline; this is **quality equivalence, not another live 30 FPS
+camera result, long-recording proof or OEM-parity claim**. Earlier failed
+packed-layout and Python-observer attempts and their partial samples were
+retained. No failed run was overwritten, reclassified, or substituted for the
+successful complete pair. All media and per-frame hash traces remain private.

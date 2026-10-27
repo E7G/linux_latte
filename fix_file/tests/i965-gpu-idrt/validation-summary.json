@@ -20,7 +20,11 @@
     "full_driver_build_pass": true,
     "VA_init_ABI": "1_24",
     "ldd_r_pass": true,
-    "preexisting_HEVC_array_bounds_warnings": 1
+    "preexisting_HEVC_array_bounds_warnings": 1,
+    "strided_input_tests": 33,
+    "native_fingerprint_varied_layouts": 32,
+    "native_GObject_attach_NULL_detach_without_streaming": true,
+    "native_normal_and_NDEBUG_UBSan_builds": true
   },
   "hardware": {
     "front_OFF": {
@@ -47,12 +51,36 @@
     "requested_AAC_kbps": 192,
     "owned_BO_full_4096_byte_matches": 16,
     "generated_static_checkers_frames_per_mode": 180,
-    "generated_static_decoded_pixel_and_NAL_identity": true
+    "generated_static_decoded_pixel_and_NAL_identity": true,
+    "generated_moving_input": {
+      "frames_per_mode": 180,
+      "distinct_visible_input_frames_per_mode": 180,
+      "native_size": [
+        1920,
+        1080
+      ],
+      "visible_bytes_per_frame": 3110400,
+      "allocation_bytes_per_frame": 3133440,
+      "visible_and_full_storage_input_identical": true,
+      "decoded_pixel_and_NAL_identity": true,
+      "ON_GPU_uploads": 180,
+      "GPU_fallbacks": 0,
+      "original_absolute_clock_origins_preserved": true,
+      "no_buffer_retiming": true,
+      "wall_seconds_approximate": [
+        39.39,
+        39.3
+      ],
+      "real_time_FPS_qualification": false,
+      "normal_UI_camera_or_audio_substitute": false
+    }
   },
   "default_enabled": false,
   "rebuilt_binary_hardware_tested": false,
   "all_recording_latency_removed": false,
   "full_source_to_MP4_payload_identity_proven": false,
   "Android_or_OEM_parity_proven": false,
-  "raw_media_or_traces_included": false
+  "raw_media_or_traces_included": false,
+  "native_probe_source_SHA256": "5a9b8a33a45361b26abd6e1c12db4dd96e1dc81ddea9d1a545911d5fe994f413",
+  "hardware_native_probe_DSO_SHA256": "6c7039e5598d7a9ecbe9d7eb883ff4f2cacf2b1f157a894a4055efb60f21db92"
 }
