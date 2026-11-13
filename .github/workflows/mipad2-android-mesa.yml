@@ -29,6 +29,13 @@ jobs:
           import os,pathlib
           ndk=pathlib.Path(os.environ['ANDROID_NDK_LATEST_HOME'])
           tools=ndk/'toolchains/llvm/prebuilt/linux-x86_64/bin'
+          pc=pathlib.Path('/tmp/android-pc');pc.mkdir()
+          # NDK supplies Android's real libz.so. Never link a host ELF or a
+          # fallback libz.so.1 into an Android driver.
+          import re
+          header=(ndk/'toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/zlib.h').read_text()
+          version=re.search(r'#define ZLIB_VERSION "([^"]+)"',header).group(1)
+          (pc/'zlib.pc').write_text(f'Name: zlib\nDescription: NDK Android zlib\nVersion: {version}\nLibs: -lz\nCflags:\n')
           s=f'''[binaries]
           c = '{tools}/x86_64-linux-android35-clang'
           cpp = ['{tools}/x86_64-linux-android35-clang++', '-static-libstdc++']
@@ -43,7 +50,7 @@ jobs:
           cpu = 'x86_64'
           endian = 'little'
           [properties]
-          pkg_config_libdir = []
+          pkg_config_libdir = ['/tmp/android-pc']
           needs_exe_wrapper = true
           '''
           pathlib.Path('/tmp/android-cross.ini').write_text(s)
@@ -74,10 +81,18 @@ jobs:
           mkdir candidate
           cp -a /tmp/mesa-stage/usr/lib64 candidate/
           cp /tmp/ndk-version.txt candidate/
+          cp /tmp/mesa-26.1.7/docs/license.rst candidate/MESA-LICENSE.rst
           cp /tmp/mesa-26.1.7/out/meson-logs/meson-log.txt candidate/
           find candidate -type f -name '*.so*' -exec readelf -d {} \; > candidate/ELF-needed.txt
           test -f candidate/lib64/libgallium_dri.so
-          ! strings candidate/lib64/libgallium_dri.so | grep -qx 'crocus: driver missing'
+          python3 - <<'PY'
+          import pathlib,subprocess
+          p=pathlib.Path('candidate/lib64/libgallium_dri.so')
+          assert b'crocus: driver missing\0' not in p.read_bytes()
+          dynamic=subprocess.check_output(['readelf','-d',str(p)],text=True)
+          assert '[libz.so]' in dynamic and '[libz.so.1]' not in dynamic
+          assert 'libc.so.6' not in dynamic
+          PY
           printf '%s\n' 'Mesa 26.1.7 Crocus, Android Bionic x86_64 API35. Build only; tablet loading/boot not yet verified.' > candidate/VALIDATION.txt
           (cd candidate && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
           tar --zstd -cf android-crocus-candidate.tar.zst candidate
