@@ -1,0 +1,80 @@
+name: Build MiPad2 Android pacing compatibility
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths: [.github/workflows/mipad2-android-presenter.yml]
+permissions:
+  contents: read
+jobs:
+  presenter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: denialwm/droidloom
+          ref: 69956ed5d6a24c4a2f494c151825dcc1dc832380
+          persist-credentials: false
+      - name: Prepare and patch optional timeline selection
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgbm-dev libdrm-dev libxkbcommon-dev libudev-dev
+          rustup toolchain install 1.93.0 --profile minimal
+          mkdir evidence
+          git rev-parse HEAD > evidence/source-commit.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('graphics/droidloom-wayland/src/main.rs');s=p.read_text()
+          old='        frame_timeline_manager: globals.bind(&qh, 1..=1, ()).ok(),'
+          assert s.count(old)==1
+          s=s.replace(old,'''        // Exact timeline is optional. Keep standard Wayland pacing and
+                  // explicit GPU sync intact on hosts with incompatible grants.
+                  frame_timeline_manager: if exact_timeline_enabled(
+                      env::var("DROIDLOOM_FRAME_TIMELINE").ok().as_deref(),
+                  ) {
+                      globals.bind(&qh, 1..=1, ()).ok()
+                  } else {
+                      eprintln!("Droidloom pacing: standard Wayland (exact timeline disabled)");
+                      None
+                  },''')
+          s+='''
+          fn exact_timeline_enabled(policy: Option<&str>) -> bool {
+              policy != Some("off")
+          }
+
+          #[cfg(test)]
+          mod mipad2_timeline_policy_tests {
+              #[test]
+              fn preserves_default_and_requires_explicit_opt_out() {
+                  assert!(super::exact_timeline_enabled(None));
+                  assert!(super::exact_timeline_enabled(Some("auto")));
+                  assert!(super::exact_timeline_enabled(Some("on")));
+                  assert!(!super::exact_timeline_enabled(Some("off")));
+              }
+          }
+          '''
+          p.write_text(s)
+          PY
+          rustfmt --edition 2024 graphics/droidloom-wayland/src/main.rs
+          git diff --check
+          git diff > evidence/presenter.patch
+      - name: Test and build presenter
+        run: |
+          set -eu
+          cargo test --locked -j2 -p droidloom-wayland
+          cargo build --locked --release -j2 -p droidloom-wayland
+          mkdir -p candidate
+          cp target/release/droidloom-wayland candidate/
+          cp -a evidence candidate/
+          cp LICENSE candidate/
+          readelf -d candidate/droidloom-wayland > candidate/ELF-needed.txt
+          (cd candidate && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          tar --zstd -cf android-presenter-candidate.tar.zst candidate
+          sha256sum android-presenter-candidate.tar.zst > android-presenter-candidate.tar.zst.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipad2-android-presenter-${{ github.sha }}
+          path: android-presenter-candidate.tar.zst*
+          retention-days: 14
