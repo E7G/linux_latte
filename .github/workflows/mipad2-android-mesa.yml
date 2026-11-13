@@ -17,7 +17,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y ninja-build pkg-config python3-venv bison flex curl xz-utils
+          sudo apt-get install -y ninja-build pkg-config python3-venv bison flex curl xz-utils llvm-18-dev libclang-18-dev libclang-cpp18-dev libllvmspirvlib-18-dev libclc-18-dev spirv-tools libzstd-dev zlib1g-dev libexpat1-dev
           python3 -m venv /tmp/mesa-venv
           /tmp/mesa-venv/bin/pip install 'meson==1.8.5' 'Mako==1.3.10' 'PyYAML==6.0.3' 'packaging==25.0'
           echo /tmp/mesa-venv/bin >> "$GITHUB_PATH"
@@ -49,12 +49,22 @@ jobs:
           pathlib.Path('/tmp/android-cross.ini').write_text(s)
           pathlib.Path('/tmp/ndk-version.txt').write_text((ndk/'source.properties').read_text())
           PY
+      - name: Build source-matched native shader compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/mesa-26.1.7
+          export PATH=/usr/lib/llvm-18/bin:$PATH
+          meson setup native-out --prefix /tmp/mesa-native-tools --buildtype release -Dplatforms= -Dgallium-drivers= -Dvulkan-drivers= -Dmesa-clc=enabled -Dinstall-mesa-clc=true -Dllvm=enabled -Dshared-llvm=enabled -Dbuild-tests=false
+          ninja -C native-out -j2
+          meson install -C native-out
+          echo /tmp/mesa-native-tools/bin >> "$GITHUB_PATH"
       - name: Build actual Crocus implementation
         shell: bash
         run: |
           set -euo pipefail
           cd /tmp/mesa-26.1.7
-          meson setup out --cross-file /tmp/android-cross.ini --prefix /usr --libdir lib64 --buildtype release -Dplatforms=android -Dplatform-sdk-version=35 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers=crocus -Dvulkan-drivers= -Dllvm=disabled -Dglx=disabled -Dglvnd=disabled -Degl=enabled -Dgles1=enabled -Dgles2=enabled -Dgbm=enabled -Dvideo-codecs= -Dgallium-va=disabled -Dbuild-tests=false -Dallow-fallback-for=libdrm -Dzstd=disabled
+          meson setup out --cross-file /tmp/android-cross.ini --prefix /usr --libdir lib64 --buildtype release -Dplatforms=android -Dplatform-sdk-version=35 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers=crocus -Dvulkan-drivers= -Dllvm=disabled -Dmesa-clc=system -Dexpat=disabled -Dglx=disabled -Dglvnd=disabled -Degl=enabled -Dgles1=enabled -Dgles2=enabled -Dgbm=enabled -Dvideo-codecs= -Dgallium-va=disabled -Dbuild-tests=false -Dallow-fallback-for=libdrm -Dzstd=disabled
           ninja -C out -j2
           DESTDIR=/tmp/mesa-stage meson install -C out
       - name: Verify and package noninstalled candidate
@@ -81,5 +91,7 @@ jobs:
         if: always()
         with:
           name: android-crocus-build-evidence-${{ github.sha }}
-          path: /tmp/mesa-26.1.7/out/meson-logs/
+          path: |
+            /tmp/mesa-26.1.7/out/meson-logs/
+            /tmp/mesa-26.1.7/native-out/meson-logs/
           retention-days: 7
