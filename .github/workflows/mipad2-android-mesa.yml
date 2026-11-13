@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           cd /tmp/mesa-26.1.7
-          meson setup out --cross-file /tmp/android-cross.ini --prefix /usr --libdir lib64 --buildtype release -Dplatforms=android -Dplatform-sdk-version=35 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers=crocus -Dvulkan-drivers= -Dllvm=disabled -Dmesa-clc=system -Dexpat=disabled -Dglx=disabled -Dglvnd=disabled -Degl=enabled -Dgles1=enabled -Dgles2=enabled -Dgbm=enabled -Dvideo-codecs= -Dgallium-va=disabled -Dbuild-tests=false -Dallow-fallback-for=libdrm -Dzstd=disabled
+          meson setup out --cross-file /tmp/android-cross.ini --prefix /usr --libdir lib64 --buildtype release -Dplatforms=android -Dplatform-sdk-version=35 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers=crocus -Dvulkan-drivers= -Dllvm=disabled -Dmesa-clc=system -Dspirv-tools=disabled -Dexpat=disabled -Dglx=disabled -Dglvnd=disabled -Degl=enabled -Dgles1=enabled -Dgles2=enabled -Dgbm=enabled -Dvideo-codecs= -Dgallium-va=disabled -Dbuild-tests=false -Dallow-fallback-for=libdrm -Dzstd=disabled
           ninja -C out -j2
           DESTDIR=/tmp/mesa-stage meson install -C out
       - name: Verify and package noninstalled candidate
