@@ -26,12 +26,16 @@ def main():
     build=args.build.resolve();modules=args.modules.resolve();output=args.output.resolve()
     if output.exists():raise RuntimeError('Output already exists')
     release=(build/'include/config/kernel.release').read_text().strip()
-    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily1'):raise RuntimeError('Unexpected release')
+    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily2'):raise RuntimeError('Unexpected release')
     config=(build/'.config').read_text()
     if 'CONFIG_EROFS_FS=m\n' not in config:raise RuntimeError('EROFS was not built as a demand-loaded module')
+    for option in ['NFT_NAT', 'NFT_MASQ']:
+        if f'CONFIG_{option}=m\n' not in config:raise RuntimeError('Missing Android networking option: '+option)
     objects=sorted((modules/'lib/modules'/release).rglob('*.ko*'))
     objects=[p for p in objects if p.name.endswith(('.ko','.ko.zst','.ko.xz','.ko.gz'))]
     if len(objects)<32 or not any(p.name.startswith('erofs.ko') for p in objects):raise RuntimeError('Missing matching modules')
+    for name in ['nft_chain_nat.ko', 'nft_masq.ko']:
+        if not any(p.name == name or p.name.startswith(name+'.') for p in objects):raise RuntimeError('Missing Android networking module: '+name)
     cert=build/'certs/signing_key.x509';negative_control=False
     with tempfile.TemporaryDirectory(prefix='mipad2-cms-') as tmp:
         tmp=Path(tmp);pem=tmp/'certificate.pem'
