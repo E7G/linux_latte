@@ -1,0 +1,85 @@
+name: Build Cherryview Android Crocus
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths: [.github/workflows/mipad2-android-mesa.yml]
+permissions:
+  contents: read
+jobs:
+  mesa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare source and NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config python3-venv bison flex curl xz-utils
+          python3 -m venv /tmp/mesa-venv
+          /tmp/mesa-venv/bin/pip install 'meson==1.8.5' 'Mako==1.3.10' 'PyYAML==6.0.3' 'packaging==25.0'
+          echo /tmp/mesa-venv/bin >> "$GITHUB_PATH"
+          curl --retry 3 -fL https://archive.mesa3d.org/mesa-26.1.7.tar.xz -o /tmp/mesa.tar.xz
+          echo '25e0a669e6638c3563e7be32a0a09f1888317e6eed0d047dc41d49dc8de26c7d  /tmp/mesa.tar.xz' | sha256sum -c -
+          tar -xf /tmp/mesa.tar.xz -C /tmp
+          test -d "$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64"
+          python3 - <<'PY'
+          import os,pathlib
+          ndk=pathlib.Path(os.environ['ANDROID_NDK_LATEST_HOME'])
+          tools=ndk/'toolchains/llvm/prebuilt/linux-x86_64/bin'
+          s=f'''[binaries]
+          c = '{tools}/x86_64-linux-android35-clang'
+          cpp = ['{tools}/x86_64-linux-android35-clang++', '-static-libstdc++']
+          ar = '{tools}/llvm-ar'
+          strip = '{tools}/llvm-strip'
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          pkg-config = 'pkg-config'
+          [host_machine]
+          system = 'android'
+          cpu_family = 'x86_64'
+          cpu = 'x86_64'
+          endian = 'little'
+          [properties]
+          pkg_config_libdir = []
+          needs_exe_wrapper = true
+          '''
+          pathlib.Path('/tmp/android-cross.ini').write_text(s)
+          pathlib.Path('/tmp/ndk-version.txt').write_text((ndk/'source.properties').read_text())
+          PY
+      - name: Build actual Crocus implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/mesa-26.1.7
+          meson setup out --cross-file /tmp/android-cross.ini --prefix /usr --libdir lib64 --buildtype release -Dplatforms=android -Dplatform-sdk-version=35 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers=crocus -Dvulkan-drivers= -Dllvm=disabled -Dglx=disabled -Dglvnd=disabled -Degl=enabled -Dgles1=enabled -Dgles2=enabled -Dgbm=enabled -Dvideo-codecs= -Dgallium-va=disabled -Dbuild-tests=false --allow-fallback-for=libdrm,expat,zlib,zstd
+          ninja -C out -j2
+          DESTDIR=/tmp/mesa-stage meson install -C out
+      - name: Verify and package noninstalled candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir candidate
+          cp -a /tmp/mesa-stage/usr/lib64 candidate/
+          cp /tmp/ndk-version.txt candidate/
+          cp /tmp/mesa-26.1.7/out/meson-logs/meson-log.txt candidate/
+          find candidate -type f -name '*.so*' -exec readelf -d {} \; > candidate/ELF-needed.txt
+          test -f candidate/lib64/libgallium_dri.so
+          ! strings candidate/lib64/libgallium_dri.so | grep -qx 'crocus: driver missing'
+          printf '%s\n' 'Mesa 26.1.7 Crocus, Android Bionic x86_64 API35. Build only; tablet loading/boot not yet verified.' > candidate/VALIDATION.txt
+          (cd candidate && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          tar --zstd -cf android-crocus-candidate.tar.zst candidate
+          sha256sum android-crocus-candidate.tar.zst > android-crocus-candidate.tar.zst.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-crocus-${{ github.sha }}
+          path: android-crocus-candidate.tar.zst*
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-crocus-build-evidence-${{ github.sha }}
+          path: /tmp/mesa-26.1.7/out/meson-logs/
+          retention-days: 7
