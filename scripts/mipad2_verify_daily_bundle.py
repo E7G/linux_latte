@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Build-only candidate verification. Never installs or labels a hang fixed."""
+from pathlib import Path
+import argparse,hashlib,json,shutil,subprocess,tempfile
+
+MARKER=b'~Module signature appended~\n'
+
+def signed_parts(data):
+    if not data.endswith(MARKER) or len(data)<len(MARKER)+12:
+        raise ValueError('Missing module signature trailer')
+    trailer=data[-len(MARKER)-12:-len(MARKER)]
+    length=int.from_bytes(trailer[8:12],'big')
+    if trailer[2]!=2 or trailer[3]!=0 or trailer[4]!=0 or any(trailer[5:8]) or length<=0 or length>len(data)-len(MARKER)-12:
+        raise ValueError('Invalid PKCS#7 module signature trailer')
+    end=len(data)-len(MARKER)-12
+    return data[:end-length],data[end-length:end]
+
+def sha(path):
+    h=hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        while part:=stream.read(1024*1024):h.update(part)
+    return h.hexdigest()
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--build',type=Path,required=True);parser.add_argument('--modules',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--commit',required=True);args=parser.parse_args()
+    build=args.build.resolve();modules=args.modules.resolve();output=args.output.resolve()
+    if output.exists():raise RuntimeError('Output already exists')
+    release=(build/'include/config/kernel.release').read_text().strip()
+    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily1'):raise RuntimeError('Unexpected release')
+    config=(build/'.config').read_text()
+    if 'CONFIG_EROFS_FS=m\n' not in config:raise RuntimeError('EROFS was not built as a demand-loaded module')
+    objects=sorted((modules/'lib/modules'/release).rglob('*.ko*'))
+    objects=[p for p in objects if p.name.endswith(('.ko','.ko.zst','.ko.xz','.ko.gz'))]
+    if len(objects)<32 or not any(p.name.startswith('erofs.ko') for p in objects):raise RuntimeError('Missing matching modules')
+    cert=build/'certs/signing_key.x509';negative_control=False
+    with tempfile.TemporaryDirectory(prefix='mipad2-cms-') as tmp:
+        tmp=Path(tmp);pem=tmp/'certificate.pem'
+        subprocess.run(['openssl','x509','-inform','DER','-in',str(cert),'-out',str(pem)],check=True)
+        for path in objects:
+            value=subprocess.check_output(['modinfo','-F','vermagic',str(path)],text=True).split()[0]
+            if value!=release:raise RuntimeError('Module vermagic mismatch')
+            if path.suffix=='.zst':data=subprocess.check_output(['zstd','-q','-d','-c',str(path)])
+            elif path.suffix=='.xz':
+                import lzma;data=lzma.decompress(path.read_bytes())
+            elif path.suffix=='.gz':
+                import gzip;data=gzip.decompress(path.read_bytes())
+            else:data=path.read_bytes()
+            payload,signature=signed_parts(data);(tmp/'payload').write_bytes(payload);(tmp/'signature').write_bytes(signature)
+            # -nointern forces the pinned public build certificate. -noverify skips
+            # CA-chain policy, not cryptographic content/signature verification.
+            command=['openssl','cms','-verify','-binary','-inform','DER','-in',str(tmp/'signature'),'-content',str(tmp/'payload'),'-certfile',str(pem),'-nointern','-noverify','-out','/dev/null']
+            q=subprocess.run(command,capture_output=True)
+            if q.returncode:raise RuntimeError('CMS verification failed: '+path.name)
+            if not negative_control:
+                if not payload:raise RuntimeError('Empty module payload')
+                (tmp/'payload').write_bytes(bytes([payload[0]^1])+payload[1:])
+                if subprocess.run(command,capture_output=True).returncode==0:raise RuntimeError('Corrupted module unexpectedly verified')
+                negative_control=True
+    output.mkdir(parents=True)
+    base=output/'var/lib/mipad2-kernel'/release;base.mkdir(parents=True)
+    for source,name in [(build/'arch/x86/boot/bzImage','vmlinuz'),(build/'.config','config'),(build/'System.map','System.map'),(build/'Module.symvers','Module.symvers'),(cert,'module-signing-public.x509')]:shutil.copyfile(source,base/name)
+    destination=output/'usr/lib/modules'/release;destination.parent.mkdir(parents=True)
+    shutil.copytree(modules/'lib/modules'/release,destination,symlinks=True)
+    for name in ['build','source']:
+        path=destination/name
+        if path.is_symlink():path.unlink()
+        elif path.exists():raise RuntimeError('Unexpected source/build object')
+    files={str(p.relative_to(output)):sha(p) for p in output.rglob('*') if p.is_file()}
+    if any(p.is_symlink() for p in output.rglob('*')):raise RuntimeError('Unexpected retained symlink')
+    manifest=dict(kernelrelease=release,source_commit=args.commit,files_sha256=files,module_count=len(objects),all_module_signatures_cryptographically_verified=True,signature_negative_control_passed=negative_control,module_certificate_sha256=sha(cert),installed=False,booted=False,hang_fixed=False,validation='Full build and matching signed-module verification only; hardware/daily/Android validation pending')
+    (base/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    print(json.dumps({k:v for k,v in manifest.items() if k!='files_sha256'},indent=2))
+
+if __name__=='__main__':main()

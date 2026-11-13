@@ -1,0 +1,66 @@
+name: Build Mi Pad 2 7.2 Android-ready candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - .github/workflows/mipad2-72-daily.yml
+      - configs/mipad2-72-r8-baseline.config
+      - scripts/mipad2_verify_daily_bundle.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mipad2-72-daily-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev dwarves zstd kmod cpio rsync
+      - name: Configure isolated candidate
+        run: |
+          set -eu
+          mkdir -p out/build
+          cp configs/mipad2-72-r8-baseline.config out/build/.config
+          scripts/config --file out/build/.config --module EROFS_FS --enable EROFS_FS_ZIP --enable EROFS_FS_XATTR --enable EROFS_FS_SECURITY --enable EROFS_FS_ZIP_LZMA --enable EROFS_FS_ZIP_DEFLATE --enable EROFS_FS_ZIP_ZSTD --set-val EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS 2 --disable EROFS_FS_DEBUG --disable EROFS_FS_PCPU_KTHREAD --disable EROFS_FS_PCPU_KTHREAD_HIPRI --disable LOCALVERSION_AUTO
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily1 olddefconfig
+          for option in ANDROID_BINDER_IPC ANDROID_BINDERFS USER_NS NAMESPACES SECCOMP_FILTER; do
+            grep -qx "CONFIG_${option}=y" out/build/.config
+          done
+          grep -qx 'CONFIG_EROFS_FS=m' out/build/.config
+          grep -qx 'CONFIG_EROFS_FS_ZIP_ZSTD=y' out/build/.config
+          grep -qx 'CONFIG_EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS=2' out/build/.config
+          sh fix_file/tests/mipad2-kernel-config-audit.sh out/build/.config
+          release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily1 kernelrelease)
+          case "$release" in 7.2.*-mipad2-integrated-daily1) ;; *) echo "Unexpected release $release"; exit 1;; esac
+          printf '%s\n' "$release" > out/kernelrelease.txt
+      - name: Build kernel and matching modules
+        run: |
+          set -eu
+          jobs=$(nproc)
+          if [ "$jobs" -gt 2 ]; then jobs=$((jobs - 2)); else jobs=1; fi
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily1 W=1 -j"$jobs" bzImage modules
+      - name: Stage and independently verify module signatures
+        run: |
+          set -eu
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily1 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PWD/out/modules" modules_install
+          python3 scripts/mipad2_verify_daily_bundle.py --build out/build --modules out/modules --output out/bundle --commit "$(git rev-parse HEAD)"
+          tar --zstd -C out/bundle -cf out/mipad2-72-daily1.tar.zst .
+          sha256sum out/mipad2-72-daily1.tar.zst > out/mipad2-72-daily1.tar.zst.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipad2-72-daily1-${{ github.sha }}
+          path: |
+            out/mipad2-72-daily1.tar.zst
+            out/mipad2-72-daily1.tar.zst.sha256
+          if-no-files-found: error
+          retention-days: 30
