@@ -26,7 +26,7 @@ def main():
     build=args.build.resolve();modules=args.modules.resolve();output=args.output.resolve()
     if output.exists():raise RuntimeError('Output already exists')
     release=(build/'include/config/kernel.release').read_text().strip()
-    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily2'):raise RuntimeError('Unexpected release')
+    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily3'):raise RuntimeError('Unexpected release')
     config=(build/'.config').read_text()
     if 'CONFIG_EROFS_FS=m\n' not in config:raise RuntimeError('EROFS was not built as a demand-loaded module')
     for option in ['NFT_NAT', 'NFT_MASQ']:
@@ -71,7 +71,7 @@ def main():
         elif path.exists():raise RuntimeError('Unexpected source/build object')
     files={str(p.relative_to(output)):sha(p) for p in output.rglob('*') if p.is_file()}
     if any(p.is_symlink() for p in output.rglob('*')):raise RuntimeError('Unexpected retained symlink')
-    manifest=dict(kernelrelease=release,source_commit=args.commit,files_sha256=files,module_count=len(objects),all_module_signatures_cryptographically_verified=True,signature_negative_control_passed=negative_control,module_certificate_sha256=sha(cert),installed=False,booted=False,hang_fixed=False,validation='Full build and matching signed-module verification only; hardware/daily/Android validation pending')
+    manifest=dict(kernelrelease=release,source_commit=args.commit,files_sha256=files,module_count=len(objects),all_module_signatures_cryptographically_verified=True,signature_negative_control_passed=negative_control,module_certificate_sha256=sha(cert),installed=False,booted=False,hang_fixed=False,mipad2_navigation_remapping_removed=True,validation='Full build and matching signed-module verification only; hardware/daily/Android validation pending')
     (base/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps({k:v for k,v in manifest.items() if k!='files_sha256'},indent=2))
 

@@ -8,6 +8,7 @@ on:
       - .github/workflows/mipad2-72-daily.yml
       - configs/mipad2-72-r8-baseline.config
       - scripts/mipad2_verify_daily_bundle.py
+      - drivers/hid/hid-multitouch.c
 
 permissions:
   contents: read
@@ -29,10 +30,17 @@ jobs:
       - name: Configure isolated candidate
         run: |
           set -eu
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('drivers/hid/hid-multitouch.c').read_text()
+          for removed in ['mt_is_mipad2_button_keyboard', 'mt_mipad2_button_mapping', 'Menu: Super+A', 'Home: Super ->', 'Back: Alt+Left']:
+              assert removed not in source, removed
+          assert 'mt_map_key_clear(KEY_BRIGHTNESSDOWN)' in source
+          PY
           mkdir -p out/build
           cp configs/mipad2-72-r8-baseline.config out/build/.config
           scripts/config --file out/build/.config --module NFT_NAT --module NFT_MASQ --module EROFS_FS --enable EROFS_FS_ZIP --enable EROFS_FS_XATTR --enable EROFS_FS_SECURITY --enable EROFS_FS_ZIP_LZMA --enable EROFS_FS_ZIP_DEFLATE --enable EROFS_FS_ZIP_ZSTD --set-val EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS 2 --disable EROFS_FS_DEBUG --disable EROFS_FS_PCPU_KTHREAD --disable EROFS_FS_PCPU_KTHREAD_HIPRI --disable LOCALVERSION_AUTO
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily2 olddefconfig
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily3 olddefconfig
           for option in ANDROID_BINDER_IPC ANDROID_BINDERFS USER_NS NAMESPACES SECCOMP_FILTER; do
             grep -qx "CONFIG_${option}=y" out/build/.config
           done
@@ -44,27 +52,27 @@ jobs:
           grep -qx 'CONFIG_EROFS_FS_ZIP_ZSTD=y' out/build/.config
           grep -qx 'CONFIG_EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS=2' out/build/.config
           sh fix_file/tests/mipad2-kernel-config-audit.sh out/build/.config
-          release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily2 kernelrelease)
-          case "$release" in 7.2.*-mipad2-integrated-daily2) ;; *) echo "Unexpected release $release"; exit 1;; esac
+          release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily3 kernelrelease)
+          case "$release" in 7.2.*-mipad2-integrated-daily3) ;; *) echo "Unexpected release $release"; exit 1;; esac
           printf '%s\n' "$release" > out/kernelrelease.txt
       - name: Build kernel and matching modules
         run: |
           set -eu
           jobs=$(nproc)
           if [ "$jobs" -gt 2 ]; then jobs=$((jobs - 2)); else jobs=1; fi
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily2 W=1 -j"$jobs" bzImage modules
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily3 W=1 -j"$jobs" bzImage modules
       - name: Stage and independently verify module signatures
         run: |
           set -eu
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily2 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PWD/out/modules" modules_install
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-daily3 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PWD/out/modules" modules_install
           python3 scripts/mipad2_verify_daily_bundle.py --build out/build --modules out/modules --output out/bundle --commit "$(git rev-parse HEAD)"
-          tar --zstd -C out/bundle -cf out/mipad2-72-daily2.tar.zst .
-          sha256sum out/mipad2-72-daily2.tar.zst > out/mipad2-72-daily2.tar.zst.sha256
+          tar --zstd -C out/bundle -cf out/mipad2-72-daily3.tar.zst .
+          sha256sum out/mipad2-72-daily3.tar.zst > out/mipad2-72-daily3.tar.zst.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: mipad2-72-daily2-${{ github.sha }}
+          name: mipad2-72-daily3-${{ github.sha }}
           path: |
-            out/mipad2-72-daily2.tar.zst
-            out/mipad2-72-daily2.tar.zst.sha256
+            out/mipad2-72-daily3.tar.zst
+            out/mipad2-72-daily3.tar.zst.sha256
           if-no-files-found: error
           retention-days: 30
