@@ -1,4 +1,4 @@
-name: Build MiPad2 Android pacing compatibility
+name: Build MiPad2 Android graphics compatibility
 on:
   workflow_dispatch:
   push:
@@ -56,8 +56,38 @@ jobs:
           }
           '''
           p.write_text(s)
+          p=Path('graphics/droidloom-wayland/src/layers.rs');s=p.read_text()
+          old='self.layer_globals.alpha.is_some() && task.accepts_present() && !task.suspended;'
+          assert s.count(old)==1
+          s=s.replace(old,'''self.layer_globals.alpha.is_some()
+                          && task.accepts_present()
+                          && !task.suspended
+                          && direct_layers_enabled(
+                              std::env::var("DROIDLOOM_DIRECT_LAYERS").ok().as_deref(),
+                          );''')
+          s+='''
+          // An explicit compatibility opt-out for a host that cannot present
+          // multi-surface Android scenes reliably. Android still composes on
+          // the GPU and submits DMA-BUF targets with ordinary explicit sync.
+          // Never skip a fence or change the default for other hosts.
+          fn direct_layers_enabled(policy: Option<&str>) -> bool {
+              policy != Some("off")
+          }
+
+          #[cfg(test)]
+          mod mipad2_composition_policy_tests {
+              #[test]
+              fn direct_layers_default_is_preserved_and_opt_out_is_explicit() {
+                  assert!(super::direct_layers_enabled(None));
+                  assert!(super::direct_layers_enabled(Some("auto")));
+                  assert!(super::direct_layers_enabled(Some("on")));
+                  assert!(!super::direct_layers_enabled(Some("off")));
+              }
+          }
+          '''
+          p.write_text(s)
           PY
-          rustfmt --edition 2024 graphics/droidloom-wayland/src/main.rs
+          rustfmt --edition 2024 graphics/droidloom-wayland/src/main.rs graphics/droidloom-wayland/src/layers.rs
           git diff --check
           git diff > evidence/presenter.patch
       - name: Test and build presenter
