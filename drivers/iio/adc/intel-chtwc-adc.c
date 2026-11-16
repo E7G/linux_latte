@@ -32,6 +32,7 @@ struct chtwc_adc {
 	int irq_error;
 	unsigned int expected;
 	unsigned int saved_mask;
+	bool mask_owned;
 	bool suspended;
 	bool removing;
 	bool faulted;
@@ -209,6 +210,8 @@ static void chtwc_adc_restore_mask(void *data)
 	struct chtwc_adc *adc = data;
 	int ret;
 
+	if (!adc->mask_owned)
+		return;
 	/* Released after free_irq: the IRQ core has disabled the level1 ADC. */
 	ret = regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
 				 CHTWC_ADC_OWNED_IRQS, adc->saved_mask);
@@ -223,7 +226,8 @@ static void chtwc_adc_quiesce(void *data)
 	mutex_lock(&adc->lock);
 	adc->removing = true;
 	chtwc_adc_stop_irq(adc);
-	if (regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
+	if (adc->mask_owned &&
+	    regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
 			       CHTWC_ADC_OWNED_IRQS, CHTWC_ADC_OWNED_IRQS))
 		dev_warn(adc->dev, "Could not quiesce ADC completion sources\n");
 	mutex_unlock(&adc->lock);
@@ -266,16 +270,21 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	ret = devm_add_action_or_reset(dev, chtwc_adc_restore_mask, adc);
 	if (ret)
 		return ret;
-	ret = regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
-				 CHTWC_ADC_OWNED_IRQS, CHTWC_ADC_OWNED_IRQS);
-	if (ret)
-		return ret;
 	ret = devm_request_threaded_irq(dev, adc->irq, NULL, chtwc_adc_irq,
 				       IRQF_ONESHOT | IRQF_NO_AUTOEN,
 				       dev_name(dev), adc);
 	if (ret)
 		return dev_err_probe(dev, ret, "Could not request ADC virtual IRQ\n");
 	ret = devm_add_action_or_reset(dev, chtwc_adc_quiesce, adc);
+	if (ret)
+		return ret;
+	/*
+	 * Claim the exclusive virq before touching masks. On request failure an
+	 * existing owner must not see even a temporary mask/preimage restoration.
+	 */
+	adc->mask_owned = true;
+	ret = regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
+				 CHTWC_ADC_OWNED_IRQS, CHTWC_ADC_OWNED_IRQS);
 	if (ret)
 		return ret;
 	platform_set_drvdata(pdev, indio_dev);

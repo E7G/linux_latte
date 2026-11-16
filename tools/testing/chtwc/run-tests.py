@@ -13,6 +13,30 @@ parser.add_argument("--cc", default="cc")
 parser.add_argument("--source-root", type=Path, default=Path(__file__).resolve().parents[3])
 args = parser.parse_args()
 root = args.source_root.resolve()
+driver = (root/"drivers/iio/adc/intel-chtwc-adc.c").read_text()
+probe = driver[driver.index("static int chtwc_adc_probe"):driver.index("static int chtwc_adc_suspend")]
+
+def check_probe_order(source):
+    # Source-order regression gate, not execution of kernel devres/IRQ code.
+    assert (source.index("devm_request_threaded_irq") <
+            source.index("adc->mask_owned = true") <
+            source.index("regmap_update_bits"))
+
+check_probe_order(probe)
+mask_block = """\tret = regmap_update_bits(adc->regmap, CHTWC_ADC_IRQ_MASK,
+\t\t\t\t CHTWC_ADC_OWNED_IRQS, CHTWC_ADC_OWNED_IRQS);
+\tif (ret)
+\t\treturn ret;
+"""
+assert probe.count(mask_block) == 1
+mutant = probe.replace(mask_block, "").replace(
+    "\tret = devm_request_threaded_irq", mask_block + "\tret = devm_request_threaded_irq")
+try:
+    check_probe_order(mutant)
+except AssertionError:
+    pass
+else:
+    raise AssertionError("Probe-order negative control failed")
 rows = []
 with tempfile.TemporaryDirectory(prefix="chtwc-adc-tests-") as name:
     tmp = Path(name)
@@ -31,7 +55,8 @@ with tempfile.TemporaryDirectory(prefix="chtwc-adc-tests-") as name:
                                             "UBSAN_OPTIONS":"halt_on_error=1"})
         assert not q.stderr, q.stderr
         rows.append(dict(flags=flags, output=q.stdout.strip(), exit_code=q.returncode))
-print(json.dumps(dict(tests=rows, hardware_tested=False, sources_sha256={
+print(json.dumps(dict(tests=rows, probe_order_source_gate=True,
+                      probe_order_negative_control=True, hardware_tested=False, sources_sha256={
     p: hashlib.sha256((root/p).read_bytes()).hexdigest()
     for p in ["drivers/iio/adc/intel-chtwc-adc-core.h",
               "drivers/iio/adc/intel-chtwc-adc.c", "tools/testing/chtwc/test-adc.c"]

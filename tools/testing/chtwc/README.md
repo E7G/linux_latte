@@ -28,6 +28,8 @@ and calibrated die conversion remain required for processed values.
   Other pending groups and the monitor-tick bit are not acknowledged.
 - Conversion mask bits0–6 are owned. Probe refuses an unmasked unsupported
   monitor tick; bit7 is preserved.
+- Probe claims the exclusive ADC virq before changing masks. If that claim
+  fails, neither quiesce nor restoration writes a saved preimage over an owner.
 - Handler completion is drained before reuse/publication/restoring masks.
   Saved owned-mask bits are restored after free_irq.
 - Timeout, uncertain command write, failed completion/cleanup quarantine further
