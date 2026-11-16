@@ -22,17 +22,20 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--build',type=Path,required=True);parser.add_argument('--modules',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--commit',required=True);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--build',type=Path,required=True);parser.add_argument('--modules',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--commit',required=True);parser.add_argument('--flavor',choices=['daily3','adc1'],default='daily3');args=parser.parse_args()
     build=args.build.resolve();modules=args.modules.resolve();output=args.output.resolve()
     if output.exists():raise RuntimeError('Output already exists')
     release=(build/'include/config/kernel.release').read_text().strip()
-    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-daily3'):raise RuntimeError('Unexpected release')
+    if not release.startswith('7.2.') or not release.endswith('-mipad2-integrated-'+args.flavor):raise RuntimeError('Unexpected release')
     config=(build/'.config').read_text()
     if 'CONFIG_EROFS_FS=m\n' not in config:raise RuntimeError('EROFS was not built as a demand-loaded module')
     for option in ['NFT_NAT', 'NFT_MASQ']:
         if f'CONFIG_{option}=m\n' not in config:raise RuntimeError('Missing Android networking option: '+option)
     objects=sorted((modules/'lib/modules'/release).rglob('*.ko*'))
     objects=[p for p in objects if p.name.endswith(('.ko','.ko.zst','.ko.xz','.ko.gz'))]
+    if args.flavor=='adc1':
+        if 'CONFIG_IIO_CHT_WC_ADC=m\n' not in config:raise RuntimeError('ADC was not built as a module')
+        if not any(p.name=='intel-chtwc-adc.ko' or p.name.startswith('intel-chtwc-adc.ko.') for p in objects):raise RuntimeError('Missing ADC module')
     if len(objects)<32 or not any(p.name.startswith('erofs.ko') for p in objects):raise RuntimeError('Missing matching modules')
     for name in ['nft_chain_nat.ko', 'nft_masq.ko']:
         if not any(p.name == name or p.name.startswith(name+'.') for p in objects):raise RuntimeError('Missing Android networking module: '+name)

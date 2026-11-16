@@ -50,6 +50,10 @@ static const struct resource cht_wc_ext_charger_resources[] = {
 	DEFINE_RES_IRQ(CHT_WC_EXT_CHGR_IRQ),
 };
 
+static const struct resource cht_wc_adc_resources[] = {
+	DEFINE_RES_IRQ(CHT_WC_ADC_IRQ),
+};
+
 static struct mfd_cell cht_wc_dev[] = {
 	{
 		.name = "cht_wcove_pwrsrc",
@@ -59,6 +63,11 @@ static struct mfd_cell cht_wc_dev[] = {
 		.name = "cht_wcove_ext_chgr",
 		.num_resources = ARRAY_SIZE(cht_wc_ext_charger_resources),
 		.resources = cht_wc_ext_charger_resources,
+	},
+	{
+		.name = "cht_wcove_adc",
+		.num_resources = ARRAY_SIZE(cht_wc_adc_resources),
+		.resources = cht_wc_adc_resources,
 	},
 	{	.name = "cht_wcove_region", },
 	{	.name = "cht_wcove_leds", },
