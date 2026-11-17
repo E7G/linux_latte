@@ -46,6 +46,36 @@ struct chtwc_adc_sample {
 };
 
 /*
+ * Nominal resistance in ohms, matching the vendor OpRegion/ALERT ABI.
+ * The legacy IIO path divides this by ten; do not copy that ten-ohm-unit ABI.
+ * Count and current selector MUST come from the same completed acquisition.
+ * This is not a calibrated temperature or the PMIC die transfer function.
+ */
+static inline int chtwc_adc_resistance(unsigned int index,
+				       const struct chtwc_adc_sample *sample,
+				       int *ohms)
+{
+	static const u32 factor[] = {
+		0, 260420, 130210, 65100, 32550, 16280,
+		8140, 4070, 2030, 0, 260420, 130210,
+	};
+	unsigned int selector;
+
+	if (index >= ARRAY_SIZE(chtwc_adc_channels) || !sample || !ohms)
+		return -EINVAL;
+	if (!chtwc_adc_channels[index].thermistor)
+		return -EOPNOTSUPP;
+	if (sample->count > 0xfff)
+		return -ERANGE;
+	selector = sample->selector;
+	if (selector >= ARRAY_SIZE(factor) || !factor[selector])
+		return -ENODATA;
+	/* Maximum intermediate4095*260420 fits u32; publish only on success. */
+	*ohms = sample->count * factor[selector] / 1000;
+	return 0;
+}
+
+/*
  * Caller serializes acquisition and PM/removal. arm/disarm own only the ADC
  * level1 virtual IRQ and selected level2 mask, never the physical parent IRQ.
  * disarm must synchronize the handler even if arm partially failed.

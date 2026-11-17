@@ -14,10 +14,15 @@ The first11 register/request/completion triples match that table. VREF aliases
 AGND without explaining a mux; it is not exposed as a fabricated independent
 reading. VBAT follows the MFD label although the vendor enum calls it VBUS.
 
-IIO exposes raw12-bit counts and labels, not degrees, ohms or millivolts.
+IIO retains existing raw12-bit counts and labels. Resistance aliases additionally
+expose nominal ohms via in_resistanceN_input for BATID, BATTEMP0/1, SYSTEMP0/1/2
+and USBID. Both count and current-source selector come from ONE completed
+transaction under the acquisition/PM mutex; no scale read from a second sample.
+The factor/1000 matches the vendor OpRegion and ALERT-ohm representation, not
+the legacy IIO factor/10000 ten-ohm-unit output. This does not calibrate the board,
+enable LPAT/thermal policy, or publish temperatures or voltages.
 The PMIC die is not decoded with the thermistor transfer function.
-Reserved thermistor source codes return ENODATA. Physical scaling, LPAT units
-and calibrated die conversion remain required for processed values.
+Reserved thermistor source codes return ENODATA. Calibrated temperature/voltage transfer and the die conversion remain incomplete.
 
 ## Ownership and lifecycle
 

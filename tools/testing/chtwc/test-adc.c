@@ -219,6 +219,42 @@ int main(void)
 	assert(chtwc_adc_acquire(&m.io, UINT32_MAX, &sample) == -EINVAL);
 	assert(chtwc_adc_acquire(&m.io, 5, NULL) == -EINVAL);
 	assert(!m.calls && !m.writes && !m.faults); checks += 3;
-	printf("PASS %u real-core acquisition/IRQ/W1C/fault/stability cases\n", checks);
+	/* Independent vendor table oracle: all 12-bit counts and source codes. */
+	{
+		const uint32_t factors[16] = {
+			0, 260420, 130210, 65100, 32550, 16280,
+			8140, 4070, 2030, 0, 260420, 130210, 0, 0, 0, 0,
+		};
+		unsigned int selector, count, index;
+		int ohms, ret;
+
+		for (index = 0; index < ARRAY_SIZE(chtwc_adc_channels); index++) {
+			for (selector = 0; selector < 16; selector++) {
+				for (count = 0; count < 4096; count++) {
+					sample.count = count; sample.selector = selector;
+					ohms = -12345;
+					ret = chtwc_adc_resistance(index, &sample, &ohms);
+					if (!(index == 1 || index == 3 || index == 4 ||
+					      index == 5 || index == 6 || index == 7 || index == 8))
+						assert(ret == -EOPNOTSUPP && ohms == -12345);
+					else if (!factors[selector])
+						assert(ret == -ENODATA && ohms == -12345);
+					else
+						assert(!ret && ohms == (int)((uint64_t)count * factors[selector] / 1000));
+					checks++;
+				}
+			}
+		}
+		sample.count = 4096; sample.selector = 6; ohms = -12345;
+		assert(chtwc_adc_resistance(5, &sample, &ohms) == -ERANGE && ohms == -12345);
+		sample.count = 3000; sample.selector = 255;
+		assert(chtwc_adc_resistance(5, &sample, &ohms) == -ENODATA && ohms == -12345);
+		assert(chtwc_adc_resistance(11, &sample, &ohms) == -EINVAL);
+		assert(chtwc_adc_resistance(UINT32_MAX, &sample, &ohms) == -EINVAL);
+		assert(chtwc_adc_resistance(5, NULL, &ohms) == -EINVAL);
+		assert(chtwc_adc_resistance(5, &sample, NULL) == -EINVAL);
+		checks += 6;
+	}
+	printf("PASS %u real-core acquisition/IRQ/W1C/fault/stability/nominal-resistance cases\n", checks);
 	return 0;
 }

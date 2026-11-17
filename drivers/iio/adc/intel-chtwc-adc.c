@@ -154,7 +154,9 @@ static int chtwc_adc_read_raw(struct iio_dev *indio_dev,
 	struct chtwc_adc_sample sample;
 	int ret;
 
-	if (mask != IIO_CHAN_INFO_RAW)
+	if (mask != IIO_CHAN_INFO_RAW && mask != IIO_CHAN_INFO_PROCESSED)
+		return -EINVAL;
+	if (mask == IIO_CHAN_INFO_PROCESSED && channel->type != IIO_RESISTANCE)
 		return -EINVAL;
 	mutex_lock(&adc->lock);
 	if (adc->removing)
@@ -166,8 +168,12 @@ static int chtwc_adc_read_raw(struct iio_dev *indio_dev,
 	else {
 		ret = chtwc_adc_acquire(&adc->io, channel->channel, &sample);
 		if (!ret) {
-			*val = sample.count;
-			ret = IIO_VAL_INT;
+			if (mask == IIO_CHAN_INFO_PROCESSED)
+				ret = chtwc_adc_resistance(channel->channel, &sample, val);
+			else
+				*val = sample.count;
+			if (!ret)
+				ret = IIO_VAL_INT;
 		}
 	}
 	mutex_unlock(&adc->lock);
@@ -190,20 +196,32 @@ static const struct iio_info chtwc_adc_info = {
 	.datasheet_name = (_label), .info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
 }
 
+/* Separate resistance aliases retain existing in_tempN_raw paths unchanged. */
+#define CHTWC_RESISTANCE(_index, _label) { \
+	.type = IIO_RESISTANCE, .indexed = 1, .channel = (_index), \
+	.datasheet_name = (_label), \
+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_PROCESSED), \
+}
+
 static const struct iio_chan_spec chtwc_iio_channels[] = {
 	CHTWC_CHANNEL(IIO_VOLTAGE, 0, "VBAT"),
-	CHTWC_CHANNEL(IIO_RESISTANCE, 1, "BATID"),
+	CHTWC_RESISTANCE(1, "BATID"),
 	CHTWC_CHANNEL(IIO_TEMP, 2, "PMICTEMP"),
 	CHTWC_CHANNEL(IIO_TEMP, 3, "BATTEMP0"),
 	CHTWC_CHANNEL(IIO_TEMP, 4, "BATTEMP1"),
 	CHTWC_CHANNEL(IIO_TEMP, 5, "SYSTEMP0"),
 	CHTWC_CHANNEL(IIO_TEMP, 6, "SYSTEMP1"),
 	CHTWC_CHANNEL(IIO_TEMP, 7, "SYSTEMP2"),
-	CHTWC_CHANNEL(IIO_RESISTANCE, 8, "USBID"),
+	CHTWC_RESISTANCE(8, "USBID"),
 	CHTWC_CHANNEL(IIO_VOLTAGE, 9, "PEAK"),
 	CHTWC_CHANNEL(IIO_VOLTAGE, 10, "AGND"),
+	CHTWC_RESISTANCE(3, "BATTEMP0"),
+	CHTWC_RESISTANCE(4, "BATTEMP1"),
+	CHTWC_RESISTANCE(5, "SYSTEMP0"),
+	CHTWC_RESISTANCE(6, "SYSTEMP1"),
+	CHTWC_RESISTANCE(7, "SYSTEMP2"),
 };
-static_assert(ARRAY_SIZE(chtwc_iio_channels) == ARRAY_SIZE(chtwc_adc_channels));
+static_assert(ARRAY_SIZE(chtwc_iio_channels) == ARRAY_SIZE(chtwc_adc_channels) + 5);
 
 static void chtwc_adc_restore_mask(void *data)
 {
@@ -293,7 +311,7 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	indio_dev->channels = chtwc_iio_channels;
 	indio_dev->num_channels = ARRAY_SIZE(chtwc_iio_channels);
-	/* No processed/scale interface until physical transfer units are proven. */
+	/* Nominal NTC ohms only; no temperature, voltage or die calibration. */
 	return devm_iio_device_register(dev, indio_dev);
 }
 
