@@ -1127,6 +1127,7 @@ static int sof_ipc4_widget_setup_comp_src(struct snd_sof_widget *swidget)
 			"Invalid number of formats: input: %d, output: %d\n",
 			src->available_fmt.num_input_formats,
 			src->available_fmt.num_output_formats);
+		ret = -EINVAL;
 		goto err;
 	}
 
@@ -1179,6 +1180,7 @@ static int sof_ipc4_widget_setup_comp_asrc(struct snd_sof_widget *swidget)
 			"Invalid number of formats: input: %d, output: %d\n",
 			asrc->available_fmt.num_input_formats,
 			asrc->available_fmt.num_output_formats);
+		ret = -EINVAL;
 		goto err;
 	}
 
@@ -2350,11 +2352,14 @@ sof_ipc4_prepare_copier_module(struct snd_sof_widget *swidget,
 				ch_map >>= 4;
 			}
 
-			if (swidget->id == snd_soc_dapm_dai_in && ch_count == out_ref_channels) {
+			if ((swidget->id == snd_soc_dapm_dai_in && ch_count == out_ref_channels) ||
+			    ch_count < blob->alh_cfg.device_count) {
 				/*
 				 * For playback DAI widgets where the channel number is equal to
-				 * the output reference channels, set the step = 0 to ensure all
-				 * the ch_mask is applied to all alh mappings.
+				 * the output reference channels, or when there are fewer
+				 * channels than aggregated devices (e.g. a mono capture
+				 * stream split across multiple links), set step = 0 to
+				 * ensure all the ch_mask is applied to all alh mappings.
 				 */
 				mask = ch_mask;
 				step = 0;

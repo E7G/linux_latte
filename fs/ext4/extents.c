@@ -4976,7 +4976,7 @@ int ext4_convert_unwritten_extents_atomic(handle_t *handle, struct inode *inode,
 		 * it can tell if the extent in the cache is a split extent.
 		 * But for now let's assume pextents as 2 always.
 		 */
-		credits = ext4_meta_trans_blocks(inode, max_blocks, 2);
+		credits = ext4_meta_trans_blocks(inode, max_blocks, 2, 0);
 	}
 
 	if (credits) {
@@ -6297,6 +6297,7 @@ EXPORT_SYMBOL_FOR_EXT4_TEST(__ext4_ext_dirty);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_ext_zeroout);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_es_register_shrinker);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_es_unregister_shrinker);
+EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_es_destroy_stats);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_map_create_blocks);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_es_init_tree);
 EXPORT_SYMBOL_FOR_EXT4_TEST(ext4_es_lookup_extent);

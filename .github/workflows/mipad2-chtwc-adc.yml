@@ -28,6 +28,7 @@ jobs:
           python3 tools/testing/chtwc/run-tests.py --cc gcc
           python3 tools/testing/chtwc/run-tests.py --cc clang
           python3 tools/testing/chtwc/test-bundle-flavor.py
+          python3 tools/testing/chtwc/test-stable-integration.py
       - name: Check driver style
         run: |
           scripts/checkpatch.pl --no-tree --file drivers/iio/adc/intel-chtwc-adc.c drivers/iio/adc/intel-chtwc-adc-core.h
@@ -57,8 +58,17 @@ jobs:
           PY
           sh fix_file/tests/mipad2-kernel-config-audit.sh out/build/.config
           release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-adc1 kernelrelease)
-          case "$release" in 7.2.*-mipad2-integrated-adc1) ;; *) echo "Unexpected release $release"; exit 1;; esac
+          case "$release" in 7.2.15-mipad2-integrated-adc1) ;; *) echo "Unexpected release $release"; exit 1;; esac
           printf '%s\n' "$release" > out/kernelrelease.txt
+      - name: Compile reviewed AHCI conflict resolution with Clang
+        run: |
+          set -eu
+          mkdir -p out/ahci
+          make O=out/ahci LLVM=1 ARCH=x86_64 x86_64_defconfig
+          scripts/config --file out/ahci/.config --module SATA_AHCI
+          make O=out/ahci LLVM=1 ARCH=x86_64 olddefconfig
+          grep -qx 'CONFIG_SATA_AHCI=m' out/ahci/.config
+          make O=out/ahci LLVM=1 ARCH=x86_64 W=1 -j2 drivers/ata/ahci.o
       - name: Build full kernel and matching modules
         run: |
           set -eu
