@@ -50,6 +50,8 @@ static void worker_cleanup(void *context)
 	}
 	complete_all(&fixture->release);
 	chtwc_thermal_worker_stop(&fixture->worker);
+	/* Keep fixture lifetime safe even when the negative control breaks stop. */
+	flush_work(&fixture->worker.work);
 	if (fixture->stopper) {
 		kthread_stop(fixture->stopper);
 		put_task_struct(fixture->stopper);
