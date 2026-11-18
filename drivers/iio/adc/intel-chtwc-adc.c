@@ -4,9 +4,10 @@
  * Register/channel definitions based on Intel's GPLv2 Android driver,
  * copyright (C) 2013-2015 Intel Corporation, in Xiaomi's Mi Pad2 tree.
  *
- * On-demand raw acquisition. Does not enable a thermal OpRegion, rewrite
- * autonomous monitors, calibrate temperatures, or replace charger/BCU policy.
+ * On-demand acquisition and optional factory LPAT board-NTC conversion. Does
+ * not enable a thermal OpRegion, rewrite monitors or replace charger/BCU policy.
  */
+#include <linux/acpi.h>
 #include <linux/atomic.h>
 #include <linux/completion.h>
 #include <linux/iio/iio.h>
@@ -17,9 +18,11 @@
 #include <linux/platform_device.h>
 #include <linux/pm.h>
 #include <linux/regmap.h>
+#include <linux/slab.h>
 #include <linux/sysfs.h>
 
 #include "intel-chtwc-adc-core.h"
+#include "intel-chtwc-adc-lpat.h"
 
 struct chtwc_adc {
 	struct device *dev;
@@ -27,6 +30,8 @@ struct chtwc_adc {
 	struct mutex lock;
 	struct completion completion;
 	struct chtwc_adc_io io;
+	struct chtwc_adc_lpat_point *lpat;
+	unsigned int lpat_count;
 	atomic_t irq_enabled;
 	int irq;
 	int irq_error;
@@ -156,7 +161,9 @@ static int chtwc_adc_read_raw(struct iio_dev *indio_dev,
 
 	if (mask != IIO_CHAN_INFO_RAW && mask != IIO_CHAN_INFO_PROCESSED)
 		return -EINVAL;
-	if (mask == IIO_CHAN_INFO_PROCESSED && channel->type != IIO_RESISTANCE)
+	if (mask == IIO_CHAN_INFO_PROCESSED && channel->type != IIO_RESISTANCE &&
+	    (channel->type != IIO_TEMP || !adc->lpat ||
+	     channel->channel < 5 || channel->channel > 7))
 		return -EINVAL;
 	mutex_lock(&adc->lock);
 	if (adc->removing)
@@ -168,7 +175,10 @@ static int chtwc_adc_read_raw(struct iio_dev *indio_dev,
 	else {
 		ret = chtwc_adc_acquire(&adc->io, channel->channel, &sample);
 		if (!ret) {
-			if (mask == IIO_CHAN_INFO_PROCESSED)
+			if (mask == IIO_CHAN_INFO_PROCESSED && channel->type == IIO_TEMP)
+				ret = chtwc_adc_temperature(channel->channel, &sample,
+							    adc->lpat, adc->lpat_count, val);
+			else if (mask == IIO_CHAN_INFO_PROCESSED)
 				ret = chtwc_adc_resistance(channel->channel, &sample, val);
 			else
 				*val = sample.count;
@@ -223,6 +233,68 @@ static const struct iio_chan_spec chtwc_iio_channels[] = {
 };
 static_assert(ARRAY_SIZE(chtwc_iio_channels) == ARRAY_SIZE(chtwc_adc_channels) + 5);
 
+/*
+ * The Mi Pad2 PMIC's constant LPAT maps ohms to decikelvin returned directly
+ * through the firmware _TMP path. This is NOT the centi-Celsius LPAT used by
+ * INT340x. Do not execute a method, force AML availability gates or copy the
+ * generic LPAT parser's unchecked u64-to-int truncation here.
+ * An unavailable/malformed table leaves all existing raw/ohms paths intact.
+ */
+static int chtwc_adc_load_lpat(struct chtwc_adc *adc)
+{
+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	struct chtwc_adc_lpat_point *points;
+	union acpi_object *object, *elements;
+	acpi_handle parent = ACPI_HANDLE(adc->dev->parent), handle;
+	unsigned int count, i;
+	acpi_object_type type;
+	acpi_status status;
+	int ret = 0;
+
+	if (!parent || ACPI_FAILURE(acpi_get_handle(parent, "LPAT", &handle)))
+		return 0;
+	status = acpi_get_type(handle, &type);
+	if (ACPI_FAILURE(status) || type != ACPI_TYPE_PACKAGE)
+		return 0;
+	status = acpi_evaluate_object(handle, NULL, NULL, &buffer);
+	if (ACPI_FAILURE(status))
+		goto out;
+	object = buffer.pointer;
+	if (!object || object->type != ACPI_TYPE_PACKAGE ||
+	    object->package.count < 4 || object->package.count % 2 ||
+	    object->package.count > 2 * CHTWC_LPAT_MAX_POINTS)
+		goto out;
+	count = object->package.count / 2;
+	elements = object->package.elements;
+	if (!elements)
+		goto out;
+	for (i = 0; i < count; i++) {
+		if (elements[2 * i].type != ACPI_TYPE_INTEGER ||
+		    elements[2 * i + 1].type != ACPI_TYPE_INTEGER ||
+		    elements[2 * i].integer.value > INT_MAX / 100 ||
+		    elements[2 * i + 1].integer.value > INT_MAX)
+			goto out;
+	}
+	points = devm_kcalloc(adc->dev, count, sizeof(*points), GFP_KERNEL);
+	if (!points) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	for (i = 0; i < count; i++) {
+		points[i].decikelvin = elements[2 * i].integer.value;
+		points[i].ohms = elements[2 * i + 1].integer.value;
+	}
+	if (!chtwc_adc_lpat_valid(points, count)) {
+		devm_kfree(adc->dev, points);
+		goto out;
+	}
+	adc->lpat = points;
+	adc->lpat_count = count;
+out:
+	ACPI_FREE(buffer.pointer);
+	return ret;
+}
+
 static void chtwc_adc_restore_mask(void *data)
 {
 	struct chtwc_adc *adc = data;
@@ -256,8 +328,9 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	struct intel_soc_pmic *pmic = dev_get_drvdata(pdev->dev.parent);
 	struct device *dev = &pdev->dev;
 	struct iio_dev *indio_dev;
+	struct iio_chan_spec *channels;
 	struct chtwc_adc *adc;
-	int ret;
+	int ret, i;
 
 	if (pmic->cht_wc_model != INTEL_CHT_WC_XIAOMI_MIPAD2)
 		return -ENODEV;
@@ -267,6 +340,17 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	adc = iio_priv(indio_dev);
 	adc->dev = dev;
 	adc->regmap = pmic->regmap;
+	ret = chtwc_adc_load_lpat(adc);
+	if (ret)
+		return ret;
+	channels = devm_kmemdup(dev, chtwc_iio_channels,
+			       sizeof(chtwc_iio_channels), GFP_KERNEL);
+	if (!channels)
+		return -ENOMEM;
+	if (adc->lpat) {
+		for (i = 5; i <= 7; i++)
+			channels[i].info_mask_separate |= BIT(IIO_CHAN_INFO_PROCESSED);
+	}
 	adc->irq = platform_get_irq(pdev, 0);
 	if (adc->irq < 0)
 		return adc->irq;
@@ -309,9 +393,9 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	indio_dev->name = "cht-whiskey-cove-adc";
 	indio_dev->info = &chtwc_adc_info;
 	indio_dev->modes = INDIO_DIRECT_MODE;
-	indio_dev->channels = chtwc_iio_channels;
+	indio_dev->channels = channels;
 	indio_dev->num_channels = ARRAY_SIZE(chtwc_iio_channels);
-	/* Nominal NTC ohms only; no temperature, voltage or die calibration. */
+	/* No thermal-zone registration, threshold or autonomous-monitor writes. */
 	return devm_iio_device_register(dev, indio_dev);
 }
 
@@ -364,5 +448,5 @@ static struct platform_driver chtwc_adc_driver = {
 };
 module_platform_driver(chtwc_adc_driver);
 
-MODULE_DESCRIPTION("Cherry Trail Whiskey Cove on-demand raw ADC");
+MODULE_DESCRIPTION("Cherry Trail Whiskey Cove ADC and factory board NTC conversion");
 MODULE_LICENSE("GPL");

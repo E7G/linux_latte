@@ -853,12 +853,13 @@ config INGENIC_ADC
 	  called ingenic_adc.
 
 config IIO_CHT_WC_ADC
-	tristate "Intel Cherry Trail Whiskey Cove raw ADC"
+	tristate "Intel Cherry Trail Whiskey Cove ADC"
 	depends on INTEL_SOC_PMIC_CHTWC
 	help
-	  On-demand raw ADC acquisition for the Cherry Trail Whiskey Cove PMIC
-	  on Xiaomi Mi Pad2. Temperature transfer/calibration and autonomous
-	  thermal-monitor policy are not implemented by this driver.
+	  On-demand ADC acquisition for the Cherry Trail Whiskey Cove PMIC
+	  on Xiaomi Mi Pad2. Optional factory LPAT converts the three board
+	  thermistors to milli-Celsius. Other raw/nominal-ohm paths are retained;
+	  PMIC die calibration and autonomous-monitor policy are not implemented.
 
 	  The completion IRQ is obtained from the parent MFD IRQ domain.
 	  This driver does not register thermal zones or change charger/BCU policy.

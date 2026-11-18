@@ -54,4 +54,12 @@ with tempfile.TemporaryDirectory(prefix="chtwc-bundle-gates-") as name:
     expect("ADC was not built as a module", "--flavor", "pmic1")
     (build/".config").write_text(config + "CONFIG_IIO_CHT_WC_ADC=m\n")
     expect("Missing ADC module", "--flavor", "pmic1")
+    release.write_text("7.2.15-mipad2-integrated-lpat1\n")
+    expect("Unexpected release")
+    for old in ["adc1", "adc2", "pmic1"]:
+        expect("Unexpected release", "--flavor", old)
+    (build/".config").write_text(config)
+    expect("ADC was not built as a module", "--flavor", "lpat1")
+    (build/".config").write_text(config + "CONFIG_IIO_CHT_WC_ADC=m\n")
+    expect("Missing ADC module", "--flavor", "lpat1")
 print(f"PASS {checks} bundle flavor/release/module gates (not signature or hardware qualification)")

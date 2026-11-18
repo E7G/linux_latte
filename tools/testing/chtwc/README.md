@@ -20,9 +20,9 @@ and USBID. Both count and current-source selector come from ONE completed
 transaction under the acquisition/PM mutex; no scale read from a second sample.
 The factor/1000 matches the vendor OpRegion and ALERT-ohm representation, not
 the legacy IIO factor/10000 ten-ohm-unit output. This does not calibrate the board,
-enable LPAT/thermal policy, or publish temperatures or voltages.
+enable thermal policy or publish voltages. Board temperatures require the optional factory LPAT path below.
 The PMIC die is not decoded with the thermistor transfer function.
-Reserved thermistor source codes return ENODATA. Calibrated temperature/voltage transfer and the die conversion remain incomplete.
+Reserved thermistor source codes return ENODATA. Voltage and PMIC die calibration remain incomplete.
 
 ## Ownership and lifecycle
 
@@ -81,3 +81,48 @@ test. It does not demonstrate that Mi Pad2 firmware reentered on a previous boot
 establish a historical crash cause, enable thermal OpRegions or calibrate any
 temperature. The separate `pmic1` full image retains the ADC module requirements;
 its build and signature verification are not boot or heat-fix qualification.
+
+
+## Mi Pad2 factory LPAT board temperatures
+
+The optional constant `LPAT` package on the parent PMIC converts nominal ohms
+from SYSTEMP0/1/2 to decikelvin. Saved factory AML returns these values directly
+through its `_TMP` paths (STR0/STR2/STR3); 47000 ohms maps to 2981 decikelvin.
+This is the PMIC table, NOT INT340x's centi-Celsius LPAT convention. IIO processed
+temperature is milli-Celsius, using the kernel's -273150 absolute-zero offset.
+Thus the factory 2981 marker is 24950 mC, not silently rounded to 25000 mC.
+
+Only the Mi Pad2 MFD model is supported. The loader accepts a constant package,
+not a method, validates integer widths before narrowing, strictly ascending
+temperature/descending positive resistance, count bounds and duplicate points.
+No available/valid table means unchanged raw and ohm paths, no processed TEMP
+attributes. Allocation failure remains a probe error. The channel array is per
+device and only in_temp5/6/7_input are added; battery, ID and PMIC die get no
+invented temperature. Current and count come from one completed acquisition
+under the existing PM/transaction lock. Rail codes and invalid selectors return
+ENODATA; readings outside the table return ERANGE without extrapolation or
+publishing a partial result. Signed 64-bit interpolation retains milli-Celsius
+precision. Negative Celsius is a result, never confused with an errno.
+
+`test-lpat.py --cc gcc` (also clang) compiles the actual conversion header and
+extracts the real loader/read_raw bodies into mock ACPI/IRQ contexts, O2 and
+ASan/UBSan separately. It tests all 4097 counts/16 selectors on all three board
+channels against an independent weighted-endpoint oracle; malformed/method/
+wide/duplicate tables, allocation failures, arithmetic extremes, forbidden
+channels, PM/removal/fault and acquisition failures, single acquisition and
+unchanged raw/ohm output. Removing the constant-package guard must fail the
+method-evaluation negative control. Source ABI gates are not kernel execution.
+
+Reference: latte-dev/android_kernel_xiaomi_latte d2afb1de9a761ff01dafdf9efe4736e521ab71f6,
+vendor `wc_opregion.c` resistance/ALERT ABI (factor/1000), not legacy IIO's
+factor/10000 ten-ohm representation. Test fixture records the 30-point factory
+PMI5 table from DSDT SHA256 fe557b8b9d4b71a0d9cd443cf8a6d95e42ff6d9fb155bb1c15e9e12a78a70536.
+No raw device logs, private ACPI dumps or identifying traces are included.
+
+The full `lpat1` image has its own release and signed-module artifact gates.
+Build, hardware temperature freshness/IRQ and sleep/wake are independent gates.
+This adds factory-derived readings, not independently calibrated thermometry.
+It registers no thermal zones, evaluates no `_TMP`, forces no AVBG/AVBD gates,
+rewrites no monitor/thermal/GPIO/charger controls and enables no thermal policy.
+The missing virtual-GPIO/thermal-IRQ/autonomous-monitor policy remains separate;
+this alone is not proof of a heat or freeze fix.
