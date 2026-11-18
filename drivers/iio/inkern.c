@@ -323,52 +323,38 @@ error_free_chans:
 static struct iio_channel *iio_channel_get_sys(const char *name,
 					       const char *channel_name)
 {
-	struct iio_map_internal *c_i = NULL, *c = NULL;
-	int err;
+	struct iio_map_internal *c_i;
 
 	if (!(name || channel_name))
 		return ERR_PTR(-ENODEV);
 
-	/* first find matching entry the channel map */
-	scoped_guard(mutex, &iio_map_list_lock) {
-		list_for_each_entry(c_i, &iio_map_list, l) {
-			if ((name && strcmp(name, c_i->map->consumer_dev_name) != 0) ||
-			    (channel_name &&
-			     strcmp(channel_name, c_i->map->consumer_channel) != 0))
-				continue;
-			c = c_i;
-			iio_device_get(c->indio_dev);
-			break;
+	struct iio_channel *channel __free(kfree) = NULL;
+
+	/* Resolve every map field while unregister is excluded. The IIO device
+	 * reference keeps the provider alive, not this separately allocated node.
+	 */
+	guard(mutex)(&iio_map_list_lock);
+	list_for_each_entry(c_i, &iio_map_list, l) {
+		if ((name && strcmp(name, c_i->map->consumer_dev_name) != 0) ||
+		    (channel_name &&
+		     strcmp(channel_name, c_i->map->consumer_channel) != 0))
+			continue;
+		channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+		if (!channel)
+			return ERR_PTR(-ENOMEM);
+		channel->indio_dev = c_i->indio_dev;
+		iio_device_get(channel->indio_dev);
+		if (c_i->map->adc_channel_label) {
+			channel->channel = iio_chan_spec_from_name(channel->indio_dev,
+							 c_i->map->adc_channel_label);
+			if (!channel->channel) {
+				iio_device_put(channel->indio_dev);
+				return ERR_PTR(-EINVAL);
+			}
 		}
+		return_ptr(channel);
 	}
-	if (!c)
-		return ERR_PTR(-ENODEV);
-
-	struct iio_channel *channel __free(kfree) =
-		kzalloc(sizeof(*channel), GFP_KERNEL);
-	if (!channel) {
-		err = -ENOMEM;
-		goto error_no_mem;
-	}
-
-	channel->indio_dev = c->indio_dev;
-
-	if (c->map->adc_channel_label) {
-		channel->channel =
-			iio_chan_spec_from_name(channel->indio_dev,
-						c->map->adc_channel_label);
-
-		if (!channel->channel) {
-			err = -EINVAL;
-			goto error_no_mem;
-		}
-	}
-
-	return_ptr(channel);
-
-error_no_mem:
-	iio_device_put(c->indio_dev);
-	return ERR_PTR(err);
+	return ERR_PTR(-ENODEV);
 }
 
 struct iio_channel *iio_channel_get(struct device *dev,

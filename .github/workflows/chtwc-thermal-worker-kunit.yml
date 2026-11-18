@@ -19,6 +19,7 @@ jobs:
             .github/workflows
             init
             kernel
+            drivers/iio
       - name: Install UML build dependencies
         run: |
           sudo apt-get update -qq
@@ -30,16 +31,25 @@ jobs:
           mkdir .chtwc-kunit-kernel
           curl --fail --location --retry 3 https://codeload.github.com/E7G/linux_latte/tar.gz/d62a71057b7b3ea32e232d53d2a22b3f1926ad4f -o kernel.tar.gz
           tar -xzf kernel.tar.gz --strip-components=1 -C .chtwc-kunit-kernel
+          cp .chtwc-kunit-kernel/drivers/iio/inkern.c iio-map-baseline.c
+          cp drivers/iio/inkern.c .chtwc-kunit-kernel/drivers/iio/inkern.c
           cp init/Kconfig .chtwc-kunit-kernel/init/Kconfig
           cp kernel/Kconfig.hz .chtwc-kunit-kernel/kernel/Kconfig.hz
           cp drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h .chtwc-kunit-kernel/lib/kunit/
           cp tools/testing/chtwc/chtwc_thermal_worker_test.c .chtwc-kunit-kernel/lib/kunit/
           cp tools/testing/chtwc/chtwc_thermal_transport_test.c .chtwc-kunit-kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_iio_map_test.c .chtwc-kunit-kernel/lib/kunit/
           printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> .chtwc-kunit-kernel/lib/kunit/Kconfig
-          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o chtwc_thermal_transport_test.o\n' >> .chtwc-kunit-kernel/lib/kunit/Makefile
-          printf 'CONFIG_KUNIT=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
+          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o chtwc_thermal_transport_test.o chtwc_iio_map_test.o\n' >> .chtwc-kunit-kernel/lib/kunit/Makefile
+          printf 'CONFIG_KUNIT=y\nCONFIG_IIO=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
           git rev-parse HEAD > source-commit.txt
-          sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h tools/testing/chtwc/chtwc_thermal_{worker,transport}_test.c init/Kconfig kernel/Kconfig.hz > source-sha256.txt
+          sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h tools/testing/chtwc/chtwc_thermal_{worker,transport}_test.c init/Kconfig kernel/Kconfig.hz drivers/iio/inkern.c tools/testing/chtwc/chtwc_iio_map_test.c tools/testing/chtwc/test_iio_map_lifetime.c tools/testing/chtwc/test-iio-map-lifetime.py > source-sha256.txt
+      - name: Reproduce and reject original map-node UAF with both compilers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/testing/chtwc/test-iio-map-lifetime.py --source drivers/iio/inkern.c --baseline iio-map-baseline.c --cc gcc | tee iio-map-gcc.json
+          python3 tools/testing/chtwc/test-iio-map-lifetime.py --source drivers/iio/inkern.c --baseline iio-map-baseline.c --cc clang | tee iio-map-clang.json
       - name: Build and run real kernel workqueue tests
         shell: bash
         run: |
@@ -48,12 +58,15 @@ jobs:
           python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit 2>&1 | tee ../positive-console.log
           cp .kunit/test.log ../positive-kunit.log
           grep -qx CONFIG_SCHED_BORE=y .kunit/.config
+          grep -qx CONFIG_IIO=y .kunit/.config
           grep -qx CONFIG_MIN_BASE_SLICE_NS=2000000 .kunit/.config
           grep -q 'ok .*worker_stop_running_test' ../positive-kunit.log
           grep -q 'ok .*worker_coalesce_running_test' ../positive-kunit.log
           grep -q 'ok .*worker_route_exhaustive_test' ../positive-kunit.log
           grep -q 'ok .*worker_route_shared_source_test' ../positive-kunit.log
           grep -q 'ok .*transport_stop_drains_critical_test' ../positive-kunit.log
+          grep -q 'ok .*iio_map_reference_test' ../positive-kunit.log
+          grep -q 'ok .*iio_map_invalid_label_test' ../positive-kunit.log
       - name: Preserve x86 scheduler defaults and explicit tuning
         shell: bash
         run: |
@@ -149,4 +162,5 @@ jobs:
             source-commit.txt
             source-sha256.txt
             x86-config.log
+            iio-map-*.json
             .chtwc-kunit-kernel/.kunit/.config
