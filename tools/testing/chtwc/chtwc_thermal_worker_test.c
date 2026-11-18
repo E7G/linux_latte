@@ -7,6 +7,7 @@
 #include <linux/sched/task.h>
 
 #include "chtwc_thermal_worker.h"
+#include "chtwc_thermal_route.h"
 
 struct worker_fixture {
 	struct chtwc_thermal_worker worker;
@@ -196,11 +197,105 @@ static void worker_coalesce_running_test(struct kunit *test)
 	KUNIT_EXPECT_EQ(test, fixture->events[1].levels, (u8)2);
 }
 
+static unsigned int route_required(unsigned int bank, unsigned int bit)
+{
+	if (bank == 0) {
+		if (bit & 0x11) return 1;
+		if (bit & 0x22) return 2;
+		if (bit & 0x44) return 4;
+		if (bit == 0x08) return 8;
+	} else if (bank == 1) {
+		if (bit <= 8) return bit;
+		if (bit == 0x10) return 0x30;
+		if (bit == 0x80) return 0x40;
+	} else if (bank == 2) {
+		if (bit & 0x41) return 0x10;
+		if (bit & 0x82) return 0x20;
+	} else if (bit >= 0x10) {
+		return bit >> 4;
+	}
+	return 0;
+}
+
+static void worker_route_exhaustive_test(struct kunit *test)
+{
+	const unsigned int mask_values[] = {0, 0x55, 0xaa, 0xff};
+	unsigned int bank, value, choice, ready, bit, other;
+
+	for (bank = 0; bank < 4; bank++)
+		for (value = 0; value < 256; value++)
+			for (choice = 0; choice < ARRAY_SIZE(mask_values); choice++)
+				for (ready = 0; ready < 128; ready++) {
+					u8 status[4] = {0}, masks[4] = {255, 255, 255, 255};
+					struct chtwc_thermal_route plan;
+					unsigned int missing = 0, recipients = 0;
+					int ret;
+
+					status[bank] = value;
+					masks[bank] = mask_values[choice];
+					for (bit = 1; bit <= 128; bit <<= 1) {
+						unsigned int required;
+
+						if (!(value & ~masks[bank] & bit))
+							continue;
+						required = route_required(bank, bit);
+						if (!required || (ready & required) != required)
+							missing |= bit;
+						else
+							recipients |= required;
+					}
+					ret = chtwc_thermal_plan(status, masks, ready, &plan);
+					if (ret != (missing ? -ENXIO : 0) ||
+					    plan.missing[bank] != missing ||
+					    plan.recipients != (missing ? 0 : recipients) ||
+					    plan.acknowledge[bank] !=
+						(missing ? 0 : (value & ~masks[bank]))) {
+						KUNIT_FAIL(test, "bank=%u status=%u mask=%u ready=%u",
+							   bank, value, masks[bank], ready);
+						return;
+					}
+					for (other = 0; other < 4; other++)
+						if (other != bank &&
+						    (plan.acknowledge[other] || plan.missing[other])) {
+							KUNIT_FAIL(test, "unrelated bank modified");
+							return;
+						}
+				}
+}
+
+static void worker_route_shared_source_test(struct kunit *test)
+{
+	u8 status[4] = {0, 0x10, 0, 0};
+	u8 masks[4] = {255, 0xef, 255, 255};
+	struct chtwc_thermal_route plan;
+
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_plan(status, masks, 0x10, &plan), -ENXIO);
+	KUNIT_EXPECT_EQ(test, plan.acknowledge[1], (u8)0);
+	KUNIT_ASSERT_EQ(test, chtwc_thermal_plan(status, masks, 0x30, &plan), 0);
+	KUNIT_EXPECT_EQ(test, plan.recipients, (u8)0x30);
+	KUNIT_EXPECT_EQ(test, plan.acknowledge[1], (u8)0x10);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 0x10), -ENXIO);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 0x30), 0);
+	status[0] = 1; masks[0] = 0xfe;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_plan(status, masks, 0x11, &plan), -ENXIO);
+	KUNIT_EXPECT_EQ(test, plan.acknowledge[0], (u8)0);
+	KUNIT_EXPECT_EQ(test, plan.acknowledge[1], (u8)0);
+	/* Board's two alerts, third alert and critical bank all belong together. */
+	masks[0] = 0x88; masks[1] = 0xf8; masks[2] = 0xff; masks[3] = 0x8f;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 7), 0);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 3), -ENXIO);
+	masks[3] = 0x0f;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 7), -ENXIO);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_ownership_ready(masks, 127), 0);
+}
+
 static struct kunit_case worker_cases[] = {
 	KUNIT_CASE(worker_restart_test),
 	KUNIT_CASE(worker_adc_owner_test),
 	KUNIT_CASE(worker_stop_running_test),
 	KUNIT_CASE(worker_coalesce_running_test),
+	KUNIT_CASE(worker_route_exhaustive_test),
+	KUNIT_CASE(worker_route_shared_source_test),
 	{}
 };
 

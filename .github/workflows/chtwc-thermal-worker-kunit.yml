@@ -32,13 +32,13 @@ jobs:
           tar -xzf kernel.tar.gz --strip-components=1 -C .chtwc-kunit-kernel
           cp init/Kconfig .chtwc-kunit-kernel/init/Kconfig
           cp kernel/Kconfig.hz .chtwc-kunit-kernel/kernel/Kconfig.hz
-          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h .chtwc-kunit-kernel/lib/kunit/
+          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker,route}.h .chtwc-kunit-kernel/lib/kunit/
           cp tools/testing/chtwc/chtwc_thermal_worker_test.c .chtwc-kunit-kernel/lib/kunit/
           printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> .chtwc-kunit-kernel/lib/kunit/Kconfig
           printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o\n' >> .chtwc-kunit-kernel/lib/kunit/Makefile
           printf 'CONFIG_KUNIT=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
           git rev-parse HEAD > source-commit.txt
-          sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h tools/testing/chtwc/chtwc_thermal_worker_test.c init/Kconfig kernel/Kconfig.hz > source-sha256.txt
+          sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker,route}.h tools/testing/chtwc/chtwc_thermal_worker_test.c init/Kconfig kernel/Kconfig.hz > source-sha256.txt
       - name: Build and run real kernel workqueue tests
         shell: bash
         run: |
@@ -50,6 +50,8 @@ jobs:
           grep -qx CONFIG_MIN_BASE_SLICE_NS=2000000 .kunit/.config
           grep -q 'ok .*worker_stop_running_test' ../positive-kunit.log
           grep -q 'ok .*worker_coalesce_running_test' ../positive-kunit.log
+          grep -q 'ok .*worker_route_exhaustive_test' ../positive-kunit.log
+          grep -q 'ok .*worker_route_shared_source_test' ../positive-kunit.log
       - name: Preserve x86 scheduler defaults and explicit tuning
         shell: bash
         run: |
@@ -83,6 +85,29 @@ jobs:
           test "$result" -ne 0
           grep -q 'not ok .*worker_stop_running_test' ../negative-kunit.log
           printf 'PASS: removing synchronous drain was rejected by actual kernel test\n' > ../negative-result.txt
+      - name: Reject partial ownership of the shared battery event
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .chtwc-kunit-kernel/lib/kunit/chtwc_thermal_route.h route-header.original
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.chtwc-kunit-kernel/lib/kunit/chtwc_thermal_route.h')
+          s=p.read_text()
+          needle='!required || (required & ready) != required'
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,'!required || !(required & ready)'))
+          PY
+          cd .chtwc-kunit-kernel
+          set +e
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-route-console.log 2>&1
+          result=$?
+          set -e
+          cp .kunit/test.log ../negative-route-kunit.log
+          cp ../route-header.original lib/kunit/chtwc_thermal_route.h
+          test "$result" -ne 0
+          grep -q 'not ok .*worker_route_shared_source_test' ../negative-route-kunit.log
+          printf 'PASS: acknowledging before every shared recipient is ready was rejected\n' > ../negative-route-result.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -94,6 +119,7 @@ jobs:
             *-console.log
             *-kunit.log
             negative-result.txt
+            negative-route-result.txt
             source-commit.txt
             source-sha256.txt
             x86-config.log
