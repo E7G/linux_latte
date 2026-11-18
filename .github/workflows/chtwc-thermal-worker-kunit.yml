@@ -1,0 +1,78 @@
+name: Mi Pad2 thermal worker kernel tests
+on:
+  push:
+    branches: [codex/ci-chtwc-thermal-worker-20261118]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kunit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install UML build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends flex bison libelf-dev libssl-dev
+      - name: Prepare exact kernel and tested overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir kernel
+          curl --fail --location --retry 3 https://codeload.github.com/E7G/linux_latte/tar.gz/d62a71057b7b3ea32e232d53d2a22b3f1926ad4f -o kernel.tar.gz
+          tar -xzf kernel.tar.gz --strip-components=1 -C kernel
+          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_thermal_worker_test.c kernel/lib/kunit/
+          printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> kernel/lib/kunit/Kconfig
+          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o\n' >> kernel/lib/kunit/Makefile
+          printf 'CONFIG_KUNIT=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
+          git rev-parse HEAD > source-commit.txt
+          sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h tools/testing/chtwc/chtwc_thermal_worker_test.c > source-sha256.txt
+      - name: Build and run real kernel workqueue tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd kernel
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit 2>&1 | tee ../positive-console.log
+          cp .kunit/test.log ../positive-kunit.log
+          grep -q 'ok .*worker_stop_running_test' ../positive-kunit.log
+          grep -q 'ok .*worker_coalesce_running_test' ../positive-kunit.log
+      - name: Reject non-draining stop mutation in the same kernel tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp kernel/lib/kunit/chtwc_thermal_worker.h worker-header.original
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('kernel/lib/kunit/chtwc_thermal_worker.h')
+          s=p.read_text()
+          needle='disable_work_sync(&worker->work);'
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,'disable_work(&worker->work);'))
+          PY
+          cd kernel
+          set +e
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-console.log 2>&1
+          result=$?
+          set -e
+          cp .kunit/test.log ../negative-kunit.log
+          cp ../worker-header.original lib/kunit/chtwc_thermal_worker.h
+          test "$result" -ne 0
+          grep -q 'not ok .*worker_stop_running_test' ../negative-kunit.log
+          printf 'PASS: removing synchronous drain was rejected by actual kernel test\n' > ../negative-result.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chtwc-thermal-worker-kunit
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            *-console.log
+            *-kunit.log
+            negative-result.txt
+            source-commit.txt
+            source-sha256.txt
+            kernel/.kunit/.config
