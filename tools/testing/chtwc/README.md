@@ -62,3 +62,22 @@ Validate raw freshness/IRQ counts, unload/reload and sleep/wake independently.
 Do not enable a temperature-policy daemon from raw ADC counts, fake AVBG/AVBD,
 or bypass virtual-GPIO/thermal-IRQ/die/LPAT integration gates.
 Upstream PRs remain paused; this work is for the user's own integrated branch.
+
+
+## PMIC OpRegion registration reentry
+
+`python3 tools/testing/chtwc/test-pmic-init.py --cc gcc` extracts the exact
+current `intel_pmic_install_opregion_handler()` body and context/data structures,
+then compiles them with synchronous ACPI registration and allocation stubs.
+The installed context must already contain the callback data, mutex, regmap and
+optional LPAT when a connecting `_REG` reenters. Tests cover power/thermal table
+combinations, absent/present LPAT, each registration failure and reverse unwind,
+invalid arguments, allocation failure and publication only after full success.
+GCC/Clang O2 and ASan/UBSan are separate runs. A negative control restores only
+the previous late data assignment and must fail at the synchronous reentry.
+
+This is a real-installer/mock-ACPI regression, not an AML interpreter or hardware
+test. It does not demonstrate that Mi Pad2 firmware reentered on a previous boot,
+establish a historical crash cause, enable thermal OpRegions or calibrate any
+temperature. The separate `pmic1` full image retains the ADC module requirements;
+its build and signature verification are not boot or heat-fix qualification.

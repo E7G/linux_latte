@@ -268,6 +268,8 @@ int intel_pmic_install_opregion_handler(struct device *dev, acpi_handle handle,
 
 	mutex_init(&opregion->lock);
 	opregion->regmap = regmap;
+	/* Installing a handler can synchronously run _REG and reenter it. */
+	opregion->data = d;
 	opregion->lpat_table = acpi_lpat_get_conversion_table(handle);
 
 	if (d->power_table_count)
@@ -298,7 +300,6 @@ int intel_pmic_install_opregion_handler(struct device *dev, acpi_handle handle,
 		goto out_remove_thermal_handler;
 	}
 
-	opregion->data = d;
 	intel_pmic_opregion = opregion;
 	return 0;
 
