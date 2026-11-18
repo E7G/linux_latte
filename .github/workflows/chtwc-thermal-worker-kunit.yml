@@ -13,6 +13,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            drivers/acpi/pmic
+            tools/testing/chtwc
+            .github/workflows
       - name: Install UML build dependencies
         run: |
           sudo apt-get update -qq
@@ -21,13 +25,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir kernel
+          mkdir .chtwc-kunit-kernel
           curl --fail --location --retry 3 https://codeload.github.com/E7G/linux_latte/tar.gz/d62a71057b7b3ea32e232d53d2a22b3f1926ad4f -o kernel.tar.gz
-          tar -xzf kernel.tar.gz --strip-components=1 -C kernel
-          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h kernel/lib/kunit/
-          cp tools/testing/chtwc/chtwc_thermal_worker_test.c kernel/lib/kunit/
-          printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> kernel/lib/kunit/Kconfig
-          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o\n' >> kernel/lib/kunit/Makefile
+          tar -xzf kernel.tar.gz --strip-components=1 -C .chtwc-kunit-kernel
+          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h .chtwc-kunit-kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_thermal_worker_test.c .chtwc-kunit-kernel/lib/kunit/
+          printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> .chtwc-kunit-kernel/lib/kunit/Kconfig
+          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o\n' >> .chtwc-kunit-kernel/lib/kunit/Makefile
           printf 'CONFIG_KUNIT=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
           git rev-parse HEAD > source-commit.txt
           sha256sum drivers/acpi/pmic/chtwc_thermal_{irq,worker}.h tools/testing/chtwc/chtwc_thermal_worker_test.c > source-sha256.txt
@@ -35,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd kernel
+          cd .chtwc-kunit-kernel
           python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit 2>&1 | tee ../positive-console.log
           cp .kunit/test.log ../positive-kunit.log
           grep -q 'ok .*worker_stop_running_test' ../positive-kunit.log
@@ -44,16 +48,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp kernel/lib/kunit/chtwc_thermal_worker.h worker-header.original
+          cp .chtwc-kunit-kernel/lib/kunit/chtwc_thermal_worker.h worker-header.original
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('kernel/lib/kunit/chtwc_thermal_worker.h')
+          p=Path('.chtwc-kunit-kernel/lib/kunit/chtwc_thermal_worker.h')
           s=p.read_text()
           needle='disable_work_sync(&worker->work);'
           assert s.count(needle)==1
           p.write_text(s.replace(needle,'disable_work(&worker->work);'))
           PY
-          cd kernel
+          cd .chtwc-kunit-kernel
           set +e
           python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-console.log 2>&1
           result=$?
@@ -68,6 +72,7 @@ jobs:
         with:
           name: chtwc-thermal-worker-kunit
           retention-days: 7
+          include-hidden-files: true
           if-no-files-found: error
           path: |
             *-console.log
@@ -75,4 +80,4 @@ jobs:
             negative-result.txt
             source-commit.txt
             source-sha256.txt
-            kernel/.kunit/.config
+            .chtwc-kunit-kernel/.kunit/.config
