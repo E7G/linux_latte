@@ -1,0 +1,198 @@
+name: Build pinned MiPad2 screenshot desktop
+on:
+  push:
+    branches: [codex/ci-quicktile-screenshot-491e7c9]
+permissions:
+  contents: read
+jobs:
+
+  desktop:
+
+
+    runs-on: ubuntu-24.04
+
+    timeout-minutes: 350
+
+    env:
+
+      DENIAL_FLUTTER_ENGINE_JOBS: '2'
+
+      DENIAL_BUILD_JOBS: '2'
+
+      CARGO_BUILD_JOBS: '2'
+
+      DENIAL_BUILD_IDENTITY: mipad2.491e7c9ba97ec2c9a12fc744d2bbadf649f6a138
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+        with:
+
+          persist-credentials: false
+          repository: E7G/denial
+          ref: 491e7c9ba97ec2c9a12fc744d2bbadf649f6a138
+
+      - name: Prepare isolated hosted builder
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+          # Only disposable, preinstalled SDKs on this GitHub-hosted runner.
+
+          for path in /usr/local/lib/android /usr/share/dotnet /opt/ghc; do
+
+            test ! -e "$path" || sudo rm -rf --one-file-system -- "$path"
+
+          done
+
+          df -h /
+
+          sudo apt-get update
+
+          sudo apt-get install -y build-essential clang cmake ninja-build jq curl git pkg-config python3 python3-venv unzip xz-utils rsync zstd patchelf bison flex gperf nasm libgtk-3-dev libgbm-dev libdrm-dev libinput-dev libudev-dev libseat-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgles2-mesa-dev libvulkan-dev libssl-dev libsystemd-dev libdbus-1-dev libpam0g-dev libpulse-dev libpipewire-0.3-dev libdisplay-info-dev libasound2-dev libfontconfig-dev libfreetype6-dev libcap-dev libxtst-dev libxrandr-dev libxcursor-dev xdg-desktop-portal
+
+          test -x /usr/libexec/xdg-desktop-portal || test -x /usr/lib/xdg-desktop-portal
+          rustup toolchain install 1.98.0 --profile minimal --component clippy --component rustfmt
+
+          mkdir -p evidence
+
+          cp prebuilt/flutter-engine/SOURCE_LOCK.json evidence/SOURCE_LOCK.json
+
+          test "$(git rev-parse HEAD)" = 491e7c9ba97ec2c9a12fc744d2bbadf649f6a138
+          git rev-parse HEAD > evidence/source-commit.txt
+
+      - name: Verify backward-compatible generated wire
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/flatc-pinned"
+          curl --fail --location --retry 3 https://github.com/google/flatbuffers/releases/download/v25.9.23/Linux.flatc.binary.g%2B%2B-13.zip -o "$RUNNER_TEMP/flatc-pinned.zip"
+          echo "de0c6ad114a5a686ecf64322528c602c7d4512446a93f290f54f00ee5abea487  $RUNNER_TEMP/flatc-pinned.zip" | sha256sum --check
+          unzip "$RUNNER_TEMP/flatc-pinned.zip" -d "$RUNNER_TEMP/flatc-pinned"
+          chmod +x "$RUNNER_TEMP/flatc-pinned/flatc"
+          FLATC="$RUNNER_TEMP/flatc-pinned/flatc" tools/generate-denial-wire --check 2>&1 | tee evidence/wire-generation-check.log
+
+      - name: Bootstrap locked toolchains
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+          python3 tools/check-settings-schema
+          tools/denial-pc bootstrap 2>&1 | tee evidence/bootstrap.log
+
+      - name: Preflight real portal frontend on private bus
+        shell: bash
+        run: |
+          set -euo pipefail
+          frontend=/usr/libexec/xdg-desktop-portal
+          test -x "$frontend" || frontend=/usr/lib/xdg-desktop-portal
+          CARGO_TARGET_DIR="$HOME/.cache/denial/pc-build/rust" DENIAL_PORTAL_TEST_BUS=1 DENIAL_PORTAL_FRONTEND_TEST="$frontend" dbus-run-session -- cargo test --locked --manifest-path compositor/Cargo.toml --jobs 2 -p denial-portal -- --test-threads=1 2>&1 | tee evidence/portal-preflight.log
+      - name: Preflight locked Flutter types before expensive engine build
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter="$HOME/.cache/denial/pc-dependencies/flutter/bin/flutter"
+          test -x "$flutter"
+          cd dart_shell
+          "$flutter" pub get --enforce-lockfile
+          "$flutter" analyze --no-pub --no-fatal-infos --no-fatal-warnings 2>&1 | tee ../evidence/flutter-analysis.log
+          git diff --exit-code -- pubspec.lock
+      - name: Check minimal KMS feature path before release build
+        shell: bash
+        run: |
+          set -euo pipefail
+          CARGO_TARGET_DIR="$HOME/.cache/denial/pc-build/rust" cargo check --locked --manifest-path compositor/Cargo.toml --jobs 2 --no-default-features --features kms --bin deniald 2>&1 | tee evidence/minimal-kms-check.log
+          CARGO_TARGET_DIR="$HOME/.cache/denial/pc-build/rust" cargo check --locked --manifest-path compositor/Cargo.toml --jobs 2 --no-default-features --features flutter --bin deniald 2>&1 | tee evidence/flutter-feature-check.log
+      - name: Test recents gestures and workspace contracts before release build
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/denial-pc flutter-test test/widgets/shell_overlay_host_test.dart test/widgets/mobile_recents_interaction_test.dart test/widgets/mobile_workspace_interaction_test.dart test/widgets/mobile_workspace_gestures_test.dart test/state/mobile_workspace_controller_test.dart test/state/mobile_workspace_input_test.dart test/state/mobile_workspace_layout_test.dart test/platform/denial_wire_test.dart test/widgets/system_shade_layer_test.dart test/platform/screenshot_result_test.dart 2>&1 | tee evidence/workspace-preflight-tests.log
+
+      - name: Build release candidate
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+          tools/denial-pc build 2>&1 | tee evidence/build.log
+
+          git diff --exit-code -- prebuilt/flutter-engine/SOURCE_LOCK.json dart_shell/pubspec.lock compositor/Cargo.lock
+
+      - name: Test actual compositor and lock-matched Flutter shell
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+          tools/denial-pc test 2>&1 | tee evidence/tests.log
+
+      - name: Stage candidate without deployment
+
+        shell: bash
+
+        run: |
+
+          set -euo pipefail
+
+          mkdir -p candidate/bin candidate/bundle candidate/settings
+
+          for binary in deniald denialctl denial-portal; do
+
+            install -m755 "$HOME/.cache/denial/pc-build/rust/release/$binary" "candidate/bin/$binary"
+
+          done
+
+          cp -a dart_shell/build/linux/x64/release/bundle/. candidate/bundle/
+
+          cp -a settings_app/build/linux/x64/release/bundle/. candidate/settings/
+
+          cp prebuilt/flutter-engine/SOURCE_LOCK.json candidate/
+
+          git rev-parse HEAD > candidate/source-commit.txt
+
+          printf '%s\n' 'Build/tests passed. Not deployed. Tablet ABI and runtime validation pending.' > candidate/VALIDATION.txt
+
+          (cd candidate && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+          tar --zstd -cf denial-mipad2-candidate.tar.zst candidate
+
+          sha256sum denial-mipad2-candidate.tar.zst > denial-mipad2-candidate.tar.zst.sha256
+
+      - uses: actions/upload-artifact@v4
+
+        if: success()
+
+        with:
+
+          name: denial-mipad2-491e7c9ba97ec2c9a12fc744d2bbadf649f6a138
+
+          path: denial-mipad2-candidate.tar.zst*
+
+          if-no-files-found: error
+
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+
+        if: always()
+
+        with:
+
+          name: denial-build-evidence-491e7c9ba97ec2c9a12fc744d2bbadf649f6a138
+
+          path: evidence/
+
+          retention-days: 7
+
