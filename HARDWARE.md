@@ -41,6 +41,29 @@ This page separates **code/configuration presence** from **runtime validation**.
 | VA-API video decode | Userspace feature | Project hardware-verified userspace setup | Current notes record `libva 2.24.0` + Intel i965 2.4.5 on CherryView; this is not a special kernel driver in this tree. |
 | Suspend / resume | Kernel PM present | **Needs repeated regression** | Re-test wireless, audio, IIO, camera and USB after resume. |
 
+## Windows and Android driver cross-check
+
+The [Mi Pad 2 Windows 10 backup](https://github.com/brianwoo/mipad2-win10-howto/tree/8526424ca49d9077c16329f150fa176b88bd642e)
+records the selected device ID in each driver's `restore.ini`. This identifies
+the device in that backup more precisely than the matching INF model list.
+
+| Windows backup device ID | Linux path in the 7.2 integration tree |
+| --- | --- |
+| PMIC `ACPI\VEN_INT&DEV_34D3&REV_0003` | Whiskey Cove MFD matches `INT34D3`. The optional LPAT ADC module exposes board thermistor readings. |
+| DPTF `INT3400`, `INT3403`, `INT3406`, `INT3407`, processor `8086:22dc` | INT340x thermal drivers, ACPI DPTF power participant and the legacy BSW processor thermal driver. Firmware policy and temperature events still need device validation. |
+| GPIO `INT33FF`, I²C `808622C1`, UART `8086228A` | Cherryview pinctrl and the ACPI LPSS I²C/UART tables. |
+| Sensor hub `8086:22d8`, sensor collection `HID\VID_8086&PID_0002` | Intel ISH and HID sensor IIO drivers. Validate orientation and readings after resume. |
+| RT5659 `ACPI\VEN_10EC&DEV_5659&SUBSYS_1D721502` | RT5659 codec matches `10EC5659`. Speaker DSP, routing and physical outputs have separate checks. |
+| Charger `XMCC0002`, BQMG0890 | Linux exposes a BQ25890 charger and BQ27520 gauge. Windows OEM OpRegion behavior remains unverified under Linux. |
+| ISP `8086:22b8`, OV5693 `INT33BE`, T4KA3 `XMCC0003` | AtomISP and the two sensor drivers. Test streaming, autofocus and image quality independently. |
+
+The [Android Whiskey Cove GPADC driver](https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/drivers/iio/adc/intel_wcove_gpadc.c)
+provides the channel and acquisition reference. The
+[factory LPAT notes](tools/testing/chtwc/README.md#mi-pad2-factory-lpat-board-temperatures)
+describe how the 7.2 candidate converts the three board NTC readings to
+milli-Celsius. Hardware temperature freshness, thermal IRQ routing and firmware
+policy remain open.
+
 ## What CI actually proves
 
 `.github/workflows/mipad2-camera-check.yml` currently validates important Mi Pad 2 configuration and source assumptions, including:

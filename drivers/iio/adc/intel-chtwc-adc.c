@@ -19,6 +19,7 @@
 #include <linux/pm.h>
 #include <linux/regmap.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 #include <linux/sysfs.h>
 
 #include "intel-chtwc-adc-core.h"
@@ -41,6 +42,7 @@ struct chtwc_adc {
 	bool suspended;
 	bool removing;
 	bool faulted;
+	struct iio_chan_spec channels[];
 };
 
 static int chtwc_adc_read(void *context, unsigned int reg, unsigned int *value)
@@ -328,13 +330,14 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	struct intel_soc_pmic *pmic = dev_get_drvdata(pdev->dev.parent);
 	struct device *dev = &pdev->dev;
 	struct iio_dev *indio_dev;
-	struct iio_chan_spec *channels;
 	struct chtwc_adc *adc;
 	int ret, i;
 
 	if (pmic->cht_wc_model != INTEL_CHT_WC_XIAOMI_MIPAD2)
 		return -ENODEV;
-	indio_dev = devm_iio_device_alloc(dev, sizeof(*adc));
+	/* Channel handles can retain the IIO device after driver detach. */
+	indio_dev = devm_iio_device_alloc(dev, struct_size(adc, channels,
+							 ARRAY_SIZE(chtwc_iio_channels)));
 	if (!indio_dev)
 		return -ENOMEM;
 	adc = iio_priv(indio_dev);
@@ -343,13 +346,10 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	ret = chtwc_adc_load_lpat(adc);
 	if (ret)
 		return ret;
-	channels = devm_kmemdup(dev, chtwc_iio_channels,
-			       sizeof(chtwc_iio_channels), GFP_KERNEL);
-	if (!channels)
-		return -ENOMEM;
+	memcpy(adc->channels, chtwc_iio_channels, sizeof(chtwc_iio_channels));
 	if (adc->lpat) {
 		for (i = 5; i <= 7; i++)
-			channels[i].info_mask_separate |= BIT(IIO_CHAN_INFO_PROCESSED);
+			adc->channels[i].info_mask_separate |= BIT(IIO_CHAN_INFO_PROCESSED);
 	}
 	adc->irq = platform_get_irq(pdev, 0);
 	if (adc->irq < 0)
@@ -393,7 +393,7 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	indio_dev->name = "cht-whiskey-cove-adc";
 	indio_dev->info = &chtwc_adc_info;
 	indio_dev->modes = INDIO_DIRECT_MODE;
-	indio_dev->channels = channels;
+	indio_dev->channels = adc->channels;
 	indio_dev->num_channels = ARRAY_SIZE(chtwc_iio_channels);
 	/* No thermal-zone registration, threshold or autonomous-monitor writes. */
 	return devm_iio_device_register(dev, indio_dev);

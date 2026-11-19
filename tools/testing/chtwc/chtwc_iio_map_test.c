@@ -43,16 +43,19 @@ static void map_cleanup(void *context)
 
 static struct map_fixture *map_create(struct kunit *test, const char *label)
 {
+	struct iio_chan_spec *channel;
 	struct map_fixture *fixture;
 	int ret;
 
 	fixture = kunit_kzalloc(test, sizeof(*fixture), GFP_KERNEL);
 	if (!fixture)
 		return NULL;
-	fixture->provider = iio_device_alloc(NULL, 0);
+	fixture->provider = iio_device_alloc(NULL, sizeof(*channel));
 	if (!fixture->provider)
 		return NULL;
-	fixture->provider->channels = &map_channel;
+	channel = iio_priv(fixture->provider);
+	*channel = map_channel;
+	fixture->provider->channels = channel;
 	fixture->provider->num_channels = 1;
 	fixture->provider->info = &map_info;
 	ret = kunit_add_action_or_reset(test, map_cleanup, fixture);
@@ -77,13 +80,15 @@ static void iio_map_reference_test(struct kunit *test)
 	fixture->channel = iio_channel_get(NULL, "chtwc-iio-kunit-SYS0");
 	KUNIT_ASSERT_NOT_ERR_OR_NULL(test, fixture->channel);
 	KUNIT_EXPECT_PTR_EQ(test, fixture->channel->indio_dev, fixture->provider);
-	KUNIT_EXPECT_PTR_EQ(test, fixture->channel->channel, &map_channel);
+	KUNIT_EXPECT_PTR_EQ(test, fixture->channel->channel, fixture->provider->channels);
 	KUNIT_ASSERT_EQ(test, iio_map_array_unregister(fixture->provider), 0);
 	fixture->mapped = false;
 	missing = iio_channel_get(NULL, "chtwc-iio-kunit-SYS0");
 	KUNIT_EXPECT_EQ(test, PTR_ERR_OR_ZERO(missing), -ENODEV);
 	if (!IS_ERR(missing))
 		iio_channel_release(missing);
+	iio_device_free(fixture->provider);
+	fixture->provider = NULL;
 	KUNIT_EXPECT_EQ(test, iio_read_channel_processed(fixture->channel, &val), 0);
 	KUNIT_EXPECT_EQ(test, val, 24950);
 }
