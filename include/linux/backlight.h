@@ -140,6 +140,16 @@ struct backlight_ops {
 	int (*get_brightness)(struct backlight_device *);
 
 	/**
+	 * @set_brightness_limit: Apply a hardware brightness ceiling.
+	 *
+	 * Optional. Drivers must preserve props.brightness and enforce the
+	 * ceiling in subsequent update_status calls. A limit equal to
+	 * max_brightness removes the ceiling. The operation is serialized
+	 * with update_status and returns 0 or a negative error code.
+	 */
+	int (*set_brightness_limit)(struct backlight_device *, unsigned int limit);
+
+	/**
 	 * @controls_device: Check against the display device
 	 *
 	 * Check if the backlight controls the given display device. This
@@ -392,6 +402,8 @@ struct backlight_device *backlight_device_get_by_name(const char *name);
 struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
 int backlight_device_set_brightness(struct backlight_device *bd,
 				    unsigned long brightness);
+int backlight_device_set_brightness_limit(struct backlight_device *bd,
+					  unsigned int limit);
 
 #if IS_REACHABLE(CONFIG_BACKLIGHT_CLASS_DEVICE)
 void backlight_notify_blank(struct backlight_device *bd,

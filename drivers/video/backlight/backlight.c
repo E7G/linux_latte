@@ -206,6 +206,29 @@ int backlight_device_set_brightness(struct backlight_device *bd,
 }
 EXPORT_SYMBOL(backlight_device_set_brightness);
 
+int backlight_device_set_brightness_limit(struct backlight_device *bd,
+					  unsigned int limit)
+{
+	int ret;
+
+	{
+		guard(mutex)(&bd->ops_lock);
+		if (!bd->ops)
+			return -ENXIO;
+		if (!bd->ops->set_brightness_limit)
+			return -EOPNOTSUPP;
+		if (limit > bd->props.max_brightness)
+			return -EINVAL;
+
+		guard(mutex)(&bd->update_lock);
+		ret = bd->ops->set_brightness_limit(bd, limit);
+	}
+	if (!ret)
+		sysfs_notify(&bd->dev.kobj, NULL, "actual_brightness");
+	return ret;
+}
+EXPORT_SYMBOL_GPL(backlight_device_set_brightness_limit);
+
 static ssize_t brightness_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
