@@ -18,17 +18,21 @@ on:
       - drivers/acpi/pmic/chtwc_thermal_*.h
       - drivers/acpi/pmic/intel_pmic_chtwc_thermal.c
       - drivers/mfd/intel_soc_pmic_chtwc.c
+      - drivers/media/i2c/t4ka3.c
       - drivers/power/supply/bq25890_charger.c
       - drivers/thermal/intel/int340x_thermal/int3403_thermal.c
       - drivers/thermal/intel/int340x_thermal/int3406_thermal.c
       - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.[ch]
+      - drivers/video/backlight/backlight.c
+      - drivers/video/backlight/lp855x_bl.c
+      - include/linux/backlight.h
       - tools/testing/chtwc/**
 
 permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat6
+  KERNEL_FLAVOR: lpat8
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
