@@ -19,6 +19,7 @@
 #define INT3403_PERF_CHANGED_EVENT	0x80
 #define INT3403_PERF_TRIP_POINT_CHANGED	0x81
 #define INT3403_THERMAL_EVENT		0x90
+#define INT3403_MIPAD2_TRIP_CHANGED	0x91
 
 /* Preserved structure for future expandbility */
 struct int3403_sensor {
@@ -49,6 +50,11 @@ static void int3403_notify(acpi_handle handle,
 	obj = priv->priv;
 	if (priv->type != INT3403_TYPE_SENSOR || !obj)
 		return;
+
+	/* The Mi Pad 2 SSDT sends 0x91 after changing its passive trip. */
+	if (event == INT3403_MIPAD2_TRIP_CHANGED &&
+	    int340x_mipad2_pmic_temp_zone(priv->adev))
+		event = INT3403_PERF_TRIP_POINT_CHANGED;
 
 	switch (event) {
 	case INT3403_PERF_CHANGED_EVENT:

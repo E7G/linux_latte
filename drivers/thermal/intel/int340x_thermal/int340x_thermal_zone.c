@@ -7,22 +7,9 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/acpi.h>
-#include <linux/dmi.h>
-#include <linux/string.h>
 #include <linux/thermal.h>
 #include <linux/units.h>
 #include "int340x_thermal_zone.h"
-
-static bool int340x_mipad2_pmic_temp_zone(struct acpi_device *adev)
-{
-	const char *name = acpi_device_bid(adev);
-
-	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
-	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
-	       acpi_dev_hid_uid_match(adev, "INT3403", NULL) &&
-	       (!strcmp(name, "STR0") || !strcmp(name, "STR1") ||
-		!strcmp(name, "STR2") || !strcmp(name, "STR3"));
-}
 
 static int int340x_thermal_get_zone_temp(struct thermal_zone_device *zone,
 					 int *temp)
@@ -218,6 +205,10 @@ static int int340x_update_one_trip(struct thermal_trip *trip, void *arg)
 	struct int34x_thermal_zone *int34x_zone = arg;
 	struct acpi_device *zone_adev = int34x_zone->adev;
 	int temp, err;
+
+	/* Aux trips are programmed through PATx and have no AML getter. */
+	if (trip->flags & THERMAL_TRIP_FLAG_RW_TEMP)
+		return 0;
 
 	switch (trip->type) {
 	case THERMAL_TRIP_CRITICAL:

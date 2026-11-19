@@ -7,6 +7,7 @@ on:
       - codex/mipad2-7.2-integrated
       - codex/mipad2-thermal-validation
       - codex/mipad2-chtwc-thermal
+      - codex/mipad2-lpat4
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
@@ -15,14 +16,16 @@ on:
       - drivers/acpi/pmic/chtwc_thermal_*.h
       - drivers/acpi/pmic/intel_pmic_chtwc_thermal.c
       - drivers/mfd/intel_soc_pmic_chtwc.c
-      - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c
+      - drivers/power/supply/bq25890_charger.c
+      - drivers/thermal/intel/int340x_thermal/int3403_thermal.c
+      - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.[ch]
       - tools/testing/chtwc/**
 
 permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat3
+  KERNEL_FLAVOR: lpat4
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
@@ -67,6 +70,8 @@ jobs:
           make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" olddefconfig
           grep -qx 'CONFIG_IIO_CHT_WC_ADC=m' out/build/.config
           grep -qx 'CONFIG_INTEL_CHTWC_THERMAL=m' out/build/.config
+          grep -qx 'CONFIG_INT340X_THERMAL=y' out/build/.config
+          grep -qx 'CONFIG_CHARGER_BQ25890=y' out/build/.config
           python3 - <<'PY'
           from pathlib import Path
           source = Path('drivers/acpi/pmic/intel_pmic_chtwc.c').read_text()
