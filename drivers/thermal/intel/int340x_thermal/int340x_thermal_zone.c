@@ -7,9 +7,32 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/acpi.h>
+#include <linux/iio/consumer.h>
 #include <linux/thermal.h>
 #include <linux/units.h>
 #include "int340x_thermal_zone.h"
+
+static int int340x_mipad2_iio_temp(struct acpi_device *adev)
+{
+	static const char * const channels[] = {
+		"mipad2-dptf-str0", "mipad2-dptf-str1", "mipad2-dptf-str2",
+	};
+	unsigned int index = acpi_device_bid(adev)[3] - '0';
+	struct iio_channel *channel;
+	int temp, ret;
+
+	/* The caller identified STR0-3. STR3 has no calibrated IIO source. */
+	if (!IS_REACHABLE(CONFIG_IIO) || index >= ARRAY_SIZE(channels))
+		return THERMAL_TEMP_INVALID;
+
+	/* The ADC may bind after INT3403 or be removed and reloaded. */
+	channel = iio_channel_get(NULL, channels[index]);
+	if (IS_ERR(channel))
+		return THERMAL_TEMP_INVALID;
+	ret = iio_read_channel_attribute(channel, &temp, NULL, IIO_CHAN_INFO_PROCESSED);
+	iio_channel_release(channel);
+	return ret == IIO_VAL_INT ? temp : THERMAL_TEMP_INVALID;
+}
 
 static int int340x_thermal_get_zone_temp(struct thermal_zone_device *zone,
 					 int *temp)
@@ -31,8 +54,8 @@ static int int340x_thermal_get_zone_temp(struct thermal_zone_device *zone,
 
 		*temp = conv_temp * 10;
 	} else if (!tmp && int340x_mipad2_pmic_temp_zone(d->adev)) {
-		/* The DPTF SSDT returns zero when the PMIC reading is unavailable. */
-		*temp = THERMAL_TEMP_INVALID;
+		/* The SSDT returns zero when it cannot access the PMIC region. */
+		*temp = int340x_mipad2_iio_temp(d->adev);
 	} else {
 		/* _TMP returns the temperature in tenths of degrees Kelvin */
 		*temp = deci_kelvin_to_millicelsius(tmp);
