@@ -1400,11 +1400,9 @@ static int t4ka3_pm_suspend(struct device *dev)
 	return 0;
 }
 
-static int t4ka3_pm_resume(struct device *dev)
+static int t4ka3_power_on(struct t4ka3_data *sensor, bool mipad2)
 {
-	struct t4ka3_data *sensor = dev_get_drvdata(dev);
 	u16 sensor_id;
-	int ret;
 
 	usleep_range(5000, 6000);
 
@@ -1417,7 +1415,7 @@ static int t4ka3_pm_resume(struct device *dev)
 	 * physical high-low-high pulse is logical 0-1-0. ACPI still owns the
 	 * rails and PMC clock; do not duplicate the legacy GMIN power writes.
 	 */
-	if (sensor->reset_gpio && t4ka3_has_mipad2_otp(sensor)) {
+	if (sensor->reset_gpio && mipad2) {
 		fsleep(1000);
 		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
 		fsleep(1000);
@@ -1430,18 +1428,31 @@ static int t4ka3_pm_resume(struct device *dev)
 	/* waiting for the sensor after powering up */
 	fsleep(20000);
 
-	ret = t4ka3_detect(sensor, &sensor_id);
-	if (ret) {
-		dev_err(sensor->dev, "sensor detect failed\n");
-		if (sensor->powerdown_gpio)
-			gpiod_set_value_cansleep(sensor->powerdown_gpio, 1);
-		if (sensor->reset_gpio)
-			gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+	return t4ka3_detect(sensor, &sensor_id);
+}
 
-		return ret;
+static int t4ka3_pm_resume(struct device *dev)
+{
+	struct t4ka3_data *sensor = dev_get_drvdata(dev);
+	bool mipad2 = t4ka3_has_mipad2_otp(sensor);
+	unsigned int attempts = mipad2 ? 4 : 1;
+	int ret;
+
+	/* The Mi Pad 2 Android driver allows four power-on attempts. */
+	for (;;) {
+		ret = t4ka3_power_on(sensor, mipad2);
+		if (!ret)
+			return 0;
+
+		t4ka3_pm_suspend(dev);
+		if (ret != -EREMOTEIO || attempts == 1)
+			break;
+		attempts--;
+		usleep_range(10000, 15000);
 	}
 
-	return 0;
+	dev_err(dev, "sensor detect failed\n");
+	return ret;
 }
 
 static DEFINE_RUNTIME_DEV_PM_OPS(t4ka3_pm_ops, t4ka3_pm_suspend,
