@@ -10,6 +10,8 @@
 #include <linux/platform_device.h>
 #include <linux/acpi.h>
 #include <linux/backlight.h>
+#include <linux/dmi.h>
+#include <linux/string.h>
 #include <linux/thermal.h>
 #include <acpi/video.h>
 
@@ -20,7 +22,7 @@ struct int3406_thermal_data {
 	int lower_limit;
 	acpi_handle handle;
 	struct acpi_video_device_brightness *br;
-	struct backlight_device *raw_bd;
+	struct backlight_device *backlight;
 	struct thermal_cooling_device *cooling_dev;
 };
 
@@ -34,8 +36,8 @@ struct int3406_thermal_data {
  * graphics driver, we make the assumption that it represents
  * the percentage of brightness only
  */
-#define ACPI_TO_RAW(v, d) (d->raw_bd->props.max_brightness * v / 100)
-#define RAW_TO_ACPI(v, d) (v * 100 / d->raw_bd->props.max_brightness)
+#define ACPI_TO_RAW(v, d) (d->backlight->props.max_brightness * v / 100)
+#define RAW_TO_ACPI(v, d) (v * 100 / d->backlight->props.max_brightness)
 
 static int
 int3406_thermal_get_max_state(struct thermal_cooling_device *cooling_dev,
@@ -61,7 +63,7 @@ int3406_thermal_set_cur_state(struct thermal_cooling_device *cooling_dev,
 
 	raw_level = ACPI_TO_RAW(acpi_level, d);
 
-	return backlight_device_set_brightness(d->raw_bd, raw_level);
+	return backlight_device_set_brightness(d->backlight, raw_level);
 }
 
 static int
@@ -72,7 +74,7 @@ int3406_thermal_get_cur_state(struct thermal_cooling_device *cooling_dev,
 	int acpi_level;
 	int index;
 
-	acpi_level = RAW_TO_ACPI(d->raw_bd->props.brightness, d);
+	acpi_level = RAW_TO_ACPI(d->backlight->props.brightness, d);
 
 	/*
 	 * There is no 1:1 mapping between the firmware interface level
@@ -131,6 +133,37 @@ static void int3406_notify(acpi_handle handle, u32 event, void *data)
 		int3406_thermal_get_limit(data);
 }
 
+static void int3406_put_backlight(void *data)
+{
+	put_device(data);
+}
+
+static struct backlight_device *int3406_mipad2_backlight(struct device *dev)
+{
+	struct backlight_device *bd;
+	struct device *supplier;
+	int ret;
+
+	/* The LP8556 panel backlight is registered as BACKLIGHT_PLATFORM. */
+	bd = backlight_device_get_by_name("lcd-backlight");
+	if (!bd)
+		return ERR_PTR(-EPROBE_DEFER);
+
+	ret = devm_add_action_or_reset(dev, int3406_put_backlight, &bd->dev);
+	if (ret)
+		return ERR_PTR(ret);
+
+	supplier = bd->dev.parent;
+	if (!supplier || !ACPI_COMPANION(supplier) ||
+	    !acpi_dev_hid_uid_match(ACPI_COMPANION(supplier), "LP855600", NULL))
+		return ERR_PTR(-ENODEV);
+
+	if (!device_link_add(dev, supplier, DL_FLAG_AUTOPROBE_CONSUMER))
+		return ERR_PTR(-ENODEV);
+
+	return bd;
+}
+
 static int int3406_thermal_probe(struct platform_device *pdev)
 {
 	struct acpi_device *adev = ACPI_COMPANION(&pdev->dev);
@@ -146,10 +179,17 @@ static int int3406_thermal_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	d->handle = ACPI_HANDLE(&pdev->dev);
 
-	bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+	if (dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	    dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	    !strcmp(acpi_device_bid(adev), "TDSP"))
+		bd = int3406_mipad2_backlight(&pdev->dev);
+	else
+		bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+	if (IS_ERR(bd))
+		return PTR_ERR(bd);
 	if (!bd)
 		return -ENODEV;
-	d->raw_bd = bd;
+	d->backlight = bd;
 
 	ret = acpi_video_get_levels(ACPI_COMPANION(&pdev->dev), &d->br, NULL);
 	if (ret)
@@ -182,6 +222,7 @@ static void int3406_thermal_remove(struct platform_device *pdev)
 {
 	struct int3406_thermal_data *d = platform_get_drvdata(pdev);
 
+	acpi_remove_notify_handler(d->handle, ACPI_DEVICE_NOTIFY, int3406_notify);
 	thermal_cooling_device_unregister(d->cooling_dev);
 	kfree(d->br);
 }
