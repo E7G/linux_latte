@@ -86,8 +86,10 @@ its build and signature verification are not boot or heat-fix qualification.
 ## Mi Pad2 factory LPAT board temperatures
 
 The optional constant `LPAT` package on the parent PMIC converts nominal ohms
-from SYSTEMP0/1/2 to decikelvin. Saved factory AML returns these values directly
-through its `_TMP` paths (STR0/STR2/STR3); 47000 ohms maps to 2981 decikelvin.
+from SYSTEMP0/1/2 to decikelvin. In the factory DPTF SSDT, the `_TMP` methods
+of STR0/1/2 reference PMI5.TMP0/1/2 respectively. STR3 uses TMP3 and needs
+separate qualification. Firmware did not expose STR1 as a thermal zone during
+the 2026-11-19 test. In the LPAT table, 47000 ohms maps to 2981 decikelvin.
 This is the PMIC table, NOT INT340x's centi-Celsius LPAT convention. IIO processed
 temperature is milli-Celsius, using the kernel's -273150 absolute-zero offset.
 Thus the factory 2981 marker is 24950 mC, not silently rounded to 25000 mC.
