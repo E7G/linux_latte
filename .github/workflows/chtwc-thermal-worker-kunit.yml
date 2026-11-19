@@ -1,7 +1,9 @@
 name: Mi Pad2 thermal worker kernel tests
 on:
   push:
-    branches: [codex/ci-chtwc-thermal-worker-20261118]
+    branches:
+      - codex/ci-chtwc-thermal-worker-20261118
+      - codex/mipad2-thermal-validation
   workflow_dispatch:
 permissions:
   contents: read

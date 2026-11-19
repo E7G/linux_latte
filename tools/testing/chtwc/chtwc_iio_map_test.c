@@ -2,6 +2,7 @@
 /* Actual IIO core APIs with an unregistered in-memory provider, no hardware. */
 #include <kunit/test.h>
 #include <linux/iio/consumer.h>
+#include <linux/iio/driver.h>
 #include <linux/iio/iio.h>
 #include <linux/iio/machine.h>
 #include <linux/module.h>
@@ -80,7 +81,7 @@ static void iio_map_reference_test(struct kunit *test)
 	KUNIT_ASSERT_EQ(test, iio_map_array_unregister(fixture->provider), 0);
 	fixture->mapped = false;
 	missing = iio_channel_get(NULL, "chtwc-iio-kunit-SYS0");
-	KUNIT_EXPECT_TRUE(test, IS_ERR(missing));
+	KUNIT_EXPECT_EQ(test, PTR_ERR_OR_ZERO(missing), -ENODEV);
 	if (!IS_ERR(missing))
 		iio_channel_release(missing);
 	KUNIT_EXPECT_EQ(test, iio_read_channel_processed(fixture->channel, &val), 0);
