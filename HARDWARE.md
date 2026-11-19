@@ -61,8 +61,14 @@ The [Android Whiskey Cove GPADC driver](https://github.com/latte-dev/android_ker
 provides the channel and acquisition reference. The
 [factory LPAT notes](tools/testing/chtwc/README.md#mi-pad2-factory-lpat-board-temperatures)
 describe how the 7.2 candidate converts the three board NTC readings to
-milli-Celsius. Hardware temperature freshness, thermal IRQ routing and firmware
-policy remain open.
+milli-Celsius. Thermal IRQ routing and firmware policy remain open.
+
+On 2026-11-19, the Mi Pad 2 running `7.2.15-mipad2-integrated-lpat1` returned
+26.8–28.6 °C from its three board NTCs. Nine reads produced nine ADC IRQs.
+The ACPI `STR0`, `STR2` and `STR3` zones returned −273.15 °C on the same boot.
+The new INT340x candidate marks a zero `_TMP` reading invalid for those three
+Mi Pad 2 zones. The LPAT readings remain available through IIO. Device
+validation of the INT340x candidate and thermal trip notification remain open.
 
 ## What CI actually proves
 
