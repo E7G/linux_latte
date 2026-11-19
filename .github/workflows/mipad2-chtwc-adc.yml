@@ -3,16 +3,22 @@ name: Build Mi Pad2 LPAT integration
 on:
   workflow_dispatch:
   push:
-    branches: [codex/mipad2-7.2-integrated]
+    branches:
+      - codex/mipad2-7.2-integrated
+      - codex/mipad2-thermal-validation
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
       - drivers/acpi/pmic/intel_pmic.c
       - drivers/acpi/pmic/intel_pmic.h
+      - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c
       - tools/testing/chtwc/**
 
 permissions:
   contents: read
+
+env:
+  KERNEL_FLAVOR: lpat2
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
@@ -54,7 +60,7 @@ jobs:
           mkdir -p out/build
           cp configs/mipad2-72-r8-baseline.config out/build/.config
           scripts/config --file out/build/.config --module IIO_CHT_WC_ADC --module NFT_NAT --module NFT_MASQ --module EROFS_FS --enable EROFS_FS_ZIP --enable EROFS_FS_XATTR --enable EROFS_FS_SECURITY --enable EROFS_FS_ZIP_LZMA --enable EROFS_FS_ZIP_DEFLATE --enable EROFS_FS_ZIP_ZSTD --set-val EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS 2 --disable EROFS_FS_DEBUG --disable EROFS_FS_PCPU_KTHREAD --disable EROFS_FS_PCPU_KTHREAD_HIPRI --disable LOCALVERSION_AUTO
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-lpat1 olddefconfig
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" olddefconfig
           grep -qx 'CONFIG_IIO_CHT_WC_ADC=m' out/build/.config
           python3 - <<'PY'
           from pathlib import Path
@@ -63,8 +69,8 @@ jobs:
           assert '.thermal_table' not in source
           PY
           sh fix_file/tests/mipad2-kernel-config-audit.sh out/build/.config
-          release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-lpat1 kernelrelease)
-          case "$release" in 7.2.15-mipad2-integrated-lpat1) ;; *) echo "Unexpected release $release"; exit 1;; esac
+          release=$(make -s O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" kernelrelease)
+          test "$release" = "7.2.15-mipad2-integrated-$KERNEL_FLAVOR"
           printf '%s\n' "$release" > out/kernelrelease.txt
       - name: Compile reviewed AHCI conflict resolution with Clang
         run: |
@@ -80,19 +86,19 @@ jobs:
           set -eu
           jobs=$(nproc)
           if [ "$jobs" -gt 2 ]; then jobs=$((jobs - 2)); else jobs=1; fi
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-lpat1 W=1 -j"$jobs" bzImage modules
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" W=1 -j"$jobs" bzImage modules
       - name: Stage and independently verify all module signatures
         run: |
           set -eu
-          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION=-lpat1 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PWD/out/modules" modules_install
-          python3 scripts/mipad2_verify_daily_bundle.py --build out/build --modules out/modules --output out/bundle --commit "$(git rev-parse HEAD)" --flavor lpat1
-          tar --zstd -C out/bundle -cf out/mipad2-72-lpat1.tar.zst .
-          sha256sum out/mipad2-72-lpat1.tar.zst > out/mipad2-72-lpat1.tar.zst.sha256
+          make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PWD/out/modules" modules_install
+          python3 scripts/mipad2_verify_daily_bundle.py --build out/build --modules out/modules --output out/bundle --commit "$(git rev-parse HEAD)" --flavor "$KERNEL_FLAVOR"
+          tar --zstd -C out/bundle -cf "out/mipad2-72-$KERNEL_FLAVOR.tar.zst" .
+          sha256sum "out/mipad2-72-$KERNEL_FLAVOR.tar.zst" > "out/mipad2-72-$KERNEL_FLAVOR.tar.zst.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: mipad2-72-lpat1-${{ github.sha }}
+          name: mipad2-72-${{ env.KERNEL_FLAVOR }}-${{ github.sha }}
           path: |
-            out/mipad2-72-lpat1.tar.zst
-            out/mipad2-72-lpat1.tar.zst.sha256
+            out/mipad2-72-${{ env.KERNEL_FLAVOR }}.tar.zst
+            out/mipad2-72-${{ env.KERNEL_FLAVOR }}.tar.zst.sha256
           if-no-files-found: error
           retention-days: 14
