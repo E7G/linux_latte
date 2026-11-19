@@ -600,14 +600,17 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_HEALTH:
-		if (!state.chrg_fault && !state.bat_fault && !state.boost_fault)
-			val->intval = POWER_SUPPLY_HEALTH_GOOD;
-		else if (state.bat_fault)
+		if (state.bat_fault)
 			val->intval = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
 		else if (state.chrg_fault == CHRG_FAULT_TIMER_EXPIRED)
 			val->intval = POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE;
-		else if (state.chrg_fault == CHRG_FAULT_THERMAL_SHUTDOWN)
+		else if (state.chrg_fault == CHRG_FAULT_THERMAL_SHUTDOWN ||
+			 state.ntc_fault == NTC_FAULT_HOT)
 			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
+		else if (state.ntc_fault == NTC_FAULT_COLD)
+			val->intval = POWER_SUPPLY_HEALTH_COLD;
+		else if (!state.chrg_fault && !state.boost_fault)
+			val->intval = POWER_SUPPLY_HEALTH_GOOD;
 		else
 			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
 		break;
