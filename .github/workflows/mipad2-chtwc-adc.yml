@@ -8,6 +8,7 @@ on:
       - codex/mipad2-thermal-validation
       - codex/mipad2-chtwc-thermal
       - codex/mipad2-lpat4
+      - codex/mipad2-dptf-iio
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
@@ -25,7 +26,7 @@ permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat4
+  KERNEL_FLAVOR: lpat5
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
@@ -70,6 +71,7 @@ jobs:
           make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" olddefconfig
           grep -qx 'CONFIG_IIO_CHT_WC_ADC=m' out/build/.config
           grep -qx 'CONFIG_INTEL_CHTWC_THERMAL=m' out/build/.config
+          grep -qx 'CONFIG_IIO=y' out/build/.config
           grep -qx 'CONFIG_INT340X_THERMAL=y' out/build/.config
           grep -qx 'CONFIG_CHARGER_BQ25890=y' out/build/.config
           python3 - <<'PY'
