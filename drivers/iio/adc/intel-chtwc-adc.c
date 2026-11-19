@@ -331,6 +331,10 @@ static const struct iio_map chtwc_adc_thermal_maps[] = {
 	IIO_MAP("SYSTEMP0", "cht_wcove_thermal", "systemp0"),
 	IIO_MAP("SYSTEMP1", "cht_wcove_thermal", "systemp1"),
 	IIO_MAP("SYSTEMP2", "cht_wcove_thermal", "systemp2"),
+	/* Use ACPI zone identities rather than instance numbers from enumeration. */
+	IIO_MAP("SYSTEMP0", "mipad2-dptf", "mipad2-dptf-str0"),
+	IIO_MAP("SYSTEMP1", "mipad2-dptf", "mipad2-dptf-str1"),
+	IIO_MAP("SYSTEMP2", "mipad2-dptf", "mipad2-dptf-str2"),
 	{ }
 };
 
@@ -347,12 +351,17 @@ static int chtwc_adc_add_thermal(struct platform_device *pdev,
 	struct resource resource;
 	int irq, ret;
 
+	if (!IS_ENABLED(CONFIG_INTEL_CHTWC_THERMAL) &&
+	    !IS_ENABLED(CONFIG_INT340X_THERMAL))
+		return 0;
+
+	ret = devm_iio_map_array_register(dev, indio_dev, chtwc_adc_thermal_maps);
+	if (ret || !IS_ENABLED(CONFIG_INTEL_CHTWC_THERMAL))
+		return ret;
+
 	irq = platform_get_irq_byname(pdev, "thermal");
 	if (irq < 0)
 		return irq;
-	ret = devm_iio_map_array_register(dev, indio_dev, chtwc_adc_thermal_maps);
-	if (ret)
-		return ret;
 
 	/* A child unbinds and suspends before its ADC provider. */
 	resource = (struct resource)DEFINE_RES_IRQ(irq);
@@ -438,7 +447,7 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	ret = devm_iio_device_register(dev, indio_dev);
 	if (ret)
 		return ret;
-	if (IS_ENABLED(CONFIG_INTEL_CHTWC_THERMAL) && adc->lpat)
+	if (adc->lpat)
 		return chtwc_adc_add_thermal(pdev, indio_dev);
 
 	return 0;
