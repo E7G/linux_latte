@@ -7,6 +7,9 @@
 #ifndef __INT340X_THERMAL_ZONE_H__
 #define __INT340X_THERMAL_ZONE_H__
 
+#include <linux/acpi.h>
+#include <linux/dmi.h>
+#include <linux/string.h>
 #include <acpi/acpi_lpat.h>
 
 #define INT340X_THERMAL_MAX_ACT_TRIP_COUNT	10
@@ -30,6 +33,17 @@ struct int34x_thermal_zone *int340x_thermal_zone_add(struct acpi_device *,
 				int (*get_temp) (struct thermal_zone_device *, int *));
 void int340x_thermal_zone_remove(struct int34x_thermal_zone *);
 void int340x_thermal_update_trips(struct int34x_thermal_zone *int34x_zone);
+
+static inline bool int340x_mipad2_pmic_temp_zone(struct acpi_device *adev)
+{
+	const char *name = acpi_device_bid(adev);
+
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       acpi_dev_hid_uid_match(adev, "INT3403", NULL) &&
+	       (!strcmp(name, "STR0") || !strcmp(name, "STR1") ||
+		!strcmp(name, "STR2") || !strcmp(name, "STR3"));
+}
 
 static inline void int340x_thermal_zone_set_priv_data(
 			struct int34x_thermal_zone *tzone, void *priv_data)
