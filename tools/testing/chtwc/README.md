@@ -128,3 +128,23 @@ It registers no thermal zones, evaluates no `_TMP`, forces no AVBG/AVBD gates,
 rewrites no monitor/thermal/GPIO/charger controls and enables no thermal policy.
 The missing virtual-GPIO/thermal-IRQ/autonomous-monitor policy remains separate;
 this alone is not proof of a heat or freeze fix.
+
+## LPAT3 board thermal device
+
+For a Xiaomi Mi Pad 2 with a valid factory LPAT table, the ADC driver creates
+a thermal child after registering the calibrated IIO channels. The three
+tripless `chtwc-sys0`, `chtwc-sys1` and `chtwc-sys2` zones read the processed
+SYSTEMP0/1/2 samples in milli-Celsius. The child uses the ADC device as its
+parent so it suspends, shuts down and unregisters before the provider.
+
+The driver requests only the nested PMIC thermal IRQ with automatic enable
+disabled. If firmware leaves every source masked or any documented enabled
+source lacks a consumer, the zones remain available for manual reads and the
+IRQ stays masked. The driver uses the full-bank transport when the ownership
+check succeeds. A capture failure masks the nested IRQ and faults it until
+reprobe. Suspend and removal synchronize the producer and drain accepted
+events before releasing the IIO channels.
+
+LPAT3 adds no programmed trips or autonomous monitor settings. Thermal
+notification delivery on the tablet and ownership of enabled die and battery
+sources still require physical verification.

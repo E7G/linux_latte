@@ -6,11 +6,15 @@ on:
     branches:
       - codex/mipad2-7.2-integrated
       - codex/mipad2-thermal-validation
+      - codex/mipad2-chtwc-thermal
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
       - drivers/acpi/pmic/intel_pmic.c
       - drivers/acpi/pmic/intel_pmic.h
+      - drivers/acpi/pmic/chtwc_thermal_*.h
+      - drivers/acpi/pmic/intel_pmic_chtwc_thermal.c
+      - drivers/mfd/intel_soc_pmic_chtwc.c
       - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c
       - tools/testing/chtwc/**
 
@@ -18,7 +22,7 @@ permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat2
+  KERNEL_FLAVOR: lpat3
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
@@ -59,9 +63,10 @@ jobs:
           set -eu
           mkdir -p out/build
           cp configs/mipad2-72-r8-baseline.config out/build/.config
-          scripts/config --file out/build/.config --module IIO_CHT_WC_ADC --module NFT_NAT --module NFT_MASQ --module EROFS_FS --enable EROFS_FS_ZIP --enable EROFS_FS_XATTR --enable EROFS_FS_SECURITY --enable EROFS_FS_ZIP_LZMA --enable EROFS_FS_ZIP_DEFLATE --enable EROFS_FS_ZIP_ZSTD --set-val EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS 2 --disable EROFS_FS_DEBUG --disable EROFS_FS_PCPU_KTHREAD --disable EROFS_FS_PCPU_KTHREAD_HIPRI --disable LOCALVERSION_AUTO
+          scripts/config --file out/build/.config --module IIO_CHT_WC_ADC --module INTEL_CHTWC_THERMAL --module NFT_NAT --module NFT_MASQ --module EROFS_FS --enable EROFS_FS_ZIP --enable EROFS_FS_XATTR --enable EROFS_FS_SECURITY --enable EROFS_FS_ZIP_LZMA --enable EROFS_FS_ZIP_DEFLATE --enable EROFS_FS_ZIP_ZSTD --set-val EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS 2 --disable EROFS_FS_DEBUG --disable EROFS_FS_PCPU_KTHREAD --disable EROFS_FS_PCPU_KTHREAD_HIPRI --disable LOCALVERSION_AUTO
           make O=out/build LLVM=1 ARCH=x86_64 LOCALVERSION="-$KERNEL_FLAVOR" olddefconfig
           grep -qx 'CONFIG_IIO_CHT_WC_ADC=m' out/build/.config
+          grep -qx 'CONFIG_INTEL_CHTWC_THERMAL=m' out/build/.config
           python3 - <<'PY'
           from pathlib import Path
           source = Path('drivers/acpi/pmic/intel_pmic_chtwc.c').read_text()
