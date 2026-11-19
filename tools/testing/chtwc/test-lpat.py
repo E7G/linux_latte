@@ -31,10 +31,13 @@ def function(name):
     return driver[start:end] + '\n'
 
 # ABI exposure is a source gate; actual full kernel build remains separate.
-assert 'channels = devm_kmemdup(dev, chtwc_iio_channels,' in driver
-assert 'for (i = 5; i <= 7; i++)' in driver
-assert 'channels[i].info_mask_separate |= BIT(IIO_CHAN_INFO_PROCESSED)' in driver
-assert 'indio_dev->channels = channels;' in driver
+probe = function('chtwc_adc_probe')
+assert re.search(r'devm_iio_device_alloc\(dev,\s*struct_size\(adc, channels,\s*'
+                 r'ARRAY_SIZE\(chtwc_iio_channels\)\)\)', probe)
+assert 'memcpy(adc->channels, chtwc_iio_channels, sizeof(chtwc_iio_channels))' in probe
+assert 'for (i = 5; i <= 7; i++)' in probe
+assert 'adc->channels[i].info_mask_separate |= BIT(IIO_CHAN_INFO_PROCESSED)' in probe
+assert 'indio_dev->channels = adc->channels;' in probe
 assert 'acpi_evaluate_integer' not in driver and '"_TMP"' not in driver
 rows = []
 with tempfile.TemporaryDirectory(prefix='chtwc-lpat-') as name:
