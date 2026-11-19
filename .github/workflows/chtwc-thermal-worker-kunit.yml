@@ -4,6 +4,7 @@ on:
     branches:
       - codex/ci-chtwc-thermal-worker-20261118
       - codex/mipad2-thermal-validation
+      - codex/mipad2-chtwc-thermal
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +23,7 @@ jobs:
             init
             kernel
             drivers/iio
+            drivers/mfd
             drivers/thermal/intel/int340x_thermal
       - name: Install UML build dependencies
         run: |
@@ -37,6 +39,8 @@ jobs:
           cp .chtwc-kunit-kernel/drivers/iio/inkern.c iio-map-baseline.c
           cp drivers/iio/inkern.c .chtwc-kunit-kernel/drivers/iio/inkern.c
           cp drivers/iio/adc/intel-chtwc-adc.c .chtwc-kunit-kernel/drivers/iio/adc/
+          cp drivers/mfd/intel_soc_pmic_chtwc.c .chtwc-kunit-kernel/drivers/mfd/
+          cp drivers/acpi/pmic/{Kconfig,Makefile,chtwc_thermal_route.h,chtwc_thermal_transport.h,intel_pmic_chtwc_thermal.c} .chtwc-kunit-kernel/drivers/acpi/pmic/
           cp drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c .chtwc-kunit-kernel/drivers/thermal/intel/int340x_thermal/
           cp init/Kconfig .chtwc-kunit-kernel/init/Kconfig
           cp kernel/Kconfig.hz .chtwc-kunit-kernel/kernel/Kconfig.hz
@@ -50,7 +54,9 @@ jobs:
           git rev-parse HEAD > source-commit.txt
           sha256sum \
             drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h \
+            drivers/acpi/pmic/{Kconfig,Makefile,intel_pmic_chtwc_thermal.c} \
             drivers/iio/{inkern.c,adc/intel-chtwc-adc.c} \
+            drivers/mfd/intel_soc_pmic_chtwc.c \
             drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c \
             init/Kconfig kernel/Kconfig.hz \
             tools/testing/chtwc/chtwc_thermal_{worker,transport}_test.c \
@@ -77,6 +83,7 @@ jobs:
           grep -q 'ok .*worker_route_exhaustive_test' ../positive-kunit.log
           grep -q 'ok .*worker_route_shared_source_test' ../positive-kunit.log
           grep -q 'ok .*transport_stop_drains_critical_test' ../positive-kunit.log
+          grep -q 'ok .*transport_board_only_ownership_test' ../positive-kunit.log
           grep -q 'ok .*iio_map_reference_test' ../positive-kunit.log
           grep -q 'ok .*iio_map_invalid_label_test' ../positive-kunit.log
       - name: Preserve x86 scheduler defaults and explicit tuning
@@ -89,18 +96,24 @@ jobs:
           scripts/config --file .kconfig-x86/.config --set-val MIN_BASE_SLICE_NS 3000000
           make ARCH=x86_64 O=.kconfig-x86 olddefconfig >> ../x86-config.log
           grep -qx CONFIG_MIN_BASE_SLICE_NS=3000000 .kconfig-x86/.config
-      - name: Compile the Mi Pad 2 ADC and INT340x objects for x86_64
+      - name: Compile the Mi Pad 2 PMIC, ADC and thermal objects for x86_64
         shell: bash
         run: |
           set -euo pipefail
           cd .chtwc-kunit-kernel
           mkdir .kconfig-adc
           cp configs/mipad2-72-r8-baseline.config .kconfig-adc/.config
-          scripts/config --file .kconfig-adc/.config --module IIO_CHT_WC_ADC
+          scripts/config --file .kconfig-adc/.config --module IIO_CHT_WC_ADC --module INTEL_CHTWC_THERMAL
           make O=.kconfig-adc LLVM=1 ARCH=x86_64 olddefconfig
           grep -qx CONFIG_IIO_CHT_WC_ADC=m .kconfig-adc/.config
+          grep -qx CONFIG_INTEL_CHTWC_THERMAL=m .kconfig-adc/.config
+          grep -qx CONFIG_INTEL_SOC_PMIC_CHTWC=y .kconfig-adc/.config
           grep -qx CONFIG_INT340X_THERMAL=y .kconfig-adc/.config
-          make O=.kconfig-adc LLVM=1 ARCH=x86_64 W=1 -j2 drivers/iio/adc/intel-chtwc-adc.o drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.o
+          make O=.kconfig-adc LLVM=1 ARCH=x86_64 W=1 -j2 \
+            drivers/mfd/intel_soc_pmic_chtwc.o \
+            drivers/acpi/pmic/intel_pmic_chtwc_thermal.o \
+            drivers/iio/adc/intel-chtwc-adc.o \
+            drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.o
       - name: Reject non-draining stop mutation in the same kernel tests
         shell: bash
         run: |
