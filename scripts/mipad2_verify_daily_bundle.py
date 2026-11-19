@@ -22,7 +22,7 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    thermal_flavors = ('lpat3', 'lpat4', 'lpat5', 'lpat6')
+    thermal_flavors = ('lpat3', 'lpat4', 'lpat5', 'lpat6', 'lpat7')
     adc_flavors = ('adc1', 'adc2', 'pmic1', 'lpat1', 'lpat2', *thermal_flavors)
     parser = argparse.ArgumentParser()
     parser.add_argument('--build', type=Path, required=True)
