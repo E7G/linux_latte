@@ -1,0 +1,190 @@
+name: Mi Pad2 thermal worker kernel tests
+on:
+  push:
+    branches:
+      - codex/ci-chtwc-thermal-worker-20261118
+      - codex/mipad2-thermal-validation
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kunit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            drivers/acpi/pmic
+            tools/testing/chtwc
+            .github/workflows
+            init
+            kernel
+            drivers/iio
+            drivers/thermal/intel/int340x_thermal
+      - name: Install UML build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bc bison clang flex libelf-dev libssl-dev lld llvm
+      - name: Prepare exact kernel and tested overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir .chtwc-kunit-kernel
+          curl --fail --location --retry 3 https://codeload.github.com/E7G/linux_latte/tar.gz/d62a71057b7b3ea32e232d53d2a22b3f1926ad4f -o kernel.tar.gz
+          tar -xzf kernel.tar.gz --strip-components=1 -C .chtwc-kunit-kernel
+          cp .chtwc-kunit-kernel/drivers/iio/inkern.c iio-map-baseline.c
+          cp drivers/iio/inkern.c .chtwc-kunit-kernel/drivers/iio/inkern.c
+          cp drivers/iio/adc/intel-chtwc-adc.c .chtwc-kunit-kernel/drivers/iio/adc/
+          cp drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c .chtwc-kunit-kernel/drivers/thermal/intel/int340x_thermal/
+          cp init/Kconfig .chtwc-kunit-kernel/init/Kconfig
+          cp kernel/Kconfig.hz .chtwc-kunit-kernel/kernel/Kconfig.hz
+          cp drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h .chtwc-kunit-kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_thermal_worker_test.c .chtwc-kunit-kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_thermal_transport_test.c .chtwc-kunit-kernel/lib/kunit/
+          cp tools/testing/chtwc/chtwc_iio_map_test.c .chtwc-kunit-kernel/lib/kunit/
+          printf '\nconfig CHTWC_THERMAL_WORKER_TEST\n\tbool "Mi Pad2 thermal worker tests"\n\tdepends on KUNIT\n' >> .chtwc-kunit-kernel/lib/kunit/Kconfig
+          printf '\nobj-$(CONFIG_CHTWC_THERMAL_WORKER_TEST) += chtwc_thermal_worker_test.o chtwc_thermal_transport_test.o chtwc_iio_map_test.o\n' >> .chtwc-kunit-kernel/lib/kunit/Makefile
+          printf 'CONFIG_KUNIT=y\nCONFIG_IIO=y\nCONFIG_CHTWC_THERMAL_WORKER_TEST=y\n' > worker.kunitconfig
+          git rev-parse HEAD > source-commit.txt
+          sha256sum \
+            drivers/acpi/pmic/chtwc_thermal_{irq,worker,route,transport}.h \
+            drivers/iio/{inkern.c,adc/intel-chtwc-adc.c} \
+            drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.c \
+            init/Kconfig kernel/Kconfig.hz \
+            tools/testing/chtwc/chtwc_thermal_{worker,transport}_test.c \
+            tools/testing/chtwc/{chtwc_iio_map_test.c,test_iio_map_lifetime.c,test-iio-map-lifetime.py} \
+            > source-sha256.txt
+      - name: Reproduce and reject original map-node UAF with both compilers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/testing/chtwc/test-iio-map-lifetime.py --source drivers/iio/inkern.c --baseline iio-map-baseline.c --cc gcc | tee iio-map-gcc.json
+          python3 tools/testing/chtwc/test-iio-map-lifetime.py --source drivers/iio/inkern.c --baseline iio-map-baseline.c --cc clang | tee iio-map-clang.json
+      - name: Build and run real kernel workqueue tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .chtwc-kunit-kernel
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit 2>&1 | tee ../positive-console.log
+          cp .kunit/test.log ../positive-kunit.log
+          grep -qx CONFIG_SCHED_BORE=y .kunit/.config
+          grep -qx CONFIG_IIO=y .kunit/.config
+          grep -qx CONFIG_MIN_BASE_SLICE_NS=2000000 .kunit/.config
+          grep -q 'ok .*worker_stop_running_test' ../positive-kunit.log
+          grep -q 'ok .*worker_coalesce_running_test' ../positive-kunit.log
+          grep -q 'ok .*worker_route_exhaustive_test' ../positive-kunit.log
+          grep -q 'ok .*worker_route_shared_source_test' ../positive-kunit.log
+          grep -q 'ok .*transport_stop_drains_critical_test' ../positive-kunit.log
+          grep -q 'ok .*iio_map_reference_test' ../positive-kunit.log
+          grep -q 'ok .*iio_map_invalid_label_test' ../positive-kunit.log
+      - name: Preserve x86 scheduler defaults and explicit tuning
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .chtwc-kunit-kernel
+          make ARCH=x86_64 O=.kconfig-x86 defconfig > ../x86-config.log
+          grep -qx CONFIG_MIN_BASE_SLICE_NS=2000000 .kconfig-x86/.config
+          scripts/config --file .kconfig-x86/.config --set-val MIN_BASE_SLICE_NS 3000000
+          make ARCH=x86_64 O=.kconfig-x86 olddefconfig >> ../x86-config.log
+          grep -qx CONFIG_MIN_BASE_SLICE_NS=3000000 .kconfig-x86/.config
+      - name: Compile the Mi Pad 2 ADC and INT340x objects for x86_64
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .chtwc-kunit-kernel
+          mkdir .kconfig-adc
+          cp configs/mipad2-72-r8-baseline.config .kconfig-adc/.config
+          scripts/config --file .kconfig-adc/.config --module IIO_CHT_WC_ADC
+          make O=.kconfig-adc LLVM=1 ARCH=x86_64 olddefconfig
+          grep -qx CONFIG_IIO_CHT_WC_ADC=m .kconfig-adc/.config
+          grep -qx CONFIG_INT340X_THERMAL=y .kconfig-adc/.config
+          make O=.kconfig-adc LLVM=1 ARCH=x86_64 W=1 -j2 drivers/iio/adc/intel-chtwc-adc.o drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.o
+      - name: Reject non-draining stop mutation in the same kernel tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .chtwc-kunit-kernel/lib/kunit/chtwc_thermal_worker.h worker-header.original
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.chtwc-kunit-kernel/lib/kunit/chtwc_thermal_worker.h')
+          s=p.read_text()
+          needle='disable_work_sync(&worker->work);'
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,'disable_work(&worker->work);'))
+          PY
+          cd .chtwc-kunit-kernel
+          set +e
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-console.log 2>&1
+          result=$?
+          set -e
+          cp .kunit/test.log ../negative-kunit.log
+          cp ../worker-header.original lib/kunit/chtwc_thermal_worker.h
+          test "$result" -ne 0
+          grep -q 'not ok .*worker_stop_running_test' ../negative-kunit.log
+          printf 'PASS: removing synchronous drain was rejected by actual kernel test\n' > ../negative-result.txt
+      - name: Reject partial ownership of the shared battery event
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .chtwc-kunit-kernel/lib/kunit/chtwc_thermal_route.h route-header.original
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.chtwc-kunit-kernel/lib/kunit/chtwc_thermal_route.h')
+          s=p.read_text()
+          needle='!required || (required & ready) != required'
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,'!required || !(required & ready)'))
+          PY
+          cd .chtwc-kunit-kernel
+          set +e
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-route-console.log 2>&1
+          result=$?
+          set -e
+          cp .kunit/test.log ../negative-route-kunit.log
+          cp ../route-header.original lib/kunit/chtwc_thermal_route.h
+          test "$result" -ne 0
+          grep -q 'not ok .*worker_route_shared_source_test' ../negative-route-kunit.log
+          printf 'PASS: acknowledging before every shared recipient is ready was rejected\n' > ../negative-route-result.txt
+      - name: Reject cancellation of accepted critical fanout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .chtwc-kunit-kernel/lib/kunit/chtwc_thermal_transport.h transport-header.original
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.chtwc-kunit-kernel/lib/kunit/chtwc_thermal_transport.h')
+          s=p.read_text()
+          needle='flush_work(&transport->work);'
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,'/* Deliberately cancel accepted pending fanout. */'))
+          PY
+          cd .chtwc-kunit-kernel
+          set +e
+          python3 tools/testing/kunit/kunit.py run --kunitconfig=../worker.kunitconfig --jobs=2 --timeout=180 --build_dir=.kunit > ../negative-transport-console.log 2>&1
+          result=$?
+          set -e
+          cp .kunit/test.log ../negative-transport-kunit.log
+          cp ../transport-header.original lib/kunit/chtwc_thermal_transport.h
+          test "$result" -ne 0
+          grep -q 'not ok .*transport_stop_drains_critical_test' ../negative-transport-kunit.log
+          printf 'PASS: canceling accepted critical fanout was rejected\n' > ../negative-transport-result.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chtwc-thermal-worker-kunit
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            *-console.log
+            *-kunit.log
+            negative-result.txt
+            negative-route-result.txt
+            negative-transport-result.txt
+            source-commit.txt
+            source-sha256.txt
+            x86-config.log
+            iio-map-*.json
+            .chtwc-kunit-kernel/.kunit/.config

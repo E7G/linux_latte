@@ -7,9 +7,22 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/acpi.h>
+#include <linux/dmi.h>
+#include <linux/string.h>
 #include <linux/thermal.h>
 #include <linux/units.h>
 #include "int340x_thermal_zone.h"
+
+static bool int340x_mipad2_pmic_temp_zone(struct acpi_device *adev)
+{
+	const char *name = acpi_device_bid(adev);
+
+	return dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+	       dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+	       acpi_dev_hid_uid_match(adev, "INT3403", NULL) &&
+	       (!strcmp(name, "STR0") || !strcmp(name, "STR1") ||
+		!strcmp(name, "STR2") || !strcmp(name, "STR3"));
+}
 
 static int int340x_thermal_get_zone_temp(struct thermal_zone_device *zone,
 					 int *temp)
@@ -30,6 +43,9 @@ static int int340x_thermal_get_zone_temp(struct thermal_zone_device *zone,
 			return conv_temp;
 
 		*temp = conv_temp * 10;
+	} else if (!tmp && int340x_mipad2_pmic_temp_zone(d->adev)) {
+		/* The DPTF SSDT returns zero when the PMIC reading is unavailable. */
+		*temp = THERMAL_TEMP_INVALID;
 	} else {
 		/* _TMP returns the temperature in tenths of degrees Kelvin */
 		*temp = deci_kelvin_to_millicelsius(tmp);
