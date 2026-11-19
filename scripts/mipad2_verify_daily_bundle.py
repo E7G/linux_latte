@@ -22,7 +22,8 @@ def sha(path):
     return h.hexdigest()
 
 def main():
-    adc_flavors = ('adc1', 'adc2', 'pmic1', 'lpat1', 'lpat2', 'lpat3')
+    thermal_flavors = ('lpat3', 'lpat4')
+    adc_flavors = ('adc1', 'adc2', 'pmic1', 'lpat1', 'lpat2', *thermal_flavors)
     parser = argparse.ArgumentParser()
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--modules', type=Path, required=True)
@@ -43,7 +44,7 @@ def main():
     if args.flavor in adc_flavors:
         if 'CONFIG_IIO_CHT_WC_ADC=m\n' not in config:raise RuntimeError('ADC was not built as a module')
         if not any(p.name=='intel-chtwc-adc.ko' or p.name.startswith('intel-chtwc-adc.ko.') for p in objects):raise RuntimeError('Missing ADC module')
-    if args.flavor == 'lpat3':
+    if args.flavor in thermal_flavors:
         if 'CONFIG_INTEL_CHTWC_THERMAL=m\n' not in config:
             raise RuntimeError('Board thermal driver was not built as a module')
         thermal_module = 'intel_pmic_chtwc_thermal.ko'
