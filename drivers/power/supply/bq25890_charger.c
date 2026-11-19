@@ -438,6 +438,11 @@ enum bq25890_ntc_fault {
 	NTC_FAULT_HOT = 6,
 };
 
+enum bq25895_ntc_fault {
+	BQ25895_NTC_FAULT_BUCK_COLD = 1,
+	BQ25895_NTC_FAULT_BUCK_HOT = 2,
+};
+
 static bool bq25890_is_adc_property(enum power_supply_property psp)
 {
 	switch (psp) {
@@ -869,6 +874,14 @@ static int bq25890_get_chip_state(struct bq25890_device *bq,
 			return ret;
 
 		*state_fields[i].data = ret;
+	}
+
+	/* BQ25895 uses separate buck codes and the common boost codes. */
+	if (bq->chip_version == BQ25895) {
+		if (state->ntc_fault == BQ25895_NTC_FAULT_BUCK_COLD)
+			state->ntc_fault = NTC_FAULT_COLD;
+		else if (state->ntc_fault == BQ25895_NTC_FAULT_BUCK_HOT)
+			state->ntc_fault = NTC_FAULT_HOT;
 	}
 
 	dev_dbg(bq->dev, "S:CHG/PG/HIZ/VSYS=%d/%d/%d/%d, F:CHG/BOOST/BAT/NTC=%d/%d/%d/%d\n",
