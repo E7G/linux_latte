@@ -10,7 +10,9 @@
 #include <linux/acpi.h>
 #include <linux/atomic.h>
 #include <linux/completion.h>
+#include <linux/iio/driver.h>
 #include <linux/iio/iio.h>
+#include <linux/iio/machine.h>
 #include <linux/interrupt.h>
 #include <linux/mfd/intel_soc_pmic.h>
 #include <linux/module.h>
@@ -325,6 +327,44 @@ static void chtwc_adc_quiesce(void *data)
 	mutex_unlock(&adc->lock);
 }
 
+static const struct iio_map chtwc_adc_thermal_maps[] = {
+	IIO_MAP("SYSTEMP0", "cht_wcove_thermal", "systemp0"),
+	IIO_MAP("SYSTEMP1", "cht_wcove_thermal", "systemp1"),
+	IIO_MAP("SYSTEMP2", "cht_wcove_thermal", "systemp2"),
+	{ }
+};
+
+static void chtwc_adc_remove_thermal(void *data)
+{
+	platform_device_unregister(data);
+}
+
+static int chtwc_adc_add_thermal(struct platform_device *pdev,
+				struct iio_dev *indio_dev)
+{
+	struct device *dev = &pdev->dev;
+	struct platform_device *child;
+	struct resource resource;
+	int irq, ret;
+
+	irq = platform_get_irq_byname(pdev, "thermal");
+	if (irq < 0)
+		return irq;
+	ret = devm_iio_map_array_register(dev, indio_dev, chtwc_adc_thermal_maps);
+	if (ret)
+		return ret;
+
+	/* A child unbinds and suspends before its ADC provider. */
+	resource = (struct resource)DEFINE_RES_IRQ(irq);
+	child = platform_device_register_resndata(dev, "cht_wcove_thermal",
+						 PLATFORM_DEVID_NONE, &resource,
+						 1, NULL, 0);
+	if (IS_ERR(child))
+		return PTR_ERR(child);
+
+	return devm_add_action_or_reset(dev, chtwc_adc_remove_thermal, child);
+}
+
 static int chtwc_adc_probe(struct platform_device *pdev)
 {
 	struct intel_soc_pmic *pmic = dev_get_drvdata(pdev->dev.parent);
@@ -395,8 +435,13 @@ static int chtwc_adc_probe(struct platform_device *pdev)
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	indio_dev->channels = adc->channels;
 	indio_dev->num_channels = ARRAY_SIZE(chtwc_iio_channels);
-	/* No thermal-zone registration, threshold or autonomous-monitor writes. */
-	return devm_iio_device_register(dev, indio_dev);
+	ret = devm_iio_device_register(dev, indio_dev);
+	if (ret)
+		return ret;
+	if (IS_ENABLED(CONFIG_INTEL_CHTWC_THERMAL) && adc->lpat)
+		return chtwc_adc_add_thermal(pdev, indio_dev);
+
+	return 0;
 }
 
 static int chtwc_adc_suspend(struct device *dev)

@@ -52,6 +52,7 @@ static const struct resource cht_wc_ext_charger_resources[] = {
 
 static const struct resource cht_wc_adc_resources[] = {
 	DEFINE_RES_IRQ(CHT_WC_ADC_IRQ),
+	DEFINE_RES_IRQ_NAMED(CHT_WC_THRM_IRQ, "thermal"),
 };
 
 static struct mfd_cell cht_wc_dev[] = {

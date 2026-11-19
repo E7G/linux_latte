@@ -50,6 +50,15 @@ config CHT_DC_TI_PMIC_OPREGION
 
 endif	# PMIC_OPREGION
 
+config INTEL_CHTWC_THERMAL
+	tristate "Intel Cherry Trail Whiskey Cove board temperature sensors"
+	depends on THERMAL && IIO_CHT_WC_ADC
+	help
+	  Export the three calibrated Xiaomi Mi Pad 2 board thermistors as
+	  thermal zones. The PMIC thermal IRQ is enabled only if all enabled
+	  sources have a supported consumer. Firmware trip thresholds and
+	  autonomous monitoring settings are left to their existing owners.
+
 config TPS68470_PMIC_OPREGION
 	bool "ACPI operation region support for TPS68470 PMIC"
 	depends on INTEL_SKL_INT3472

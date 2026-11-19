@@ -207,6 +207,7 @@ static void transport_read_faults_test(struct kunit *test)
 		struct transport_fixture *fixture = transport_create(test, 127);
 
 		KUNIT_ASSERT_NOT_NULL(test, fixture);
+		fixture->masks[0] = 0xfe;
 		KUNIT_ASSERT_EQ(test, chtwc_thermal_transport_start(&fixture->transport), 0);
 		fixture->io_calls = 0;
 		fixture->fail_at = fail;
@@ -216,6 +217,36 @@ static void transport_read_faults_test(struct kunit *test)
 		KUNIT_EXPECT_EQ(test, fixture->transport.sequence, 0ULL);
 		KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_stop(&fixture->transport), 0);
 	}
+}
+
+static void transport_board_only_ownership_test(struct kunit *test)
+{
+	struct transport_fixture *fixture = transport_create(test, 7);
+
+	KUNIT_ASSERT_NOT_NULL(test, fixture);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_start(&fixture->transport), -ENODATA);
+	fixture->masks[0] = 0xfe;
+	fixture->masks[1] = 0xef;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_start(&fixture->transport), -ENXIO);
+	KUNIT_EXPECT_EQ(test, fixture->writes, 0U);
+
+	fixture->masks[1] = 0xff;
+	KUNIT_ASSERT_EQ(test, chtwc_thermal_transport_start(&fixture->transport), 0);
+	fixture->status[0] = 0x01;
+	fixture->status[1] = 0x10;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_capture(&fixture->transport), 1);
+	KUNIT_EXPECT_EQ(test, fixture->writes, 1U);
+	KUNIT_EXPECT_EQ(test, fixture->status[1], (u8)0x10);
+
+	/* Firmware enables the shared battery source after activation. */
+	fixture->masks[1] = 0xef;
+	fixture->status[0] = 0x01;
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_capture(&fixture->transport), -ENXIO);
+	KUNIT_EXPECT_EQ(test, fixture->writes, 1U);
+	KUNIT_EXPECT_EQ(test, fixture->status[0], (u8)0x01);
+	KUNIT_EXPECT_EQ(test, fixture->status[1], (u8)0x10);
+	KUNIT_ASSERT_EQ(test, chtwc_thermal_transport_stop(&fixture->transport), 0);
+	KUNIT_EXPECT_EQ(test, chtwc_thermal_transport_start(&fixture->transport), -ENXIO);
 }
 
 static int transport_stopper(void *context)
@@ -271,6 +302,7 @@ static struct kunit_case transport_cases[] = {
 	KUNIT_CASE(transport_shared_fanout_test),
 	KUNIT_CASE(transport_fault_snapshot_test),
 	KUNIT_CASE(transport_read_faults_test),
+	KUNIT_CASE(transport_board_only_ownership_test),
 	KUNIT_CASE(transport_stop_drains_critical_test),
 	{}
 };

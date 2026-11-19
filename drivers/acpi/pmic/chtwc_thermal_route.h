@@ -85,8 +85,8 @@ static inline int chtwc_thermal_plan(const u8 status[4], const u8 masks[4],
 	return missing ? -ENXIO : 0;
 }
 
-/* Check documented sources enabled before parent IRQ activation. Reserved bits
- * are NOT assumed valid; actual unexpected asserted status is rejected above.
+/* Require at least one enabled source, with every enabled source owned.
+ * Reserved bits are checked if they actually assert.
  */
 static inline int chtwc_thermal_ownership_ready(const u8 masks[4],
 		unsigned int ready)
@@ -94,11 +94,16 @@ static inline int chtwc_thermal_ownership_ready(const u8 masks[4],
 	struct chtwc_thermal_route plan;
 	u8 status[4] = {0};
 	unsigned int bank, owner;
+	int ret;
 
 	for (bank = 0; bank < 4; bank++)
 		for (owner = 0; owner < CHTWC_THERMAL_OWNERS; owner++)
 			status[bank] |= chtwc_thermal_owner_sources[owner][bank];
-	return chtwc_thermal_plan(status, masks, ready, &plan);
+	ret = chtwc_thermal_plan(status, masks, ready, &plan);
+	if (ret)
+		return ret;
+
+	return plan.recipients ? 0 : -ENODATA;
 }
 
 #endif
