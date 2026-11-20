@@ -83,6 +83,24 @@ isolated ALPM installation, all 124 unchanged stock files matched byte
 and mode checks, a deliberate gate write error aborted before replacement,
 and downgrading recovered the signed stock plugin exactly. A simulated
 future runtime update also left the feature disabled. The guarded
-kernel object compiled and passed the host dispatch test. A guarded
-device boot, exact default-off/on transition, and native package
-upgrade/rollback remain unverified on the tablet.
+kernel object compiled and passed the host dispatch test.
+
+Full LPAT13 from `2b23322aca9de940fd61c0f63f2354f87ec47a8b` built
+and passed verification of all 37 module signatures and 55 bundle
+files. In a networkless UEFI QEMU guest with the signed AtomISP
+module and actual Arch systemd, pacman and GStreamer 1.28.7:
+
+* The stock backend loaded with STEPWISE still off after user-session
+  startup; the activation unit was absent.
+* The paired backend loaded with the gate initially off and then
+  enabled by the packaged unit before user sessions were allowed.
+* The real ALPM downgrade ran the disarm hook before file changes,
+  restored the stock plugin digest and passed its integrity check.
+  A same-boot reinstall and service restart kept the gate off.
+* LPAT11, which lacks this parameter, still loaded the paired plugin
+  and completed the package downgrade and reinstall.
+
+This verifies the guest boot and activation/rollback paths, not
+capture or power management on a real Mi Pad 2. The guarded tablet
+boot and the physical camera matrix with stock and paired native
+backends remain to be run before merging.
