@@ -16,7 +16,7 @@ ISP = (ROOT / "drivers/staging/media/atomisp/pci/atomisp_ioctl.c").read_text()
 
 
 def function(source, name):
-    start = re.search(rf"^static (?:int|void|unsigned int) {name}\(", source, re.M)
+    start = re.search(rf"^static (?:bool|int|void|unsigned int) {name}\(", source, re.M)
     return source[start.start():source.index("\n}", start.end()) + 2]
 
 
@@ -34,6 +34,7 @@ PRELUDE = r"""
 #include <string.h>
 #include <linux/videodev2.h>
 #include <linux/v4l2-mediabus.h>
+#include <linux/v4l2-subdev.h>
 typedef uint32_t u32;
 #define max(a, b) ((a) > (b) ? (a) : (b))
 struct v4l2_subdev_state {
@@ -44,14 +45,29 @@ struct v4l2_subdev_state {
 struct ov5693_device { bool mipad2; u32 pixel_rate; };
 struct v4l2_subdev {
 	struct ov5693_device *ov;
-	int (*range)(struct v4l2_subdev *, struct v4l2_subdev_state *,
-		     u32, u32, struct v4l2_frmival_stepwise *);
+	int (*get_frame_interval_range)(struct v4l2_subdev *, struct v4l2_subdev_state *,
+					u32, u32, struct v4l2_frmival_stepwise *);
+	int (*enum_frame_interval)(struct v4l2_subdev *, struct v4l2_subdev_state *,
+				   struct v4l2_subdev_frame_interval_enum *);
 };
 struct atomisp_input_subdev {
 	struct v4l2_subdev_state *try_sd_state;
 	struct v4l2_subdev *sensor;
 };
-struct atomisp_device { struct atomisp_input_subdev *input; };
+struct atomisp_device { struct atomisp_input_subdev *inputs; };
+struct atomisp_sub_device { int input_curr; };
+struct atomisp_pipe { struct atomisp_sub_device *asd; };
+struct video_device { struct atomisp_device *isp; struct atomisp_pipe *pipe; };
+struct file { struct video_device *vdev; };
+static struct v4l2_subdev_state *active_state;
+static const struct { u32 code; } atomisp_in_fmt_conv[] = {{0x3007}};
+static int param_locked;
+#define THIS_MODULE (&param_locked)
+static void kernel_param_lock(int *p) { assert(!*p); *p = 1; }
+static void kernel_param_unlock(int *p) { assert(*p); *p = 0; }
+#define video_devdata(f) ((f)->vdev)
+#define video_get_drvdata(v) ((v)->isp)
+#define atomisp_to_video_pipe(v) ((v)->pipe)
 static int tries, try_error;
 static void v4l2_subdev_lock_state(struct v4l2_subdev_state *s)
 {
@@ -62,6 +78,12 @@ static void v4l2_subdev_unlock_state(struct v4l2_subdev_state *s)
 {
 	assert(s->locked);
 	s->locked = 0;
+}
+static struct v4l2_subdev_state *
+v4l2_subdev_lock_and_get_active_state(struct v4l2_subdev *sd)
+{
+	v4l2_subdev_lock_state(active_state);
+	return active_state;
 }
 static struct ov5693_device *to_ov5693_sensor(struct v4l2_subdev *sd)
 {
@@ -82,7 +104,7 @@ v4l2_subdev_state_get_crop(struct v4l2_subdev_state *s, u32 pad)
 static int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *pix,
 			   void *f, void *s)
 {
-	struct v4l2_subdev_state *state = isp->input->try_sd_state;
+	struct v4l2_subdev_state *state = isp->inputs[0].try_sd_state;
 
 	assert(!f && !s && !state->locked);
 	tries++;
@@ -98,10 +120,20 @@ static int atomisp_try_fmt(struct atomisp_device *isp, struct v4l2_pix_format *p
 	state->crop.height = state->fmt.height;
 	return 0;
 }
-#define v4l2_subdev_call(sd, op, fn, ...) (sd)->range(sd, __VA_ARGS__)
+#define v4l2_subdev_call(sd, op, fn, ...) (sd)->fn(sd, __VA_ARGS__)
+#define v4l2_subdev_has_op(sd, op, fn) ((sd)->fn != NULL)
 """
 
 TEST = r"""
+static int legacy_enum(struct v4l2_subdev *sd, struct v4l2_subdev_state *state,
+		       struct v4l2_subdev_frame_interval_enum *fie)
+{
+	assert(state == active_state && state->locked);
+	assert(fie->code == 0x3007 && fie->which == V4L2_SUBDEV_FORMAT_ACTIVE);
+	fie->interval = (struct v4l2_fract) {1, 15};
+	return 0;
+}
+
 static void verify(const struct v4l2_frmival_stepwise *ival,
 		   u32 ppl, u32 rate, u32 min, u32 max)
 {
@@ -113,22 +145,31 @@ static void verify(const struct v4l2_frmival_stepwise *ival,
 int main(void)
 {
 	struct ov5693_device ov = {.mipad2 = true, .pixel_rate = 160000000};
-	struct v4l2_subdev front = {&ov, ov5693_get_frame_interval_range};
-	struct v4l2_subdev rear = {NULL, t4ka3_get_frame_interval_range};
+	struct v4l2_subdev front = {
+		.ov = &ov, .get_frame_interval_range = ov5693_get_frame_interval_range,
+	};
+	struct v4l2_subdev rear = {
+		.get_frame_interval_range = t4ka3_get_frame_interval_range,
+	};
+	struct v4l2_subdev legacy = {.enum_frame_interval = legacy_enum};
 	struct v4l2_subdev_state state = {0};
 	struct v4l2_frmival_stepwise range = {0};
 	struct atomisp_input_subdev input = {&state, &front};
 	struct atomisp_device isp = {&input};
+	struct atomisp_sub_device asd = {0};
+	struct atomisp_pipe pipe = {&asd};
+	struct video_device vdev = {&isp, &pipe};
+	struct file file = {&vdev};
 	struct v4l2_frmivalenum fival = {
 		.pixel_format = V4L2_PIX_FMT_NV12, .width = 1920, .height = 1080,
 	};
 	unsigned int checked = 0;
 
 	v4l2_subdev_lock_state(&state);
-	assert(front.range(&front, &state, 0, 0, &range) == -EINVAL);
-	assert(rear.range(&rear, &state, 1, 0, &range) == -EINVAL);
-	assert(rear.range(&rear, &state, 0, 1, &range) == -EINVAL);
-	assert(front.range(&front, NULL, 0, 0, &range) == -EINVAL);
+	assert(front.get_frame_interval_range(&front, &state, 0, 0, &range) == -EINVAL);
+	assert(rear.get_frame_interval_range(&rear, &state, 1, 0, &range) == -EINVAL);
+	assert(rear.get_frame_interval_range(&rear, &state, 0, 1, &range) == -EINVAL);
+	assert(front.get_frame_interval_range(&front, NULL, 0, 0, &range) == -EINVAL);
 	for (u32 h = 2; h <= 2460; h += 2)
 	for (u32 mask = 0; mask < 4; mask++) {
 		bool both = (mask == 3);
@@ -141,15 +182,15 @@ int main(void)
 			.height = h * ((mask & 2) ? 2 : 1),
 		};
 		saved = state;
-		assert(!front.range(&front, &state, 0, 0, &range));
+		assert(!front.get_frame_interval_range(&front, &state, 0, 0, &range));
 		verify(&range, 2688, 160000000, h + (both ? 16 : 24), 65535);
 		ov.mipad2 = false;
 		ov.pixel_rate = 167680000;
-		assert(!front.range(&front, &state, 0, 0, &range));
+		assert(!front.get_frame_interval_range(&front, &state, 0, 0, &range));
 		verify(&range, 2688, 167680000, h + 4, 65535);
 		ov.mipad2 = true;
 		ov.pixel_rate = 160000000;
-		assert(!rear.range(&rear, &state, 0, 0, &range));
+		assert(!rear.get_frame_interval_range(&rear, &state, 0, 0, &range));
 		verify(&range, 3440, 257174400, max(rear_min, 7u), 65535);
 		assert(!memcmp(&saved, &state, sizeof(state)));
 		checked += 3;
@@ -178,7 +219,21 @@ int main(void)
 	try_error = -EIO;
 	assert(atomisp_enum_stepwise_frameintervals(&isp, &input, &fival) == -EIO);
 	assert(tries == 5 && !state.locked);
-	printf("PASS: %u geometry/timing cases, exact 1080p endpoints, index/format/error checks\n", checked);
+	try_error = 0;
+	assert(atomisp_enum_frameintervals(&file, NULL, &fival) == -ENOTTY);
+	assert(tries == 5 && !param_locked);
+	stepwise_frame_intervals = true;
+	assert(!atomisp_enum_frameintervals(&file, NULL, &fival));
+	verify(&fival.stepwise, 3440, 257174400, 1100, 65535);
+	stepwise_frame_intervals = false;
+	assert(atomisp_enum_frameintervals(&file, NULL, &fival) == -ENOTTY);
+	assert(tries == 6 && !state.locked && !param_locked);
+	input.sensor = &legacy;
+	active_state = &state;
+	assert(!atomisp_enum_frameintervals(&file, NULL, &fival));
+	assert(fival.type == V4L2_FRMIVAL_TYPE_DISCRETE && fival.discrete.numerator == 1 &&
+	       fival.discrete.denominator == 15 && !state.locked);
+	printf("PASS: %u geometry/timing cases, exact endpoints, gate and legacy dispatch\n", checked);
 }
 """
 
@@ -197,6 +252,9 @@ parts = [
     function(T4, "t4ka3_get_vblank_limits"),
     function(T4, "t4ka3_get_frame_interval_range"),
     function(ISP, "atomisp_enum_stepwise_frameintervals"),
+    re.search(r"^static bool stepwise_frame_intervals.*;$", ISP, re.M)[0],
+    function(ISP, "atomisp_stepwise_frame_intervals_enabled"),
+    function(ISP, "atomisp_enum_frameintervals"),
     TEST,
 ]
 with tempfile.TemporaryDirectory(prefix="mipad2-v4l2-intervals-") as temp:

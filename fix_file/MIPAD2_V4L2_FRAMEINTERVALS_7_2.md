@@ -71,3 +71,18 @@ GStreamer 1.28.7 installation is a demonstrated regression; do not
 make the kernel a daily default on its own. An original signed Arch
 `gst-plugins-good 1.28.7-1` archive was verified and its V4L2 plugin
 matched the installed file byte-for-byte for rollback.
+
+## Guarded follow-up
+
+The follow-up keeps exact interval reporting disabled by default for
+the two sensors that supply it. The paired
+[Arch package](packages/gst-plugins-good-mipad2/README.md) enables it
+at boot only for the matching native backend. The package-manager hook
+restores legacy probing before runtime replacement or rollback. In an
+isolated ALPM installation, all 124 unchanged stock files matched byte
+and mode checks, a deliberate gate write error aborted before replacement,
+and downgrading recovered the signed stock plugin exactly. A simulated
+future runtime update also left the feature disabled. The guarded
+kernel object compiled and passed the host dispatch test. A guarded
+device boot, exact default-off/on transition, and native package
+upgrade/rollback remain unverified on the tablet.
