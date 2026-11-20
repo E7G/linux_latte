@@ -718,6 +718,7 @@ static int atomisp_suspend(struct device *dev)
 	struct atomisp_device *isp = (struct atomisp_device *)
 				     dev_get_drvdata(dev);
 	unsigned long flags;
+	int ret;
 
 	/* FIXME: Suspend is not supported by sensors. Abort if streaming. */
 	spin_lock_irqsave(&isp->lock, flags);
@@ -728,7 +729,11 @@ static int atomisp_suspend(struct device *dev)
 	}
 	spin_unlock_irqrestore(&isp->lock, flags);
 
-	pm_runtime_resume(dev);
+	ret = pm_runtime_resume(dev);
+	if (ret < 0) {
+		dev_err(dev, "Failed to resume ISP for system suspend: %d\n", ret);
+		return ret;
+	}
 
 	isp->asd.recreate_streams_on_resume = isp->asd.stream_prepared;
 	atomisp_destroy_pipes_stream(&isp->asd);

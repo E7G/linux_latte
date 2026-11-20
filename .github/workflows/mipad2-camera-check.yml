@@ -14,12 +14,14 @@ on:
       - 'drivers/media/i2c/ov5693.c'
       - 'drivers/media/i2c/t4ka3.c'
       - 'drivers/media/v4l2-core/v4l2-cci.c'
+      - 'drivers/staging/media/atomisp/pci/atomisp_v4l2.c'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
       - 'fix_file/tests/mipad2-ov5693-otp-io-test.py'
       - 'fix_file/tests/mipad2-t4ka3-start-host-test.py'
       - 'fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py'
       - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
+      - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
@@ -68,14 +70,20 @@ jobs:
           python3 -B fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py
       - name: Verify front and rear V4L2 stream lifecycle ownership
         run: python3 -B fix_file/tests/mipad2-stream-stop-pm-host-test.py
-      - name: Compile the 7.2 OV5693, T4KA3 and CCI objects
+      - name: Verify AtomISP aborts system suspend on failed runtime wake
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-atomisp-suspend-host-test.py
+          CC="clang -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-atomisp-suspend-host-test.py
+      - name: Compile the 7.2 sensor, CCI and AtomISP power objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
           case "$(make -s O=out LLVM=1 ARCH=x86_64 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
           grep -qx 'CONFIG_VIDEO_OV5693=m' out/.config
           grep -qx 'CONFIG_VIDEO_T4KA3=m' out/.config
+          grep -qx 'CONFIG_VIDEO_ATOMISP=m' out/.config
           make O=out LLVM=1 ARCH=x86_64 W=1 -j"$(nproc)" \
-            drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o
+            drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o \
+            drivers/staging/media/atomisp/pci/atomisp_v4l2.o
 
   camera-drivers:
     # The legacy audit below deliberately requires old GPIO and navigation-key code.
