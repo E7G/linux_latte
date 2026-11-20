@@ -36,6 +36,7 @@ void dump_sp_dmem(struct atomisp_device *isp, unsigned int addr,
 		  unsigned int size);
 struct camera_mipi_info *atomisp_to_sensor_mipi_info(struct v4l2_subdev *sd);
 struct atomisp_video_pipe *atomisp_to_video_pipe(struct video_device *dev);
+int atomisp_csi_set_ready(struct atomisp_device *isp, bool enable);
 int atomisp_reset(struct atomisp_device *isp);
 int atomisp_buffers_in_css(struct atomisp_video_pipe *pipe);
 void atomisp_buffer_done(struct ia_css_frame *frame, enum vb2_buffer_state state);

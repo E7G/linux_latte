@@ -3,8 +3,7 @@
 from pathlib import Path
 import os,re,subprocess,tempfile
 r=Path(os.environ.get('MIPAD2_KERNEL_SOURCE',str(Path(__file__).resolve().parents[2])))
-file='drivers/staging/media/atomisp/pci/atomisp_ioctl.c';rev=os.environ.get('MIPAD2_START_UNWIND_BASELINE')
-s=subprocess.check_output(['git','show',rev+':'+file],cwd=r,text=True) if rev else (r/file).read_text()
+s=(r/'drivers/staging/media/atomisp/pci/atomisp_ioctl.c').read_text()
 m=re.search(r'^int atomisp_start_streaming\([^;{}]*\)\s*\{',s,re.M);assert m
 end=m.end();depth=1
 while depth:depth+=(s[end]=='{')-(s[end]=='}');end+=1
@@ -29,10 +28,11 @@ struct vb2_queue {struct atomisp_video_pipe *owner;};
 struct params {bool css_update_params_needed;struct {struct {int dz_config;} update_flag;int dz_config;} css_param;struct {void *dz_config;} config;void *dvs_6axis;bool dis_proj_data_valid;};
 struct atomisp_parameters {int dz_config;};
 struct atomisp_sub_device {struct atomisp_device *isp;struct atomisp_video_pipe video_out;struct params params;bool streaming;int sof_count,sequence,sequence_temp,input_curr,latest_preview_exp_id,postview_exp_id,preview_exp_id;};
-struct atomisp_device {int assert_recovery_work;void *dev;struct mutex mutex;int lock;struct {struct mutex graph_mutex;unsigned hw_revision;} media_dev;struct {unsigned csi_control,i_control;} saved_regs;struct {void *csi_remote_source;} inputs[1];struct atomisp_sub_device asd;bool isp_fatal_error;};
+struct atomisp_device {int assert_recovery_work;void *dev;struct mutex mutex;int lock;struct {struct mutex graph_mutex;unsigned hw_revision;} media_dev;struct {unsigned i_control;} saved_regs;struct {void *csi_remote_source;} inputs[1];struct atomisp_sub_device asd;bool isp_fatal_error;};
 struct pci_dev {int unused;};static struct pci_dev pci;
 enum vb2_buffer_state {VB2_BUF_STATE_QUEUED=1,VB2_BUF_STATE_ERROR=2};
-enum {IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF=1,ATOMISP_DFS_MODE_AUTO=1,ATOMISP_DFS_MODE_LOW=2,ATOMISP_HW_REVISION_ISP2401=2,ATOMISP_HW_REVISION_SHIFT=4,ATOMISP_HW_STEPPING_B0=1,MRFLD_PCI_CSI_CONTROL=1,PCI_I_CONTROL=2,MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK=4,MRFLD_PCI_CSI_CONTROL_CSI_READY=1};
+enum {IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF=1,ATOMISP_DFS_MODE_AUTO=1,ATOMISP_DFS_MODE_LOW=2,ATOMISP_HW_REVISION_ISP2401=2,ATOMISP_HW_REVISION_SHIFT=4,ATOMISP_HW_STEPPING_B0=1,PCI_I_CONTROL=2,MRFLD_PCI_I_CONTROL_SRSE_RESET_MASK=4};
+static int csi_enable_error,csi_disable_error,csi_enables,csi_disables;
 static int pipe_error,frame_error,media_error,css_error,sensor_error,create_error,reset_error,mc_refs,css_owned,flushes,flush_state,sensor_calls,resets,recreates,css_stops,dfs_low;
 static bool css_started,pipes_ready,irq_enabled,csi_enabled;
 static struct atomisp_video_pipe *vq_to_pipe(struct vb2_queue *q) {return q->owner;}
@@ -61,9 +61,35 @@ static void atomisp_qbuffers_to_css(struct atomisp_sub_device *a) {(void)a;asser
 static void atomisp_css_irq_enable(struct atomisp_device *d,int what,bool on) {(void)d;assert(what==1);irq_enabled=on;}
 static void atomisp_csi2_configure(struct atomisp_sub_device *a) {(void)a;}
 static int atomisp_freq_scaling(struct atomisp_device *d,int mode,bool force) {(void)d;(void)force;if(mode==ATOMISP_DFS_MODE_LOW)dfs_low++;return 0;}
-static int pci_write_config_word(struct pci_dev *p,int reg,unsigned val) {(void)p;assert(reg==MRFLD_PCI_CSI_CONTROL);csi_enabled=!!(val&1);return 0;}
+static int atomisp_csi_set_ready(struct atomisp_device *d,bool enable)
+{
+ assert(d->mutex.locked);
+ if (!d->media_dev.hw_revision)
+  return 0;
+ if (enable) {
+  csi_enables++;
+  assert(d->asd.streaming && css_started && irq_enabled && css_owned);
+  if (csi_enable_error)
+   return csi_enable_error;
+ } else {
+  csi_disables++;
+  assert(!d->asd.streaming && !irq_enabled);
+  if (csi_disable_error)
+   return csi_disable_error;
+ }
+ csi_enabled=enable;
+ return 0;
+}
 static int pci_write_config_dword(struct pci_dev *p,int reg,unsigned val) {(void)p;(void)val;assert(reg==PCI_I_CONTROL);return 0;}
-static int sensor_start(void *camera,int on) {(void)camera;assert(on==1);sensor_calls++;return sensor_error;}
+static int sensor_start(void *camera,int on)
+{
+ (void)camera;
+ assert(on==1);
+ if (on && csi_enables)
+  assert(csi_enabled);
+ sensor_calls++;
+ return sensor_error;
+}
 #define v4l2_subdev_call(camera,kind,fn,on) sensor_start(camera,on)
 static void atomisp_clear_css_buffer_counters(struct atomisp_sub_device *a) {(void)a;css_owned=0;}
 static void atomisp_css_stop_preserve_config(struct atomisp_sub_device *a) {(void)a;assert(css_started);css_started=false;pipes_ready=false;css_stops++;}
@@ -78,6 +104,7 @@ static void init(struct atomisp_device *d,struct atomisp_video_pipe *p,struct vb
  memset(d,0,sizeof(*d));memset(p,0,sizeof(*p));p->asd=&d->asd;d->asd.isp=d;q->owner=p;
  d->media_dev.hw_revision=modern?((ATOMISP_HW_REVISION_ISP2401<<ATOMISP_HW_REVISION_SHIFT)|ATOMISP_HW_STEPPING_B0):0;
  pipe_error=frame_error=media_error=css_error=sensor_error=create_error=reset_error=mc_refs=css_owned=flushes=sensor_calls=resets=recreates=css_stops=dfs_low=0;
+ csi_enable_error=csi_disable_error=csi_enables=csi_disables=0;
  css_started=irq_enabled=csi_enabled=false;pipes_ready=true;
 }
 int main(void) {
@@ -89,6 +116,7 @@ int main(void) {
   assert(!d.asd.streaming && !css_started && mc_refs==0 && css_owned==0 && !irq_enabled && !csi_enabled && "Sensor-start failure must unwind CSS, buffers, CSI and media pipeline");
   assert(ret==sensor_error && flushes==1 && flush_state==VB2_BUF_STATE_QUEUED && css_stops==1 && resets==1 && recreates==(broken==2?0:1) && dfs_low==1);
   assert(!d.mutex.locked && !d.media_dev.graph_mutex.locked);
+  assert(csi_enables==(int)modern && csi_disables==(int)modern && sensor_calls==1);
   assert(d.isp_fatal_error==!!broken && pipes_ready==!broken);
   sensor_error=0;create_error=reset_error=0;
   ret=atomisp_start_streaming(&q,2);
@@ -100,6 +128,18 @@ int main(void) {
   struct atomisp_device d;struct atomisp_video_pipe p;struct vb2_queue q;init(&d,&p,&q,true);
   if(stage==0)pipe_error=-EINVAL;if(stage==1)frame_error=-ENOSPC;if(stage==2)media_error=-EBUSY;if(stage==3)css_error=-EIO;
   assert(atomisp_start_streaming(&q,2)<0);assert(!d.asd.streaming && !css_started && !mc_refs && !css_owned && flushes==1 && flush_state==VB2_BUF_STATE_QUEUED && !sensor_calls && !css_stops && !resets);
+  count++;
+ }
+ for(unsigned fail_disable=0;fail_disable<2;fail_disable++) {
+  struct atomisp_device d;struct atomisp_video_pipe p;struct vb2_queue q;init(&d,&p,&q,true);
+  csi_enable_error=-ENODEV;csi_disable_error=fail_disable?-EIO:0;
+  assert(atomisp_start_streaming(&q,2)==-ENODEV);
+  assert(!sensor_calls && !d.asd.streaming && !irq_enabled && !css_started && !mc_refs);
+  assert(!css_owned && !csi_enabled && flushes==1 && flush_state==VB2_BUF_STATE_QUEUED);
+  assert(csi_enables==1 && csi_disables==1 && resets==1 && recreates==1);
+  assert(!d.mutex.locked && !d.isp_fatal_error);
+  csi_enable_error=csi_disable_error=0;
+  assert(!atomisp_start_streaming(&q,2) && sensor_calls==1 && csi_enabled);
   count++;
  }
  printf("PASS %u extracted AtomISP start/unwind/retry/fatal-recreate/pre-start cases; mocked media/CSS/hardware\n",count);

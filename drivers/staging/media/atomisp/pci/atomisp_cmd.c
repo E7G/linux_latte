@@ -257,6 +257,38 @@ done:
 	return ret;
 }
 
+int atomisp_csi_set_ready(struct atomisp_device *isp, bool enable)
+{
+	struct pci_dev *pdev = to_pci_dev(isp->dev);
+	u32 control, updated;
+	int ret;
+
+	lockdep_assert_held(&isp->mutex);
+
+	/* Only needed on ANN B0/K0 and later. */
+	if (isp->media_dev.hw_revision < ((ATOMISP_HW_REVISION_ISP2401 <<
+					   ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
+		return 0;
+
+	/* CSI_READY is bit 25. Preserve the live lane configuration. */
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	if (PCI_POSSIBLE_ERROR(control))
+		return -ENODEV;
+
+	if (enable)
+		updated = control | MRFLD_PCI_CSI_CONTROL_CSI_READY;
+	else
+		updated = control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY;
+
+	if (updated == control)
+		return 0;
+
+	return pcibios_err_to_errno(pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
+							 updated));
+}
+
 /*
  * reset and restore ISP
  */
@@ -982,10 +1014,9 @@ void atomisp_assert_recovery_work(struct work_struct *work)
 		dev_dbg(isp->dev, "DFS auto failed while recovering!\n");
 
 	/* Match initial STREAMON after power-cycle restores the CSI registers. */
-	if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
-					    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
-		pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
-				      isp->saved_regs.csi_control | MRFLD_PCI_CSI_CONTROL_CSI_READY);
+	ret = atomisp_csi_set_ready(isp, true);
+	if (ret)
+		goto recovery_failed;
 
 	/* Dequeueing buffers is not needed, CSS will recycle buffers that it has */
 	atomisp_flush_video_pipe(&isp->asd.video_out, VB2_BUF_STATE_ERROR, false);
@@ -1007,10 +1038,8 @@ recovery_failed:
 	/* Reset failure may leave the ISP off: do not access its MMIO then. */
 	if (css_started) {
 		atomisp_css_irq_enable(isp, IA_CSS_IRQ_INFO_CSS_RECEIVER_SOF, false);
-		if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
-						    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0))
-			pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
-					      isp->saved_regs.csi_control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY);
+		if (atomisp_csi_set_ready(isp, false))
+			dev_warn(isp->dev, "Disabling CSI after recovery error failed\n");
 		if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, false))
 			dev_warn(isp->dev, "DFS failed after recovery error\n");
 	}
