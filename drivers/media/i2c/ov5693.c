@@ -254,7 +254,7 @@ static int ov5693_mipad2_read_otp_bank(struct ov5693_device *ov5693,
 static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 {
 	unsigned int bank;
-	int stop_ret = 0;
+	int frame_ret, stream_ret;
 	int ret;
 
 	if (ov5693->otp_cached)
@@ -267,14 +267,14 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 	 * OTP window. Do the same, but only while the V4L2 stream is idle.
 	 * The caller has already runtime-resumed the sensor before taking lock.
 	 */
-	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
-		  0x00, &ret);
+	ret = cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+			0x00, NULL);
 	if (ret)
-		return ret;
+		goto restore;
 
 	ret = ov5693_enable_streaming(ov5693, true);
 	if (ret)
-		goto stop_streaming;
+		goto restore;
 
 	for (bank = 0; bank < OV5693_MIPAD2_OTP_BANKS; bank++) {
 		u8 *bank_data = &ov5693->otp_data[bank * OV5693_MIPAD2_OTP_BANK_SIZE];
@@ -284,18 +284,18 @@ static int ov5693_mipad2_fetch_otp(struct ov5693_device *ov5693)
 			break;
 	}
 
-stop_streaming:
-	/* Always attempt to restore both sensor state registers on failure. */
-	cci_write(ov5693->regmap, CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
-		  0x0f, &stop_ret);
-	{
-		int stream_ret = ov5693_enable_streaming(ov5693, false);
-
-		if (!stop_ret)
-			stop_ret = stream_ret;
+restore:
+	/* Even a failed I2C write can leave the sensor state uncertain. */
+	frame_ret = cci_write(ov5693->regmap,
+			     CCI_REG8(OV5693_MIPAD2_OTP_FRAME_OFF_REG),
+			     0x0f, NULL);
+	stream_ret = ov5693_enable_streaming(ov5693, false);
+	if (frame_ret || stream_ret) {
+		/* Force the normal sensor reinitialization before the next stream. */
+		ov5693->needs_reinit = true;
+		if (!ret)
+			ret = frame_ret ?: stream_ret;
 	}
-	if (!ret)
-		ret = stop_ret;
 	if (ret)
 		return ret;
 
