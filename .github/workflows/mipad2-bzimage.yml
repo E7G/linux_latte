@@ -13,6 +13,9 @@ on:
       - cachyos-mipad2
     paths:
       - drivers/hid/**
+      - drivers/gpu/drm/i915/display/vlv_dsi.c
+      - drivers/video/backlight/backlight.c
+      - include/linux/backlight.h
       - arch/x86/configs/xiaomipad2_defconfig
       - arch/x86/boot/compressed/Makefile
       - drivers/firmware/efi/libstub/Makefile

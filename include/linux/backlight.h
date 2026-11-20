@@ -407,6 +407,7 @@ struct backlight_device *backlight_device_get_by_name(const char *name);
 struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
 int backlight_device_set_brightness(struct backlight_device *bd,
 				    unsigned long brightness);
+int backlight_device_reapply_status(struct backlight_device *bd);
 
 #define to_backlight_device(obj) container_of(obj, struct backlight_device, dev)
 
