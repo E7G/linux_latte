@@ -43,12 +43,31 @@ rate range for every size in its integer size range.
   with the tablet’s GStreamer runtime. For 1080p and 1920×1440 it
   accepts nominal 30 fps and the exact 30.002 fps front rate, rejects an
   out-of-range 120 fps, and handles malformed/equal interval endpoints.
-* The replacement plugin, loaded from a private path with a private
-  registry on LPAT11, passed six positive captures across the two
-  resolutions, inputs and nominal/native rate requests. No system
-  package or plugin was replaced; LPAT11 has no stepwise callback.
-* Remaining gate: build/sign LPAT12, verify native enumeration and
-  `S_PARM` round trips for both sensors including during a competing
-  read-only enumeration client, and run old/new GStreamer controls
-  on the same candidate. Keep the known-good boot and user-space
-  backend until the pair has been tested.
+* Full LPAT12 (`f6bc1261f71ca2732fd92f346324450a6021231b`) built
+  with the LPAT11 config. All 37 module signatures and 55 bundle
+  files verified. The expected release booted in the one-shot GRUB
+  entry; the saved rollback entry was unchanged.
+* On both inputs, 24 native enumerations matched the previous
+  hardware control readback at 640×480, 1280×720, 1920×1080 and
+  1920×1440 in NV12, YU12 and YUYV. 144 endpoint, step and clamp
+  `S_PARM` round trips passed. While streaming, 120 concurrent
+  queries per camera took place without changing ACTIVE state or
+  interrupting the 150 ordered buffers on either input.
+* The initial run's fixture compared exposure against a value read
+  before restoring VBLANK, which can itself change exposure. After
+  re-reading controls following VBLANK, the saved state was
+  restored and the entire matrix passed again.
+* On the same LPAT12 boot, stock GStreamer 1.28.7 failed all six
+  fixed 30 fps tests with `not-negotiated`. The replacement plugin
+  passed all six: both cameras, 1080p and 1920×1440, with nominal
+  30/1 and the native front 78125/2604 request. It also passed the
+  same six tests on LPAT11. The plugin was loaded from a private
+  path/registry, with the same ELF dependencies as the stock build
+  (including GUdev). No system plugin or package was overwritten.
+
+Remaining deployment gate: distribute and roll back the compatible
+backend together with the kernel. Booting LPAT12 with an unmodified
+GStreamer 1.28.7 installation is a demonstrated regression; do not
+make the kernel a daily default on its own. An original signed Arch
+`gst-plugins-good 1.28.7-1` archive was verified and its V4L2 plugin
+matched the installed file byte-for-byte for rollback.
