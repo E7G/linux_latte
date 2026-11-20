@@ -6,13 +6,16 @@ on:
       - main
       - cachyos-mipad2
       - codex/mipad2-6.14-integrated
+      - codex/mipad2-7.2-integrated
       - test/mipad2-camera-20260829
   pull_request:
     paths:
       - 'drivers/hid/hid-sensor-hub.c'
       - 'drivers/media/i2c/ov5693.c'
+      - 'drivers/media/v4l2-core/v4l2-cci.c'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
+      - 'fix_file/tests/mipad2-ov5693-otp-io-test.py'
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
@@ -37,7 +40,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  camera-7-2:
+    if: github.base_ref == 'codex/mipad2-7.2-integrated' || github.ref_name == 'codex/mipad2-7.2-integrated'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev
+      - name: Exercise OV5693 OTP faults through the production CCI register accessors
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-ov5693-otp-io-test.py
+          CC="clang -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-ov5693-otp-io-test.py
+          python3 -B fix_file/tests/mipad2-ov5693-otp-parser-test.py
+      - name: Compile the 7.2 OV5693 and CCI objects
+        run: |
+          make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
+          case "$(make -s O=out LLVM=1 ARCH=x86_64 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
+          grep -qx 'CONFIG_VIDEO_OV5693=m' out/.config
+          make O=out LLVM=1 ARCH=x86_64 W=1 -j"$(nproc)" \
+            drivers/media/i2c/ov5693.o drivers/media/v4l2-core/v4l2-cci.o
+
   camera-drivers:
+    # The legacy audit below deliberately requires old GPIO and navigation-key code.
+    if: github.base_ref != 'codex/mipad2-7.2-integrated' && github.ref_name != 'codex/mipad2-7.2-integrated'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
