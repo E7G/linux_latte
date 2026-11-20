@@ -19,6 +19,7 @@ on:
       - 'fix_file/tests/mipad2-ov5693-otp-io-test.py'
       - 'fix_file/tests/mipad2-t4ka3-start-host-test.py'
       - 'fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py'
+      - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
@@ -65,6 +66,8 @@ jobs:
           CC=gcc python3 -B fix_file/tests/mipad2-t4ka3-start-host-test.py
           CC="clang -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-t4ka3-start-host-test.py
           python3 -B fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py
+      - name: Verify front and rear V4L2 stream lifecycle ownership
+        run: python3 -B fix_file/tests/mipad2-stream-stop-pm-host-test.py
       - name: Compile the 7.2 OV5693, T4KA3 and CCI objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
