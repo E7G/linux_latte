@@ -73,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix="chtwc-bundle-gates-") as name:
     adc_config = config + "CONFIG_IIO_CHT_WC_ADC=m\n"
     for flavor, previous in (("lpat3", "lpat2"), ("lpat4", "lpat3"),
                              ("lpat5", "lpat4"), ("lpat6", "lpat5"),
-                             ("lpat8", "lpat6"), ("lpat9", "lpat8")):
+                             ("lpat8", "lpat6"), ("lpat9", "lpat8"), ("lpat10", "lpat9")):
         candidate_release = f"7.2.15-mipad2-integrated-{flavor}"
         release.write_text(candidate_release + "\n")
         (build/".config").write_text(adc_config)

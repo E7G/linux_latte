@@ -18,7 +18,8 @@ esac
 
 pixel_format=${MIPAD2_CAMERA_PIXEL_FORMAT:-YU12}
 case "$pixel_format" in
-	YU12|NV12|YUYV) ;;
+	YU12|NV12) bytes_per_frame=$((1280 * 720 * 3 / 2)) ;;
+	YUYV) bytes_per_frame=$((1280 * 720 * 2)) ;;
 	*)
 		printf 'Unsupported test pixel format: %s\n' "$pixel_format" >&2
 		printf 'Use YU12, NV12 or YUYV.\n' >&2
@@ -79,8 +80,12 @@ capture_one()
 		v4l2-ctl -d "$video_node" --set-input="$input" \
 		--set-fmt-video=width=1280,height=720,pixelformat="$pixel_format" \
 		--stream-mmap=4 --stream-count=3 --stream-to="$out" >"$log" 2>&1 \
-		&& size=$(wc -c <"$out") && [ "$size" -gt 0 ]; then
-		if [ "$can_read_dmesg" -eq 1 ] &&
+		&& size=$(wc -c <"$out"); then
+		if [ "$size" -ne "$((3 * bytes_per_frame))" ]; then
+			printf 'MISS %s %s payload: got %s bytes, expected %s\n' \
+				"$label" "$pixel_format" "$size" "$((3 * bytes_per_frame))"
+			fail=1
+		elif [ "$can_read_dmesg" -eq 1 ] &&
 			[ "$(css_error_count)" -gt "$css_before" ]; then
 			printf 'MISS %s capture: new AtomISP CSS queue error\n' "$label"
 			cat "$log"
