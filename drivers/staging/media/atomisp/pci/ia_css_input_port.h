@@ -21,6 +21,9 @@
 #define	IA_CSS_CSI2_PORT_1LANE MIPI_PORT1_ID
 #define	IA_CSS_CSI2_PORT_2LANE MIPI_PORT2_ID
 
+/* Legacy receiver count when the source does not report a link frequency. */
+#define IA_CSS_DEFAULT_PORT_RXCOUNT 0x04040404U
+
 /* The CSI2 interface supports 2 types of compression or can
  *  be run without compression.
  */

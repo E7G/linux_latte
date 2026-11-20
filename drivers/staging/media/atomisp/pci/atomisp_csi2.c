@@ -5,6 +5,7 @@
  * Copyright (c) 2010 Intel Corporation. All Rights Reserved.
  */
 
+#include <media/v4l2-common.h>
 #include <media/v4l2-event.h>
 #include <media/v4l2-mediabus.h>
 #include "atomisp_cmd.h"
@@ -206,6 +207,33 @@ error:
 	return ret;
 }
 
+int atomisp_csi2_get_link_freq(const struct atomisp_input_subdev *input)
+{
+	struct v4l2_subdev *source = input->csi_remote_source;
+	unsigned int pad = input->sensor_isp ? SENSOR_ISP_PAD_SOURCE : 0;
+	s64 freq;
+
+	if (!source || pad >= source->entity.num_pads)
+		return 0;
+
+	/*
+	 * LINK_FREQ is an integer menu, not a frequency-valued G_CTRL.
+	 * Do not estimate from PIXEL_RATE: it can describe sensor array
+	 * timing rather than the rate on this CSI-2 link.
+	 */
+	freq = v4l2_get_link_freq(&source->entity.pads[pad], 0, 0);
+	if (freq == -ENOENT) {
+		struct v4l2_ctrl *ctrl;
+
+		/* Legacy AtomISP sensors such as OV2722 use a scalar in Hz. */
+		ctrl = v4l2_ctrl_find(source->ctrl_handler, V4L2_CID_LINK_FREQ);
+		if (ctrl && ctrl->type == V4L2_CTRL_TYPE_INTEGER)
+			freq = v4l2_ctrl_g_ctrl(ctrl);
+	}
+
+	return freq > 0 && freq <= INT_MAX ? freq : 0;
+}
+
 static const int LIMIT_SHIFT = 6;	/* Limit numeric range into 31 bits */
 
 static int
@@ -222,7 +250,7 @@ atomisp_csi2_configure_calc(const short int coeffs[2], int mipi_freq, int def)
 	r /= mipi_freq >> LIMIT_SHIFT;
 	r += accinv * coeffs[0];
 
-	return r;
+	return max(r, 0);
 }
 
 static void atomisp_csi2_configure_isp2401(struct atomisp_sub_device *asd)
@@ -288,18 +316,14 @@ static void atomisp_csi2_configure_isp2401(struct atomisp_sub_device *asd)
 	int dat_termen;
 	int dat_settle;
 
-	struct v4l2_control ctrl;
 	struct atomisp_device *isp = asd->isp;
-	int mipi_freq = 0;
+	struct atomisp_input_subdev *input = &isp->inputs[asd->input_curr];
+	int mipi_freq;
 	enum atomisp_camera_port port;
 	int n;
 
-	port = isp->inputs[asd->input_curr].port;
-
-	ctrl.id = V4L2_CID_LINK_FREQ;
-	if (v4l2_g_ctrl
-	    (isp->inputs[asd->input_curr].sensor->ctrl_handler, &ctrl) == 0)
-		mipi_freq = ctrl.value;
+	port = input->port;
+	mipi_freq = atomisp_csi2_get_link_freq(input);
 
 	clk_termen = atomisp_csi2_configure_calc(coeff_clk_termen, mipi_freq,
 						 TERMEN_DEFAULT);
@@ -309,6 +333,9 @@ static void atomisp_csi2_configure_isp2401(struct atomisp_sub_device *asd)
 						 TERMEN_DEFAULT);
 	dat_settle = atomisp_csi2_configure_calc(coeff_dat_settle, mipi_freq,
 						 SETTLE_DEFAULT);
+
+	dev_dbg(isp->dev, "CSI-2 port %u: link %d Hz, clock settle %d, data settle %d\n",
+		port, mipi_freq, clk_settle, dat_settle);
 
 	for (n = 0; n < csi2_port_lanes[port] + 1; n++) {
 		hrt_address base = csi2_port_base[port] + csi2_lane_base[n];

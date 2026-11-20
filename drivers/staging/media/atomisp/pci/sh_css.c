@@ -7505,7 +7505,7 @@ void ia_css_stream_config_defaults(struct ia_css_stream_config *stream_config)
 	 * This field used to be hardcoded within CSS but this has now
 	 * been moved to the stream_config struct.
 	 */
-	stream_config->source.port.rxcount = 0x04040404;
+	stream_config->source.port.rxcount = IA_CSS_DEFAULT_PORT_RXCOUNT;
 }
 
 int ia_css_pipe_create(const struct ia_css_pipe_config *config,
