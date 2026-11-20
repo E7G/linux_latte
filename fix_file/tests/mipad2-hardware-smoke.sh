@@ -206,6 +206,31 @@ else
     miss 'thermal zones'
 fi
 
+if modinfo -k "$release" intel_pmic_chtwc_thermal >/dev/null 2>&1; then
+    if [ ! -L /sys/bus/platform/devices/cht_wcove_adc/driver ]; then
+        miss 'Whiskey Cove ADC driver binding'
+    fi
+    for thermistor in chtwc-sys0 chtwc-sys1 chtwc-sys2; do
+        zone_path=
+        for type_file in /sys/class/thermal/thermal_zone*/type; do
+            if [ -r "$type_file" ] && [ "$(cat "$type_file")" = "$thermistor" ]; then
+                zone_path=${type_file%/type}
+                break
+            fi
+        done
+        if [ -z "$zone_path" ]; then
+            miss "Whiskey Cove board thermal zone $thermistor"
+            continue
+        fi
+        board_temp=$(cat "$zone_path/temp" 2>/dev/null || true)
+        if [ "$board_temp" -ge -40000 ] 2>/dev/null && [ "$board_temp" -le 125000 ]; then
+            printf 'OK   board thermal %s %s mC\n' "$thermistor" "$board_temp"
+        else
+            miss "Whiskey Cove board thermal reading $thermistor"
+        fi
+    done
+fi
+
 for led in mipad2:rgb:indicator mipad2:white:touch-buttons-backlight; do
     if [ -e "/sys/class/leds/$led" ]; then
         printf 'OK   LED %s\n' "$led"
