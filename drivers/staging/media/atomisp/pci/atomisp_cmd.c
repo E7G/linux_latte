@@ -4463,6 +4463,11 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 	if (ret)
 		return ret;
 
+	/* Firmware lane topology is fixed; check PCI before changing ACTIVE formats. */
+	ret = atomisp_csi_lane_config(isp);
+	if (ret)
+		return ret;
+
 	pipe->sh_fmt = format_bridge->sh_fmt;
 	pipe->pix.pixelformat = format_bridge->pixelformat;
 
@@ -4493,8 +4498,6 @@ int atomisp_set_fmt(struct video_device *vdev, struct v4l2_format *f)
 			 "Set format to sensor failed with %d\n", ret);
 		return -EINVAL;
 	}
-
-	atomisp_csi_lane_config(isp);
 
 	atomisp_check_copy_mode(asd, &f->fmt.pix);
 

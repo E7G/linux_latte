@@ -786,7 +786,7 @@ int atomisp_csi_lane_config(struct atomisp_device *isp)
 
 	unsigned int i, j;
 	u32 csi_control;
-	int nportconfigs;
+	int nportconfigs, ret;
 	u32 port_config_mask;
 	int port3_lanes_shift;
 
@@ -830,7 +830,13 @@ int atomisp_csi_lane_config(struct atomisp_device *isp)
 		return -EINVAL;
 	}
 
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &csi_control);
+	ret = pcibios_err_to_errno(pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
+						       &csi_control));
+	if (ret)
+		return ret;
+	if (PCI_POSSIBLE_ERROR(csi_control))
+		return -ENODEV;
+
 	csi_control &= ~port_config_mask;
 	csi_control |= (portconfigs[i].code << MRFLD_PORT_CONFIGCODE_SHIFT)
 		       | (portconfigs[i].lanes[0] ? 0 : (1 << MRFLD_PORT1_ENABLE_SHIFT))
@@ -840,7 +846,10 @@ int atomisp_csi_lane_config(struct atomisp_device *isp)
 		       | (((1 << portconfigs[i].lanes[1]) - 1) << MRFLD_PORT2_LANES_SHIFT)
 		       | (((1 << portconfigs[i].lanes[2]) - 1) << port3_lanes_shift);
 
-	pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, csi_control);
+	ret = pcibios_err_to_errno(pci_write_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
+							csi_control));
+	if (ret)
+		return ret;
 
 	dev_dbg(isp->dev,
 		"%s: the portconfig is %d-%d-%d, CSI_CONTROL is 0x%08X\n",
