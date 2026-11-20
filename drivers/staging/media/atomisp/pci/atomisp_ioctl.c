@@ -8,6 +8,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/module.h>
 #include <linux/pci.h>
 
 #include <media/v4l2-ioctl.h>
@@ -29,6 +30,15 @@
 
 static const char *DRIVER = "atomisp";	/* max size 15 */
 static const char *CARD = "ATOM ISP";	/* max size 31 */
+
+/*
+ * Old GStreamer stepwise probes can omit otherwise valid rates. Keep the
+ * legacy ioctl result until userspace is ready to consume the exact range.
+ */
+static bool stepwise_frame_intervals;
+module_param(stepwise_frame_intervals, bool, 0644);
+MODULE_PARM_DESC(stepwise_frame_intervals,
+		 "Expose line-quantized sensor frame intervals (default: false)");
 
 /*
  * FIXME: ISP should not know beforehand all CIDs supported by sensor.
@@ -567,6 +577,17 @@ static int atomisp_enum_stepwise_frameintervals(struct atomisp_device *isp,
 	return 0;
 }
 
+static bool atomisp_stepwise_frame_intervals_enabled(void)
+{
+	bool enabled;
+
+	kernel_param_lock(THIS_MODULE);
+	enabled = stepwise_frame_intervals;
+	kernel_param_unlock(THIS_MODULE);
+
+	return enabled;
+}
+
 static int atomisp_enum_frameintervals(struct file *file, void *priv,
 				       struct v4l2_frmivalenum *fival)
 {
@@ -587,8 +608,12 @@ static int atomisp_enum_frameintervals(struct file *file, void *priv,
 	if (!input->sensor)
 		return -EINVAL;
 
-	if (v4l2_subdev_has_op(input->sensor, pad, get_frame_interval_range))
+	if (v4l2_subdev_has_op(input->sensor, pad, get_frame_interval_range)) {
+		if (!atomisp_stepwise_frame_intervals_enabled())
+			return -ENOTTY;
+
 		return atomisp_enum_stepwise_frameintervals(isp, input, fival);
+	}
 
 	act_sd_state = v4l2_subdev_lock_and_get_active_state(input->sensor);
 	ret = v4l2_subdev_call(input->sensor, pad, enum_frame_interval,
