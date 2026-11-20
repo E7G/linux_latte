@@ -1,0 +1,2 @@
+# Unified diff context markers precede the upstream C tab indentation.
+candidate.patch whitespace=-space-before-tab

@@ -1,0 +1,142 @@
+diff --git a/src/i965_drv_video.c b/src/i965_drv_video.c
+index 5e75428..91d69ad 100644
+--- a/src/i965_drv_video.c
++++ b/src/i965_drv_video.c
+@@ -2072,4 +2072,80 @@ static inline int AlignHeightForFormat(struct i965_driver_data *i965, int su_hin
+ }
+
++/*
++ * The legacy GEM import can represent a single linear YUV420 object.
++ * Translate only descriptors whose offsets/strides it preserves exactly.
++ */
++static VAStatus
++i965_prime2_to_external(const VADRMPRIMESurfaceDescriptor *desc,
++			unsigned int width, unsigned int height,
++			VASurfaceAttribExternalBuffers *external, uintptr_t *fd)
++{
++	uint32_t drm_format, planes;
++
++	if (!desc || desc->width != width || desc->height != height ||
++	    (width | height) & 1)
++		return VA_STATUS_ERROR_INVALID_PARAMETER;
++
++	switch (desc->fourcc) {
++	case VA_FOURCC_NV12:
++		drm_format = DRM_FORMAT_NV12;
++		planes = 2;
++		break;
++	case VA_FOURCC_I420:
++		drm_format = DRM_FORMAT_YUV420;
++		planes = 3;
++		break;
++	case VA_FOURCC_YV12:
++		drm_format = DRM_FORMAT_YVU420;
++		planes = 3;
++		break;
++	default:
++		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
++	}
++
++	if (desc->num_objects != 1 || desc->num_layers != 1 ||
++	    desc->objects[0].drm_format_modifier != DRM_FORMAT_MOD_LINEAR ||
++	    desc->layers[0].drm_format != drm_format ||
++	    desc->layers[0].num_planes != planes)
++		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
++
++	const uint32_t *pitch = desc->layers[0].pitch;
++	const uint32_t *offset = desc->layers[0].offset;
++	uint64_t end = 0;
++
++	if (desc->objects[0].fd < 0 || pitch[0] < width)
++		return VA_STATUS_ERROR_INVALID_PARAMETER;
++	if (offset[0] || offset[1] % pitch[0] ||
++	    (planes == 3 && offset[2] % pitch[0]) ||
++	    pitch[1] != (planes == 2 ? pitch[0] : pitch[0] / 2) ||
++	    (planes == 3 && pitch[2] != pitch[1]))
++		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
++
++	for (unsigned int i = 0; i < planes; i++) {
++		if (desc->layers[0].object_index[i] || offset[i] < end)
++			return VA_STATUS_ERROR_INVALID_PARAMETER;
++		end = offset[i] + (uint64_t)pitch[i] *
++		      (i == 0 ? height : height / 2);
++	}
++	if (end > desc->objects[0].size)
++		return VA_STATUS_ERROR_INVALID_PARAMETER;
++
++	*fd = desc->objects[0].fd;
++	*external = (VASurfaceAttribExternalBuffers) {
++		.pixel_format = desc->fourcc,
++		.width = width,
++		.height = height,
++		.data_size = desc->objects[0].size,
++		.num_planes = planes,
++		.buffers = fd,
++		.num_buffers = 1,
++	};
++	for (unsigned int i = 0; i < planes; i++) {
++		external->pitches[i] = pitch[i];
++		external->offsets[i] = offset[i];
++	}
++	return VA_STATUS_SUCCESS;
++}
++
+ static VAStatus
+ i965_CreateSurfaces2(
+@@ -2094,6 +2170,9 @@ i965_CreateSurfaces2(
+ 	int expected_fourcc = 0;
+ 	int memory_type = I965_SURFACE_MEM_NATIVE; /* native */
++	bool prime2 = false;
+ 	int surface_usage_hint = VA_SURFACE_ATTRIB_USAGE_HINT_GENERIC;
+-	VASurfaceAttribExternalBuffers *memory_attribute = NULL;
++	void *descriptor = NULL;
++	VASurfaceAttribExternalBuffers prime2_external;
++	uintptr_t prime2_fd;
+
+ 	for (i = 0; i < num_attribs && attrib_list; i++) {
+@@ -2114,4 +2193,5 @@ i965_CreateSurfaces2(
+
+ 			ASSERT_RET(attrib_list[i].value.type == VAGenericValueTypeInteger, VA_STATUS_ERROR_INVALID_PARAMETER);
++			prime2 = false;
+
+ 			if (attrib_list[i].value.value.i == VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM)
+@@ -2123,4 +2203,9 @@ i965_CreateSurfaces2(
+ 				memory_type = I965_SURFACE_MEM_DRM_PRIME; /* drm prime fd */
+ 			}
++			else if (attrib_list[i].value.value.i == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2)
++			{
++				memory_type = I965_SURFACE_MEM_DRM_PRIME;
++				prime2 = true;
++			}
+ 			else if (attrib_list[i].value.value.i == VA_SURFACE_ATTRIB_MEM_TYPE_VA)
+ 			{
+@@ -2134,4 +2219,5 @@ i965_CreateSurfaces2(
+ 			{
+ 				i965_log_debug(ctx, "i965_CreateSurfaces2: Unknown VA_SURFACE_TYPE: %i\n", attrib_list[i].value.value.i);
++				return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
+ 			}
+ 		}
+@@ -2140,8 +2226,22 @@ i965_CreateSurfaces2(
+ 			(attrib_list[i].flags == VA_SURFACE_ATTRIB_SETTABLE)) {
+ 			ASSERT_RET(attrib_list[i].value.type == VAGenericValueTypePointer, VA_STATUS_ERROR_INVALID_PARAMETER);
+-			memory_attribute = (VASurfaceAttribExternalBuffers *)attrib_list[i].value.value.p;
++			descriptor = attrib_list[i].value.value.p;
+ 		}
+ 	}
+
++	VASurfaceAttribExternalBuffers *memory_attribute = descriptor;
++	if (prime2) {
++		if (num_surfaces != 1 || format != VA_RT_FORMAT_YUV420)
++			return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
++		vaStatus = i965_prime2_to_external(descriptor, width, height,
++						 &prime2_external, &prime2_fd);
++		if (vaStatus != VA_STATUS_SUCCESS)
++			return vaStatus;
++		if (expected_fourcc && expected_fourcc != prime2_external.pixel_format)
++			return VA_STATUS_ERROR_INVALID_PARAMETER;
++		expected_fourcc = prime2_external.pixel_format;
++		memory_attribute = &prime2_external;
++	}
++
+ 	/* support 420 & 422 & RGB32 format, 422 and RGB32 are only used
+ 	 * for post-processing (including color conversion) */
