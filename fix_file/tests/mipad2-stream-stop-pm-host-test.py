@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Compile actual sensor stop callbacks + V4L2 wrapper/disable-streams.
+"""Compile OV5693 streaming and T4KA3 stop callbacks with the V4L2 wrappers.
 
-Runtime PM, I2C, active-state infrastructure and enable path are host stubs.
-This validates stop ownership/flags, not hardware powerdown or full AtomISP.
+Runtime PM, register delivery and sensor programming use host stubs.
+This checks lifecycle and refcounts, not hardware powerdown or full AtomISP.
 """
 from pathlib import Path
 import os,re,subprocess,tempfile
@@ -39,12 +39,21 @@ struct handler {int unused;};
 struct ov5693_device {struct mutex lock;struct device *dev;struct {struct handler handler;} ctrls;bool streaming,needs_reinit;};
 struct t4ka3_data {struct v4l2_subdev sd;struct device *dev;void *regmap;int streaming;};
 static int refs,pm_puts,sync_puts,writes,stop_error,pm_error,start_error,mode_error,setup_error,init_error,inits,suspend_error;
-static bool powered=true;
+static int modes,setups,start_writes,stop_writes;
+static bool powered=true,wire_streaming,start_lands_on_error;
 static struct ov5693_device *to_ov5693_sensor(struct v4l2_subdev *sd) {return sd->owner;}
 static struct t4ka3_data *to_t4ka3_sensor(struct v4l2_subdev *sd) {return sd->owner;}
 static void mutex_lock(struct mutex *m) {assert(!m->locked);m->locked=1;}
 static void mutex_unlock(struct mutex *m) {assert(m->locked);m->locked=0;}
-static int pm_runtime_resume_and_get(void *d) {(void)d;if(pm_error)return pm_error;refs++;powered=true;return 0;}
+static int pm_runtime_resume_and_get(void *d) {
+#ifdef TEST_OV
+ struct ov5693_device *o=d;assert(!o->lock.locked && "Runtime resume may take sensor mutex");
+#else
+ (void)d;
+#endif
+ if(pm_error)return pm_error;
+ refs++;powered=true;return 0;
+}
 static void pm_runtime_put(void *d) {(void)d;assert(refs>0);refs--;pm_puts++;}
 static int pm_runtime_put_sync_suspend(void *d) {
  struct ov5693_device *o=d;
@@ -56,12 +65,28 @@ static int pm_runtime_put_sync_suspend(void *d) {
  assert(refs>0);refs--;pm_puts++;sync_puts++;
  if(refs)return -EBUSY;
  if(suspend_error)return suspend_error;
- powered=false;return 0;
+ powered=false;wire_streaming=false;return 0;
 }
-static int ov5693_mode_configure(struct ov5693_device *o) {assert(o->lock.locked);return mode_error;}
-static int ov5693_sensor_init(struct ov5693_device *o) {assert(o->lock.locked);inits++;return init_error;}
-static int __v4l2_ctrl_handler_setup(struct handler *h) {(void)h;return setup_error;}
-static int ov5693_enable_streaming(struct ov5693_device *o,bool on) {assert(o->lock.locked);writes++;return on?start_error:stop_error;}
+static int ov5693_mode_configure(struct ov5693_device *o) {
+ assert(o->lock.locked && powered && !wire_streaming);modes++;return mode_error;
+}
+static int ov5693_sensor_init(struct ov5693_device *o) {
+ assert(o->lock.locked && powered);inits++;if(!init_error)wire_streaming=false;return init_error;
+}
+static int __v4l2_ctrl_handler_setup(struct handler *h) {
+ (void)h;assert(!wire_streaming);setups++;return setup_error;
+}
+static int ov5693_enable_streaming(struct ov5693_device *o,bool on) {
+ assert(o->lock.locked && powered);writes++;
+ if(on) {
+  assert(!wire_streaming);start_writes++;
+  if(!start_error || start_lands_on_error)wire_streaming=true;
+  return start_error;
+ }
+ stop_writes++;
+ if(!stop_error)wire_streaming=false;
+ return stop_error;
+}
 #define T4KA3_REG_STREAM 0x0100
 static int cci_write(void *m,unsigned reg,int v,void *err) {(void)m;assert(reg==T4KA3_REG_STREAM && v==0 && !err);writes++;return stop_error;}
 #define dev_err(...) ((void)0)
@@ -88,10 +113,69 @@ static int t4_bridge(struct v4l2_subdev *sd,int enable) {
  /* Enable is a PM/flag stub; stop and both core wrappers are extracted. */
  struct t4ka3_data *t=sd->owner;assert(!sd->enabled_pads);refs++;powered=true;t->streaming=1;sd->enabled_pads=1;return 0;
 }
+#ifdef TEST_OV
+static void test_ov_start_recovery(void)
+{
+ enum { PM, INIT, MODE, SETUP, START };
+ const int failures[]={-EIO,-EREMOTEIO,-ETIMEDOUT,-ENXIO};
+ const int standby_failures[]={0,-EAGAIN,-EREMOTEIO};
+ unsigned int cases=0;
+
+ for(int phase=PM;phase<=START;phase++)
+ for(int stale=0;stale<=1;stale++) {
+  if((phase==INIT && !stale) || (phase==MODE && stale))continue;
+  for(unsigned int first=0;first<sizeof(failures)/sizeof(*failures);first++)
+  for(unsigned int stop=0;stop<sizeof(standby_failures)/sizeof(*standby_failures);stop++)
+  for(int extra=0;extra<=1;extra++)
+  for(int suspend_fails=0;suspend_fails<=1;suspend_fails++)
+  for(int landed=0;landed<=1;landed++) {
+   struct ov5693_device sensor={.needs_reinit=stale};
+   struct video_ops video={.s_stream=ov5693_s_stream};
+   struct ops ops={.video=&video};
+   struct v4l2_subdev sd={.owner=&sensor,.ops=&ops};
+   int error=failures[first];
+   bool suspend_requested=phase!=PM && stop;
+   bool suspended=suspend_requested && !extra && !suspend_fails;
+
+   sensor.dev=(void*)&sensor;
+   refs=extra;pm_puts=sync_puts=writes=inits=modes=setups=start_writes=stop_writes=0;
+   powered=true;wire_streaming=stale;start_lands_on_error=landed;
+   pm_error=phase==PM?error:0;init_error=phase==INIT?error:0;
+   mode_error=phase==MODE?error:0;setup_error=phase==SETUP?error:0;
+   start_error=phase==START?error:0;stop_error=standby_failures[stop];
+   suspend_error=suspend_fails?-ENXIO:0;
+
+   assert(call_s_stream(&sd,1)==error && refs==extra);
+   assert(!sd.s_stream_enabled && !sd.privacy && !sensor.streaming && !sensor.lock.locked);
+   assert(pm_puts==(phase!=PM) && sync_puts==suspend_requested);
+   assert(sensor.needs_reinit==(phase!=PM || stale));
+   assert(inits==(phase!=PM && stale) && modes==(phase!=PM && !stale));
+   assert(setups==(phase==SETUP || phase==START));
+   assert(start_writes==(phase==START) && stop_writes==(phase!=PM));
+   assert(powered==!suspended);
+   if(suspended || (phase!=PM && !stop))assert(!wire_streaming);
+   int before=writes;
+   assert(call_s_stream(&sd,0)==0 && writes==before && refs==extra);
+
+   /* An extra PM owner is allowed: next start still runs full initialization. */
+   bool reinit_on_retry=sensor.needs_reinit;
+   int old_inits=inits;
+   pm_error=init_error=mode_error=setup_error=start_error=stop_error=suspend_error=0;
+   assert(call_s_stream(&sd,1)==0 && sensor.streaming && wire_streaming);
+   assert(sd.s_stream_enabled && sd.privacy && refs==extra+1 && !sensor.needs_reinit);
+   assert(inits==old_inits+reinit_on_retry);
+   assert(call_s_stream(&sd,0)==0 && refs==extra && !wire_streaming);
+   cases++;
+  }
+ }
+ printf("PASS %u extracted OV5693 start/unwind and V4L2 ownership cases\n",cases);
+}
+#endif
 int main(void) {
  const int faults[]={0,-EIO,-EREMOTEIO,-ETIMEDOUT,-ENXIO};unsigned cases=0;
  for(unsigned e=0;e<5;e++)for(unsigned extra=0;extra<2;extra++)for(unsigned repeat=1;repeat<=8;repeat++) {
   refs=extra;pm_puts=sync_puts=writes=inits=0;stop_error=faults[e];powered=true;suspend_error=0;
+  wire_streaming=false;
   struct device d={0};struct media_device md={.dev=&d};struct pad pad={.flags=MEDIA_PAD_FL_SOURCE};
   struct video_ops video={0};struct pad_ops pads={0};struct ops ops={.video=&video,.pad=&pads};
 #ifdef TEST_OV
@@ -124,6 +208,9 @@ int main(void) {
   assert(call_s_stream(&sd,0)==0 && refs==(int)extra && pm_puts==2);cases++;
  }
  printf("PASS %u extracted callback/core stop, PM, idle and restart cases; mocked bus/power/enable infrastructure, not hardware proof\n",cases);
+#ifdef TEST_OV
+ test_ov_start_recovery();
+#endif
 }
 '''
 core=extract('drivers/media/v4l2-core/v4l2-subdev.c','call_s_stream')

@@ -1486,7 +1486,7 @@ static int ov5693_set_selection(struct v4l2_subdev *sd,
 static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
-	int ret;
+	int ret, recovery;
 
 	if (enable) {
 		ret = pm_runtime_resume_and_get(ov5693->dev);
@@ -1494,7 +1494,7 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 			return ret;
 
 		mutex_lock(&ov5693->lock);
-		/* An interrupted stop may leave power on for another PM user. */
+		/* Another PM user may have kept the sensor in an unknown state. */
 		if (ov5693->needs_reinit) {
 			ret = ov5693_sensor_init(ov5693);
 			if (!ret)
@@ -1504,17 +1504,15 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 		}
 		if (!ret)
 			ret = __v4l2_ctrl_handler_setup(&ov5693->ctrls.handler);
-		if (ret) {
-			mutex_unlock(&ov5693->lock);
-			goto err_power_down;
-		}
+		if (ret)
+			goto err_standby;
 
 		ret = ov5693_enable_streaming(ov5693, true);
-		if (!ret)
-			ov5693->streaming = true;
-		mutex_unlock(&ov5693->lock);
 		if (ret)
-			goto err_power_down;
+			goto err_standby;
+
+		ov5693->streaming = true;
+		mutex_unlock(&ov5693->lock);
 		return 0;
 	}
 
@@ -1540,8 +1538,22 @@ static int ov5693_s_stream(struct v4l2_subdev *sd, int enable)
 	}
 	return 0;
 
-err_power_down:
-	pm_runtime_put(ov5693->dev);
+err_standby:
+	/* A failed I2C write may still have reached the sensor. */
+	ov5693->needs_reinit = true;
+	recovery = ov5693_enable_streaming(ov5693, false);
+	mutex_unlock(&ov5693->lock);
+
+	if (recovery) {
+		dev_warn(ov5693->dev, "start recovery failed: %d; requesting powerdown\n",
+			 recovery);
+		recovery = pm_runtime_put_sync_suspend(ov5693->dev);
+		if (recovery < 0 && recovery != -EBUSY)
+			dev_warn(ov5693->dev, "start powerdown failed: %d\n", recovery);
+	} else {
+		pm_runtime_put(ov5693->dev);
+	}
+
 	return ret;
 }
 
