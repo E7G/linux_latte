@@ -36,6 +36,7 @@ struct magn_3d_state {
 	struct hid_sensor_common magn_flux_attributes;
 	struct hid_sensor_common rot_attributes;
 	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
+	struct iio_mount_matrix orientation;
 
 	/* dynamically sized array to hold sensor values */
 	u32 *iio_vals;
@@ -45,6 +46,20 @@ struct magn_3d_state {
 	struct common_attributes magn_flux_attr;
 	struct common_attributes rot_attr;
 	s64 timestamp;
+};
+
+static const struct iio_mount_matrix *
+hid_magn_3d_get_mount_matrix(const struct iio_dev *indio_dev,
+			     const struct iio_chan_spec *chan)
+{
+	struct magn_3d_state *state = iio_priv(indio_dev);
+
+	return &state->orientation;
+}
+
+static const struct iio_chan_spec_ext_info magn_3d_ext_info[] = {
+	IIO_MOUNT_MATRIX(IIO_SHARED_BY_TYPE, hid_magn_3d_get_mount_matrix),
+	{ }
 };
 
 static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
@@ -473,6 +488,7 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
 	struct magn_3d_state *magn_state;
 	struct iio_chan_spec *channels;
 	int chan_count = 0;
+	int i;
 
 	indio_dev = devm_iio_device_alloc(&pdev->dev,
 					  sizeof(struct magn_3d_state));
@@ -505,6 +521,14 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to parse report\n");
 		return ret;
 	}
+
+	ret = iio_read_mount_matrix(&pdev->dev, &magn_state->orientation);
+	if (ret)
+		return dev_err_probe(&pdev->dev, ret, "reading mount matrix\n");
+
+	for (i = 0; i < chan_count; i++)
+		if (channels[i].type == IIO_MAGN)
+			channels[i].ext_info = magn_3d_ext_info;
 
 	indio_dev->channels = channels;
 	indio_dev->num_channels = chan_count;

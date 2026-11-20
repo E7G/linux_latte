@@ -37,6 +37,7 @@ jobs:
 
       - name: Configure Mi Pad 2 CachyOS navkeys kernel
         run: |
+          sh fix_file/tests/mipad2-sensor-orientation-audit.sh
           make xiaomipad2_defconfig
           release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
           echo "kernelrelease=$release"

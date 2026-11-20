@@ -25,6 +25,7 @@ struct gyro_3d_state {
 	struct hid_sensor_hub_callbacks callbacks;
 	struct hid_sensor_common common_attributes;
 	struct hid_sensor_hub_attribute_info gyro[GYRO_3D_CHANNEL_MAX];
+	struct iio_mount_matrix orientation;
 	struct {
 		u32 gyro_val[GYRO_3D_CHANNEL_MAX];
 		aligned_s64 timestamp;
@@ -34,6 +35,20 @@ struct gyro_3d_state {
 	int scale_precision;
 	int value_offset;
 	s64 timestamp;
+};
+
+static const struct iio_mount_matrix *
+hid_gyro_3d_get_mount_matrix(const struct iio_dev *indio_dev,
+			     const struct iio_chan_spec *chan)
+{
+	struct gyro_3d_state *state = iio_priv(indio_dev);
+
+	return &state->orientation;
+}
+
+static const struct iio_chan_spec_ext_info gyro_3d_ext_info[] = {
+	IIO_MOUNT_MATRIX(IIO_SHARED_BY_ALL, hid_gyro_3d_get_mount_matrix),
+	{ }
 };
 
 static const u32 gyro_3d_addresses[GYRO_3D_CHANNEL_MAX] = {
@@ -58,6 +73,7 @@ static const struct iio_chan_spec gyro_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_X,
+		.ext_info = gyro_3d_ext_info,
 	}, {
 		.type = IIO_ANGL_VEL,
 		.modified = 1,
@@ -68,6 +84,7 @@ static const struct iio_chan_spec gyro_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Y,
+		.ext_info = gyro_3d_ext_info,
 	}, {
 		.type = IIO_ANGL_VEL,
 		.modified = 1,
@@ -78,6 +95,7 @@ static const struct iio_chan_spec gyro_3d_channels[] = {
 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
 		BIT(IIO_CHAN_INFO_HYSTERESIS),
 		.scan_index = CHANNEL_SCAN_INDEX_Z,
+		.ext_info = gyro_3d_ext_info,
 	},
 	IIO_CHAN_SOFT_TIMESTAMP(CHANNEL_SCAN_INDEX_TIMESTAMP)
 };
@@ -293,6 +311,10 @@ static int hid_gyro_3d_probe(struct platform_device *pdev)
 	gyro_state = iio_priv(indio_dev);
 	gyro_state->common_attributes.hsdev = hsdev;
 	gyro_state->common_attributes.pdev = pdev;
+
+	ret = iio_read_mount_matrix(&pdev->dev, &gyro_state->orientation);
+	if (ret)
+		return dev_err_probe(&pdev->dev, ret, "reading mount matrix\n");
 
 	ret = hid_sensor_parse_common_attributes(hsdev,
 						HID_USAGE_SENSOR_GYRO_3D,
