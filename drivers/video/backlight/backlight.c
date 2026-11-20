@@ -229,6 +229,22 @@ int backlight_device_set_brightness_limit(struct backlight_device *bd,
 }
 EXPORT_SYMBOL_GPL(backlight_device_set_brightness_limit);
 
+/**
+ * backlight_device_reapply_status - Restore the current backlight settings
+ * @bd: referenced backlight device
+ *
+ * Serialize with driver removal when a consumer restores the backlight
+ * after reprogramming the display pipeline.
+ *
+ * Return: 0 on success or a negative error code.
+ */
+int backlight_device_reapply_status(struct backlight_device *bd)
+{
+	guard(mutex)(&bd->ops_lock);
+	return backlight_update_status(bd);
+}
+EXPORT_SYMBOL_GPL(backlight_device_reapply_status);
+
 static ssize_t brightness_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {

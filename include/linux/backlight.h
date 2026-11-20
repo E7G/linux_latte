@@ -404,6 +404,7 @@ int backlight_device_set_brightness(struct backlight_device *bd,
 				    unsigned long brightness);
 int backlight_device_set_brightness_limit(struct backlight_device *bd,
 					  unsigned int limit);
+int backlight_device_reapply_status(struct backlight_device *bd);
 
 #if IS_REACHABLE(CONFIG_BACKLIGHT_CLASS_DEVICE)
 void backlight_notify_blank(struct backlight_device *bd,
