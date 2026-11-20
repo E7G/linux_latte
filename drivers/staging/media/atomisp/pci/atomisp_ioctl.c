@@ -927,12 +927,9 @@ static void atomisp_stop_stream(struct atomisp_video_pipe *pipe,
 			dev_warn(isp->dev, "Stopping sensor stream failed: %d\n", ret);
 	}
 
-	/* Disable the CSI interface on ANN B0/K0 */
-	if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
-					    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0)) {
-		pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
-				      isp->saved_regs.csi_control & ~MRFLD_PCI_CSI_CONTROL_CSI_READY);
-	}
+	ret = atomisp_csi_set_ready(isp, false);
+	if (ret)
+		dev_warn(isp->dev, "Disabling CSI failed: %d\n", ret);
 
 	if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_LOW, false))
 		dev_warn(isp->dev, "DFS failed.\n");
@@ -993,7 +990,6 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	struct atomisp_video_pipe *pipe = vq_to_pipe(vq);
 	struct atomisp_sub_device *asd = pipe->asd;
 	struct atomisp_device *isp = asd->isp;
-	struct pci_dev *pdev = to_pci_dev(isp->dev);
 	unsigned long irqflags;
 	int ret;
 
@@ -1081,23 +1077,22 @@ int atomisp_start_streaming(struct vb2_queue *vq, unsigned int count)
 	if (atomisp_freq_scaling(isp, ATOMISP_DFS_MODE_AUTO, false) < 0)
 		dev_dbg(isp->dev, "DFS auto mode failed!\n");
 
-	/* Enable the CSI interface on ANN B0/K0 */
-	if (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
-					    ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0)) {
-		pci_write_config_word(pdev, MRFLD_PCI_CSI_CONTROL,
-				      isp->saved_regs.csi_control | MRFLD_PCI_CSI_CONTROL_CSI_READY);
+	ret = atomisp_csi_set_ready(isp, true);
+	if (ret) {
+		dev_err(isp->dev, "Enabling CSI failed: %d\n", ret);
+		goto stop_stream;
 	}
 
 	/* stream on the sensor */
 	ret = v4l2_subdev_call(isp->inputs[asd->input_curr].csi_remote_source,
 			       video, s_stream, 1);
-	if (ret) {
-		dev_err(isp->dev, "Starting sensor stream failed: %d\n", ret);
-		atomisp_stop_stream(pipe, false, VB2_BUF_STATE_QUEUED);
-		/* Preserve the original sensor errno after rollback. */
+	if (!ret)
 		goto out_unlock;
-	}
 
+	dev_err(isp->dev, "Starting sensor stream failed: %d\n", ret);
+stop_stream:
+	atomisp_stop_stream(pipe, false, VB2_BUF_STATE_QUEUED);
+	/* Preserve the original errno after rollback. */
 out_unlock:
 	mutex_unlock(&isp->mutex);
 	/* A failed start can also have queued a firmware-assert recovery. */

@@ -16,6 +16,10 @@ on:
       - 'drivers/media/v4l2-core/v4l2-cci.c'
       - 'drivers/staging/media/atomisp/pci/atomisp_v4l2.c'
       - 'drivers/staging/media/atomisp/pci/atomisp_cmd.c'
+      - 'drivers/staging/media/atomisp/pci/atomisp_cmd.h'
+      - 'drivers/staging/media/atomisp/pci/atomisp_ioctl.c'
+      - 'drivers/staging/media/atomisp/include/linux/atomisp.h'
+      - 'include/linux/pci.h'
       - 'drivers/staging/media/atomisp/pci/atomisp-regs.h'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
@@ -25,6 +29,9 @@ on:
       - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
+      - 'fix_file/tests/mipad2-csi-ready-host-test.py'
+      - 'fix_file/tests/mipad2-stream-start-unwind-host-test.py'
+      - 'fix_file/tests/mipad2-recovery-error-host-test.py'
       - 'fix_file/packages/**'
       - 'fix_file/tests/mipad2-package-source-test.py'
       - 'fix_file/tests/mipad2-usb-serial-handoff-test.py'
@@ -81,7 +88,13 @@ jobs:
         run: |
           CC=gcc python3 -B fix_file/tests/mipad2-csi-lane-io-host-test.py
           CC="clang -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-csi-lane-io-host-test.py
-      - name: Compile the 7.2 sensor, CCI and AtomISP power objects
+      - name: Verify AtomISP updates CSI_READY and handles receiver errors
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-csi-ready-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-csi-ready-host-test.py
+          python3 -B fix_file/tests/mipad2-stream-start-unwind-host-test.py
+          python3 -B fix_file/tests/mipad2-recovery-error-host-test.py
+      - name: Compile the 7.2 sensor, CCI and AtomISP objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
           case "$(make -s O=out LLVM=1 ARCH=x86_64 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
@@ -90,7 +103,8 @@ jobs:
           grep -qx 'CONFIG_VIDEO_ATOMISP=m' out/.config
           make O=out LLVM=1 ARCH=x86_64 W=1 -j"$(nproc)" \
             drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o \
-            drivers/staging/media/atomisp/pci/atomisp_v4l2.o drivers/staging/media/atomisp/pci/atomisp_cmd.o
+            drivers/staging/media/atomisp/pci/atomisp_v4l2.o drivers/staging/media/atomisp/pci/atomisp_cmd.o \
+            drivers/staging/media/atomisp/pci/atomisp_ioctl.o
 
   camera-drivers:
     # The legacy audit below deliberately requires old GPIO and navigation-key code.
