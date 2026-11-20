@@ -14,6 +14,9 @@ on:
     paths:
       - drivers/hid/**
       - arch/x86/configs/xiaomipad2_defconfig
+      - arch/x86/boot/compressed/Makefile
+      - drivers/firmware/efi/libstub/Makefile
+      - fix_file/tests/mipad2-early-boot.sh
       - .github/workflows/mipad2-bzimage.yml
 
 jobs:
@@ -104,3 +107,26 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 14
+
+  early-boot:
+    needs: build
+    # The static BusyBox on newer images can itself require AVX.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-latte-cachyos-navkeys-kernel-bundle
+          path: dist
+      - name: Install baseline x86 boot test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qemu-system-x86 ovmf busybox-static btrfs-progs cpio
+      - name: Boot through EFI with a CPU without BMI2
+        run: |
+          test "$(cat dist/commit.txt)" = "$(git rev-parse HEAD)"
+          (cd dist && sha256sum -c SHA256SUMS)
+          bash fix_file/tests/mipad2-early-boot.sh \
+            dist/vmlinuz-linux-latte-cachyos-navkeys "$(cat dist/kernelrelease.txt)"
