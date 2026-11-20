@@ -1,0 +1,33 @@
+name: Mi Pad 2 EFI pstore report
+
+on:
+  pull_request:
+    paths:
+      - 'fix_file/tests/mipad2-pstore-report*.py'
+      - '.github/workflows/mipad2-pstore-check.yml'
+  push:
+    branches:
+      - codex/mipad2-7.2-integrated
+    paths:
+      - 'fix_file/tests/mipad2-pstore-report*.py'
+      - '.github/workflows/mipad2-pstore-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  pstore-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /fix_file/tests/mipad2-pstore-report.py
+            /fix_file/tests/mipad2-pstore-report-test.py
+      - name: Run the production report against regular and faulted fixtures
+        run: |
+          python3 -B fix_file/tests/mipad2-pstore-report-test.py
+          python3 -B -O fix_file/tests/mipad2-pstore-report-test.py

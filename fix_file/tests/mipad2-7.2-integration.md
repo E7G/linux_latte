@@ -80,3 +80,6 @@ R2 booted, but actual default rear QBUF failed with zero frames. It is quarantin
 and stable 6.14 restored. R3 fixes the V4L2 NULL callback/file-context boundary.
 See [evidence and scope](mipad2-7.2-null-fh-validation.md); host tests are not
 physical camera qualification. The requested upstream remains exact 9928c7b8.
+
+For an unplanned boot or resume failure, see the
+[read-only EFI pstore procedure](mipad2-7.2-pstore.md) after recovery.
