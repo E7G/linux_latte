@@ -18,8 +18,10 @@ on:
       - 'drivers/staging/media/atomisp/pci/atomisp_cmd.c'
       - 'drivers/staging/media/atomisp/pci/atomisp_cmd.h'
       - 'drivers/staging/media/atomisp/pci/atomisp_ioctl.c'
+      - 'drivers/staging/media/atomisp/pci/atomisp_internal.h'
       - 'drivers/staging/media/atomisp/include/linux/atomisp.h'
       - 'include/linux/pci.h'
+      - 'include/uapi/linux/pci_regs.h'
       - 'drivers/staging/media/atomisp/pci/atomisp-regs.h'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
@@ -30,6 +32,8 @@ on:
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
       - 'fix_file/tests/mipad2-csi-ready-host-test.py'
+      - 'fix_file/tests/mipad2-pci-save-host-test.py'
+      - 'fix_file/tests/mipad2-pci-restore-host-test.py'
       - 'fix_file/tests/mipad2-stream-start-unwind-host-test.py'
       - 'fix_file/tests/mipad2-recovery-error-host-test.py'
       - 'fix_file/packages/**'
@@ -94,6 +98,11 @@ jobs:
           CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-csi-ready-host-test.py
           python3 -B fix_file/tests/mipad2-stream-start-unwind-host-test.py
           python3 -B fix_file/tests/mipad2-recovery-error-host-test.py
+      - name: Verify AtomISP rejects incomplete PCI snapshots before registering IRQs
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-pci-save-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-pci-save-host-test.py
+          python3 -B fix_file/tests/mipad2-pci-restore-host-test.py
       - name: Compile the 7.2 sensor, CCI and AtomISP objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig

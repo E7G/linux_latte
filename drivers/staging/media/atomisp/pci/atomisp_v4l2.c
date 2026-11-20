@@ -344,27 +344,67 @@ void atomisp_video_unregister(struct atomisp_video_pipe *video)
 static int atomisp_save_iunit_reg(struct atomisp_device *isp)
 {
 	struct pci_dev *pdev = to_pci_dev(isp->dev);
+	struct atomisp_regs regs = isp->saved_regs;
+	int ret;
 
 	dev_dbg(isp->dev, "%s\n", __func__);
 
-	pci_read_config_word(pdev, PCI_COMMAND, &isp->saved_regs.pcicmdsts);
-	/* isp->saved_regs.ispmmadr is set from the atomisp_pci_probe() */
-	pci_read_config_dword(pdev, PCI_MSI_CAPID, &isp->saved_regs.msicap);
-	pci_read_config_dword(pdev, PCI_MSI_ADDR, &isp->saved_regs.msi_addr);
-	pci_read_config_word(pdev, PCI_MSI_DATA,  &isp->saved_regs.msi_data);
-	pci_read_config_byte(pdev, PCI_INTERRUPT_LINE, &isp->saved_regs.intr);
-	pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &isp->saved_regs.interrupt_control);
+	/* BAR0 is recorded by probe; never publish a partial snapshot. */
+	ret = pci_read_config_word(pdev, PCI_COMMAND, &regs.pcicmdsts);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, PCI_MSI_CAPID, &regs.msicap);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, PCI_MSI_ADDR, &regs.msi_addr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_word(pdev, PCI_MSI_DATA, &regs.msi_data);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_byte(pdev, PCI_INTERRUPT_LINE, &regs.intr);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, PCI_INTERRUPT_CTRL, &regs.interrupt_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_PMCS, &regs.pmcs);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, PCI_I_CONTROL, &regs.i_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL, &regs.csi_access_viol);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL, &regs.csi_rcomp_config);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL, &regs.csi_afe_dly);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL, &regs.csi_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	if (PCI_POSSIBLE_ERROR(regs.csi_control))
+		return -ENODEV;
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
+				    &regs.csi_afe_rcomp_config);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL, &regs.csi_afe_hs_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
+	ret = pci_read_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
+				    &regs.csi_deadline_control);
+	if (ret)
+		return pcibios_err_to_errno(ret);
 
-	pci_read_config_dword(pdev, MRFLD_PCI_PMCS, &isp->saved_regs.pmcs);
 	/* Ensure read/write combining is enabled. */
-	pci_read_config_dword(pdev, PCI_I_CONTROL, &isp->saved_regs.i_control);
-	isp->saved_regs.i_control |=
+	regs.i_control |=
 	    MRFLD_PCI_I_CONTROL_ENABLE_READ_COMBINING |
 	    MRFLD_PCI_I_CONTROL_ENABLE_WRITE_COMBINING;
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_ACCESS_CTRL_VIOL,
-			      &isp->saved_regs.csi_access_viol);
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_RCOMP_CONTROL,
-			      &isp->saved_regs.csi_rcomp_config);
+
 	/*
 	 * Hardware bugs require setting CSI_HS_OVR_CLK_GATE_ON_UPDATE.
 	 * ANN/CHV: RCOMP updates do not happen when using CSI2+ path
@@ -373,26 +413,19 @@ static int atomisp_save_iunit_reg(struct atomisp_device *isp)
 	 * is missed, and IUNIT can hang.
 	 * For both issues, setting this bit is a workaround.
 	 */
-	isp->saved_regs.csi_rcomp_config |= MRFLD_PCI_CSI_HS_OVR_CLK_GATE_ON_UPDATE;
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_TRIM_CONTROL,
-			      &isp->saved_regs.csi_afe_dly);
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_CONTROL,
-			      &isp->saved_regs.csi_control);
+	regs.csi_rcomp_config |= MRFLD_PCI_CSI_HS_OVR_CLK_GATE_ON_UPDATE;
+
 	if (isp->media_dev.hw_revision >=
 	    (ATOMISP_HW_REVISION_ISP2401 << ATOMISP_HW_REVISION_SHIFT))
-		isp->saved_regs.csi_control |= MRFLD_PCI_CSI_CONTROL_PARPATHEN;
+		regs.csi_control |= MRFLD_PCI_CSI_CONTROL_PARPATHEN;
 	/*
 	 * On CHT CSI_READY bit should be enabled before stream on
 	 */
 	if (IS_CHT && (isp->media_dev.hw_revision >= ((ATOMISP_HW_REVISION_ISP2401 <<
 		       ATOMISP_HW_REVISION_SHIFT) | ATOMISP_HW_STEPPING_B0)))
-		isp->saved_regs.csi_control |= MRFLD_PCI_CSI_CONTROL_CSI_READY;
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_RCOMP_CONTROL,
-			      &isp->saved_regs.csi_afe_rcomp_config);
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_AFE_HS_CONTROL,
-			      &isp->saved_regs.csi_afe_hs_control);
-	pci_read_config_dword(pdev, MRFLD_PCI_CSI_DEADLINE_CONTROL,
-			      &isp->saved_regs.csi_deadline_control);
+		regs.csi_control |= MRFLD_PCI_CSI_CONTROL_CSI_READY;
+
+	isp->saved_regs = regs;
 	return 0;
 }
 
@@ -1504,8 +1537,12 @@ static int atomisp_pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
 
 	INIT_WORK(&isp->assert_recovery_work, atomisp_assert_recovery_work);
 
-	/* save the iunit context only once after all the values are init'ed. */
-	atomisp_save_iunit_reg(isp);
+	/* Save the IUNIT context once, after setting up the CSI lanes. */
+	err = atomisp_save_iunit_reg(isp);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to save IUNIT registers: %d\n", err);
+		goto error_unregister_entities;
+	}
 
 	/* Init ISP memory management */
 	hmm_init();
@@ -1515,7 +1552,7 @@ static int atomisp_pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
 					IRQF_SHARED, "isp_irq", isp);
 	if (err) {
 		dev_err(&pdev->dev, "Failed to request irq (%d)\n", err);
-		goto error_unregister_entities;
+		goto error_hmm_cleanup;
 	}
 
 	/* Load firmware into ISP memory */
@@ -1544,8 +1581,9 @@ error_unload_firmware:
 	ia_css_unload_firmware();
 error_free_irq:
 	devm_free_irq(&pdev->dev, pdev->irq, isp);
-error_unregister_entities:
+error_hmm_cleanup:
 	hmm_cleanup();
+error_unregister_entities:
 	atomisp_unregister_entities(isp);
 error_uninitialize_modules:
 	atomisp_uninitialize_modules(isp);
