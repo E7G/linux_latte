@@ -18,6 +18,7 @@ on:
       - drivers/acpi/pmic/chtwc_thermal_*.h
       - drivers/acpi/pmic/intel_pmic_chtwc_thermal.c
       - drivers/mfd/intel_soc_pmic_chtwc.c
+      - drivers/gpu/drm/i915/display/vlv_dsi.c
       - drivers/media/i2c/t4ka3.c
       - drivers/power/supply/bq25890_charger.c
       - drivers/thermal/intel/int340x_thermal/int3403_thermal.c
@@ -32,7 +33,7 @@ permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat8
+  KERNEL_FLAVOR: lpat9
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
