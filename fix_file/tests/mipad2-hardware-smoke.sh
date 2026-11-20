@@ -45,28 +45,96 @@ else
     miss '/boot mounted'
 fi
 
-wifi_node=
-for path in /sys/class/net/*/wireless; do
-    [ -d "$path" ] || continue
-    wifi_node=${path%/wireless}
-    break
-done
-if [ -n "$wifi_node" ]; then
-    printf 'OK   Wi-Fi %s (%s)\n' "${wifi_node##*/}" \
-        "$(cat "$wifi_node/operstate" 2>/dev/null || echo unknown)"
-    wifi_driver=$(basename "$(readlink "$wifi_node/device/driver" 2>/dev/null || true)")
-    [ "$wifi_driver" = brcmfmac ] && printf 'OK   Wi-Fi driver brcmfmac\n' || miss 'Wi-Fi bound to brcmfmac'
-else
-    miss 'Wi-Fi interface'
-fi
+# BEGIN MIPAD2_WIRELESS_CHECKS
+mipad2_wifi_pci_check() {
+    mp2_pci=
+    mp2_matches=0
+    for mp2_path in "$1"/bus/pci/devices/*; do
+        [ -r "$mp2_path/vendor" ] && [ -r "$mp2_path/device" ] || continue
+        [ "$(cat "$mp2_path/vendor")" = 0x14e4 ] || continue
+        [ "$(cat "$mp2_path/device")" = 0x43ec ] || continue
+        mp2_pci=$mp2_path
+        mp2_matches=$((mp2_matches + 1))
+    done
+    if [ "$mp2_matches" -ne 1 ]; then
+        miss "expected one onboard BCM4356 PCI device (14e4:43ec; found $mp2_matches)"
+        return
+    fi
 
-if find /usr/lib/firmware/brcm -maxdepth 1 \
-    \( -name 'brcmfmac4356-pcie.bin*' -o -name 'brcmfmac4356-pcie.Xiaomi*' \) \
-    -print -quit 2>/dev/null | grep -q .; then
-    printf 'OK   BCM4356 Wi-Fi firmware/NVRAM\n'
-else
-    miss 'BCM4356 Wi-Fi firmware/NVRAM'
-fi
+    mp2_driver=$(readlink "$mp2_pci/driver" 2>/dev/null || true)
+    if [ "${mp2_driver##*/}" != brcmfmac ]; then
+        miss "onboard BCM4356 bound to brcmfmac"
+        return
+    fi
+    printf 'OK   onboard BCM4356 driver brcmfmac\n'
+
+    mp2_wlan=
+    for mp2_net in "$mp2_pci"/net/*; do
+        [ -d "$mp2_net/wireless" ] || [ -e "$mp2_net/phy80211" ] || continue
+        mp2_wlan=$mp2_net
+        printf 'OK   onboard Wi-Fi interface %s (%s)\n' "${mp2_net##*/}" \
+            "$(cat "$mp2_net/operstate" 2>/dev/null || echo unknown)"
+    done
+    [ -n "$mp2_wlan" ] || miss 'onboard BCM4356 Wi-Fi interface'
+}
+
+mipad2_fw_file_present() (
+    mp2_lib=$1
+    mp2_release=$2
+    mp2_override=$3
+    mp2_name=$4
+    shift 4
+    for mp2_suffix in "" "$@"; do
+        for mp2_directory in "$mp2_override" "$mp2_lib/updates/$mp2_release" \
+            "$mp2_lib/updates" "$mp2_lib/$mp2_release" "$mp2_lib"; do
+            [ -n "$mp2_directory" ] || continue
+            mp2_file=$mp2_directory/brcm/$mp2_name$mp2_suffix
+            [ -f "$mp2_file" ] && [ -s "$mp2_file" ] && [ -r "$mp2_file" ] && exit 0
+        done
+    done
+    exit 1
+)
+
+mipad2_fw_file_check() {
+    mp2_fw_base=$1
+    mp2_fw_release=$2
+    mp2_fw_override=$3
+    shift 3
+    if mipad2_fw_file_present "$mp2_fw_base" "$mp2_fw_release" "$mp2_fw_override" \
+        brcmfmac4356-pcie.bin "$@"; then
+        printf 'OK   local BCM4356 Wi-Fi firmware file present\n'
+    else
+        miss 'local BCM4356 Wi-Fi firmware file (brcmfmac4356-pcie.bin)'
+    fi
+    if mipad2_fw_file_present "$mp2_fw_base" "$mp2_fw_release" "$mp2_fw_override" \
+        'brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt' "$@"; then
+        printf 'OK   local Mi Pad 2 board NVRAM file present\n'
+    else
+        miss 'local Mi Pad 2 board NVRAM file (brcmfmac4356-pcie.Xiaomi Inc-Mipad2.txt)'
+    fi
+    if mipad2_fw_file_present "$mp2_fw_base" "$mp2_fw_release" "$mp2_fw_override" \
+        BCM4356A2.hcd "$@"; then
+        printf 'OK   local BCM4356A2 Bluetooth firmware file present\n'
+    else
+        miss 'local BCM4356A2 Bluetooth firmware file (BCM4356A2.hcd)'
+    fi
+}
+# END MIPAD2_WIRELESS_CHECKS
+
+mipad2_wifi_pci_check /sys
+firmware_override=$(cat /sys/module/firmware_class/parameters/path 2>/dev/null || true)
+case "$firmware_override" in
+    /*) ;;
+    *) firmware_override= ;;
+esac
+# The running kernel determines which compressed file names are usable.
+# These are availability checks, not proof of what was loaded at boot.
+fw_config=$(zcat /proc/config.gz 2>/dev/null || true)
+fw_zstd=
+fw_xz=
+printf '%s\n' "$fw_config" | grep -qx 'CONFIG_FW_LOADER_COMPRESS_ZSTD=y' && fw_zstd=.zst
+printf '%s\n' "$fw_config" | grep -qx 'CONFIG_FW_LOADER_COMPRESS_XZ=y' && fw_xz=.xz
+mipad2_fw_file_check /lib/firmware "$release" "$firmware_override" "$fw_zstd" "$fw_xz"
 
 bt_node=
 for path in /sys/class/bluetooth/hci*; do
@@ -78,13 +146,6 @@ if [ -n "$bt_node" ]; then
     printf 'OK   Bluetooth %s\n' "${bt_node##*/}"
 else
     miss 'Bluetooth HCI device'
-fi
-
-if find /usr/lib/firmware/brcm -maxdepth 1 -iname 'BCM4356A2.hcd*' \
-    -print -quit 2>/dev/null | grep -q .; then
-    printf 'OK   BCM4356A2 Bluetooth firmware\n'
-else
-    miss 'BCM4356A2 Bluetooth firmware'
 fi
 
 if [ -r /proc/asound/cards ] && grep -Eqi 'rt5659|cht.*5659' /proc/asound/cards; then

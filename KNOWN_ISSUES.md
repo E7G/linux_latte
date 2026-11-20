@@ -113,6 +113,17 @@ fix_file/BCM4356A2.hcd
 
 如果无线没有出现，应先检查 `dmesg` 中驱动实际请求的 firmware/NVRAM 文件名，而不是盲目重命名唯一副本。
 
+7.2 的只读硬件检查用 PCI ID `14e4:43ec` 定位板载 BCM4356，再分别检查
+驱动绑定、网络接口及本地固件文件；外接 USB 网卡不能代替板载接口。
+Wi-Fi 二进制、Mi Pad 2 专用 NVRAM 和 Bluetooth 补丁是独立检查项。
+文件存在不代表本次启动已加载该文件；固件可能来自 initramfs，而
+接口存在也不代表已关联 Wi-Fi、取得地址或恢复了 SSH。
+
+PCI ID 来自 Mi Pad 2 Windows Broadcom INF（`PCI\VEN_14E4&DEV_43EC`）。
+[Android latte 原厂包](https://github.com/latte-dev/android_vendor_xiaomi_latte/tree/aaf390134608e033e8c5b545568e68dab1ed2bdf/proprietary/vendor/firmware/brcm)
+同样把 PCIe BCM4356A2 固件和校准文件分开；Linux 使用自己的上游文件名，
+不要把 Android 固件或校准文件按名覆盖安装。
+
 ## 7. Recovery 工具不是通用分区恢复器
 
 当前 `mipad2-recovery` 只适用于项目当前假定的安装布局。尤其是 `mp2-recover` 目前把 Timeshift snapshot/restore device **硬编码为**：
