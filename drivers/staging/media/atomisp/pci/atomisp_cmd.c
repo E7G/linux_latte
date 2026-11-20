@@ -604,8 +604,9 @@ void atomisp_buffer_done(struct ia_css_frame *frame, enum vb2_buffer_state state
 	frame->vb.sequence = pipe->use_sof_sequence ?
 		atomic_read(&pipe->asd->sequence) : pipe->sequence;
 	list_del(&frame->queue);
+	/* Report the CSS frame footprint and exclude the page-aligned buffer tail. */
 	if (state == VB2_BUF_STATE_DONE)
-		vb2_set_plane_payload(&frame->vb.vb2_buf, 0, pipe->pix.sizeimage);
+		vb2_set_plane_payload(&frame->vb.vb2_buf, 0, frame->data_bytes);
 	trace_atomisp_buffer_done(pipe->vdev.minor, frame->vb.vb2_buf.index,
 				  frame->vb.sequence, frame->exp_id, frame->isp_config_id,
 				  state, frame->vb.vb2_buf.timestamp,

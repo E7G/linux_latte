@@ -10,6 +10,7 @@ on:
       - codex/mipad2-lpat4
       - codex/mipad2-dptf-iio
       - codex/mipad2-tdsp-lp8556
+      - fix/mipad2-atomisp-payload
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
@@ -21,6 +22,7 @@ on:
       - drivers/gpu/drm/i915/display/vlv_dsi.c
       - drivers/media/i2c/t4ka3.c
       - drivers/power/supply/bq25890_charger.c
+      - drivers/staging/media/atomisp/pci/atomisp_cmd.c
       - drivers/thermal/intel/int340x_thermal/int3403_thermal.c
       - drivers/thermal/intel/int340x_thermal/int3406_thermal.c
       - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.[ch]
@@ -33,7 +35,7 @@ permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat9
+  KERNEL_FLAVOR: lpat10
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
