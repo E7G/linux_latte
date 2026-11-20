@@ -1,0 +1,51 @@
+diff --git a/sys/v4l2/gstv4l2src.c b/sys/v4l2/gstv4l2src.c
+index cc1bbbf..7a10f43 100644
+--- a/sys/v4l2/gstv4l2src.c
++++ b/sys/v4l2/gstv4l2src.c
+@@ -964,4 +964,36 @@ activate_failed:
+ }
+
++static gboolean
++gst_v4l2src_query_caps_latency (GstBaseSrc * bsrc, GstQuery * query)
++{
++  GstCaps *caps = gst_pad_get_current_caps (GST_BASE_SRC_PAD (bsrc));
++  const GstStructure *s;
++  GstClockTime min_latency;
++  gint fps_n, fps_d;
++  gboolean ret = FALSE;
++
++  if (!caps || !gst_caps_is_fixed (caps))
++    goto done;
++
++  s = gst_caps_get_structure (caps, 0);
++  if (!gst_structure_get_fraction (s, "framerate", &fps_n, &fps_d)
++      || fps_n <= 0 || fps_d <= 0)
++    goto done;
++
++  /* Downstream can ask during the CAPS event, before allocation applies
++   * the format to the device. A fixated source rate provides the minimum
++   * capture latency now. The buffer pool's maximum is not known yet. */
++  min_latency = gst_util_uint64_scale_int (GST_SECOND, fps_d, fps_n);
++  if (g_strcmp0 (gst_structure_get_string (s, "interlace-mode"),
++          "alternate") == 0)
++    min_latency /= 2;
++  gst_query_set_latency (query, TRUE, min_latency, GST_CLOCK_TIME_NONE);
++  ret = TRUE;
++
++done:
++  gst_clear_caps (&caps);
++  return ret;
++}
++
+ static gboolean
+ gst_v4l2src_query (GstBaseSrc * bsrc, GstQuery * query)
+@@ -992,6 +1024,7 @@ gst_v4l2src_query (GstBaseSrc * bsrc, GstQuery * query)
+       /* we must have a framerate */
+       if (fps_n <= 0 || fps_d <= 0) {
+-        GST_WARNING_OBJECT (src,
+-            "Can't give latency since framerate isn't fixated !");
++        res = gst_v4l2src_query_caps_latency (bsrc, query);
++        if (!res)
++          GST_DEBUG_OBJECT (src, "Capture framerate isn't fixated yet");
+         goto done;
+       }
