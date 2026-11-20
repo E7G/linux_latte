@@ -14,6 +14,9 @@ on:
     paths:
       - drivers/hid/**
       - arch/x86/configs/xiaomipad2_defconfig
+      - arch/x86/boot/compressed/Makefile
+      - drivers/firmware/efi/libstub/Makefile
+      - fix_file/tests/mipad2-early-boot.sh
       - .github/workflows/mipad2-bzimage.yml
 
 jobs:
@@ -29,8 +32,9 @@ jobs:
       - name: Install kernel build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod \
+            qemu-system-x86 ovmf busybox-static btrfs-progs cpio
 
       - name: Configure Mi Pad 2 CachyOS navkeys kernel
         run: |
@@ -52,6 +56,11 @@ jobs:
       - name: Build bzImage and modules
         run: |
           make LOCALVERSION="$MIPAD2_LOCALVERSION" -j"$(nproc)" bzImage modules
+
+      - name: Boot through EFI with a CPU without BMI2
+        run: |
+          release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
+          bash fix_file/tests/mipad2-early-boot.sh arch/x86/boot/bzImage "$release"
 
       - name: Stage matching modules
         run: |
