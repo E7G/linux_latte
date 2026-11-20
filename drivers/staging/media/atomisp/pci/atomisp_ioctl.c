@@ -532,6 +532,41 @@ static int atomisp_enum_framesizes(struct file *file, void *priv,
 	return 0;
 }
 
+static int atomisp_enum_stepwise_frameintervals(struct atomisp_device *isp,
+						struct atomisp_input_subdev *input,
+						struct v4l2_frmivalenum *fival)
+{
+	struct v4l2_subdev_state *state = input->try_sd_state;
+	struct v4l2_pix_format pix = {
+		.width = fival->width,
+		.height = fival->height,
+		.pixelformat = fival->pixel_format,
+	};
+	int ret;
+
+	if (fival->index || !state || !pix.width || !pix.height)
+		return -EINVAL;
+
+	/* TRY branches do not power the sensor or change its ACTIVE state. */
+	ret = atomisp_try_fmt(isp, &pix, NULL, NULL);
+	if (ret)
+		return ret;
+	if (pix.pixelformat != fival->pixel_format || pix.width != fival->width ||
+	    pix.height != fival->height)
+		return -EINVAL;
+
+	/* vdev.lock serializes TRY state reuse across video-node ioctls. */
+	v4l2_subdev_lock_state(state);
+	ret = v4l2_subdev_call(input->sensor, pad, get_frame_interval_range,
+			       state, 0, 0, &fival->stepwise);
+	v4l2_subdev_unlock_state(state);
+	if (ret)
+		return ret;
+
+	fival->type = V4L2_FRMIVAL_TYPE_STEPWISE;
+	return 0;
+}
+
 static int atomisp_enum_frameintervals(struct file *file, void *priv,
 				       struct v4l2_frmivalenum *fival)
 {
@@ -551,6 +586,9 @@ static int atomisp_enum_frameintervals(struct file *file, void *priv,
 
 	if (!input->sensor)
 		return -EINVAL;
+
+	if (v4l2_subdev_has_op(input->sensor, pad, get_frame_interval_range))
+		return atomisp_enum_stepwise_frameintervals(isp, input, fival);
 
 	act_sd_state = v4l2_subdev_lock_and_get_active_state(input->sensor);
 	ret = v4l2_subdev_call(input->sensor, pad, enum_frame_interval,

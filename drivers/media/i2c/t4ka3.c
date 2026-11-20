@@ -666,24 +666,22 @@ static void t4ka3_fill_format(struct t4ka3_data *sensor,
 	t4ka3_set_bayer_order(sensor, fmt);
 }
 
+static int t4ka3_binning(const struct v4l2_mbus_framefmt *fmt,
+			 const struct v4l2_rect *crop)
+{
+	if (fmt->width <= crop->width / 2 && fmt->height <= crop->height / 2)
+		return 2;
+
+	return 1;
+}
+
 static void t4ka3_calc_mode(struct t4ka3_data *sensor,
 			    struct v4l2_mbus_framefmt *fmt,
 			    struct v4l2_rect *crop)
 {
-	int width;
-	int height;
-	int binning;
-
-	width = fmt->width;
-	height = fmt->height;
-
-	if (width <= (crop->width / 2) && height <= (crop->height / 2))
-		binning = 2;
-	else
-		binning = 1;
-
-	width *= binning;
-	height *= binning;
+	int binning = t4ka3_binning(fmt, crop);
+	int width = fmt->width * binning;
+	int height = fmt->height * binning;
 
 	sensor->mode.binning = binning;
 	sensor->mode.win_x = (crop->left + (crop->width - width) / 2) & ~1;
@@ -697,18 +695,15 @@ static void t4ka3_calc_mode(struct t4ka3_data *sensor,
 	sensor->mode.win_y = DIV_ROUND_UP(sensor->mode.win_y, binning);
 }
 
-static void t4ka3_get_vblank_limits(struct t4ka3_data *sensor,
-				    struct v4l2_subdev_state *state,
+static void t4ka3_get_vblank_limits(int height, int binning,
 				    int *min, int *max, int *def)
 {
-	struct v4l2_mbus_framefmt *fmt = v4l2_subdev_state_get_format(state, 0);
-
-	*min = T4KA3_MIN_VBLANK + (sensor->mode.binning - 1) * fmt->height;
+	*min = T4KA3_MIN_VBLANK + (binning - 1) * height;
 	/* A minimum-size crop must still allow one exposure line + margin. */
 	*min = max(*min, T4KA3_COARSE_INTEGRATION_TIME_MARGIN +
-		   T4KA3_COARSE_INTEGRATION_TIME_MIN - (int)fmt->height);
-	*max = T4KA3_MAX_VBLANK - fmt->height;
-	*def = T4KA3_LINES_PER_FRAME_30FPS - fmt->height;
+		   T4KA3_COARSE_INTEGRATION_TIME_MIN - height);
+	*max = T4KA3_MAX_VBLANK - height;
+	*def = T4KA3_LINES_PER_FRAME_30FPS - height;
 }
 
 static int t4ka3_set_pad_format(struct v4l2_subdev *sd,
@@ -748,7 +743,8 @@ static int t4ka3_set_pad_format(struct v4l2_subdev *sd,
 	t4ka3_calc_mode(sensor, fmt, crop);
 
 	/* vblank range is height dependent adjust and reset to default */
-	t4ka3_get_vblank_limits(sensor, sd_state, &min, &max, &def);
+	t4ka3_get_vblank_limits(fmt->height, sensor->mode.binning, &min, &max,
+				&def);
 	ret = __v4l2_ctrl_modify_range(sensor->ctrls.vblank, min, max, 1, def);
 	if (ret)
 		return ret;
@@ -1205,6 +1201,41 @@ static int t4ka3_init_state(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int t4ka3_get_frame_interval_range(struct v4l2_subdev *sd,
+					  struct v4l2_subdev_state *state,
+					  u32 pad, u32 stream,
+					  struct v4l2_frmival_stepwise *range)
+{
+	const struct v4l2_mbus_framefmt *fmt;
+	const struct v4l2_rect *crop;
+	int min, max, def;
+
+	if (!state || pad || stream)
+		return -EINVAL;
+
+	fmt = v4l2_subdev_state_get_format(state, pad);
+	crop = v4l2_subdev_state_get_crop(state, pad);
+	if (!fmt->width || !fmt->height)
+		return -EINVAL;
+
+	t4ka3_get_vblank_limits(fmt->height, t4ka3_binning(fmt, crop), &min,
+				&max, &def);
+	range->min = (struct v4l2_fract) {
+		.numerator = T4KA3_PIXELS_PER_LINE * (fmt->height + min),
+		.denominator = T4KA3_PIXEL_RATE,
+	};
+	range->max = (struct v4l2_fract) {
+		.numerator = T4KA3_PIXELS_PER_LINE * (fmt->height + max),
+		.denominator = T4KA3_PIXEL_RATE,
+	};
+	range->step = (struct v4l2_fract) {
+		.numerator = T4KA3_PIXELS_PER_LINE,
+		.denominator = T4KA3_PIXEL_RATE,
+	};
+
+	return 0;
+}
+
 static int t4ka3_get_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_state *sd_state,
 				     struct v4l2_subdev_frame_interval *interval)
@@ -1272,6 +1303,7 @@ static const struct v4l2_subdev_pad_ops t4ka3_pad_ops = {
 	.get_selection = t4ka3_get_selection,
 	.set_selection = t4ka3_set_selection,
 	.get_frame_interval = t4ka3_get_frame_interval,
+	.get_frame_interval_range = t4ka3_get_frame_interval_range,
 	.set_frame_interval = t4ka3_set_frame_interval,
 	.enable_streams = t4ka3_enable_stream,
 	.disable_streams = t4ka3_disable_stream,
@@ -1328,7 +1360,8 @@ static int t4ka3_init_controls(struct t4ka3_data *sensor)
 	crop = v4l2_subdev_state_get_crop(state, 0);
 
 	t4ka3_calc_mode(sensor, fmt, crop);
-	t4ka3_get_vblank_limits(sensor, state, &min, &max, &def);
+	t4ka3_get_vblank_limits(fmt->height, sensor->mode.binning, &min, &max,
+				&def);
 
 	v4l2_subdev_unlock_state(state);
 

@@ -205,7 +205,8 @@ int main(void) {
 }
 '''
 production = ''.join([function(cmd,'atomisp_get_padding'),function(cmd,'atomisp_try_fmt'),
-    function(ioctl,'atomisp_enum_framesizes_crop'),function(ov,'ov5693_min_vblank'),function(ov,'__ov5693_calc_vts')])
+    function(ioctl,'atomisp_enum_framesizes_crop'),function(ov,'ov5693_min_vblank_for_mode'),
+    function(ov,'ov5693_min_vblank'),function(ov,'__ov5693_calc_vts')])
 negative = os.environ.get('MIPAD2_GEOMETRY_NEGATIVE')
 if negative == 'padding':
     a = production.index('\tif (IS_ISP2401 && input->sensor')

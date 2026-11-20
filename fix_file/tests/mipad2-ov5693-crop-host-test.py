@@ -96,7 +96,8 @@ int main(void) {
 }
 '''
 function_names=['__ov5693_calc_vts','__ov5693_get_pad_format','__ov5693_get_pad_crop','ov5693_set_fmt','ov5693_set_selection']
-if not os.environ.get('MIPAD2_CROP_NEGATIVE'):function_names.insert(0,'ov5693_min_vblank')
+if not os.environ.get('MIPAD2_CROP_NEGATIVE'):
+ function_names[:0]=['ov5693_min_vblank_for_mode','ov5693_min_vblank']
 functions=''.join(function(n) for n in function_names)
 with tempfile.TemporaryDirectory(prefix='mipad2-crop-') as temp:
     p=Path(temp);c=p/'test.c';c.write_text(base+macros+functions+cases)

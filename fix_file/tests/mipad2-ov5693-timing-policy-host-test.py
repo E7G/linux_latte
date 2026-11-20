@@ -11,7 +11,8 @@ def function(name):
  n=m.end();depth=1
  while depth:depth+=(s[n]=='{')-(s[n]=='}');n+=1
  return s[m.start():n]+'\n'
-helper=function('ov5693_min_vblank');calc=function('__ov5693_calc_vts')
+helper=function('ov5693_min_vblank_for_mode')+'\n'+function('ov5693_min_vblank')
+calc=function('__ov5693_calc_vts')
 negative=os.environ.get('MIPAD2_TIMING_POLICY_NEGATIVE')
 if negative=='floor':
  helper='static unsigned int ov5693_min_vblank(struct ov5693_device *d) { (void)d;return 4; }\n'
