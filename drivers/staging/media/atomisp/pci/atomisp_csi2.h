@@ -22,6 +22,7 @@
 struct v4l2_device;
 
 struct atomisp_device;
+struct atomisp_input_subdev;
 struct atomisp_sub_device;
 
 struct atomisp_mipi_csi2_device {
@@ -46,6 +47,7 @@ int atomisp_mipi_csi2_register_entities(struct atomisp_mipi_csi2_device *csi2,
 int atomisp_csi2_bridge_init(struct atomisp_device *isp);
 int atomisp_csi2_bridge_parse_firmware(struct atomisp_device *isp);
 
+int atomisp_csi2_get_link_freq(const struct atomisp_input_subdev *input);
 void atomisp_csi2_configure(struct atomisp_sub_device *asd);
 
 #endif /* __ATOMISP_CSI2_H__ */

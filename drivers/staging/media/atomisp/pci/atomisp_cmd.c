@@ -4015,18 +4015,13 @@ static inline int atomisp_set_sensor_mipi_to_isp(
     enum atomisp_input_stream_id stream_id,
     struct camera_mipi_info *mipi_info)
 {
-	struct v4l2_control ctrl;
 	struct atomisp_device *isp = asd->isp;
 	struct atomisp_input_subdev *input = &isp->inputs[asd->input_curr];
 	const struct atomisp_in_fmt_conv *fc;
-	int mipi_freq = 0;
+	int mipi_freq = atomisp_csi2_get_link_freq(input);
 	unsigned int input_format, bayer_order;
 	enum atomisp_input_format metadata_format = ATOMISP_INPUT_FORMAT_EMBEDDED;
 	u32 mipi_port, metadata_width = 0, metadata_height = 0;
-
-	ctrl.id = V4L2_CID_LINK_FREQ;
-	if (v4l2_g_ctrl(input->sensor->ctrl_handler, &ctrl) == 0)
-		mipi_freq = ctrl.value;
 
 	if (asd->stream_env[stream_id].isys_configs == 1) {
 		input_format =

@@ -1732,18 +1732,10 @@ void atomisp_css_preview_enable_online(struct atomisp_sub_device *asd,
 	}
 }
 
-int atomisp_css_input_configure_port(
-    struct atomisp_sub_device *asd,
-    enum mipi_port_id port,
-    unsigned int num_lanes,
-    unsigned int timeout,
-    unsigned int mipi_freq,
-    enum atomisp_input_format metadata_format,
-    unsigned int metadata_width,
-    unsigned int metadata_height)
+static unsigned int atomisp_css_rxcount(unsigned int mipi_freq)
 {
-	int i;
-	struct atomisp_stream_env *stream_env;
+	unsigned int scaled_freq = mipi_freq / 46000;
+
 	/*
 	 * Calculate rx_count as follows:
 	 * Input: mipi_freq                 : CSI-2 bus frequency in Hz
@@ -1755,16 +1747,35 @@ int atomisp_css_input_configure_port(
 	 * The formula below is simplified version of the above with
 	 * 10-bit fixed points for improved accuracy.
 	 */
-	const unsigned int rxcount =
-	    min(((mipi_freq / 46000) - 1280) >> 10, 0xffU) * 0x01010101U;
+	if (!mipi_freq)
+		return IA_CSS_DEFAULT_PORT_RXCOUNT;
+
+	if (scaled_freq < 1280)
+		return 0;
+
+	return min((scaled_freq - 1280) >> 10, 0xffU) * 0x01010101U;
+}
+
+int atomisp_css_input_configure_port(struct atomisp_sub_device *asd,
+				     enum mipi_port_id port,
+				     unsigned int num_lanes,
+				     unsigned int timeout,
+				     unsigned int mipi_freq,
+				     enum atomisp_input_format metadata_format,
+				     unsigned int metadata_width,
+				     unsigned int metadata_height)
+{
+	unsigned int rxcount = atomisp_css_rxcount(mipi_freq);
+	struct atomisp_stream_env *stream_env;
+	int i;
 
 	for (i = 0; i < ATOMISP_INPUT_STREAM_NUM; i++) {
 		stream_env = &asd->stream_env[i];
 		stream_env->stream_config.source.port.port = port;
 		stream_env->stream_config.source.port.num_lanes = num_lanes;
 		stream_env->stream_config.source.port.timeout = timeout;
-		if (mipi_freq)
-			stream_env->stream_config.source.port.rxcount = rxcount;
+		/* Do not keep the previous sensor's count if the source changes. */
+		stream_env->stream_config.source.port.rxcount = rxcount;
 		stream_env->stream_config.
 		metadata_config.data_type = metadata_format;
 		stream_env->stream_config.
