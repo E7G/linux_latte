@@ -62,13 +62,21 @@ static int cci_read(void *map,int reg,u64 *value,int *error){
 main=r'''
 static int expected_return(void){return fault==1||fault==2?-EREMOTEIO:fault==4?-ETIMEDOUT:fault==3||fault==5?-ENODEV:0;}
 static void golden(bool board,bool reset,bool powerdown){
- gold_count=0;want(WAIT_RANGE,5000,6000);
- if(powerdown)want(GPIO,1,0);
- if(reset&&board){want(WAIT_FIXED,1000,0);want(GPIO,2,0);want(WAIT_FIXED,1000,0);want(GPIO,2,1);want(WAIT_FIXED,1000,0);}
- if(reset)want(GPIO,2,0);
- want(WAIT_FIXED,20000,0);
- if(fault!=5){want(CCI_HIGH,0,0);if(fault!=1&&fault!=4)want(CCI_LOW,0,0);}
- if(expected_return()){if(powerdown)want(GPIO,1,1);if(reset)want(GPIO,2,1);}
+ unsigned attempts=1;
+#ifdef HAS_POWER_ON_RETRY
+ if(board&&(fault==1||fault==2))attempts=4;
+#endif
+ gold_count=0;
+ for(unsigned i=0;i<attempts;i++){
+  if(i)want(WAIT_RANGE,10000,15000);
+  want(WAIT_RANGE,5000,6000);
+  if(powerdown)want(GPIO,1,0);
+  if(reset&&board){want(WAIT_FIXED,1000,0);want(GPIO,2,0);want(WAIT_FIXED,1000,0);want(GPIO,2,1);want(WAIT_FIXED,1000,0);}
+  if(reset)want(GPIO,2,0);
+  want(WAIT_FIXED,20000,0);
+  if(fault!=5){want(CCI_HIGH,0,0);if(fault!=1&&fault!=4)want(CCI_LOW,0,0);}
+  if(expected_return()){if(powerdown)want(GPIO,1,1);if(reset)want(GPIO,2,1);}
+ }
 }
 int main(void){
  static const char *vendors[]={"Xiaomi Inc","Xiaomi Inc","Xiaomi Inc","Xiaomi","LENOVO","Xiaomi Inc","","Xiaomi Inc"};
@@ -107,14 +115,26 @@ int main(void){
 with tempfile.TemporaryDirectory(prefix='mipad2-t4ka3-reset-build-') as d:
     for label in (['original','candidate'] if prototype else ['current']):
         p=Path('/tmp/mipad2-r25-t4ka3-reset-20261020')/(label+'.c') if prototype else root/'drivers/media/i2c/t4ka3.c'
-        s=p.read_text();functions='\n'.join(extract(s,n) for n in ['t4ka3_has_mipad2_otp','t4ka3_detect','t4ka3_pm_suspend','t4ka3_pm_resume'])
-        generated=Path(d)/(label+'.c');generated.write_text(prefix+functions+main);exe=generated.with_suffix('')
+        s=p.read_text()
+        names=['t4ka3_has_mipad2_otp','t4ka3_detect','t4ka3_pm_suspend']
+        retry=bool(re.search(r'^static int t4ka3_power_on\(', s, re.M))
+        if retry:
+            names.append('t4ka3_power_on')
+        names.append('t4ka3_pm_resume')
+        functions='\n'.join(extract(s,n) for n in names)
+        define='#define HAS_POWER_ON_RETRY\n' if not prototype else ''
+        generated=Path(d)/(label+'.c');generated.write_text(define+prefix+functions+main);exe=generated.with_suffix('')
         q=subprocess.run(['cc','-std=gnu11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie',str(generated),'-o',str(exe)],capture_output=True,text=True)
-        assert q.returncode==0,q.stderr
+        if q.returncode:
+            raise SystemExit(q.stderr)
         q=subprocess.run([str(exe)],capture_output=True,text=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1'))
-        assert q.returncode==0 and not q.stderr,q.stderr
-        result=json.loads(q.stdout);assert result['cases']==4608 and result['resumes']==102912 and result['physical_pulse_checks']==268,result
-        assert result['failed']==144 if label=='original' else result['failed']==0,result
+        if q.returncode or q.stderr:
+            raise SystemExit(q.stderr or f'{label} fixture exited {q.returncode}')
+        result=json.loads(q.stdout)
+        expected=dict(cases=4608,resumes=102912,physical_pulse_checks=268,
+                      failed=144 if label=='original' else 0)
+        if result != expected:
+            raise SystemExit(f'{label} reset/retry contract differs: {result}')
         report=dict(label=label,source_sha256=hashlib.sha256(s.encode()).hexdigest(),functions_sha256=hashlib.sha256(functions.encode()).hexdigest(),contract=result,sanitizers=['address','undefined','leak'],scope='Exact DMI/ACPI identity, ID-read, PM suspend/resume functions. GPIO/CCI/delay/ACPI/DMI stubs and independent OEM-sequence golden; no actual clocks, power rails, firmware reset, bus latency, cold-boot or image/recording proof.')
         dest=output/('mipad2-r25-t4ka3-reset-'+label+'-host.json');assert not dest.exists();dest.write_text(json.dumps(report,indent=2)+'\n')
         print(label,json.dumps(result),flush=True)

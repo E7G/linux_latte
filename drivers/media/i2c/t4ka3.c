@@ -191,6 +191,8 @@ struct t4ka3_data {
 	u8 otp_cal_data[T4KA3_MIPAD2_OTP_CAL_SIZE];
 	int otp_cal_error;
 	bool otp_cached;
+	/* A group-hold write may have reached the sensor even on an I/O error. */
+	bool group_hold_pending;
 
 	/* MIPI lane info */
 	u32 link_freq_index;
@@ -939,58 +941,95 @@ static int t4ka3_set_mode(struct t4ka3_data *sensor,
 	return ret;
 }
 
+static int t4ka3_release_group_hold(struct t4ka3_data *sensor)
+{
+	int ret;
+
+	if (!sensor->group_hold_pending)
+		return 0;
+
+	ret = cci_write(sensor->regmap, T4KA3_REG_PARAM_HOLD, 0, NULL);
+	if (!ret)
+		sensor->group_hold_pending = false;
+
+	return ret;
+}
+
 static int t4ka3_enable_stream(struct v4l2_subdev *sd,
 			       struct v4l2_subdev_state *state,
 			       u32 pad, u64 streams_mask)
 {
 	struct t4ka3_data *sensor = to_t4ka3_sensor(sd);
+	int recovery;
 	int ret;
 
-	ret = pm_runtime_get_sync(sensor->sd.dev);
+	ret = pm_runtime_resume_and_get(sensor->sd.dev);
 	if (ret < 0) {
 		dev_err(sensor->dev, "power-up err.\n");
-		goto error_powerdown;
+		return ret;
 	}
 	/* A previous stop may have failed while another PM user held power. */
 	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
 
-	cci_multi_reg_write(sensor->regmap, t4ka3_init_config,
-			    ARRAY_SIZE(t4ka3_init_config), &ret);
-	/* enable group hold */
+	ret = t4ka3_release_group_hold(sensor);
+	if (ret)
+		goto error_recover;
+
+	ret = cci_multi_reg_write(sensor->regmap, t4ka3_init_config,
+				  ARRAY_SIZE(t4ka3_init_config), NULL);
+	if (ret)
+		goto error_recover;
+
+	sensor->group_hold_pending = true;
 	cci_write(sensor->regmap, T4KA3_REG_PARAM_HOLD, 1, &ret);
 	cci_multi_reg_write(sensor->regmap, t4ka3_pre_mode_set_regs,
 			    ARRAY_SIZE(t4ka3_pre_mode_set_regs), &ret);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
 
 	ret = t4ka3_set_mode(sensor, state);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
 
 	ret = cci_multi_reg_write(sensor->regmap, t4ka3_post_mode_set_regs,
 				  ARRAY_SIZE(t4ka3_post_mode_set_regs), NULL);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
 
 	/* Restore value of all ctrls */
 	ret = __v4l2_ctrl_handler_setup(&sensor->ctrls.handler);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
 
-	/* disable group hold */
-	cci_write(sensor->regmap, T4KA3_REG_PARAM_HOLD, 0, &ret);
-	cci_write(sensor->regmap, T4KA3_REG_STREAM, 1, &ret);
+	ret = t4ka3_release_group_hold(sensor);
 	if (ret)
-		goto error_powerdown;
+		goto error_recover;
+
+	ret = cci_write(sensor->regmap, T4KA3_REG_STREAM, 1, NULL);
+	if (ret)
+		goto error_recover;
 
 	sensor->streaming = 1;
 
-	return ret;
+	return 0;
 
-error_powerdown:
-	pm_runtime_put(sensor->sd.dev);
+error_recover:
+	/* Do not publish failed stream-on, even if the write took effect. */
+	recovery = cci_write(sensor->regmap, T4KA3_REG_STREAM, 0, NULL);
+	/* Don't commit a partial register group if standby is uncertain. */
+	if (!recovery)
+		recovery = t4ka3_release_group_hold(sensor);
+	if (recovery) {
+		dev_warn(sensor->dev, "start recovery failed: %d; requesting powerdown\n",
+			 recovery);
+		recovery = pm_runtime_put_sync_suspend(sensor->sd.dev);
+		if (recovery < 0 && recovery != -EBUSY)
+			dev_warn(sensor->dev, "start powerdown failed: %d\n", recovery);
+	} else {
+		pm_runtime_put(sensor->sd.dev);
+	}
 
 	return ret;
 }
