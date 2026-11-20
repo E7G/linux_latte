@@ -32,9 +32,8 @@ jobs:
       - name: Install kernel build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod \
-            qemu-system-x86 ovmf busybox-static btrfs-progs cpio
+          sudo apt-get install -y \
+            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd kmod
 
       - name: Configure Mi Pad 2 CachyOS navkeys kernel
         run: |
@@ -56,11 +55,6 @@ jobs:
       - name: Build bzImage and modules
         run: |
           make LOCALVERSION="$MIPAD2_LOCALVERSION" -j"$(nproc)" bzImage modules
-
-      - name: Boot through EFI with a CPU without BMI2
-        run: |
-          release="$(make -s LOCALVERSION="$MIPAD2_LOCALVERSION" kernelrelease)"
-          bash fix_file/tests/mipad2-early-boot.sh arch/x86/boot/bzImage "$release"
 
       - name: Stage matching modules
         run: |
@@ -113,3 +107,26 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 14
+
+  early-boot:
+    needs: build
+    # The static BusyBox on newer images can itself require AVX.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-latte-cachyos-navkeys-kernel-bundle
+          path: dist
+      - name: Install baseline x86 boot test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qemu-system-x86 ovmf busybox-static btrfs-progs cpio
+      - name: Boot through EFI with a CPU without BMI2
+        run: |
+          test "$(cat dist/commit.txt)" = "$(git rev-parse HEAD)"
+          (cd dist && sha256sum -c SHA256SUMS)
+          bash fix_file/tests/mipad2-early-boot.sh \
+            dist/vmlinuz-linux-latte-cachyos-navkeys "$(cat dist/kernelrelease.txt)"
