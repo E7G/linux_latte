@@ -23,6 +23,7 @@
  * Author: Jani Nikula <jani.nikula@intel.com>
  */
 
+#include <linux/backlight.h>
 #include <linux/dmi.h>
 #include <linux/slab.h>
 
@@ -715,6 +716,30 @@ static void intel_dsi_unprepare(struct intel_encoder *encoder);
  * - wait t4                                           - wait t4
  */
 
+static void vlv_dsi_mipad2_restore_backlight(struct intel_display *display)
+{
+#if IS_REACHABLE(CONFIG_BACKLIGHT_CLASS_DEVICE)
+	struct backlight_device *bd;
+	int ret;
+
+	if (!dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") ||
+	    !dmi_match(DMI_PRODUCT_NAME, "Mipad2"))
+		return;
+
+	bd = backlight_device_get_by_name("lcd-backlight");
+	if (!bd)
+		return;
+
+	/* The VBT sequence writes 0x1f to the LP8556 brightness register. */
+	if (bd->props.type == BACKLIGHT_PLATFORM) {
+		ret = backlight_device_reapply_status(bd);
+		if (ret)
+			drm_dbg_kms(display->drm, "Failed to restore LP8556 brightness: %d\n", ret);
+	}
+	put_device(&bd->dev);
+#endif
+}
+
 /*
  * DSI port enable has to be done before pipe and plane enable, so we do it in
  * the pre_enable hook instead of the enable hook.
@@ -813,6 +838,7 @@ static void intel_dsi_pre_enable(struct intel_atomic_state *state,
 
 	intel_backlight_enable(pipe_config, conn_state);
 	intel_dsi_vbt_exec_sequence(intel_dsi, MIPI_SEQ_BACKLIGHT_ON);
+	vlv_dsi_mipad2_restore_backlight(display);
 }
 
 static void bxt_dsi_enable(struct intel_atomic_state *state,

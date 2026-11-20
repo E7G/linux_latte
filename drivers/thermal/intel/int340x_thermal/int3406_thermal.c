@@ -10,17 +10,22 @@
 #include <linux/platform_device.h>
 #include <linux/acpi.h>
 #include <linux/backlight.h>
+#include <linux/dmi.h>
+#include <linux/string.h>
 #include <linux/thermal.h>
 #include <acpi/video.h>
 
 #define INT3406_BRIGHTNESS_LIMITS_CHANGED	0x80
 
 struct int3406_thermal_data {
+	struct mutex lock;
 	int upper_limit;
 	int lower_limit;
+	bool limit_brightness;
+	unsigned long cooling_state;
 	acpi_handle handle;
 	struct acpi_video_device_brightness *br;
-	struct backlight_device *raw_bd;
+	struct backlight_device *backlight;
 	struct thermal_cooling_device *cooling_dev;
 };
 
@@ -34,8 +39,8 @@ struct int3406_thermal_data {
  * graphics driver, we make the assumption that it represents
  * the percentage of brightness only
  */
-#define ACPI_TO_RAW(v, d) (d->raw_bd->props.max_brightness * v / 100)
-#define RAW_TO_ACPI(v, d) (v * 100 / d->raw_bd->props.max_brightness)
+#define ACPI_TO_RAW(v, d) (d->backlight->props.max_brightness * v / 100)
+#define RAW_TO_ACPI(v, d) (v * 100 / d->backlight->props.max_brightness)
 
 static int
 int3406_thermal_get_max_state(struct thermal_cooling_device *cooling_dev,
@@ -43,16 +48,15 @@ int3406_thermal_get_max_state(struct thermal_cooling_device *cooling_dev,
 {
 	struct int3406_thermal_data *d = cooling_dev->devdata;
 
+	guard(mutex)(&d->lock);
 	*state = d->upper_limit - d->lower_limit;
 	return 0;
 }
 
-static int
-int3406_thermal_set_cur_state(struct thermal_cooling_device *cooling_dev,
-			      unsigned long state)
+static int int3406_thermal_apply_state(struct int3406_thermal_data *d,
+				       unsigned long state)
 {
-	struct int3406_thermal_data *d = cooling_dev->devdata;
-	int acpi_level, raw_level;
+	int acpi_level, raw_level, ret;
 
 	if (state > d->upper_limit - d->lower_limit)
 		return -EINVAL;
@@ -61,7 +65,23 @@ int3406_thermal_set_cur_state(struct thermal_cooling_device *cooling_dev,
 
 	raw_level = ACPI_TO_RAW(acpi_level, d);
 
-	return backlight_device_set_brightness(d->raw_bd, raw_level);
+	if (!d->limit_brightness)
+		return backlight_device_set_brightness(d->backlight, raw_level);
+
+	ret = backlight_device_set_brightness_limit(d->backlight, raw_level);
+	if (!ret)
+		d->cooling_state = state;
+	return ret;
+}
+
+static int
+int3406_thermal_set_cur_state(struct thermal_cooling_device *cooling_dev,
+				      unsigned long state)
+{
+	struct int3406_thermal_data *d = cooling_dev->devdata;
+
+	guard(mutex)(&d->lock);
+	return int3406_thermal_apply_state(d, state);
 }
 
 static int
@@ -72,7 +92,13 @@ int3406_thermal_get_cur_state(struct thermal_cooling_device *cooling_dev,
 	int acpi_level;
 	int index;
 
-	acpi_level = RAW_TO_ACPI(d->raw_bd->props.brightness, d);
+	guard(mutex)(&d->lock);
+	if (d->limit_brightness) {
+		*state = d->cooling_state;
+		return 0;
+	}
+
+	acpi_level = RAW_TO_ACPI(d->backlight->props.brightness, d);
 
 	/*
 	 * There is no 1:1 mapping between the firmware interface level
@@ -125,10 +151,87 @@ static void int3406_thermal_get_limit(struct int3406_thermal_data *d)
 	d->upper_limit = d->upper_limit > 0 ? d->upper_limit : d->br->count - 1;
 }
 
+static int int3406_thermal_refresh_limits(struct int3406_thermal_data *d)
+{
+	int old_lower = d->lower_limit, old_upper = d->upper_limit;
+	unsigned long state;
+	int ret = 0;
+
+	int3406_thermal_get_limit(d);
+	if (d->upper_limit < d->lower_limit) {
+		ret = -EINVAL;
+	} else if (d->limit_brightness) {
+		state = min_t(unsigned long, d->cooling_state,
+			      d->upper_limit - d->lower_limit);
+		ret = int3406_thermal_apply_state(d, state);
+	}
+	if (ret) {
+		d->lower_limit = old_lower;
+		d->upper_limit = old_upper;
+	}
+	return ret;
+}
+
 static void int3406_notify(acpi_handle handle, u32 event, void *data)
 {
-	if (event == INT3406_BRIGHTNESS_LIMITS_CHANGED)
-		int3406_thermal_get_limit(data);
+	struct int3406_thermal_data *d = data;
+	int ret;
+
+	if (event != INT3406_BRIGHTNESS_LIMITS_CHANGED)
+		return;
+
+	{
+		guard(mutex)(&d->lock);
+		ret = int3406_thermal_refresh_limits(d);
+	}
+	if (!ret)
+		thermal_cooling_device_update(d->cooling_dev);
+	else
+		dev_warn_ratelimited(&d->cooling_dev->device,
+				     "Cannot refresh brightness limits: %d\n", ret);
+}
+
+static void int3406_thermal_clear_limit(struct int3406_thermal_data *d)
+{
+	int ret;
+
+	if (!d->limit_brightness)
+		return;
+	ret = backlight_device_set_brightness_limit(d->backlight,
+						    d->backlight->props.max_brightness);
+	if (ret)
+		dev_warn(&d->backlight->dev, "Cannot clear brightness limit: %d\n", ret);
+}
+
+static void int3406_put_backlight(void *data)
+{
+	put_device(data);
+}
+
+static struct backlight_device *int3406_mipad2_backlight(struct device *dev)
+{
+	struct backlight_device *bd;
+	struct device *supplier;
+	int ret;
+
+	/* The LP8556 panel backlight is registered as BACKLIGHT_PLATFORM. */
+	bd = backlight_device_get_by_name("lcd-backlight");
+	if (!bd)
+		return ERR_PTR(-EPROBE_DEFER);
+
+	ret = devm_add_action_or_reset(dev, int3406_put_backlight, &bd->dev);
+	if (ret)
+		return ERR_PTR(ret);
+
+	supplier = bd->dev.parent;
+	if (!supplier || !ACPI_COMPANION(supplier) ||
+	    !acpi_dev_hid_uid_match(ACPI_COMPANION(supplier), "LP855600", NULL))
+		return ERR_PTR(-ENODEV);
+
+	if (!device_link_add(dev, supplier, DL_FLAG_AUTOPROBE_CONSUMER))
+		return ERR_PTR(-ENODEV);
+
+	return bd;
 }
 
 static int int3406_thermal_probe(struct platform_device *pdev)
@@ -136,6 +239,7 @@ static int int3406_thermal_probe(struct platform_device *pdev)
 	struct acpi_device *adev = ACPI_COMPANION(&pdev->dev);
 	struct int3406_thermal_data *d;
 	struct backlight_device *bd;
+	acpi_status status;
 	int ret;
 
 	if (!ACPI_HANDLE(&pdev->dev))
@@ -144,28 +248,47 @@ static int int3406_thermal_probe(struct platform_device *pdev)
 	d = devm_kzalloc(&pdev->dev, sizeof(*d), GFP_KERNEL);
 	if (!d)
 		return -ENOMEM;
+	mutex_init(&d->lock);
 	d->handle = ACPI_HANDLE(&pdev->dev);
 
-	bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+	d->limit_brightness = dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+			      dmi_match(DMI_PRODUCT_NAME, "Mipad2") &&
+			      !strcmp(acpi_device_bid(adev), "TDSP");
+	if (d->limit_brightness)
+		bd = int3406_mipad2_backlight(&pdev->dev);
+	else
+		bd = backlight_device_get_by_type(BACKLIGHT_RAW);
+	if (IS_ERR(bd))
+		return PTR_ERR(bd);
 	if (!bd)
 		return -ENODEV;
-	d->raw_bd = bd;
+	d->backlight = bd;
 
 	ret = acpi_video_get_levels(ACPI_COMPANION(&pdev->dev), &d->br, NULL);
 	if (ret)
 		return ret;
 
-	int3406_thermal_get_limit(d);
+	if (d->br->count <= 2) {
+		ret = -EINVAL;
+		goto err_free_levels;
+	}
+	ret = int3406_thermal_refresh_limits(d);
+	if (ret)
+		goto err_free_levels;
 
 	d->cooling_dev = thermal_cooling_device_register(acpi_device_bid(adev),
 							 d, &video_cooling_ops);
-	if (IS_ERR(d->cooling_dev))
-		goto err;
+	if (IS_ERR(d->cooling_dev)) {
+		ret = PTR_ERR(d->cooling_dev);
+		goto err_clear_limit;
+	}
 
-	ret = acpi_install_notify_handler(adev->handle, ACPI_DEVICE_NOTIFY,
-					  int3406_notify, d);
-	if (ret)
+	status = acpi_install_notify_handler(adev->handle, ACPI_DEVICE_NOTIFY,
+					     int3406_notify, d);
+	if (ACPI_FAILURE(status)) {
+		ret = -ENODEV;
 		goto err_cdev;
+	}
 
 	platform_set_drvdata(pdev, d);
 
@@ -173,16 +296,20 @@ static int int3406_thermal_probe(struct platform_device *pdev)
 
 err_cdev:
 	thermal_cooling_device_unregister(d->cooling_dev);
-err:
+err_clear_limit:
+	int3406_thermal_clear_limit(d);
+err_free_levels:
 	kfree(d->br);
-	return -ENODEV;
+	return ret;
 }
 
 static void int3406_thermal_remove(struct platform_device *pdev)
 {
 	struct int3406_thermal_data *d = platform_get_drvdata(pdev);
 
+	acpi_remove_notify_handler(d->handle, ACPI_DEVICE_NOTIFY, int3406_notify);
 	thermal_cooling_device_unregister(d->cooling_dev);
+	int3406_thermal_clear_limit(d);
 	kfree(d->br);
 }
 

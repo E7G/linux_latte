@@ -68,6 +68,7 @@ struct lp855x {
 	struct lp855x_device_config *cfg;
 	struct i2c_client *client;
 	struct backlight_device *bl;
+	unsigned int brightness_limit;
 	struct device *dev;
 	struct lp855x_platform_data *pdata;
 	struct pwm_device *pwm;
@@ -240,7 +241,8 @@ static int lp855x_pwm_ctrl(struct lp855x *lp, int br, int max_br)
 static int lp855x_bl_update_status(struct backlight_device *bl)
 {
 	struct lp855x *lp = bl_get_data(bl);
-	int brightness = bl->props.brightness;
+	int brightness = min_t(unsigned int, bl->props.brightness,
+			       lp->brightness_limit);
 
 	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
 		brightness = 0;
@@ -259,8 +261,40 @@ static const struct backlight_ops lp855x_bl_ops = {
 	.update_status = lp855x_bl_update_status,
 };
 
+static int lp855x_bl_get_register_brightness(struct backlight_device *bl)
+{
+	struct lp855x *lp = bl_get_data(bl);
+
+	return i2c_smbus_read_byte_data(lp->client, lp->cfg->reg_brightness);
+}
+
+static int lp855x_bl_set_brightness_limit(struct backlight_device *bl,
+					  unsigned int limit)
+{
+	struct lp855x *lp = bl_get_data(bl);
+	unsigned int old_limit = lp->brightness_limit;
+	int ret;
+
+	if (old_limit == limit)
+		return 0;
+
+	lp->brightness_limit = limit;
+	ret = lp855x_bl_update_status(bl);
+	if (ret)
+		lp->brightness_limit = old_limit;
+	return ret;
+}
+
+static const struct backlight_ops lp855x_acpi_register_bl_ops = {
+	.options = BL_CORE_SUSPENDRESUME,
+	.update_status = lp855x_bl_update_status,
+	.get_brightness = lp855x_bl_get_register_brightness,
+	.set_brightness_limit = lp855x_bl_set_brightness_limit,
+};
+
 static int lp855x_backlight_register(struct lp855x *lp)
 {
+	const struct backlight_ops *ops = &lp855x_bl_ops;
 	struct backlight_device *bl;
 	struct backlight_properties props;
 	struct lp855x_platform_data *pdata = lp->pdata;
@@ -274,9 +308,14 @@ static int lp855x_backlight_register(struct lp855x *lp)
 		pdata->initial_brightness = props.max_brightness;
 
 	props.brightness = pdata->initial_brightness;
+	lp->brightness_limit = props.max_brightness;
+
+	if (lp->mode == REGISTER_BASED && ACPI_COMPANION(lp->dev) &&
+	    acpi_dev_hid_uid_match(ACPI_COMPANION(lp->dev), "LP855600", NULL))
+		ops = &lp855x_acpi_register_bl_ops;
 
 	bl = devm_backlight_device_register(lp->dev, name, lp->dev, lp,
-				       &lp855x_bl_ops, &props);
+				       ops, &props);
 	if (IS_ERR(bl))
 		return PTR_ERR(bl);
 

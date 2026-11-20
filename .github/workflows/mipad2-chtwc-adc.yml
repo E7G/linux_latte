@@ -9,6 +9,7 @@ on:
       - codex/mipad2-chtwc-thermal
       - codex/mipad2-lpat4
       - codex/mipad2-dptf-iio
+      - codex/mipad2-tdsp-lp8556
     paths:
       - .github/workflows/mipad2-chtwc-adc.yml
       - drivers/iio/adc/intel-chtwc-adc*
@@ -17,16 +18,22 @@ on:
       - drivers/acpi/pmic/chtwc_thermal_*.h
       - drivers/acpi/pmic/intel_pmic_chtwc_thermal.c
       - drivers/mfd/intel_soc_pmic_chtwc.c
+      - drivers/gpu/drm/i915/display/vlv_dsi.c
+      - drivers/media/i2c/t4ka3.c
       - drivers/power/supply/bq25890_charger.c
       - drivers/thermal/intel/int340x_thermal/int3403_thermal.c
+      - drivers/thermal/intel/int340x_thermal/int3406_thermal.c
       - drivers/thermal/intel/int340x_thermal/int340x_thermal_zone.[ch]
+      - drivers/video/backlight/backlight.c
+      - drivers/video/backlight/lp855x_bl.c
+      - include/linux/backlight.h
       - tools/testing/chtwc/**
 
 permissions:
   contents: read
 
 env:
-  KERNEL_FLAVOR: lpat5
+  KERNEL_FLAVOR: lpat9
 
 concurrency:
   group: mipad2-chtwc-adc-${{ github.ref }}
@@ -73,6 +80,7 @@ jobs:
           grep -qx 'CONFIG_INTEL_CHTWC_THERMAL=m' out/build/.config
           grep -qx 'CONFIG_IIO=y' out/build/.config
           grep -qx 'CONFIG_INT340X_THERMAL=y' out/build/.config
+          grep -qx 'CONFIG_INT3406_THERMAL=y' out/build/.config
           grep -qx 'CONFIG_CHARGER_BQ25890=y' out/build/.config
           python3 - <<'PY'
           from pathlib import Path
