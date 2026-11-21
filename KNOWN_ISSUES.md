@@ -14,6 +14,7 @@ mkinitcpio 42-1，systemd 261.3-1），在 GRUB 单次启动项的 `linux` 行�
 `plymouth.enable=0`，系统启动总耗时从 500.905 秒降到 39.032 秒。
 日志显示 Plymouth 启动服务跳过，`plymouth-read-write.service` 约 0.11 秒完成。
 随后在同次启动中实测了前后摄像头、RTC s2idle 和 USB 串口收发。
+第二次使用该参数的单次启动为 37.712 秒。
 
 排查类似现象时，可先核对当前启动的关键路径和上一次启动的 Plymouth 服务时间。
 
