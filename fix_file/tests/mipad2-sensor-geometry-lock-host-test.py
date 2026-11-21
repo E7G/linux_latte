@@ -12,9 +12,9 @@ def function(s,name):
  n=m.end();depth=1
  while depth:depth+=(s[n]=='{')-(s[n]=='}');n+=1
  return s[m.start():n]+'\n'
-ovnames=['ov5693_min_vblank','__ov5693_calc_vts','__ov5693_get_pad_format','__ov5693_get_pad_crop',
+ovnames=['ov5693_min_vblank_for_mode','ov5693_min_vblank','__ov5693_calc_vts','__ov5693_get_pad_format','__ov5693_get_pad_crop',
  'ov5693_get_fmt','ov5693_set_fmt','ov5693_get_selection','ov5693_set_selection','ov5693_enum_frame_size','ov5693_init_state']
-t4names=['t4ka3_calc_mode','t4ka3_fill_format','t4ka3_get_vblank_limits','t4ka3_set_pad_format','t4ka3_set_selection']
+t4names=['t4ka3_binning','t4ka3_calc_mode','t4ka3_fill_format','t4ka3_get_vblank_limits','t4ka3_set_pad_format','t4ka3_set_selection']
 parts={n:function(ov,n) for n in ovnames};parts.update({n:function(t4,n) for n in t4names})
 negative=os.environ.get('MIPAD2_SENSOR_GEOMETRY_NEGATIVE')
 if negative=='ov_busy':

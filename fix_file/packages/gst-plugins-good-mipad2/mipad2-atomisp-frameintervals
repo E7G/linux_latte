@@ -1,0 +1,81 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+set -eu
+
+runtime_versions()
+{
+	/usr/bin/pacman -Q gstreamer gst-plugins-base-libs gst-plugins-good
+}
+
+set_interval_gate()
+{
+	value=$1
+	[ -e "$parameter" ] || return 0
+	if [ "$(cat "$parameter")" != "$value" ]; then
+		printf '%s\n' "$value" > "$parameter"
+	fi
+	test "$(cat "$parameter")" = "$value"
+}
+
+run_gate()
+(
+	case "$1" in
+		enable|disable|inhibit) ;;
+		*) return 2 ;;
+	esac
+
+	if [ "$1" = enable ]; then
+		[ "$(cat "$product" 2>/dev/null)" = Mipad2 ] || return 0
+	fi
+	umask 077
+	mkdir -p -- "$state"
+	exec 9>"$state/lock"
+	flock -x 9
+
+	case "$1" in
+		inhibit)
+			# Prevent a service restart from re-enabling during or after
+			# the transaction. The marker is deliberately per boot.
+			: > "$state/inhibit"
+			set_interval_gate N
+			return
+			;;
+		disable)
+			set_interval_gate N
+			return
+			;;
+	esac
+
+	[ -e "$parameter" ] || return 0
+	set_interval_gate N
+	[ ! -e "$state/inhibit" ] || return 0
+	[ "$(runtime_versions 2>/dev/null)" = "$expected_versions" ] || return 0
+	IFS= read -r hash < "$manifest" || return 0
+	case "$hash" in
+		*[!0-9a-f]*) return 0 ;;
+	esac
+	[ "${#hash}" -eq 64 ] || return 0
+	printf '%s  %s\n' "$hash" "$plugin" | sha256sum --check --status || return 0
+
+	set_interval_gate Y
+)
+
+main()
+{
+	[ "$#" -eq 1 ] || exit 2
+	PATH=/usr/bin:/usr/sbin
+	export PATH
+	LC_ALL=C
+	export LC_ALL
+	product=/sys/class/dmi/id/product_name
+	parameter=/sys/module/atomisp/parameters/stepwise_frame_intervals
+	state=/run/mipad2-atomisp-frameintervals
+	manifest=/usr/share/gst-plugins-good-mipad2/v4l2-plugin.sha256
+	plugin=/usr/lib/gstreamer-1.0/libgstvideo4linux2.so
+	expected_versions='gstreamer 1.28.7-1
+gst-plugins-base-libs 1.28.7-1
+gst-plugins-good 1.28.7-1.1'
+	run_gate "$1"
+}
+
+main "$@"

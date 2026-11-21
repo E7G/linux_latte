@@ -1,0 +1,13 @@
+[Unit]
+Description=Enable Mi Pad 2 AtomISP intervals with the qualified GStreamer backend
+After=systemd-modules-load.service
+Before=systemd-user-sessions.service display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/mipad2-atomisp-frameintervals enable
+ExecStop=/usr/libexec/mipad2-atomisp-frameintervals disable
+
+[Install]
+WantedBy=multi-user.target

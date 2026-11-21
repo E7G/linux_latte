@@ -1,0 +1,23 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Package
+Target = gstreamer
+Target = gst-plugins-base-libs
+Target = gst-plugins-good
+Target = libgudev
+Target = v4l-utils
+
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Path
+Target = usr/lib/gstreamer-1.0/libgstvideo4linux2.so
+
+[Action]
+Description = Returning Mi Pad 2 AtomISP to legacy frame interval probing before the media stack changes...
+When = PreTransaction
+Exec = /usr/libexec/mipad2-atomisp-frameintervals inhibit
+AbortOnFail
