@@ -13,6 +13,7 @@ on:
       - 'drivers/hid/hid-sensor-hub.c'
       - 'drivers/usb/dwc3/gadget.c'
       - 'drivers/usb/dwc3/core.c'
+      - 'drivers/usb/gadget/function/u_serial.c'
       - 'drivers/media/i2c/ov5693.c'
       - 'drivers/media/i2c/t4ka3.c'
       - 'drivers/media/v4l2-core/v4l2-cci.c'
@@ -41,6 +42,7 @@ on:
       - 'fix_file/tests/mipad2-frameinterval-rollout-host-test.sh'
       - 'fix_file/tests/mipad2-pci-save-host-test.py'
       - 'fix_file/tests/mipad2-dwc3-gadget-start-host-test.py'
+      - 'fix_file/tests/mipad2-usb-console-lifetime-host-test.py'
       - 'fix_file/tests/mipad2-pci-restore-host-test.py'
       - 'fix_file/tests/mipad2-stream-start-unwind-host-test.py'
       - 'fix_file/tests/mipad2-recovery-error-host-test.py'
@@ -127,17 +129,23 @@ jobs:
           CC=gcc python3 -B fix_file/tests/mipad2-frame-interval-range-host-test.py
           CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-frame-interval-range-host-test.py
           sh fix_file/tests/mipad2-frameinterval-rollout-host-test.sh
-      - name: Compile the 7.2 sensor, CCI, AtomISP and DWC3 objects
+      - name: Verify USB serial console detachment and async request ownership
+        run: |
+          CC="gcc -fsanitize=address,undefined -fno-sanitize-recover=all" \
+            python3 -B fix_file/tests/mipad2-usb-console-lifetime-host-test.py
+      - name: Compile the 7.2 media and USB objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
           case "$(make -s O=out LLVM=1 ARCH=x86_64 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
           grep -qx 'CONFIG_VIDEO_OV5693=m' out/.config
           grep -qx 'CONFIG_VIDEO_T4KA3=m' out/.config
           grep -qx 'CONFIG_VIDEO_ATOMISP=m' out/.config
+          grep -qx 'CONFIG_U_SERIAL_CONSOLE=y' out/.config
           make O=out LLVM=1 ARCH=x86_64 W=1 -j"$(nproc)" \
             drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o \
             drivers/staging/media/atomisp/pci/atomisp_v4l2.o drivers/staging/media/atomisp/pci/atomisp_cmd.o \
-            drivers/staging/media/atomisp/pci/atomisp_ioctl.o drivers/usb/dwc3/gadget.o
+            drivers/staging/media/atomisp/pci/atomisp_ioctl.o drivers/usb/dwc3/gadget.o \
+            drivers/usb/gadget/function/u_serial.o
 
   camera-drivers:
     # The legacy audit below deliberately requires old GPIO and navigation-key code.
