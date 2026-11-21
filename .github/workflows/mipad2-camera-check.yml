@@ -32,6 +32,8 @@ on:
       - 'fix_file/tests/mipad2-t4ka3-start-host-test.py'
       - 'fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py'
       - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
+      - 'fix_file/tests/mipad2-7.2-r4-lifecycle-device-test.c'
+      - 'fix_file/tests/mipad2-linear-420-payload-host-test.c'
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
       - 'fix_file/tests/mipad2-csi-ready-host-test.py'
@@ -90,6 +92,13 @@ jobs:
           python3 -B fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py
       - name: Verify front and rear V4L2 stream lifecycle ownership
         run: python3 -B fix_file/tests/mipad2-stream-stop-pm-host-test.py
+      - name: Verify exact linear 4:2:0 payload used by the device lifecycle test
+        run: |
+          out=$(mktemp)
+          trap 'rm -f -- "$out"' EXIT
+          gcc -std=gnu11 -Wall -Wextra -Werror -fsanitize=undefined -fno-sanitize-recover=undefined \
+            fix_file/tests/mipad2-linear-420-payload-host-test.c -o "$out"
+          "$out"
       - name: Verify AtomISP aborts system suspend on failed runtime wake
         run: |
           CC=gcc python3 -B fix_file/tests/mipad2-atomisp-suspend-host-test.py
