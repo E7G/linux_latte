@@ -21,6 +21,7 @@ rtc = root / "sys/class/rtc/rtc0"
 pmc = root / "sys/kernel/debug/pmc_atom/sleep_state"
 irq = root / "sys/power/pm_wakeup_irq"
 rtc_events = root / "sys/firmware/acpi/interrupts/ff_rt_clk"
+interrupts = root / "proc/interrupts"
 cmd = Path(sys.argv[0]).name
 args = sys.argv[1:]
 mode = os.environ["CASE"]
@@ -90,6 +91,22 @@ elif cmd == "journalctl":
                     counter = {"multiple-rtc": "5", "reset-counter": "0",
                                "bad-counter-after": "invalid"}.get(mode, "4")
                     rtc_events.write_text(f"       {counter}    disabled     unmasked\n")
+                lines = interrupts.read_text().splitlines(keepends=True)
+                if mode == "silent-pme-and-rtc":
+                    lines[-1] = lines[-1].replace("3 0 0 0", "3 0 1 0")
+                elif mode == "redistributed-pme":
+                    lines[-1] = lines[-1].replace("3 0 0 0", "2 1 0 0")
+                elif mode == "changed-pme-irq":
+                    lines[-1] = lines[-1].replace("131:", "133:")
+                elif mode == "missing-pme-after":
+                    lines.pop()
+                elif mode == "changed-pme-cpus":
+                    lines[0] = lines[0].replace("CPU2", "CPU4")
+                elif mode == "bad-pme-after":
+                    lines[-1] = lines[-1].replace("3 0 0 0", "bad 0 0 0")
+                elif mode == "duplicate-pme-after":
+                    lines.append(" 133: 3 0 0 0 INT0002 Virtual GPIO 2 ACPI:Event\n")
+                interrupts.write_text("".join(lines))
                 if mode != "no-residency":
                     pmc.write_text("S0I3 Residency:\t7200000us\n")
                 if mode == "foreign-alarm":
@@ -108,6 +125,12 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
             "sys/class/dmi/id/sys_vendor": "Xiaomi Inc\n",
             "sys/class/dmi/id/product_name": "Other\n" if mode == "wrong-device" else "Mipad2\n",
             "proc/1/comm": "systemd\n",
+            "proc/interrupts": (
+                "      CPU0 CPU1 CPU2 CPU3\n"
+                "   9: 1 0 0 0 IO-APIC 9-fasteoi acpi, INT0002\n"
+                + ("" if mode == "no-pme-child" else
+                   " 131: 3 0 0 0 INT0002 Virtual GPIO 2 ACPI:Event\n")
+            ),
             "sys/power/mem_sleep": "[s2idle]\n",
             "sys/power/pm_wakeup_irq": "",
             "sys/kernel/debug/pmc_atom/sleep_state": "S0I3 Residency:\t1000000us\n",
@@ -117,6 +140,8 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
                 "malformed\n" if mode == "bad-counter-before" else "       3    disabled     unmasked\n",
             "events": "",
         }
+        if mode == "duplicate-pme":
+            files["proc/interrupts"] += " 133: 0 0 0 0 INT0002 Virtual GPIO 2 ACPI:Event\n"
         if mode == "missing-counter":
             del files["sys/firmware/acpi/interrupts/ff_rt_clk"]
         for name, value in files.items():
@@ -146,6 +171,12 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
         wake_failures = {
             "shared-sci-only": "without corroborating evidence of an RTC wake",
             "mixed-pme-and-rtc": "Kernel reported a different wake source",
+            "silent-pme-and-rtc": "Virtual PME child interrupt evidence changed",
+            "redistributed-pme": "Virtual PME child interrupt evidence changed",
+            "changed-pme-irq": "Virtual PME child interrupt evidence changed",
+            "changed-pme-cpus": "Virtual PME child interrupt evidence changed",
+            "missing-pme-after": "Virtual PME child interrupt evidence changed",
+            "duplicate-pme-after": "Cannot read virtual PME interrupt counters after resume",
         }
         if mode in wake_failures:
             if wake_failures[mode] not in result.stderr or "INFO S0I3 delta:" not in result.stdout:
@@ -174,6 +205,15 @@ if __name__ == "__main__":
         ("fixed-debug", 0, ["arm", "request", "resume", "clear"], ""),
         ("shared-sci-only", 1, ["arm", "request", "resume", "clear"], ""),
         ("mixed-pme-and-rtc", 1, ["arm", "request", "resume", "clear"], ""),
+        ("silent-pme-and-rtc", 1, ["arm", "request", "resume", "clear"], ""),
+        ("redistributed-pme", 1, ["arm", "request", "resume", "clear"], ""),
+        ("changed-pme-irq", 1, ["arm", "request", "resume", "clear"], ""),
+        ("changed-pme-cpus", 1, ["arm", "request", "resume", "clear"], ""),
+        ("missing-pme-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("duplicate-pme-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("bad-pme-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("duplicate-pme", 1, [], ""),
+        ("no-pme-child", 1, [], ""),
         ("multiple-rtc", 1, ["arm", "request", "resume", "clear"], ""),
         ("reset-counter", 1, ["arm", "request", "resume", "clear"], ""),
         ("bad-counter-after", 1, ["arm", "request", "resume", "clear"], ""),

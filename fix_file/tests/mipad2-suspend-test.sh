@@ -92,6 +92,48 @@ rtc_event_count()
         }' "$rtc_events"
 }
 
+pme_irq_snapshot()
+{
+    # ACPI SCI and the virtual GPIO controller share IRQ 9. Compare its
+    # pin-2 child, including the IRQ number and CPU columns, across the test.
+    awk '
+        NR == 1 {
+            if (!NF) {
+                invalid = 1
+                exit
+            }
+            for (i = 1; i <= NF; i++) {
+                if ($i !~ /^CPU[0-9]+$/) {
+                    invalid = 1
+                    exit
+                }
+                cpus = cpus (i == 1 ? "" : ",") $i
+            }
+            columns = NF
+            next
+        }
+        /[[:space:]]INT0002 Virtual GPIO[[:space:]]+2[[:space:]]+ACPI:Event[[:space:]]*$/ {
+            if (++matches != 1 || $1 !~ /^[0-9]+:$/ || NF != columns + 6) {
+                invalid = 1
+                exit
+            }
+            irq = $1
+            for (i = 2; i <= columns + 1; i++) {
+                if ($i !~ /^[0-9]+$/) {
+                    invalid = 1
+                    exit
+                }
+                counts = counts (i == 2 ? "" : ",") $i
+            }
+        }
+        END {
+            if (invalid || !columns) exit 1
+            if (matches) printf "%s%s:%s\n", irq, cpus, counts
+            else print "unavailable"
+        }
+    ' /proc/interrupts
+}
+
 check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
 check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
 before=$(s0i3_us)
@@ -120,6 +162,8 @@ printf 'INFO S0I3 before: %sus\n' "$before"
 printf 'INFO suspending for %ss with RTC wake\n' "$seconds"
 check_no_alarm || fail_run "RTC alarm state changed before arming"
 rtc_before=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter"
+pme_before=$(pme_irq_snapshot) || fail_run "Cannot read virtual PME interrupt counters"
+[ "$pme_before" != unavailable ] || fail_run "Virtual PME child interrupt is unavailable"
 rtcwake -d /dev/rtc0 -m no -s "$seconds"
 alarm=$(cat "$rtc/wakealarm")
 case "$alarm" in ''|*[!0-9]*) fail_run "RTC alarm could not be verified";; esac
@@ -171,12 +215,17 @@ delta=$((after - before))
 printf 'INFO S0I3 after:  %sus\n' "$after"
 printf 'INFO S0I3 delta:  %sus\n' "$delta"
 printf 'INFO wake IRQ: %s; RTC fixed-event count: %s -> %s\n' "$wake_irq" "$rtc_before" "$rtc_after"
+pme_after=$(pme_irq_snapshot) || fail_run "Cannot read virtual PME interrupt counters after resume"
+printf 'INFO virtual PME child IRQ snapshot: %s -> %s\n' "$pme_before" "$pme_after"
 [ "$wake_irq" = 9 ] && [ "$rtc_now" -ge "$expected_alarm" ] &&
 [ "$((rtc_after - rtc_before))" -eq 1 ] ||
     fail_run "Suspend ended without corroborating evidence of an RTC wake"
 if printf '%s\n' "$resume_log" | grep -Eq '^ACPI: PM: (ACPI custom handler wakeup|ACPI non-EC GPE wakeup|Wakeup after ACPI Notify sync|Wakeup unrelated to ACPI SCI)$'; then
     fail_run "Kernel reported a different wake source"
 fi
+
+[ "$pme_before" = "$pme_after" ] ||
+    fail_run "Virtual PME child interrupt evidence changed during the RTC test"
 
 # Allow for entry/exit latency but require most of the requested interval in S0i3.
 minimum=$((seconds * 700000))
