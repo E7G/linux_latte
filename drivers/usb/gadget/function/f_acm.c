@@ -439,10 +439,12 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
 				return -EINVAL;
 
-		usb_ep_enable(acm->notify);
+		return usb_ep_enable(acm->notify);
 
-	} else if (intf == acm->data_id) {
-		if (acm->notify->enabled) {
+	}
+
+	if (intf == acm->data_id) {
+		if (acm->port.in->enabled) {
 			dev_dbg(&cdev->gadget->dev,
 				"reset acm ttyGS%d\n", acm->port_num);
 			gserial_disconnect(&acm->port);
@@ -459,12 +461,10 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 				return -EINVAL;
 			}
 		}
-		gserial_connect(&acm->port, acm->port_num);
+		return gserial_connect(&acm->port, acm->port_num);
+	}
 
-	} else
-		return -EINVAL;
-
-	return 0;
+	return -EINVAL;
 }
 
 static void acm_disable(struct usb_function *f)
