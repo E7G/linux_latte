@@ -1506,7 +1506,15 @@ int gserial_connect(struct gserial *gser, u8 port_num)
 	status = gs_console_connect(port);
 	spin_unlock_irqrestore(&port->port_lock, flags);
 
-	return status;
+	/*
+	 * The TTY connection is already active. A missing printk request
+	 * must not turn a successful serial connection into an error.
+	 */
+	if (status)
+		pr_warn_ratelimited("ttyGS%d: failed to connect printk console: %d\n",
+				    port_num, status);
+
+	return 0;
 
 fail_out:
 	usb_ep_disable(gser->in);
