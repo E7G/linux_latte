@@ -151,6 +151,17 @@ int main(void)
     tfa98xx_dsp_init(&tfa.init_work);
     assert(starts == 2 && !powered && !tfa.dsp_init_lock.held);
     assert(cancel_monitor == 3 && cancel_init == 3);
+    /* ALSA state restore can replay either value while probing passively. */
+    int before_restore_stops = stops;
+    assert(tfa98xx_set_stop_ctl(&control, &value) == 0);
+    value.value.integer.value[0] = 0;
+    assert(tfa98xx_set_stop_ctl(&control, &value) == 0);
+    assert(starts == 2 && stops == before_restore_stops &&
+           cancel_monitor == 3 && cancel_init == 3 && !queued_monitor &&
+           !tfa.desired_running && !tfa.monitor_status && !powered);
+    value.value.integer.value[0] = 2;
+    assert(tfa98xx_set_stop_ctl(&control, &value) == -EINVAL);
+    value.value.integer.value[0] = 1;
     defer_dsp_start = false;
     assert(tfa98xx_digital_mute(&dai, 0) == 0);
     tfa98xx_dsp_init(&tfa.init_work);

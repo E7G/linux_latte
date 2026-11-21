@@ -669,6 +669,10 @@ static int tfa98xx_set_stop_ctl(struct snd_kcontrol *kcontrol,
 	if (requested < 0 || requested > 1)
 		return -EINVAL;
 
+	/* ALSA state restore may write this control during a deferred boot. */
+	if (READ_ONCE(defer_dsp_start))
+		return 0;
+
 	/* Controls must obey the same worker draining/locking as C2C mute. */
 	ret = tfa98xx_set_running(tfa98xx, !requested);
 	return ret ? ret : 1;
