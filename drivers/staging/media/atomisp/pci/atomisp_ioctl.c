@@ -44,7 +44,7 @@ MODULE_PARM_DESC(stepwise_frame_intervals,
  * FIXME: ISP should not know beforehand all CIDs supported by sensor.
  * Instead, it needs to propagate to sensor unknown CIDs.
  */
-static struct v4l2_query_ext_ctrl ci_v4l2_controls[] = {
+static const struct v4l2_query_ext_ctrl ci_v4l2_controls[] = {
 	{
 		.id = V4L2_CID_AUTO_WHITE_BALANCE,
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
@@ -1316,17 +1316,11 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
  * this ioctl with a pointer to this structure. The driver fills
  * the rest of the structure.
  */
-static int atomisp_query_ext_ctrl(struct file *file, void *fh,
-				  struct v4l2_query_ext_ctrl *qc)
+static int atomisp_query_control(struct atomisp_sub_device *asd,
+				 struct v4l2_query_ext_ctrl *qc)
 {
-	struct video_device *vdev = video_devdata(file);
-	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
 	struct atomisp_device *isp = asd->isp;
-	int i;
-
-	/* TODO: implement V4L2_CTRL_FLAG_NEXT_CTRL */
-	if (qc->id & V4L2_CTRL_FLAG_NEXT_CTRL)
-		return -EINVAL;
+	unsigned int i;
 
 	/*
 	 * Sensor-owned controls must report the sensor's actual range.  The old
@@ -1362,6 +1356,62 @@ static int atomisp_query_ext_ctrl(struct file *file, void *fh,
 	 */
 	qc->flags = V4L2_CTRL_FLAG_DISABLED;
 	return -EINVAL;
+}
+
+static int atomisp_query_next_control(struct atomisp_sub_device *asd,
+				      struct v4l2_query_ext_ctrl *qc)
+{
+	struct v4l2_query_ext_ctrl best = {};
+	u32 after = qc->id & V4L2_CTRL_ID_MASK;
+	unsigned int i;
+	int ret;
+
+	/* The capture node's get/set paths handle scalar controls only. */
+	if (!(qc->id & V4L2_CTRL_FLAG_NEXT_CTRL))
+		return -EINVAL;
+
+	for (i = 0; i < ctrls_num; i++) {
+		struct v4l2_query_ext_ctrl candidate = {
+			.id = ci_v4l2_controls[i].id,
+		};
+
+		/*
+		 * Leave legacy private IDs available for direct queries only.
+		 * VIDIOC_G_CTRL/S_CTRL cannot address them on this node.
+		 */
+		if (candidate.id >= V4L2_CID_PRIVATE_BASE ||
+		    candidate.id <= after || (best.id && candidate.id >= best.id))
+			continue;
+
+		ret = atomisp_query_control(asd, &candidate);
+		if (ret == -EINVAL || ret == -ENODEV)
+			continue;
+		if (ret)
+			return ret;
+		if ((candidate.flags & (V4L2_CTRL_FLAG_DISABLED |
+					V4L2_CTRL_FLAG_HAS_PAYLOAD)) ||
+		    candidate.nr_of_dims || candidate.type >= V4L2_CTRL_COMPOUND_TYPES ||
+		    candidate.type == V4L2_CTRL_TYPE_INTEGER64)
+			continue;
+		best = candidate;
+	}
+
+	if (!best.id)
+		return -EINVAL;
+	*qc = best;
+	return 0;
+}
+
+static int atomisp_query_ext_ctrl(struct file *file, void *fh,
+				  struct v4l2_query_ext_ctrl *qc)
+{
+	struct video_device *vdev = video_devdata(file);
+	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+
+	if (qc->id & (V4L2_CTRL_FLAG_NEXT_CTRL | V4L2_CTRL_FLAG_NEXT_COMPOUND))
+		return atomisp_query_next_control(asd, qc);
+
+	return atomisp_query_control(asd, qc);
 }
 
 static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
