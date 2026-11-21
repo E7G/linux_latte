@@ -1,6 +1,31 @@
 # Known issues / 当前已知限制
 
-本文档只记录与当前 `cachyos-mipad2` 分支和 `xiaomipad2_defconfig` 相符的已知限制。这里的“已集成”表示代码、配置或辅助工具已经存在，**不等于该功能已经在所有发行版和所有使用场景下完全稳定**。
+除单独注明的 7.2 真机结果外，本文记录与当前 `cachyos-mipad2` 分支和 `xiaomipad2_defconfig` 相符的已知限制。这里的“已集成”表示代码、配置或辅助工具已经存在，**不等于该功能已经在所有发行版和所有使用场景下完全稳定**。
+
+## 7.2.15 真机启动延迟（Plymouth）
+
+2026-11-21 在 Mi Pad 2 的 Arch 系统上，LPAT17 的内核约 18 秒时已发现两颗
+AtomISP 传感器。此后，sysinit 关键路径上的`plymouth-read-write.service`
+等待了 462 秒。桌面、SSH 和串口登录都在该等待结束后启动。USB 串口出现在
+主机上时，平板的串口登录服务仍可能尚未启动。
+
+同一份签名 LPAT17 内核及同一份 initramfs（Plymouth 26.134.222-2，
+mkinitcpio 42-1，systemd 261.3-1），在 GRUB 单次启动项的 `linux` 行末尾只添加
+`plymouth.enable=0`，系统启动总耗时从 500.905 秒降到 39.032 秒。
+日志显示 Plymouth 启动服务跳过，`plymouth-read-write.service` 约 0.11 秒完成。
+随后在同次启动中实测了前后摄像头、RTC s2idle 和 USB 串口收发。
+
+排查类似现象时，可先核对当前启动的关键路径和上一次启动的 Plymouth 服务时间。
+
+```sh
+systemd-analyze critical-chain graphical.target
+journalctl -b -1 -u plymouth-read-write.service -o short-monotonic
+```
+
+若时间集中在 `plymouth-read-write.service`，可先对目标内核的单次 GRUB
+启动项加上 `plymouth.enable=0` 做对照，并保留可用回退项。这个参数会关闭
+Plymouth 启动画面。其他发行版、启用磁盘加密的系统以及不同的 initramfs
+需要分别验证。
 
 ## 1. AtomISP 摄像头仍是实验性功能
 
