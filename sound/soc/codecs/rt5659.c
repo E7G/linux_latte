@@ -1409,7 +1409,16 @@ static void rt5659_jack_detect_work(struct work_struct *work)
 	if (!component)
 		return;
 
-	ret = regmap_read(rt5659->regmap, RT5659_INT_ST_1, &status);
+	/*
+	 * The GPIO signals an edge, so a brief I2C failure can otherwise
+	 * leave jack routing stale until the next physical change.
+	 */
+	for (int retry = 0; ; retry++) {
+		ret = regmap_read(rt5659->regmap, RT5659_INT_ST_1, &status);
+		if (retry == 2 || (ret != -EIO && ret != -EREMOTEIO))
+			break;
+		usleep_range(10000, 12000);
+	}
 	if (ret)
 		goto io_error;
 
