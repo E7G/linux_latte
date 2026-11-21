@@ -177,7 +177,7 @@ DECLARE_EVENT_CLASS(udc_log_ep,
 		__get_str(name), __entry->maxpacket, __entry->maxpacket_limit,
 		__entry->max_streams, __entry->mult, __entry->maxburst,
 		__entry->address, __entry->claimed ? "claimed:" : "released:",
-		__entry->enabled ? "enabled" : "disabled", ret)
+		__entry->enabled ? "enabled" : "disabled", __entry->ret)
 );
 
 DEFINE_EVENT(udc_log_ep, usb_ep_set_maxpacket_limit,
