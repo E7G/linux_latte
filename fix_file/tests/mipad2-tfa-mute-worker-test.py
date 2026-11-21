@@ -39,14 +39,23 @@ typedef unsigned short u16;
 #define TFA98XX_DSP_INIT_DONE 1
 #define TFA98XX_DSP_INIT_FAIL 2
 #define TFA98XX_DSP_INIT_PENDING 0
+#define TFA98XX_DSP_INIT_RECOVER 3
+#define TFA98XX_DSP_INIT_NO_CALIBRATION 4
 #define READ_ONCE(x) (x)
 #define WRITE_ONCE(x, v) ((x) = (v))
 #define TFA98XX_STATUSREG 0
 #define TFA98XX_SYS_CTRL 9
 #define TFA98XX_CF_STATUS 0x73
+#define TFA98XX_STATUSREG_PLLS_MSK 1
+#define TFA98XX_STATUSREG_AREFS_MSK 2
+#define TFA98XX_STATUSREG_ACS 4
+#define TFA98XX_STATUSREG_WDS 8
+#define TFA98XX_STATUS_UP_MASK 3
+#define msecs_to_jiffies(ms) ((unsigned long)(ms) * HZ / 1000)
 #define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 static void test_log(const char *fmt, ...) { (void)fmt; }
 #define dev_info(dev, ...) test_log(__VA_ARGS__)
+#define dev_warn(dev, ...) test_log(__VA_ARGS__)
 #define pr_debug(...) test_log(__VA_ARGS__)
 struct work_struct { int unused; };
 struct delayed_work { struct work_struct work; };
@@ -66,7 +75,7 @@ struct snd_ctl_elem_value { struct { struct { long value[1]; } integer; } value;
 static bool defer_dsp_start;
 static struct tfa98xx *amp;
 static int starts, stops, cancel_monitor, cancel_init, queued_monitor;
-static int start_error, stop_error, powered;
+static int start_error, stop_error, powered, status_reads, queued_init;
 static void *snd_soc_component_get_drvdata(struct snd_soc_component *c) { return c->priv; }
 static struct snd_soc_component *snd_kcontrol_chip(struct snd_kcontrol *k)
 { return k->component; }
@@ -88,8 +97,14 @@ static int queue_delayed_work(void *wq, struct delayed_work *work, unsigned int 
 static int queue_delayed_work(void *wq, struct delayed_work *work, unsigned int delay)
 {
     (void)wq;
-    assert(work == &amp->delay_work && delay == HZ);
+    assert(work == &amp->delay_work && (delay == HZ || delay == HZ / 10));
     queued_monitor++; return 1;
+}
+static int queue_work(void *wq, struct work_struct *work)
+{
+    (void)wq;
+    assert(work == &amp->init_work && amp->dsp_init_lock.held);
+    queued_init++; return 1;
 }
 static int mod_delayed_work(void *wq, struct delayed_work *work, unsigned int delay)
     __attribute__((unused));
@@ -114,7 +129,7 @@ static int tfa98xx_dsp_stop(struct tfa98xx *tfa)
     stops++; powered = 0; return stop_error;
 }
 static unsigned int snd_soc_component_read(void *component, unsigned int reg)
-{ (void)component; (void)reg; return 0; }
+{ (void)component; (void)reg; status_reads++; return 0; }
 """
 harness = r"""
 int main(void)
@@ -187,11 +202,39 @@ int main(void)
     assert(tfa.desired_running && tfa.monitor_status && queued_monitor == 1);
     value.value.integer.value[0] = 2;
     assert(tfa98xx_set_stop_ctl(&control, &value) == -EINVAL);
+    /* Stop publishes monitor=0 before drain can clear desired_running. */
+    tfa.monitor_status = 0;
+    tfa98xx_dsp_init(&tfa.init_work);
+    assert(starts == 4 && tfa.desired_running && !powered);
+    tfa.monitor_status = 1;
+    /* Invalid factory calibration must not repower the amp at each poll. */
+    start_error = -ENODATA;
+    tfa98xx_dsp_init(&tfa.init_work);
+    assert(starts == 5 && tfa.dsp_init == TFA98XX_DSP_INIT_NO_CALIBRATION);
+    int before = status_reads;
+    queued_monitor = 0;
+    for (unsigned int i = 0; i < 20; i++) {
+        tfa98xx_monitor(&tfa.delay_work.work);
+        tfa98xx_dsp_init(&tfa.init_work); /* another stale queued request */
+    }
+    assert(starts == 5 && status_reads == before && !queued_init && !queued_monitor);
+    assert(!tfa.dsp_init_lock.held && !powered);
+    assert(tfa98xx_digital_mute(&dai, 1) == 0);
+    assert(tfa.dsp_init == TFA98XX_DSP_INIT_PENDING);
+    assert(tfa98xx_digital_mute(&dai, 0) == 0);
+    start_error = 0;
+    tfa98xx_monitor(&tfa.delay_work.work);
+    assert(queued_init == 1 && queued_monitor >= 1);
+    tfa98xx_dsp_init(&tfa.init_work);
+    assert(starts == 6 && powered && tfa.dsp_init == TFA98XX_DSP_INIT_DONE);
     puts("PASS: real mute/stop/init callbacks; both workers drained outside lock, immediate monitor, stop-to-playback restart, invalid control and error paths");
     return 0;
 }
 """
-callbacks = callback("tfa98xx_dsp_init") + "\n" + callback("tfa98xx_set_running") + "\n" + callback("tfa98xx_digital_mute") + "\n" + callback("tfa98xx_set_stop_ctl")
+callbacks = "\n".join(callback(name) for name in (
+    "tfa98xx_monitor", "tfa98xx_dsp_init", "tfa98xx_set_running",
+    "tfa98xx_digital_mute", "tfa98xx_set_stop_ctl",
+))
 with tempfile.TemporaryDirectory(prefix="mipad2-tfa-mute-worker-") as temp:
     cfile, binary = Path(temp) / "test.c", Path(temp) / "test"
     cfile.write_text(mock + callbacks + harness)

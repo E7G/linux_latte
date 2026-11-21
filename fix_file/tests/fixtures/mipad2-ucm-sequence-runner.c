@@ -4,8 +4,14 @@
 #include <alsa/asoundlib.h>
 #include <alsa/use-case.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 int main(void){snd_use_case_mgr_t *m=NULL;int rc=snd_use_case_mgr_open(&m,"hw:0");if(rc<0){fprintf(stderr,"open: %s\n",snd_strerror(rc));return 10;}
  rc=snd_use_case_set(m,"_verb","HiFi");if(rc<0){fprintf(stderr,"verb: %s\n",snd_strerror(rc));return 11;}
+ const char *mixer=NULL;
+ rc=snd_use_case_get(m,"PlaybackMixerElem/Speaker",&mixer);
+ if(rc<0||strcmp(mixer,"DAC1")){fprintf(stderr,"speaker mixer: %s\n",mixer?mixer:snd_strerror(rc));free((void *)mixer);return 14;}
+ free((void *)mixer);
  const char *dev[]={"Speaker","Headphones","IntMic","HeadsetMic"};
  for(int n=0;n<3;n++)for(unsigned i=0;i<4;i++){rc=snd_use_case_set(m,"_enadev",dev[i]);if(rc<0){fprintf(stderr,"enable %s: %s\n",dev[i],snd_strerror(rc));return 12;}rc=snd_use_case_set(m,"_disdev",dev[i]);if(rc<0)return 13;}
  snd_use_case_mgr_close(m);snd_config_update_free_global();printf("real ALSA %s: 3x4 enable/disable cycles pass\n",snd_asoundlib_version());return 0;}

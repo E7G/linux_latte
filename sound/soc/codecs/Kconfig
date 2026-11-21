@@ -2301,7 +2301,8 @@ config SND_SOC_TFA98XX_XIAOMI
 	help
 	  Enable the Xiaomi/Intel Cherry Trail era NXP TFA9890 compatibility
 	  driver used by Mi Pad 2. It loads the factory tfa98xx.cnt container
-	  and supports the built-in CoolFlux DSP speaker profiles.
+	  and supports the built-in CoolFlux DSP speaker profiles using an
+	  existing factory speaker calibration. It does not provision one.
 
 	  This is an alternative to SND_SOC_TFA989X for the same
 	  i2c:tfa9890 devices. The default Mi Pad 2 configuration keeps the

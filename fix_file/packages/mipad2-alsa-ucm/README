@@ -1,12 +1,26 @@
 Mi Pad 2 RT5659 UCM profile; devices: Speaker, Headphones, IntMic, HeadsetMic.
 
-pkgrel8 supports both the 6.14 unprefixed Amp Input/Amp Input1 controls and
-the 7.2 codec_conf-prefixed Left Amp Input/Right Amp Input controls. A complete
+The bypass paths support both the 6.14 unprefixed Amp Input/Amp Input1 controls
+and the 7.2 codec_conf-prefixed Left Amp Input/Right Amp Input controls. A complete
 prefixed pair is preferred when both layouts exist. Partial/unknown layouts
 are rejected before mixer writes. Both channels are selected before speaker
 power is enabled. This keeps one UCM configuration across kernel rollback.
 
+pkgrel9 adds the optional 7.2 factory DSP backend. It requires the left and
+right Profile controls with their corresponding musicL/musicR enum strings and
+both Stop controls. Partial or mixed factory/bypass controls fail before any
+mixer write. Speaker enable powers the speaker path off, applies the two named
+profiles, disables headphones and then enables the speaker path. Headphone and
+capture sequences do not select factory profiles.
+
+The existing RT5659 DAC1 mixer supplies speaker volume. The factory music
+profiles have one vstep, so UCM neither models the two TFA Master Volume
+controls as volume sliders nor writes them. It never writes Stop: the kernel's
+C2C/DAPM path must own amplifier start/stop along with clocks. UCM does not
+enable a deferred factory DSP and does not calibrate hardware.
+
 Real libasound 1.2.15.3/1.2.16.1 parsing and synthetic-control sequence tests:
   python3 fix_file/tests/mipad2-ucm-real-parser-test.py
-Requires GCC and ALSA development files; --alsa-root accepts an isolated root.
+Requires GCC and ALSA development files; --alsa-root and --libdir accept an
+isolated root and library path relative to it.
 These tests are not physical audio, DAPM, jack IRQ or acoustic validation.

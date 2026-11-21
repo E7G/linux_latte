@@ -678,7 +678,7 @@ int tfaContWriteProfile(struct tfa98xx *tfa98xx, int profile, int vstep)
 	struct nxpTfaProfile *prof = tfaContProfile(tfa98xx, profile);
 	struct nxpTfaFileDsc *file;
 	u8 *base = tfa98xx->fw.base;
-	int i;
+	int i, ret;
 
 	pr_debug("\n");
 
@@ -686,8 +686,12 @@ int tfaContWriteProfile(struct tfa98xx *tfa98xx, int profile, int vstep)
 		return -EINVAL;
 	}
 
-	tfa98xx_mute(tfa98xx); /* this will wait for SWS */
-	tfa98xx_powerdown(tfa98xx, 1);
+	ret = tfa98xx_mute(tfa98xx); /* waits for SWS */
+	if (ret)
+		return ret;
+	ret = tfa98xx_powerdown(tfa98xx, 1);
+	if (ret)
+		return ret;
 
 	/*  process and write registers first */
 	for (i = 0; i < prof->length; i++) {
@@ -699,7 +703,9 @@ int tfaContWriteProfile(struct tfa98xx *tfa98xx, int profile, int vstep)
 	}
 
 	/* power up CF */
-	tfa98xx_dsp_power_up(tfa98xx);
+	ret = tfa98xx_dsp_power_up(tfa98xx);
+	if (ret)
+		return ret;
 
 	/*  process and write all other items after power up of CF */
 	for (i = 0; i < prof->length; i++) {
@@ -739,7 +745,9 @@ int tfaContWriteFilesVstep(struct tfa98xx *tfa98xx, int profile, int vstep)
 			if (pwdn < 0)
 				pwdn = tfa98xx_is_pwdn(tfa98xx);
 			if (pwdn) {
-				tfa98xx_dsp_power_up(tfa98xx);
+				ret = tfa98xx_dsp_power_up(tfa98xx);
+				if (ret)
+					return ret;
 				pwdn = 0;
 			}
 

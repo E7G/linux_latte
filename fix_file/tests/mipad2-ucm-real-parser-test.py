@@ -14,15 +14,18 @@ def require(value, message):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--alsa-root',type=Path)
+parser.add_argument('--libdir',default='usr/lib/x86_64-linux-gnu')
 parser.add_argument('--runtime-lib',type=Path)
+parser.add_argument('--baseline',type=Path,help='optional pkgrel8 profile directory to compare')
 args=parser.parse_args()
 repo=Path(os.environ.get('MIPAD2_KERNEL_SOURCE',Path(__file__).resolve().parents[2]))
 pkg=repo/'fix_file/packages/mipad2-alsa-ucm'
 fixtures=repo/'fix_file/tests/fixtures'
-profiles={n:(pkg/n).read_text() for n in ['cht-bsw-rt5659.conf','HiFi.conf']}
-flags=shlex.split(subprocess.check_output(['pkg-config','--cflags','--libs','alsa'],text=True)) if not args.alsa_root else ['-I'+str(args.alsa_root/'usr/include'),'-L'+str(args.alsa_root/'usr/lib/x86_64-linux-gnu'),'-lasound']
-runtime=args.runtime_lib or (args.alsa_root/'usr/lib/x86_64-linux-gnu' if args.alsa_root else None)
+profiles={n:(pkg/n).read_text() for n in ['cht-bsw-rt5659.conf','HiFi.conf','BypassAmplifiers.conf','FactoryAmplifiers.conf']}
+flags=shlex.split(subprocess.check_output(['pkg-config','--cflags','--libs','alsa'],text=True)) if not args.alsa_root else ['-I'+str(args.alsa_root/'usr/include'),'-L'+str(args.alsa_root/args.libdir),'-lasound']
+runtime=args.runtime_lib or (args.alsa_root/args.libdir if args.alsa_root else None)
 rows=[]
+baseline_rows=0
 with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as directory:
     base=Path(directory)
     common=['gcc','-g','-O1','-Wall','-Wextra','-Werror','-Wno-misleading-indentation']
@@ -33,19 +36,39 @@ with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as director
     ucm=base/'ucm';(ucm/'test').mkdir(parents=True)
     (ucm/'ucm.conf').write_text('Syntax 3\nUseCasePath.test { Directory "test" File "test.conf" }\n')
     (ucm/'test/test.conf').write_text(profiles['cht-bsw-rt5659.conf'])
-    (ucm/'test/HiFi.conf').write_text(profiles['HiFi.conf'])
+    for profile in ('HiFi.conf', 'BypassAmplifiers.conf', 'FactoryAmplifiers.conf'):
+        (ucm/'test'/profile).write_text(profiles[profile])
     def run(layout,tag):
         log=base/(tag+'.controls')
         env=dict(os.environ,ALSA_PLUGIN_DIR=str(base),ALSA_CONFIG_PATH=str(base/'alsa.conf'),ALSA_CONFIG_UCM2=str(ucm),MP2_CTL_LAYOUT=layout,MP2_CTL_LOG=str(log))
         if runtime:env['LD_LIBRARY_PATH']=str(runtime)
         q=subprocess.run([str(base/'runner')],capture_output=True,text=True,env=env,timeout=30)
         return q,log.read_text().splitlines() if log.exists() else []
-    for layout in ['modern','legacy','both','missing_right','legacy_missing_right','missing_left','mixed_right','none']:
+    bypass_layouts = ('modern','legacy','both','missing_right','legacy_missing_right',
+                      'missing_left','mixed_right','none')
+    factory_layouts = ('factory','factory_no_left','factory_no_right','factory_wrong_left',
+                       'factory_wrong_right','factory_no_stop','factory_mixed_modern',
+                       'factory_mixed_legacy','factory_stop_only_mixed')
+    for layout in (*bypass_layouts, *factory_layouts):
         q,writes=run(layout,layout)
-        positive=layout in ['modern','legacy','both']
+        positive=layout in ['modern','legacy','both','factory']
         left='Amp Input|0' if layout=='legacy' else 'Left Amp Input|0'
         right='Amp Input1|1' if layout=='legacy' else 'Right Amp Input|1'
-        if positive:
+        if layout == 'factory':
+            require(q.returncode == 0, (layout, q.stderr))
+            require([x for x in writes if ' Profile|' in x] ==
+                    ['Left Profile|1', 'Right Profile|2'] * 3, writes)
+            require(not any(' Amp Input' in x or x.startswith('Amp Input') or
+                            ' Stop|' in x or ' Master Volume|' in x for x in writes), writes)
+            enables = [i for i, x in enumerate(writes) if x == 'Ext Spk Switch|1']
+            require(len(enables) == 3, writes)
+            for i in enables:
+                require(writes[i - 4:i] == ['Ext Spk Switch|0', 'Left Profile|1',
+                                            'Right Profile|2', 'Headphone Switch|0'], writes)
+                require(writes[i + 1:i + 4] == ['DAC1 Playback Switch|1',
+                                                'DAC1 Playback Switch|0',
+                                                'Ext Spk Switch|0'], writes)
+        elif positive:
             require(q.returncode == 0, (layout, q.stderr))
             amps=[x for x in writes if 'Amp Input' in x]
             require(amps == [left, right] * 3, (layout, amps))
@@ -55,6 +78,19 @@ with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as director
         else:
             require(q.returncode == 10 and (not writes), (layout, q.returncode, writes, q.stderr))
         rows.append(dict(layout=layout,exit_code=q.returncode,passed=True,mixer_write_count=len(writes),sequence_summary=q.stdout.strip(),partial_or_unknown_rejected_before_writes=not positive))
+    if args.baseline:
+        (ucm/'test/test.conf').write_text((args.baseline/'cht-bsw-rt5659.conf').read_text())
+        (ucm/'test/HiFi.conf').write_text((args.baseline/'HiFi.conf').read_text())
+        for layout in bypass_layouts:
+            q,writes=run(layout,'baseline-'+layout)
+            old=(base/(layout+'.controls'))
+            expected=old.read_text().splitlines() if old.exists() else []
+            row=next(row for row in rows if row['layout']==layout)
+            require(q.returncode == row['exit_code'] and writes == expected,
+                    (layout,q.returncode,writes,expected,q.stderr))
+            baseline_rows += 1
+        (ucm/'test/test.conf').write_text(profiles['cht-bsw-rt5659.conf'])
+        (ucm/'test/HiFi.conf').write_text(profiles['HiFi.conf'])
     # Mutate only the temporary configuration to select the left amplifier for
     # both channels. ALSA accepts it, but the independent channel oracle must not.
     wrong=profiles['HiFi.conf'].replace("${var:RightAmpControl}' Right","${var:LeftAmpControl}' Right")
@@ -64,5 +100,14 @@ with tempfile.TemporaryDirectory(prefix='mipad2-ucm-actual-parser-') as director
     amps=[x for x in writes if 'Amp Input' in x]
     require(q.returncode == 0 and amps != ['Left Amp Input|0', 'Right Amp Input|1'] * 3, 'UCM oracle invariant failed at original line 60')
     require(amps == ['Left Amp Input|0', 'Left Amp Input|1'] * 3, amps)
-result=dict(state='real-ALSA-UCM-layout-and-channel-oracles-pass',cases=rows,wrong_channel_mutation_detected=True,profile_sha256={n:hashlib.sha256(s.encode()).hexdigest() for n,s in profiles.items()},scope='Real libasound ControlExists/substitution/parser/sequence/ctl_ext APIs with explicitly synthetic controls. No physical PCM, DAPM, jack or acoustic validation.',hardware_tested=False)
+    # Wrong enum labels on the registered control failed at open above. This
+    # distinct mutation leaves registration correct but writes a valid wrong enum.
+    wrong = profiles['HiFi.conf'].replace("name='Right Profile' musicR",
+                                          "name='Right Profile' bypassR")
+    require(wrong != profiles['HiFi.conf'], 'factory profile mutation did not apply')
+    (ucm/'test/HiFi.conf').write_text(wrong)
+    q,writes=run('factory','wrong-dsp-profile-negative')
+    require(q.returncode == 0 and [x for x in writes if ' Profile|' in x] ==
+            ['Left Profile|1', 'Right Profile|1'] * 3, (q.stderr, writes))
+result=dict(state='real-ALSA-UCM-layout-and-channel-oracles-pass',cases=rows,bypass_baseline_layouts_identical=baseline_rows,wrong_channel_mutation_detected=True,wrong_factory_profile_mutation_detected=True,profile_sha256={n:hashlib.sha256(s.encode()).hexdigest() for n,s in profiles.items()},scope='Real libasound ControlExists/substitution/parser/sequence/ctl_ext APIs with explicitly synthetic controls. No physical PCM, DAPM, jack or acoustic validation.',hardware_tested=False)
 print(json.dumps(result,indent=2))

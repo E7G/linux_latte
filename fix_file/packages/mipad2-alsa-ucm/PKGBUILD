@@ -1,6 +1,6 @@
 pkgname=mipad2-alsa-ucm
 pkgver=20260830
-pkgrel=8
+pkgrel=9
 pkgdesc="ALSA UCM profile for Xiaomi Mi Pad 2 RT5659 and dual TFA9890"
 arch=(x86_64)
 depends=(alsa-lib)
@@ -8,16 +8,22 @@ license=(GPL2)
 source=(
   'HiFi.conf'
   'cht-bsw-rt5659.conf'
+  'BypassAmplifiers.conf'
+  'FactoryAmplifiers.conf'
   'README'
 )
 sha256sums=(
-  '115f9b103c42cff6ecbb67b9ae0a32cc1139d77bf44a3b9ccb727903739e6a22'
-  '9b462faa50a7bebb04409fe4003208574824383e60ed69695d0af88e3e3c420d'
-  '158f126a6832ea9357dc45138e653b677bd7f45618c53f01d34c73bdba46eb22'
+  '8b5c8e091482ae4b2fe7131eb45fdfc5af30c8c1718da0446de85cc8829305d3'
+  '33f9b821adfd75a1a667b415fa692af64e2fabba9e418638af2d8bb2a01498a5'
+  '682be353f25e538f79dbcf5d1dca9f88ffaf25235a74c7333937d8bf4d14a31e'
+  '78f7e0a2cb33ae1cd6a9212a74194d78a16baf3986a486578fcc957d3e4c74b5'
+  'bffde47a57b44902c6cc8f75162832417dd8ebad2c9d56dc6f28d386976d62ba'
 )
 
 package() {
   install -Dm644 "$srcdir/cht-bsw-rt5659.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/cht-bsw-rt5659.conf"
   install -Dm644 "$srcdir/HiFi.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/HiFi.conf"
+  install -Dm644 "$srcdir/BypassAmplifiers.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/BypassAmplifiers.conf"
+  install -Dm644 "$srcdir/FactoryAmplifiers.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/cht-bsw-rt5659/FactoryAmplifiers.conf"
   install -Dm644 "$srcdir/README" "$pkgdir/usr/share/doc/mipad2-alsa-ucm/README"
 }
