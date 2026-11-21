@@ -1248,84 +1248,109 @@ static void rt5659_enable_push_button_irq(struct snd_soc_component *component,
 }
 
 /**
- * rt5659_headset_detect - Detect headset.
- * @component: SoC audio component device.
- * @jack_insert: Jack insert or not.
+ * rt5659_headset_detect - detect a headset or headphones
+ * @component: codec component
+ * @jack_insert: whether the presence check found an accessory
  *
- * Detect whether is headset or not when jack inserted.
- *
- * Returns detect status.
+ * Return the jack status on success, or a negative errno on I/O failure.
  */
-
-static int rt5659_headset_detect(struct snd_soc_component *component, int jack_insert)
+static int rt5659_headset_detect(struct snd_soc_component *component,
+			       bool jack_insert)
 {
+	static const unsigned int settle_ms[] = {300, 150, 100, 50, 30};
 	struct snd_soc_dapm_context *dapm = snd_soc_component_to_dapm(component);
-	int val, i = 0, sleep_time[5] = {300, 150, 100, 50, 30};
-	int reg_63;
-
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
+	unsigned int i, status, saved_power;
+	int ret, restore_ret;
 
-	if (jack_insert) {
-		snd_soc_dapm_force_enable_pin(dapm,
-			"Mic Det Power");
-		snd_soc_dapm_sync(dapm);
-		reg_63 = snd_soc_component_read(component, RT5659_PWR_ANLG_1);
-
-		snd_soc_component_update_bits(component, RT5659_PWR_ANLG_1,
-			RT5659_PWR_VREF2 | RT5659_PWR_MB,
-			RT5659_PWR_VREF2 | RT5659_PWR_MB);
-		msleep(20);
-		snd_soc_component_update_bits(component, RT5659_PWR_ANLG_1,
-			RT5659_PWR_FV2, RT5659_PWR_FV2);
-
-		snd_soc_component_write(component, RT5659_EJD_CTRL_2, 0x4160);
-		snd_soc_component_update_bits(component, RT5659_EJD_CTRL_1,
-			0x20, 0x0);
-		msleep(20);
-		snd_soc_component_update_bits(component, RT5659_EJD_CTRL_1,
-			0x20, 0x20);
-
-		while (i < 5) {
-			msleep(sleep_time[i]);
-			val = snd_soc_component_read(component, RT5659_EJD_CTRL_2) & 0x0003;
-			i++;
-			if (val == 0x1 || val == 0x2 || val == 0x3)
-				break;
-		}
-
-		switch (val) {
-		case 1:
-			rt5659->jack_type = SND_JACK_HEADSET;
-			rt5659_enable_push_button_irq(component, true);
-			break;
-		default:
-			snd_soc_component_write(component, RT5659_PWR_ANLG_1, reg_63);
-			rt5659->jack_type = SND_JACK_HEADPHONE;
-			snd_soc_dapm_disable_pin(dapm, "Mic Det Power");
-			snd_soc_dapm_sync(dapm);
-			break;
-		}
-	} else {
+	if (!jack_insert) {
 		snd_soc_dapm_disable_pin(dapm, "Mic Det Power");
 		snd_soc_dapm_sync(dapm);
 		if (rt5659->jack_type == SND_JACK_HEADSET)
 			rt5659_enable_push_button_irq(component, false);
 		rt5659->jack_type = 0;
+		return 0;
 	}
 
-	dev_dbg(component->dev, "jack_type = %d\n", rt5659->jack_type);
+	ret = snd_soc_dapm_force_enable_pin(dapm, "Mic Det Power");
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_dapm_sync(dapm);
+	if (ret < 0)
+		goto disable_mic_det;
+
+	ret = regmap_read(rt5659->regmap, RT5659_PWR_ANLG_1, &saved_power);
+	if (ret)
+		goto disable_mic_det;
+
+	ret = snd_soc_component_update_bits(component, RT5659_PWR_ANLG_1,
+			RT5659_PWR_VREF2 | RT5659_PWR_MB,
+			RT5659_PWR_VREF2 | RT5659_PWR_MB);
+	if (ret < 0)
+		goto restore_power;
+	msleep(20);
+	ret = snd_soc_component_update_bits(component, RT5659_PWR_ANLG_1,
+			RT5659_PWR_FV2, RT5659_PWR_FV2);
+	if (ret < 0)
+		goto restore_power;
+
+	ret = snd_soc_component_write(component, RT5659_EJD_CTRL_2, 0x4160);
+	if (ret < 0)
+		goto restore_power;
+	ret = snd_soc_component_update_bits(component, RT5659_EJD_CTRL_1,
+			0x20, 0x0);
+	if (ret < 0)
+		goto restore_power;
+	msleep(20);
+	ret = snd_soc_component_update_bits(component, RT5659_EJD_CTRL_1,
+			0x20, 0x20);
+	if (ret < 0)
+		goto restore_power;
+
+	for (i = 0; i < ARRAY_SIZE(settle_ms); i++) {
+		msleep(settle_ms[i]);
+		ret = regmap_read(rt5659->regmap, RT5659_EJD_CTRL_2, &status);
+		if (ret)
+			goto restore_power;
+		status &= 0x3;
+		if (status)
+			break;
+	}
+	if (status == 1) {
+		rt5659->jack_type = SND_JACK_HEADSET;
+		rt5659_enable_push_button_irq(component, true);
+		return rt5659->jack_type;
+	}
+
+restore_power:
+	restore_ret = snd_soc_component_write(component, RT5659_PWR_ANLG_1,
+					      saved_power);
+	if (!ret)
+		ret = restore_ret;
+disable_mic_det:
+	snd_soc_dapm_disable_pin(dapm, "Mic Det Power");
+	snd_soc_dapm_sync(dapm);
+	if (ret < 0)
+		return ret;
+
+	rt5659->jack_type = SND_JACK_HEADPHONE;
 	return rt5659->jack_type;
 }
 
 static int rt5659_button_detect(struct snd_soc_component *component)
 {
-	int btn_type, val;
+	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
+	unsigned int val;
+	int ret;
 
-	val = snd_soc_component_read(component, RT5659_4BTN_IL_CMD_1);
-	btn_type = val & 0xfff0;
-	snd_soc_component_write(component, RT5659_4BTN_IL_CMD_1, val);
+	ret = regmap_read(rt5659->regmap, RT5659_4BTN_IL_CMD_1, &val);
+	if (ret)
+		return ret;
+	ret = regmap_write(rt5659->regmap, RT5659_4BTN_IL_CMD_1, val);
+	if (ret)
+		return ret;
 
-	return btn_type;
+	return val & 0xfff0;
 }
 
 static bool rt5659_has_jack_detect(const struct rt5659_priv *rt5659)
@@ -1377,71 +1402,73 @@ static void rt5659_jack_detect_work(struct work_struct *work)
 {
 	struct rt5659_priv *rt5659 =
 		container_of(work, struct rt5659_priv, jack_detect_work.work);
-	int val, btn_type, report = 0;
+	struct snd_soc_component *component = rt5659->component;
+	unsigned int status;
+	int report, buttons, ret;
 
-	if (!rt5659->component)
+	if (!component)
 		return;
 
-	val = snd_soc_component_read(rt5659->component, RT5659_INT_ST_1) & 0x0080;
-	if (!val) {
-		/* jack in */
-		if (rt5659->jack_type == 0) {
-			/* jack was out, report jack type */
-			report = rt5659_headset_detect(rt5659->component, 1);
-		} else {
-			/* jack is already in, report button event */
-			report = SND_JACK_HEADSET;
-			btn_type = rt5659_button_detect(rt5659->component);
-			/**
-			 * rt5659 can report three kinds of button behavior,
-			 * one click, double click and hold. However,
-			 * currently we will report button pressed/released
-			 * event. So all the three button behaviors are
-			 * treated as button pressed.
-			 */
-			switch (btn_type) {
-			case 0x8000:
-			case 0x4000:
-			case 0x2000:
-				report |= SND_JACK_BTN_0;
-				break;
-			case 0x1000:
-			case 0x0800:
-			case 0x0400:
-				report |= SND_JACK_BTN_1;
-				break;
-			case 0x0200:
-			case 0x0100:
-			case 0x0080:
-				report |= SND_JACK_BTN_2;
-				break;
-			case 0x0040:
-			case 0x0020:
-			case 0x0010:
-				report |= SND_JACK_BTN_3;
-				break;
-			case 0x0000: /* unpressed */
-				break;
-			default:
-				btn_type = 0;
-				dev_err(rt5659->component->dev,
-					"Unexpected button code 0x%04x\n",
-					btn_type);
-				break;
-			}
+	ret = regmap_read(rt5659->regmap, RT5659_INT_ST_1, &status);
+	if (ret)
+		goto io_error;
 
-			/* button release or spurious interrput*/
-			if (btn_type == 0)
-				report =  rt5659->jack_type;
+	if (status & 0x0080) {
+		report = rt5659_headset_detect(component, false);
+	} else if (!rt5659->jack_type) {
+		report = rt5659_headset_detect(component, true);
+	} else if (rt5659->jack_type == SND_JACK_HEADSET) {
+		buttons = rt5659_button_detect(component);
+		if (buttons < 0) {
+			ret = buttons;
+			goto io_error;
+		}
+
+		report = SND_JACK_HEADSET;
+		/* Each button has distinct single, double and hold codes. */
+		switch (buttons) {
+		case 0x8000:
+		case 0x4000:
+		case 0x2000:
+			report |= SND_JACK_BTN_0;
+			break;
+		case 0x1000:
+		case 0x0800:
+		case 0x0400:
+			report |= SND_JACK_BTN_1;
+			break;
+		case 0x0200:
+		case 0x0100:
+		case 0x0080:
+			report |= SND_JACK_BTN_2;
+			break;
+		case 0x0040:
+		case 0x0020:
+		case 0x0010:
+			report |= SND_JACK_BTN_3;
+			break;
+		case 0:
+			break;
+		default:
+			dev_err(component->dev, "Unexpected button code 0x%04x\n",
+				buttons);
+			break;
 		}
 	} else {
-		/* jack out */
-		report = rt5659_headset_detect(rt5659->component, 0);
+		return;
 	}
 
+	if (report < 0) {
+		ret = report;
+		goto io_error;
+	}
 	snd_soc_jack_report(rt5659->hs_jack, report, SND_JACK_HEADSET |
 			    SND_JACK_BTN_0 | SND_JACK_BTN_1 |
 			    SND_JACK_BTN_2 | SND_JACK_BTN_3);
+	return;
+
+io_error:
+	dev_err_ratelimited(component->dev, "Jack detection failed: %d\n", ret);
 }
 
 static void rt5659_jack_detect_intel_hd_header(struct work_struct *work)
@@ -1455,8 +1482,9 @@ static void rt5659_jack_detect_intel_hd_header(struct work_struct *work)
 		return;
 
 	/* headphone jack */
-	regmap_read(rt5659->regmap, RT5659_GPIO_STA, &value);
-	hp_flag = (!(value & 0x8)) ? true : false;
+	if (regmap_read(rt5659->regmap, RT5659_GPIO_STA, &value))
+		goto read_mic;
+	hp_flag = !(value & 0x8);
 
 	if (hp_flag != rt5659->hda_hp_plugged) {
 		rt5659->hda_hp_plugged = hp_flag;
@@ -1476,10 +1504,12 @@ static void rt5659_jack_detect_intel_hd_header(struct work_struct *work)
 			SND_JACK_HEADPHONE);
 	}
 
-	/* mic jack */
-	regmap_read(rt5659->regmap, RT5659_4BTN_IL_CMD_1, &value);
-	regmap_write(rt5659->regmap, RT5659_4BTN_IL_CMD_1, value);
-	mic_flag = (value & 0x2000) ? true : false;
+read_mic:
+	if (regmap_read(rt5659->regmap, RT5659_4BTN_IL_CMD_1, &value))
+		return;
+	if (regmap_write(rt5659->regmap, RT5659_4BTN_IL_CMD_1, value))
+		return;
+	mic_flag = value & 0x2000;
 
 	if (mic_flag != rt5659->hda_mic_plugged) {
 		rt5659->hda_mic_plugged = mic_flag;
