@@ -20,6 +20,7 @@ root = Path(os.environ["FIXTURE"])
 rtc = root / "sys/class/rtc/rtc0"
 pmc = root / "sys/kernel/debug/pmc_atom/sleep_state"
 irq = root / "sys/power/pm_wakeup_irq"
+rtc_events = root / "sys/firmware/acpi/interrupts/ff_rt_clk"
 cmd = Path(sys.argv[0]).name
 args = sys.argv[1:]
 mode = os.environ["CASE"]
@@ -37,10 +38,14 @@ elif cmd == "busctl":
         rows.append(["sleep:idle", "MiPad2-serial-debug", "serial debugging", "block", 0, 22])
     if mode == "bad-inhibitors":
         rows.append(["sleep", "broken"])
+    if mode == "replaced-before-request" and (rtc / "wakealarm").read_text():
+        (rtc / "wakealarm").write_text("999\n")
     print(json.dumps({"type": "a(ssssuu)", "data": [rows]}))
 elif cmd == "rtcwake":
     if args == ["-d", "/dev/rtc0", "-m", "no", "-s", "8"]:
         (rtc / "wakealarm").write_text("108\n")
+        if mode == "expired-before-request":
+            (rtc / "since_epoch").write_text("108\n")
         log("arm")
     elif args == ["-d", "/dev/rtc0", "-m", "disable"]:
         (rtc / "wakealarm").write_text("")
@@ -71,11 +76,20 @@ elif cmd == "journalctl":
             print("PM: suspend entry (s2idle)\nPM: suspend exit\n"
                   "PM: suspend entry (s2idle)\nPM: suspend exit")
         else:
-            print("PM: suspend entry (s2idle)\nPM: suspend exit")
+            print("PM: suspend entry (s2idle)")
+            if mode == "mixed-pme-and-rtc":
+                print("ACPI: PM: ACPI custom handler wakeup")
+            elif mode == "fixed-debug":
+                print("ACPI: PM: ACPI fixed event wakeup")
+            print("PM: suspend exit")
             if count == 3:
                 log("resume")
                 (rtc / "since_epoch").write_text("107\n" if mode == "early-clock" else "108\n")
                 irq.write_text("127\n" if mode == "button" else "9\n")
+                if mode not in ("shared-sci-only", "button", "early-clock"):
+                    counter = {"multiple-rtc": "5", "reset-counter": "0",
+                               "bad-counter-after": "invalid"}.get(mode, "4")
+                    rtc_events.write_text(f"       {counter}    disabled     unmasked\n")
                 if mode != "no-residency":
                     pmc.write_text("S0I3 Residency:\t7200000us\n")
                 if mode == "foreign-alarm":
@@ -99,8 +113,12 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
             "sys/kernel/debug/pmc_atom/sleep_state": "S0I3 Residency:\t1000000us\n",
             "sys/class/rtc/rtc0/wakealarm": "555\n" if mode == "prearmed" else "",
             "sys/class/rtc/rtc0/since_epoch": "100\n",
+            "sys/firmware/acpi/interrupts/ff_rt_clk":
+                "malformed\n" if mode == "bad-counter-before" else "       3    disabled     unmasked\n",
             "events": "",
         }
+        if mode == "missing-counter":
+            del files["sys/firmware/acpi/interrupts/ff_rt_clk"]
         for name, value in files.items():
             path = root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,14 +141,20 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
         )
         events = (root / "events").read_text().splitlines()
         alarm = (root / "sys/class/rtc/rtc0/wakealarm").read_text().strip()
-        assert (result.returncode, events, alarm) == (expected_code, expected_events, expected_alarm), (
-            mode, result.returncode, events, alarm, result.stdout, result.stderr
-        )
+        if (result.returncode, events, alarm) != (expected_code, expected_events, expected_alarm):
+            raise AssertionError((mode, result.returncode, events, alarm, result.stdout, result.stderr))
+        wake_failures = {
+            "shared-sci-only": "without corroborating evidence of an RTC wake",
+            "mixed-pme-and-rtc": "Kernel reported a different wake source",
+        }
+        if mode in wake_failures:
+            if wake_failures[mode] not in result.stderr or "INFO S0I3 delta:" not in result.stdout:
+                raise AssertionError((mode, result.stdout, result.stderr))
 
 
 if __name__ == "__main__":
     script = Path(__file__).with_name("mipad2-suspend-test.sh").read_text()
-    for case in (
+    cases = (
         ("normal", 0, ["arm", "request", "resume", "clear"], ""),
         ("blocked", 1, [], ""),
         ("bad-inhibitors", 1, [], ""),
@@ -147,6 +171,17 @@ if __name__ == "__main__":
         ("foreign-alarm", 0, ["arm", "request", "resume"], "999"),
         ("no-residency", 1, ["arm", "request", "resume", "clear"], ""),
         ("late-audio-failure", 1, ["arm", "request", "resume", "clear"], ""),
-    ):
+        ("fixed-debug", 0, ["arm", "request", "resume", "clear"], ""),
+        ("shared-sci-only", 1, ["arm", "request", "resume", "clear"], ""),
+        ("mixed-pme-and-rtc", 1, ["arm", "request", "resume", "clear"], ""),
+        ("multiple-rtc", 1, ["arm", "request", "resume", "clear"], ""),
+        ("reset-counter", 1, ["arm", "request", "resume", "clear"], ""),
+        ("bad-counter-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("bad-counter-before", 1, [], ""),
+        ("missing-counter", 1, [], ""),
+        ("expired-before-request", 1, ["arm", "clear"], ""),
+        ("replaced-before-request", 1, ["arm"], "999"),
+    )
+    for case in cases:
         check_case(script, *case)
-    print("PASS: 16 suspend, inhibitor, RTC ownership and journal cases")
+    print(f"PASS: {len(cases)} suspend, inhibitor, RTC ownership and wake-source cases")
