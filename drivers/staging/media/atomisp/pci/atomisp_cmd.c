@@ -3661,8 +3661,9 @@ static void atomisp_fill_pix_format(struct v4l2_pix_format *f,
 
 	f->sizeimage = PAGE_ALIGN(height * bytes);
 
-	if (f->field == V4L2_FIELD_ANY)
-		f->field = V4L2_FIELD_NONE;
+	/* Capture is progressive and does not negotiate CSC via S/TRY_FMT. */
+	f->field = V4L2_FIELD_NONE;
+	f->flags = 0;
 
 	/*
 	 * FIXME: do we need to set this up differently, depending on the
@@ -3671,6 +3672,7 @@ static void atomisp_fill_pix_format(struct v4l2_pix_format *f,
 	f->colorspace = V4L2_COLORSPACE_REC709;
 	f->ycbcr_enc = V4L2_YCBCR_ENC_709;
 	f->xfer_func = V4L2_XFER_FUNC_709;
+	f->quantization = V4L2_QUANTIZATION_DEFAULT;
 }
 
 /* Get sensor padding values for the non padded width x height resolution */
