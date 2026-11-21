@@ -21,6 +21,14 @@ The package does not install, replace, or configure Wi-Fi or Bluetooth
 firmware/modules. It replaces the old Mi Pad 2 USB Ethernet gadget because a
 single UDC cannot bind both legacy `g_ether` and the ACM function.
 
+## Shutdown and reboot
+
+A host can leave the cable connected while its serial application is closed.
+On shutdown, an unread USB TX queue can block the ttyGS0 shell while it is
+draining its terminal. The late quiesce unit detaches the owned ACM gadget
+before stopping the serial getty, only when a shutdown target is queued.
+Expect USB serial output to end earlier during shutdown. Normal console
+use, service restart, and the separate suspend hook are unchanged.
 
 ## Suspend / S0ix
 

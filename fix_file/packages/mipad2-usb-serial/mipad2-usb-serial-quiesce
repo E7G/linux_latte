@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 0 ] || exit 1
+G=/sys/kernel/config/usb_gadget/mipad2
+
+# Only detach on host shutdown, not when this companion unit is restarted.
+jobs=$(timeout 2s systemctl --system list-jobs --no-legend --no-pager --plain) || exit 0
+if ! printf '%s\n' "$jobs" | awk '
+    $2 ~ /^(shutdown|reboot|poweroff|halt|kexec)\.target$/ && $3 == "start" { found = 1 }
+    END { exit !found }
+'; then
+    exit 0
+fi
+
+# Limit this to the existing Mi Pad 2 configfs ACM gadget. The ordinary
+# serial service still owns setup, explicit stopping and the sleep path.
+[ -r "$G/UDC" ] && [ -r "$G/idVendor" ] && [ -r "$G/idProduct" ] || exit 0
+[ -d "$G/functions/acm.usb0" ] && [ -L "$G/configs/c.1/acm.usb0" ] || exit 0
+[ -n "$(cat "$G/UDC")" ] || exit 0
+[ "$(cat "$G/idVendor")" = 0x1d6b ] && [ "$(cat "$G/idProduct")" = 0x0104 ] || exit 0
+[ "$(readlink -f "$G/configs/c.1/acm.usb0")" = "$(readlink -f "$G/functions/acm.usb0")" ] || exit 0
+printf '\n' > "$G/UDC"
+echo 'Mi Pad 2 ACM detached before serial login shutdown'

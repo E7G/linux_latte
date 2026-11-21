@@ -1,0 +1,10 @@
+[Unit]
+Description=Detach Mi Pad 2 USB ACM before serial login shutdown
+After=mipad2-usb-serial.service serial-getty@ttyGS0.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStopSec=5s
+ExecStart=/usr/bin/true
+ExecStop=/usr/local/libexec/mipad2-usb-serial-quiesce
