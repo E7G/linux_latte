@@ -392,21 +392,9 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	if (ret)
 		return ret;
 
-	/*
-	 * 挂上插孔通知：耳机插入时给扬声器功放掉电（见 cht_jack_notify）。
-	 * 放在 set_jack_detect 之前，避免漏掉首次状态上报。
-	 */
-	ctx->jack_nb.notifier_call = cht_jack_notify;
-	snd_soc_jack_notifier_register(&ctx->headset, &ctx->jack_nb);
-
 	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_0, KEY_PLAYPAUSE);
 	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_1, KEY_VOLUMEUP);
 	snd_jack_set_key(ctx->headset.jack, SND_JACK_BTN_2, KEY_VOLUMEDOWN);
-
-	/* codec 侧注册 jack，插孔状态变化由 rt5659 的中断驱动 */
-	ret = rt5659_set_jack_detect(component, &ctx->headset);
-	if (ret)
-		return ret;
 
 	if (ctx->mclk) {
 		/*
@@ -456,7 +444,20 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 	snd_soc_dapm_enable_pin(snd_soc_card_to_dapm(card), "Int Mic");
 
 	snd_soc_dapm_sync(snd_soc_card_to_dapm(card));
-	return 0;
+
+	/* Register the notifier before the codec queues the initial report. */
+	ctx->jack_nb.notifier_call = cht_jack_notify;
+	snd_soc_jack_notifier_register(&ctx->headset, &ctx->jack_nb);
+	return rt5659_set_jack_detect(component, &ctx->headset);
+}
+
+static void cht_codec_exit(struct snd_soc_pcm_runtime *runtime)
+{
+	struct snd_soc_component *component = snd_soc_rtd_to_codec(runtime, 0)->component;
+	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(runtime->card);
+
+	rt5659_set_jack_detect(component, NULL);
+	snd_soc_jack_notifier_unregister(&ctx->headset, &ctx->jack_nb);
 }
 
 static int cht_codec_fixup(struct snd_soc_pcm_runtime *rtd,
@@ -626,6 +627,7 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.id = 0,
 		.no_pcm = 1,
 		.init = cht_codec_init,
+		.exit = cht_codec_exit,
 		.be_hw_params_fixup = cht_codec_fixup,
 		.ops = &cht_be_ssp2_ops,
 		SND_SOC_DAILINK_REG(ssp2_port, ssp2_codec, platform),

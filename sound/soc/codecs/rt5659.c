@@ -1328,22 +1328,19 @@ static int rt5659_button_detect(struct snd_soc_component *component)
 	return btn_type;
 }
 
+static bool rt5659_has_jack_detect(const struct rt5659_priv *rt5659)
+{
+	return rt5659->pdata.jd_src == RT5659_JD3 ||
+	       rt5659->pdata.jd_src == RT5659_JD_HDA_HEADER;
+}
+
 static irqreturn_t rt5659_irq(int irq, void *data)
 {
 	struct rt5659_priv *rt5659 = data;
 
-	int entry_is_empty = list_empty(&rt5659->jack_detect_work.work.entry);
-	printk("rt5659 [%s]: jack_detect_work entry is empty: %s\n", __func__, entry_is_empty? "true":"false");
-	if (!entry_is_empty){
-		printk("rt5659 [%s]: jack_detect_work func is %pS\n", __func__, rt5659->jack_detect_work.work.func);
-	}
-
-	if (rt5659->pdata.jd_src == RT5659_JD_NULL){
-		printk("rt5659 [%s]: rt5659->pdata.jd_src = RT5659_JD_NULL, jack_detect_work not init.", __func__);
-	} else {
+	if (rt5659_has_jack_detect(rt5659))
 		queue_delayed_work(system_power_efficient_wq,
-					&rt5659->jack_detect_work, msecs_to_jiffies(250));
-	}
+				   &rt5659->jack_detect_work, msecs_to_jiffies(250));
 
 	return IRQ_HANDLED;
 }
@@ -1353,9 +1350,24 @@ int rt5659_set_jack_detect(struct snd_soc_component *component,
 {
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
 
-	rt5659->hs_jack = hs_jack;
+	if (!rt5659_has_jack_detect(rt5659))
+		return 0;
 
-	rt5659_irq(0, rt5659);
+	if (hs_jack != rt5659->hs_jack) {
+		/* Drain reports before changing the card-owned jack pointer. */
+		if (rt5659->hs_jack)
+			disable_delayed_work_sync(&rt5659->jack_detect_work);
+
+		rt5659->hs_jack = hs_jack;
+		rt5659->jack_type = 0;
+		rt5659->hda_hp_plugged = false;
+		rt5659->hda_mic_plugged = false;
+		if (hs_jack)
+			enable_delayed_work(&rt5659->jack_detect_work);
+	}
+
+	if (hs_jack)
+		rt5659_irq(0, rt5659);
 
 	return 0;
 }
@@ -3710,6 +3722,7 @@ static void rt5659_remove(struct snd_soc_component *component)
 	struct rt5659_priv *rt5659 = snd_soc_component_get_drvdata(component);
 	int ret;
 
+	rt5659_set_jack_detect(component, NULL);
 	ret = regmap_write(rt5659->regmap, RT5659_RESET, 0);
 	if (ret)
 		dev_err(component->dev, "failed to reset codec: %d\n", ret);
@@ -4312,6 +4325,10 @@ static int rt5659_i2c_probe(struct i2c_client *i2c)
 	default:
 		break;
 	}
+
+	/* The IRQ may fire before the sound card supplies a jack. */
+	if (rt5659_has_jack_detect(rt5659))
+		disable_delayed_work(&rt5659->jack_detect_work);
 
 	if (i2c->irq) {
 		ret = devm_request_threaded_irq(&i2c->dev, i2c->irq, NULL,
