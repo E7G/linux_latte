@@ -1,0 +1,31 @@
+name: Mi Pad 2 suspend safety checks
+
+on:
+  pull_request:
+    branches: ['codex/mipad2-7.2-integrated']
+    paths:
+      - 'fix_file/tests/mipad2-suspend-test.sh'
+      - 'fix_file/tests/mipad2-suspend-host-test.py'
+      - '.github/workflows/mipad2-suspend-host.yml'
+  push:
+    branches: ['codex/mipad2-7.2-integrated']
+    paths:
+      - 'fix_file/tests/mipad2-suspend-test.sh'
+      - 'fix_file/tests/mipad2-suspend-host-test.py'
+      - '.github/workflows/mipad2-suspend-host.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  suspend-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Test suspend and RTC handling with simulated hardware
+        run: |
+          sh -n fix_file/tests/mipad2-suspend-test.sh
+          python3 -B fix_file/tests/mipad2-suspend-host-test.py

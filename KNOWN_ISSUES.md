@@ -112,6 +112,16 @@ sudo sh fix_file/tests/mipad2-hardware-smoke.sh
 
 注意 smoke test 主要验证设备枚举和接口存在性，不能替代实际播放、录音、传感器数据和摄像头采集测试。
 
+在 7.2.15 的真机对照中，LPAT17 有一轮约 19 秒的休眠没有增加 S0i3
+驻留时间，LPAT18 也出现过同样现象；后来 LPAT17 在同一启动中仍能进入 S0i3。
+这与“没有被定时叫醒”不同：后者有一次是诊断脚本把异步的休眠请求误当成
+休眠结束，在实际入睡前取消了 RTC 唤醒。
+
+7.2 分支的 `fix_file/tests/mipad2-suspend-test.sh` 是主动休眠测试，不是只读
+检查。脚本先确认没有阻止休眠的锁（包括串口调试），再经 logind 请求休眠；
+如果找不到成对的本次入睡／恢复日志，会保留定时唤醒，不擅自清除。
+只有确认本机 RTC 唤醒并读取到实际 S0i3 驻留增长时，才算通过。
+
 ## 4. USB gadget 依赖固件暴露可用 UDC
 
 内核 defconfig 已启用 DWC3 PCI dual-role、USB Gadget、ConfigFS ACM 和 gadget serial console 支持，但某些 Mi Pad 2 固件设置仍可能让 `/sys/class/udc/` 为空。
