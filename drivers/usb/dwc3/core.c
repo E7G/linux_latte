@@ -2470,6 +2470,7 @@ assert_reset:
 
 static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
 {
+	bool enabled_susphy = false;
 	u32 reg;
 	int i;
 	int ret;
@@ -2483,8 +2484,10 @@ static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
 		 * TI AM62 platform requires SUSPHY to be
 		 * enabled for system suspend to work.
 		 */
-		if (!dwc->susphy_state)
+		if (!dwc->susphy_state) {
 			dwc3_enable_susphy(dwc, true);
+			enabled_susphy = true;
+		}
 	}
 
 	switch (dwc->current_dr_role) {
@@ -2493,7 +2496,7 @@ static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
 			break;
 		ret = dwc3_gadget_suspend(dwc);
 		if (ret)
-			return ret;
+			goto restore_susphy;
 		synchronize_irq(dwc->irq_gadget);
 		dwc3_core_exit(dwc);
 		break;
@@ -2531,7 +2534,7 @@ static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
 		if (dwc->current_otg_role == DWC3_OTG_ROLE_DEVICE) {
 			ret = dwc3_gadget_suspend(dwc);
 			if (ret)
-				return ret;
+				goto restore_susphy;
 			synchronize_irq(dwc->irq_gadget);
 		}
 
@@ -2544,6 +2547,12 @@ static int dwc3_suspend_common(struct dwc3 *dwc, pm_message_t msg)
 	}
 
 	return 0;
+
+restore_susphy:
+	/* A failed suspend will not get a matching resume callback. */
+	if (enabled_susphy)
+		dwc3_enable_susphy(dwc, false);
+	return ret;
 }
 
 static int dwc3_resume_common(struct dwc3 *dwc, pm_message_t msg)
