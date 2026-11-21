@@ -38,6 +38,8 @@ on:
       - 'fix_file/tests/mipad2-7.2-r4-lifecycle-device-test.c'
       - 'fix_file/tests/mipad2-linear-420-payload-host-test.c'
       - 'fix_file/tests/mipad2-atomisp-format-metadata-host-test.py'
+      - 'fix_file/tests/mipad2-atomisp-packed-format-host-test.py'
+      - 'fix_file/tests/mipad2-atomisp-packed-format-device-test.c'
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
       - 'fix_file/tests/mipad2-csi-ready-host-test.py'
@@ -102,6 +104,10 @@ jobs:
         run: |
           CC="gcc -fsanitize=undefined -fno-sanitize-recover=undefined" \
             python3 -B fix_file/tests/mipad2-atomisp-format-metadata-host-test.py
+      - name: Verify AtomISP does not mislabel planar data as packed Y444
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-atomisp-packed-format-host-test.py
+          gcc -std=gnu11 -O2 -Wall -Wextra -Werror -fsyntax-only fix_file/tests/mipad2-atomisp-packed-format-device-test.c
       - name: Verify exact linear 4:2:0 payload used by the device lifecycle test
         run: |
           out=$(mktemp)
