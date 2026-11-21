@@ -33,8 +33,10 @@ done
 pmc=/sys/kernel/debug/pmc_atom/sleep_state
 rtc=/sys/class/rtc/rtc0
 irq=/sys/power/pm_wakeup_irq
+rtc_events=/sys/firmware/acpi/interrupts/ff_rt_clk
 [ -r "$pmc" ] && [ -r "$rtc/wakealarm" ] && [ -r "$rtc/since_epoch" ] &&
-[ -r "$irq" ] || fail_run "PMC, RTC or wake-IRQ evidence is unavailable"
+[ -r "$irq" ] && [ -r "$rtc_events" ] ||
+    fail_run "PMC, RTC fixed-event counter or wake-IRQ evidence is unavailable"
 
 umask 077
 exec 9>>/run/mipad2-suspend-test.lock
@@ -80,6 +82,16 @@ check_no_alarm()
     [ -z "$existing" ]
 }
 
+rtc_event_count()
+{
+    awk '
+        NR == 1 && $1 ~ /^[0-9]+$/ && $1 <= 4294967295 { count = $1 + 0; valid = 1 }
+        END {
+            if (NR != 1 || !valid) exit 1
+            printf "%.0f\n", count
+        }' "$rtc_events"
+}
+
 check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
 check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
 before=$(s0i3_us)
@@ -107,10 +119,14 @@ trap 'exit 1' HUP INT TERM
 printf 'INFO S0I3 before: %sus\n' "$before"
 printf 'INFO suspending for %ss with RTC wake\n' "$seconds"
 check_no_alarm || fail_run "RTC alarm state changed before arming"
+rtc_before=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter"
 rtcwake -d /dev/rtc0 -m no -s "$seconds"
 alarm=$(cat "$rtc/wakealarm")
 case "$alarm" in ''|*[!0-9]*) fail_run "RTC alarm could not be verified";; esac
 check_no_sleep_inhibitor || fail_run "Suspend became inhibited before the request"
+[ "$(cat "$rtc/wakealarm")" = "$alarm" ] &&
+[ "$(cat "$rtc/since_epoch")" -lt "$alarm" ] ||
+    fail_run "RTC alarm was replaced or elapsed before requesting suspend"
 sleep_queued=1
 systemctl --check-inhibitors=yes suspend || fail_run "Suspend request not confirmed; leaving RTC alarm intact"
 
@@ -142,11 +158,11 @@ while [ "$tries" -lt 45 ]; do
 done
 [ "$state" = resumed ] || fail_run "No complete suspend cycle; leaving RTC alarm intact"
 sleep_queued=0
-# On this board ACPI IRQ 9 delivers the RTC wake. The power button is
-# a separate GPIO interrupt. Also require the RTC alarm time to elapse.
+# RTC wakes on IRQ 9, shared by ACPI SCI and the INT0002 PME handler.
 rtc_now=$(cat "$rtc/since_epoch")
-[ "$(cat "$irq")" = 9 ] && [ "$rtc_now" -ge "$alarm" ] ||
-    fail_run "Suspend ended without the expected RTC wake"
+rtc_after=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter after resume"
+wake_irq=$(cat "$irq")
+expected_alarm=$alarm
 clear_own_alarm
 alarm=''
 after=$(s0i3_us)
@@ -154,6 +170,13 @@ after=$(s0i3_us)
 delta=$((after - before))
 printf 'INFO S0I3 after:  %sus\n' "$after"
 printf 'INFO S0I3 delta:  %sus\n' "$delta"
+printf 'INFO wake IRQ: %s; RTC fixed-event count: %s -> %s\n' "$wake_irq" "$rtc_before" "$rtc_after"
+[ "$wake_irq" = 9 ] && [ "$rtc_now" -ge "$expected_alarm" ] &&
+[ "$((rtc_after - rtc_before))" -eq 1 ] ||
+    fail_run "Suspend ended without corroborating evidence of an RTC wake"
+if printf '%s\n' "$resume_log" | grep -Eq '^ACPI: PM: (ACPI custom handler wakeup|ACPI non-EC GPE wakeup|Wakeup after ACPI Notify sync|Wakeup unrelated to ACPI SCI)$'; then
+    fail_run "Kernel reported a different wake source"
+fi
 
 # Allow for entry/exit latency but require most of the requested interval in S0i3.
 minimum=$((seconds * 700000))
