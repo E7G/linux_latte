@@ -122,6 +122,19 @@ sudo sh fix_file/tests/mipad2-hardware-smoke.sh
 如果找不到成对的本次入睡／恢复日志，会保留定时唤醒，不擅自清除。
 只有确认本机 RTC 唤醒并读取到实际 S0i3 驻留增长时，才算通过。
 
+用 USB 串口调试时，先在平板上开启临时防休眠锁。例如从仓库目录运行：
+
+```sh
+sudo python3 fix_file/tests/mipad2-serial-debug-awake.py start 60
+python3 fix_file/tests/mipad2-serial-debug-awake.py status
+```
+
+该命令通过 systemd/logind 锁定休眠和自动空闲操作，SSH 断开不影响，超时
+自动释放，不修改平板默认电源设置。已持有的锁不会被重新启动或续期。
+确认调试结束后，可运行
+`sudo python3 fix_file/tests/mipad2-serial-debug-awake.py stop` 提前释放这一把锁。
+其他程序持有的锁不受影响。不要绕过锁运行主动休眠测试。
+
 ## 4. USB gadget 依赖固件暴露可用 UDC
 
 内核 defconfig 已启用 DWC3 PCI dual-role、USB Gadget、ConfigFS ACM 和 gadget serial console 支持，但某些 Mi Pad 2 固件设置仍可能让 `/sys/class/udc/` 为空。
