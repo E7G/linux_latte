@@ -54,6 +54,8 @@ static int tfaContWriteFilesVstep(struct tfa98xx *tfa, int profile, int step)
 { (void)tfa; (void)profile; (void)step; return volume_error; }
 static int tfa98xx_unmute(struct tfa98xx *tfa)
 { (void)tfa; unmutes++; return unmute_error; }
+static int tfa98xx_require_calibration(struct tfa98xx *tfa)
+{ (void)tfa; return 0; }
 static int tfa98xx_dsp_stop(struct tfa98xx *tfa)
 { (void)tfa; stops++; hw_pwdn = 1; return 0; }
 """

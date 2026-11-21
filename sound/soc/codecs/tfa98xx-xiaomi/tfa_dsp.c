@@ -24,6 +24,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/pm.h>
+#include <linux/regmap.h>
 #include <linux/slab.h>
 #include <linux/crc32.h>
 
@@ -51,7 +52,6 @@
  * are application specific.
  */
 #define TFA98XX_WAITRESULT_NTRIES	50
-#define TFA98XX_WAITRESULT_NTRIES_WAIT	200
 #define TFA98XX_WAITRESULT_NTRIES_LONG	2000
 
 
@@ -93,34 +93,18 @@
  */
 int tfaRunWriteBitfield(struct tfa98xx *tfa98xx,  struct nxpTfaBitfield bf)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 value, oldvalue, msk, tmp;
+	u16 msk;
 	union {
 		u16 field;
 		struct nxpTfaBfEnum Enum;
 	} bfUni;
 
-	value = bf.value;
 	bfUni.field = bf.field;
-	/* bfUni.field  &= 0x7fff; */ /* mask of high bit, done before */
-
-	pr_debug("bitfield: %s=%d (0x%x[%d..%d]=0x%x)\n",
-		 tfaContBfName(bfUni.field), value, bfUni.Enum.address,
-		 bfUni.Enum.pos, bfUni.Enum.pos+bfUni.Enum.len, value);
-	if (((struct nxpTfaBfEnum *)&bf.field)->address & 0x80)
-		pr_err("WARNING:not a persistant write of MTP\n");
-
-	oldvalue = (u16)snd_soc_component_read(component, bfUni.Enum.address);
-	tmp = oldvalue;
-
-	msk = ((1 << (bfUni.Enum.len + 1)) - 1) << bfUni.Enum.pos;
-	oldvalue &= ~msk;
-	oldvalue |= value << bfUni.Enum.pos;
-	pr_debug("bitfield: %s=%d (0x%x -> 0x%x)\n", tfaContBfName(bfUni.field),
-		 value, tmp, oldvalue);
-	snd_soc_component_write(component, bfUni.Enum.address, oldvalue);
-
-	return 0;
+	if (bfUni.Enum.pos + bfUni.Enum.len >= 16)
+		return -EINVAL;
+	msk = GENMASK(bfUni.Enum.pos + bfUni.Enum.len, bfUni.Enum.pos);
+	return regmap_write_bits(tfa98xx->regmap, bfUni.Enum.address, msk,
+				 (unsigned int)bf.value << bfUni.Enum.pos);
 }
 
 /*
@@ -129,19 +113,8 @@ int tfaRunWriteBitfield(struct tfa98xx *tfa98xx,  struct nxpTfaBitfield bf)
  */
 int tfaRunWriteRegister(struct tfa98xx *tfa98xx, struct nxpTfaRegpatch *reg)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 value, newvalue;
-
-	pr_debug("register: 0x%02x=0x%04x (msk=0x%04x)\n", reg->address,
-		 reg->value, reg->mask);
-
-	value = (u16)snd_soc_component_read(component, reg->address);
-	value &= ~reg->mask;
-	newvalue = reg->value & reg->mask;
-	value |= newvalue;
-	snd_soc_component_write(component, reg->address, value);
-
-	return 0;
+	return regmap_write_bits(tfa98xx->regmap, reg->address, reg->mask,
+				 reg->value);
 }
 
 /*
@@ -155,18 +128,14 @@ int tfaRunWriteRegister(struct tfa98xx *tfa98xx, struct nxpTfaRegpatch *reg)
  */
 static int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	int ret = 0;
-	u16 status, mtp0, sysctrl;
-	int tries;
+	unsigned int status, mtp0;
+	int ret, tries;
 
 	*ready = 0;
 
-	/* check the contents of the STATUS register */
-	status = (u16)snd_soc_component_read(component, TFA98XX_STATUSREG);
-	sysctrl = (u16)snd_soc_component_read(component, TFA98XX_SYS_CTRL);
-
-	pr_debug("statusreg = 0x%04x, sysctrl=0x%04x\n", status, sysctrl);
+	ret = regmap_read(tfa98xx->regmap, TFA98XX_STATUSREG, &status);
+	if (ret)
+		return ret;
 
 	/*
 	 * if AMPS is set then we were already configured and running
@@ -198,7 +167,11 @@ static int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
 	 *   2 times retry avoids catching this short mtpbusy active period
 	 */
 	for (tries = 2; tries > 0; tries--) {
-		status = (u16)snd_soc_component_read(component, TFA98XX_STATUSREG);
+		ret = regmap_read(tfa98xx->regmap, TFA98XX_STATUSREG, &status);
+		if (ret) {
+			*ready = 0;
+			return ret;
+		}
 		/* check the contents of the STATUS register */
 		*ready = (status & TFA98XX_STATUSREG_MTPB_MSK) == 0;
 		if (*ready)	/* if ready go on */
@@ -214,12 +187,16 @@ static int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
 	 * check the contents of  MTP register for non-zero,
 	 * this indicates that the subsys is ready
 	 */
-	mtp0 = (u16)snd_soc_component_read(component, 0x84);
+	ret = regmap_read(tfa98xx->regmap, 0x84, &mtp0);
+	if (ret) {
+		*ready = 0;
+		return ret;
+	}
 
 	*ready = (mtp0 != 0);	/* The MTP register written? */
 	pr_debug("MTP0 %d\n", *ready);
 
-	return ret;
+	return 0;
 }
 
 /*
@@ -227,8 +204,7 @@ static int tfa98xx_dsp_system_stable(struct tfa98xx *tfa98xx, int *ready)
  */
 static int tfa98xx_clockgating(struct tfa98xx *tfa98xx, int on)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 value;
+	unsigned int mask = TFA98XX_CURRENTSENSE4_CTRL_CLKGATECFOFF;
 
 	pr_debug("%d\n", on);
 
@@ -236,15 +212,8 @@ static int tfa98xx_clockgating(struct tfa98xx *tfa98xx, int on)
 	if (tfa98xx->rev != REV_TFA9890)
 		return 0;
 
-	/* TFA9890: temporarily disable clock gating when dsp reset is used */
-	value = snd_soc_component_read(component, TFA98XX_CURRENTSENSE4);
-
-	if (on)	/* clock gating on - clear the bit */
-		value &= ~TFA98XX_CURRENTSENSE4_CTRL_CLKGATECFOFF;
-	else	/* clock gating off - set the bit */
-		value |= TFA98XX_CURRENTSENSE4_CTRL_CLKGATECFOFF;
-
-	return snd_soc_component_write(component, TFA98XX_CURRENTSENSE4, value);
+	return regmap_write_bits(tfa98xx->regmap, TFA98XX_CURRENTSENSE4,
+				 mask, on ? 0 : mask);
 }
 
 /*
@@ -253,24 +222,20 @@ static int tfa98xx_clockgating(struct tfa98xx *tfa98xx, int on)
  */
 static int tfa98xx_dsp_reset(struct tfa98xx *tfa98xx, int state)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 value;
+	unsigned int mask = TFA98XX_CF_CONTROLS_RST_MSK;
+	int ret, restore;
 
 	pr_debug("\n");
 
 	/* TFA9890: temporarily disable clock gating when dsp reset is used */
-	tfa98xx_clockgating(tfa98xx, 0);
+	ret = tfa98xx_clockgating(tfa98xx, 0);
+	if (!ret)
+		ret = regmap_write_bits(tfa98xx->regmap, TFA98XX_CF_CONTROLS,
+					mask, state ? mask : 0);
 
-	value = snd_soc_component_read(component, TFA98XX_CF_CONTROLS);
-
-	/* set requested the DSP reset signal state */
-	value = state ? (value | TFA98XX_CF_CONTROLS_RST_MSK) :
-			(value & ~TFA98XX_CF_CONTROLS_RST_MSK);
-
-	snd_soc_component_write(component, TFA98XX_CF_CONTROLS, value);
-
-	/* clock gating restore */
-	return tfa98xx_clockgating(tfa98xx, 1);
+	/* A failed bus write may still have taken effect. */
+	restore = tfa98xx_clockgating(tfa98xx, 1);
+	return ret ?: restore;
 }
 
 int tfa98xx_powerdown(struct tfa98xx *tfa98xx, int powerdown)
@@ -574,51 +539,6 @@ static int tfa98xx_dsp_reset_count(struct tfa98xx *tfa98xx)
 	return count;
 }
 
-/*
- * wait for calibrate done
- */
-static int tfa98xx_wait_calibration(struct tfa98xx *tfa98xx, int *done)
-{
-	struct snd_soc_component *component = tfa98xx->component;
-	int ret = 0;
-	int tries = 0;
-	u16 mtp;
-
-	*done = 0;
-
-	mtp = snd_soc_component_read(component, TFA98XX_MTP);
-
-	pr_debug("TFA98XX_MTP 0x%04x\n", mtp);
-
-	/* in case of calibrate once wait for MTPEX */
-	if (mtp & TFA98XX_MTP_MTPOTC) {
-		pr_debug("calibrate once wait for MTPEX\n");
-		while ((*done == 0) && (tries < TFA98XX_WAITRESULT_NTRIES_WAIT)) {
-			msleep_interruptible(5);
-			mtp = snd_soc_component_read(component, TFA98XX_MTP);
-			/* check MTP bit1 (MTPEX) */
-			*done = (mtp & TFA98XX_MTP_MTPEX);
-			tries++;
-		}
-	} else { /* poll xmem for calibrate always */
-		pr_debug("poll xmem for calibrate always\n");
-		while ((*done == 0) && (tries < TFA98XX_WAITRESULT_NTRIES_WAIT)) {
-			msleep_interruptible(5);
-			ret = tfa98xx_dsp_read_mem(tfa98xx,
-						   TFA98XX_XMEM_CALIBRATION_DONE,
-						   1, done);
-			tries++;
-		}
-	}
-
-	if (tries == TFA98XX_WAITRESULT_NTRIES_WAIT) {
-		pr_err("Calibrate Done timedout\n");
-		return -ETIMEDOUT;
-	}
-
-	return ret;
-}
-
 static int tfa9887_specific(struct tfa98xx *tfa98xx)
 {
 	struct snd_soc_component *component = tfa98xx->component;
@@ -785,40 +705,6 @@ static int tfa98xx_init(struct tfa98xx *tfa98xx)
 	return ret;
 }
 
-/* NXP: Only restore I2C registers */
-static int tfa98xx_restore_i2cmtp(struct tfa98xx *tfa98xx)
-{
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 readValue;
-
-	pr_err("%s\n", __func__);
-
-	snd_soc_component_write(component, 0x40, 0x5a6b);
-	readValue = (u16)snd_soc_component_read(component, 0x8b);
-
-	readValue ^= 0x5a;
-
-	snd_soc_component_write(component, 0x60, readValue);
-	snd_soc_component_write(component, 0x0b, 0x5A);
-
-	snd_soc_component_write(component, 0x81, 0xF800);
-	snd_soc_component_write(component, 0x82, 0x414);
-	snd_soc_component_write(component, 0x84, 0x3F40);
-	snd_soc_component_write(component, 0x85, 0x0);
-	snd_soc_component_write(component, 0x86, 0x0);
-	snd_soc_component_write(component, 0x87, 0x0);
-	snd_soc_component_write(component, 0x8a, 0x5555);
-	snd_soc_component_write(component, 0x8b, 0xAAAA);
-	snd_soc_component_write(component, 0x8c, 0x5555);
-	snd_soc_component_write(component, 0x8d, 0xAAAA);
-
-	snd_soc_component_write(component, 0x60, 0x0);
-	snd_soc_component_write(component, 0x40, 0x0);
-
-	return 0;
-}
-
-
 /*
  * start the clocks and wait until the AMP is switching
  * on return the DSP sub system will be ready for loading
@@ -826,7 +712,6 @@ static int tfa98xx_restore_i2cmtp(struct tfa98xx *tfa98xx)
 static int tfa98xx_startup(struct tfa98xx *tfa98xx)
 {
 	int tries, status, ret;
-	int mtp0;
 
 	pr_debug("\n");
 
@@ -900,27 +785,8 @@ static int tfa98xx_startup(struct tfa98xx *tfa98xx)
 		msleep(1);
 	}
 
-	if (tries == CFSTABLE_TRIES) {
-		 pr_err("tfa98xx_dsp_system_stable Time out\n");
-		/*
-		* check the contents of  MTP register for non-zero,
-		* this indicates that the subsys is ready
-		*/
-		mtp0 = snd_soc_component_read(tfa98xx->component, 0x84);
-		if (mtp0 < 0)
-			return mtp0;
-
-		/* NXP: if 0x84 is wrong, restore the correct mtp settings */
-		if (!mtp0) {
-			pr_err("nxp: mtp0 incident before calibration.\n");
-			ret = tfa98xx_restore_i2cmtp(tfa98xx);
-			if (ret)
-				return ret;
-		}
+	if (tries == CFSTABLE_TRIES)
 		return -ETIMEDOUT;
-	}  else {
-		pr_debug("OK (tries=%d)\n", tries);
-	}
 
 	/* the CF subsystem is enabled */
 	pr_debug("reset count:0x%x\n", tfa98xx_dsp_reset_count(tfa98xx));
@@ -960,27 +826,43 @@ int tfa98xx_is_pwdn(struct tfa98xx *tfa98xx)
 }
 
 /*
- * report if device has been calibrated
+ * Playback may use the stored factory calibration, but must never schedule
+ * a new measurement or copy calibration data to MTP. Both flags are
+ * required: EX alone does not select the stored-calibration path.
  */
-static int tfaIsCalibrated(struct tfa98xx *tfa98xx)
+static int tfa98xx_require_calibration(struct tfa98xx *tfa98xx)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 status;
+	const unsigned int required = TFA98XX_MTP_MTPOTC | TFA98XX_MTP_MTPEX;
+	unsigned int status, mtp;
+	int ret;
 
-	status = snd_soc_component_read(component, TFA98XX_KEY2_PROTECTED_SPKR_CAL_MTP);
+	ret = regmap_read(tfa98xx->regmap, TFA98XX_STATUSREG, &status);
+	if (ret)
+		return ret;
+	if (status & TFA98XX_STATUSREG_MTPB_MSK)
+		return -EBUSY;
 
-	pr_debug("MTPEX %d\n", (status & TFA98XX_KEY2_PROTECTED_SPKR_CAL_MTP_MTPEX) != 0);
+	ret = regmap_read(tfa98xx->regmap, TFA98XX_MTP, &mtp);
+	if (ret)
+		return ret;
+	if ((mtp & required) != required || mtp == U16_MAX) {
+		dev_err_ratelimited(&tfa98xx->i2c->dev,
+				    "stored speaker calibration unavailable\n");
+		return -ENODATA;
+	}
 
-	return ((status & TFA98XX_KEY2_PROTECTED_SPKR_CAL_MTP_MTPEX) != 0);
+	return 0;
 }
 
 int tfa98xx_is_amp_running(struct tfa98xx *tfa98xx)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 status;
+	unsigned int status;
+	int ret;
 
 	/* check status SWS bit to set */
-	status = snd_soc_component_read(component, TFA98XX_STATUSREG);
+	ret = regmap_read(tfa98xx->regmap, TFA98XX_STATUSREG, &status);
+	if (ret)
+		return ret;
 
 	pr_debug("SWS %d\n", (status & TFA98XX_STATUSREG_SWS_MSK) != 0);
 
@@ -1017,30 +899,22 @@ static int tfa98xx_coldboot(struct tfa98xx *tfa98xx, int state)
  */
 int tfa98xx_dsp_power_up(struct tfa98xx *tfa98xx)
 {
-	int ret = 0;
-	int tries, status;
+	int tries, status, ret;
 
-	pr_debug("\n");
-
-	/* power on the sub system */
 	ret = tfa98xx_powerdown(tfa98xx, 0);
+	if (ret)
+		return ret;
 
-	pr_debug("Waiting for DSP system stable...\n");
-
-	/* wait until everything is stable, in case clock has been off */
 	for (tries = CFSTABLE_TRIES; tries > 0; tries--) {
 		ret = tfa98xx_dsp_system_stable(tfa98xx, &status);
+		if (ret)
+			return ret;
 		if (status)
-			break;
+			return 0;
 	}
 
-	if (tries == 0) {
-		/* timedout */
-		pr_err("DSP subsystem start timed out\n");
-		return -ETIMEDOUT;
-	}
-
-	return ret;
+	pr_err("DSP subsystem start timed out\n");
+	return -ETIMEDOUT;
 }
 
 /*
@@ -1117,18 +991,15 @@ static int tfa98xx_process_patch_file(struct tfa98xx *tfa98xx, int len, const u8
 	 */
 	index = 0;
 	while (index < len) {
+		if (len - index < 2)
+			return -EINVAL;
+
 		/* extract little endian length */
 		size = data[index] + data[index + 1] * 256;
-		if (size > TFA98XX_MAX_I2C_SIZE)
-			pr_err("Patch chunk size %d > %d\n", size,
-				TFA98XX_MAX_I2C_SIZE);
-
 		index += 2;
 
-		if ((index + size) > len) {
-			/* outside the buffer, error in the input data */
+		if (size < 2 || size > TFA98XX_MAX_I2C_SIZE || size > len - index)
 			return -EINVAL;
-		}
 
 		/*
 		 * Need to copy data from the fw into local memory to avoid
@@ -1175,17 +1046,9 @@ int tfa98xx_dsp_patch(struct tfa98xx *tfa98xx, int patchLength,
 
 static int tfa98xx_set_configured(struct tfa98xx *tfa98xx)
 {
-	struct snd_soc_component *component = tfa98xx->component;
-	u16 value;
-
-	pr_debug("\n");
-
-	/* read the SystemControl register, modify the bit and write again */
-	value = snd_soc_component_read(component, TFA98XX_SYS_CTRL);
-	value |= TFA98XX_SYS_CTRL_SBSL_MSK;
-	snd_soc_component_write(component, TFA98XX_SYS_CTRL, value);
-
-	return 0;
+	return regmap_write_bits(tfa98xx->regmap, TFA98XX_SYS_CTRL,
+				 TFA98XX_SYS_CTRL_SBSL_MSK,
+				 TFA98XX_SYS_CTRL_SBSL_MSK);
 }
 
 #define TO_LONG_LONG(x)	((s64)(x)<<32)
@@ -2169,6 +2032,10 @@ static int tfaRunStartDSP(struct tfa98xx *tfa98xx)
 {
 	int ret;
 
+	ret = tfa98xx_require_calibration(tfa98xx);
+	if (ret)
+		return ret;
+
 	ret = tfaContWritePatch(tfa98xx);
 	if (ret) {
 		pr_err("Error, writing patch failed (%d)\n", ret);
@@ -2205,60 +2072,6 @@ static int tfaRunColdStartup(struct tfa98xx *tfa98xx)
 	return ret;
 }
 
-/* write this fuction to keep PA working when it never be done calibration */
-static int tfaRunSetCalibrateOnce(struct tfa98xx *tfa98xx)
-{
-    struct snd_soc_component *component = tfa98xx->component;
-	int mtp, status;
-	int tries = 0;
-	int err, lock_err;
-
-	/* Read MTP Register */
-	mtp = snd_soc_component_read(component, TFA98XX_MTP);
-	if (mtp < 0)
-		return mtp;
-	if ((mtp & TFA98XX_MTP_MTPOTC) == 0) {
-		/* Setting sequence for MTPOTC one time calibration */
-		err = snd_soc_component_write(component, 0x0b, 0x5A);
-		if (err)
-			return err;
-		err = snd_soc_component_write(component, TFA98XX_MTP, 0x01);
-		if (err)
-			goto lock_mtp;
-		err = snd_soc_component_write(component, 0x62, 0x800);
-		if (err)
-			goto lock_mtp;
-
-		for (tries = 0; tries < TFA98XX_WAITRESULT_NTRIES; tries++) {
-			msleep(10);
-			/* Check if MTP is still busy */
-			status = snd_soc_component_read(component, TFA98XX_STATUSREG);
-			if (status < 0) {
-				err = status;
-				goto lock_mtp;
-			}
-			if (!(status & TFA98XX_STATUSREG_MTPB_MSK))
-				break;
-		}
-		if (tries == TFA98XX_WAITRESULT_NTRIES)
-			err = -ETIMEDOUT;
-		else
-			err = 0;
-
-	lock_mtp:
-		lock_err = snd_soc_component_write(component, 0x0b, 0x0);
-		if (!err)
-			err = lock_err;
-		if (err == -ETIMEDOUT)
-			pr_err("Wait for MTPB timed out\n");
-		if (err)
-			return err;
-	}
-
-	return 0;
-}
-
-
 static int coldboot;
 module_param(coldboot, int, S_IRUGO | S_IWUSR);
 
@@ -2280,8 +2093,6 @@ static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 	}
 
 	if (force || tfa98xx_is_coldboot(tfa98xx)) {
-		int done;
-
 		pr_debug("coldstart%s\n", force ? " (forced)" : "");
 
 		/* in case of force CF already runnning */
@@ -2304,11 +2115,6 @@ static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 		 *   no DSP reset/sample rate may be done until configured
 		 *   (SBSL)
 		 */
-
-		/* Set calibrate MTPOTC to 1 if it's not calibrated */
-		ret = tfaRunSetCalibrateOnce(tfa98xx);
-		if (ret)
-			return ret;
 
 		/* soft mute */
 		ret = tfa98xx_set_mute(tfa98xx, Tfa98xx_Mute_Digital);
@@ -2346,6 +2152,11 @@ static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 			return ret;
 		}
 
+		/* Do not configure the DSP if the stored flags changed. */
+		ret = tfa98xx_require_calibration(tfa98xx);
+		if (ret)
+			return ret;
+
 		/* tell DSP it's loaded SBSL = 1 */
 		ret = tfa98xx_set_configured(tfa98xx);
 		if (ret) {
@@ -2353,38 +2164,12 @@ static int tfaRunSpeakerBoost(struct tfa98xx *tfa98xx, int force)
 			return ret;
 		}
 
-		/* await calibration, this should return ok */
-		ret = tfa98xx_wait_calibration(tfa98xx, &done);
-		if (ret && ret != -ETIMEDOUT)
-			return ret;
-		if (!done) {
-			pr_err("Calibration not done!\n");
-			/*
-			 * Don't return on timeout, otherwise we cannot power
-			 * down the DSP
-			 */
-		} else {
-			pr_debug("Calibration done\n");
-		}
-
-	} else {
-		/* already warm, so just pwr on */
-		ret = tfa98xx_dsp_power_up(tfa98xx);
+		/* Retain the first settling interval of the old MTP poll. */
+		msleep(5);
+		return 0;
 	}
 
-
-
-	if (!tfaIsCalibrated(tfa98xx)) {
-		pr_err("Not calibrated, power down devcie\n");
-		ret = tfa98xx_powerdown(tfa98xx, 1);
-		if (ret)
-			return ret;
-
-		return -EINVAL;
-	}
-
-
-	return 0;
+	return tfa98xx_dsp_power_up(tfa98xx);
 }
 
 int tfa98xx_dsp_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
@@ -2453,6 +2238,10 @@ int tfa98xx_dsp_start(struct tfa98xx *tfa98xx, int next_profile, int vstep)
 			}
 		}
 	}
+
+	ret = tfa98xx_require_calibration(tfa98xx);
+	if (ret)
+		goto rollback_state;
 
 	ret = tfa98xx_unmute(tfa98xx);
 	if (ret)

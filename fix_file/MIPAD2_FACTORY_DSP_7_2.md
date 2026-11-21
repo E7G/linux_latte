@@ -108,3 +108,96 @@ Current tablet postflight retains stock tfa989x/Left0Right1/closedPCM,686 protec
 files and35private aliases unchanged, no new kernel faults. Raw kernel/UART/pointer
 and media evidence stays tablet-private. Old freeze/failed-reset DMA, full image,
 optical/acoustic/long-stability goals remain open; no default/OEM/task promotion.
+
+## 7.2.15: use existing speaker calibration without provisioning it
+
+The [pinned Android DSP source](https://github.com/latte-dev/android_kernel_xiaomi_latte/blob/d2afb1de9a761ff01dafdf9efe4736e521ab71f6/sound/soc/codecs/tfa_dsp.c)
+scheduled one-time MTP calibration during ordinary playback startup and
+substituted hard-coded MTP shadow values when DSP readiness timed out. Do
+not copy those policies into a desktop boot or resume path. The Windows
+Realtek I2S INF confirms the RT5659/1D721502 match but supplies no basis
+for provisioning, changing or measuring amplifier calibration from Linux.
+
+The optional driver now requires nonbusy MTP and both stored-calibration
+flags before starting the DSP and again before enabling its configured
+output or unmuting. A read or configuration error fails the start and
+uses the existing mute/power-down path. Missing calibration, a clock
+timeout or an all-ones read never generates a substitute calibration.
+Register-map writes and raw firmware transfers reject the MTP key,
+control and shadow register ranges; the CoolFlux data port remains usable
+for the factory patch. The driver's deferred probe and the default stock
+TFA989X configuration are unchanged.
+
+Run `tests/mipad2-tfa-calibration-policy-test.py` with GCC or Clang.
+The harness executes production policy and start code against a simulated
+bus: 65,536 calibration values, 257 register decisions and five cold/warm
+start paths, including failure and rollback before unmute. Optionally set
+`MIPAD2_FACTORY_CNT` to the [pinned Android vendor container](https://github.com/latte-dev/android_vendor_xiaomi_latte/blob/aaf390134608e033e8c5b545568e68dab1ed2bdf/proprietary/etc/firmware/tfa98xx.cnt)
+whose digest matches the prior tablet read. It checks 38 device/profile
+register descriptors and 44 raw patch transactions through the real
+guard and parser. No proprietary payload is copied into this tree.
+
+These tests do not prove either physical amp has usable calibration,
+accepts the stored flags after reset, runs CoolFlux or produces sound.
+Read both AMP states via the owning driver in a deferred one-shot
+candidate before any DSP playback. Keep the stock backend if either amp
+does not meet the gate; do not auto-provision it. DSP-aware UCM and the
+physical stereo, headphone/mic and suspend/resume gates remain open.
+
+## DSP-aware UCM candidate
+
+`mipad2-alsa-ucm 20260830-9` recognizes the optional factory codec without
+requiring changes to the two bypass layouts needed by the running and
+rollback kernels. The master configuration requires both matching music
+enums and both Stop elements before it accepts the factory ABI. A partial,
+mixed, or mislabelled factory control layout fails at the parse step
+before it can change a mixer.
+
+With the optional ABI, speaker enable explicitly disables the speaker
+path before selecting `musicL` and `musicR`, then enables it through
+the existing RT5659/DAPM path. It retains the RT5659 DAC1 mixer for
+user volume, does not write the single-step factory volumes or Stop
+controls, and does not start DSP outside the kernel clock lifecycle.
+Headphone and microphone sequences are unchanged.
+
+- Real libasound 1.2.16.1 (Arch snapshot) and 1.2.15.3 (upstream source),
+  normal and optimized harness: 17 layouts per run, including 13
+  rejected with zero writes. All eight bypass cases have exactly the
+  same complete write sequences/results as pkgrel8. Both wrong
+  channel/profile mutations were distinguished from valid routing.
+- Arch `makepkg` verified package source hashes and all five archived
+  payload files matched. In a disposable ALPM root, upgrading the rebuilt
+  pkgrel8 to pkgrel9 and downgrading to pkgrel8 restored both original
+  ALSA configurations and removed the two new includes; `pacman -Qkk`
+  reported zero altered files after each transaction.
+
+This is a staged companion, not a driver deployment. Verify calibration
+of both amps and the real ALSA control ABI on the deferred one-shot
+7.2.15 kernel. Only then exercise DAPM, low-volume stereo, microphone,
+headset and suspend/resume; pkgrel8 remains the bypass rollback.
+
+## Factory mixer ABI and worker follow-up
+
+Read and write the ALSA enumerated slot for `Profile`, not the
+integer union member. A changed selection returns 1 so the ALSA
+control core sends the notification. Use the previously selected
+profile for volume step scaling when several changes are staged
+before the DSP powers up.
+
+Protect selected profile and volume with the same mutex as DSP
+startup and shutdown. Mixer writes update hardware only if the
+route is still active, the monitor is enabled, initialization has
+succeeded, and the amplifier reports active switching. Propagate a
+switching-status read error or DSP failure without publishing a new
+selection. Once the stored calibration check yields `-ENODATA`,
+the monitor and queued starts stop trying until the speaker route
+is stopped and explicitly started again. I/O errors and temporary
+clock failures are still eligible for the normal recovery path.
+
+`tests/mipad2-tfa-profile-control-test.py` exercises the actual 7.2
+control layout with the production callbacks and a simulated bus,
+including 32 live-route combinations, independent channels, enum
+slot width, staged volume steps and rollback. The worker fixture
+checks that 20 repeat monitor/worker calls do not read or repower
+an uncalibrated device and that a later valid route can start again.
+These tests do not claim physical DSP timing or live-switch sound.

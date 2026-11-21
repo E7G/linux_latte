@@ -29,13 +29,34 @@ static const struct ctl_def defs[]={{"DAC1 Playback Switch",0,{}},
 {"Amp Input",2,{"Left","Right"}},
 {"Amp Input1",2,{"Left","Right"}},
 {"Left Amp Input",2,{"Left","Right"}},
-{"Right Amp Input",2,{"Left","Right"}}};
+{"Right Amp Input",2,{"Left","Right"}},
+{"Left Profile",3,{"speechL","musicL","bypassL"}},
+{"Right Profile",3,{"speechR","bypassR","musicR"}},
+{"Left Stop",0,{}},
+{"Right Stop",0,{}},
+{"Left Master Volume",0,{}},
+{"Right Master Volume",0,{}}};
 static long values[128][2];
 struct fake {snd_ctl_ext_t ext;};
 static int present(unsigned i){
  const char *n=defs[i].name,*mode=getenv("MP2_CTL_LAYOUT");
  int old=!strcmp(n,"Amp Input")||!strcmp(n,"Amp Input1");
  int modern=!strcmp(n,"Left Amp Input")||!strcmp(n,"Right Amp Input");
+ int factory=strstr(n," Profile")||strstr(n," Stop")||strstr(n," Master Volume");
+ if(!strncmp(mode,"factory",7)){
+  if(!strcmp(mode,"factory_stop_only_mixed")){
+   if(factory)return strstr(n," Stop")!=NULL;
+   return !old;
+  }
+  if(old||modern)
+   return (!strcmp(mode,"factory_mixed_modern")&&!strcmp(n,"Left Amp Input"))||
+          (!strcmp(mode,"factory_mixed_legacy")&&!strcmp(n,"Amp Input1"));
+  if(!strcmp(mode,"factory_no_left")&&!strcmp(n,"Left Profile"))return 0;
+  if(!strcmp(mode,"factory_no_right")&&!strcmp(n,"Right Profile"))return 0;
+  if(!strcmp(mode,"factory_no_stop")&&!strcmp(n,"Right Stop"))return 0;
+  return 1;
+ }
+ if(factory)return 0;
  if(!strcmp(mode,"legacy"))return !modern;
  if(!strcmp(mode,"modern"))return !old;
  if(!strcmp(mode,"missing_right"))return !old&&strcmp(n,"Right Amp Input");
@@ -54,12 +75,19 @@ static snd_ctl_ext_key_t find_ctl(snd_ctl_ext_t *e,const snd_ctl_elem_id_t *id){
  (void)e;unsigned num=snd_ctl_elem_id_get_numid(id);for(unsigned i=0;i<sizeof(defs)/sizeof(defs[0]);i++)if(present(i)&&((num&&num==i+1)||(!num&&!strcmp(snd_ctl_elem_id_get_name(id),defs[i].name))))return i;return SND_CTL_EXT_KEY_NOT_FOUND;
 }
 static int attr(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,int *t,unsigned *acc,unsigned *count){
- (void)e;*acc=SND_CTL_EXT_ACCESS_READWRITE;*count=1;*t=defs[k].items?SND_CTL_ELEM_TYPE_ENUMERATED:strstr(defs[k].name,"Switch")?SND_CTL_ELEM_TYPE_BOOLEAN:SND_CTL_ELEM_TYPE_INTEGER;
+ (void)e;*acc=SND_CTL_EXT_ACCESS_READWRITE;*count=1;*t=defs[k].items?SND_CTL_ELEM_TYPE_ENUMERATED:(strstr(defs[k].name,"Switch")||strstr(defs[k].name," Stop"))?SND_CTL_ELEM_TYPE_BOOLEAN:SND_CTL_ELEM_TYPE_INTEGER;
  if(strstr(defs[k].name,"Capture Volume"))*count=2;return 0;
 }
-static int int_info(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,long *a,long *b,long *step){(void)e;(void)k;*a=0;*b=100;*step=1;return 0;}
+static int int_info(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,long *a,long *b,long *step){(void)e;*a=0;*b=strstr(defs[k].name," Master Volume")?0:100;*step=1;return 0;}
 static int enum_info(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,unsigned *n){(void)e;*n=defs[k].items;return 0;}
-static int enum_name(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,unsigned item,char *dst,size_t n){(void)e;if(item>=defs[k].items)return -EINVAL;snprintf(dst,n,"%s",defs[k].labels[item]);return 0;}
+static int enum_name(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,unsigned item,char *dst,size_t n){
+ (void)e;if(item>=defs[k].items)return -EINVAL;
+ const char *label=defs[k].labels[item],*mode=getenv("MP2_CTL_LAYOUT");
+ if((!strcmp(mode,"factory_wrong_left")&&!strcmp(label,"musicL"))||
+    (!strcmp(mode,"factory_wrong_right")&&!strcmp(label,"musicR")))
+  label="unexpected";
+ snprintf(dst,n,"%s",label);return 0;
+}
 static int read_int(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,long *v){(void)e;v[0]=values[k][0];if(strstr(defs[k].name,"Capture Volume"))v[1]=values[k][1];return 0;}
 static int read_enum(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,unsigned *v){(void)e;v[0]=values[k][0];return 0;}
 static int write_int(snd_ctl_ext_t *e,snd_ctl_ext_key_t k,long *v){

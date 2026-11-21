@@ -23,6 +23,7 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/mutex.h>
 #include <linux/pm.h>
 #include <linux/slab.h>
 #include <linux/regmap.h>
@@ -103,11 +104,48 @@ int tfa98xx_i2c_read(struct i2c_client *tfa98xx_client,	u8 reg, u8 *value,
 	return err;
 }
 
+/* Protect MTP keys, controller and shadow registers from host-side writes. */
+static bool tfa98xx_writeable_reg(struct device *dev, unsigned int reg)
+{
+	switch (reg) {
+	case TFA98XX_MTPKEY2_REG:
+	case 0x60 ... TFA98XX_KEY1_PROTECTED_MTP_CTRL_REG3:
+	case TFA98XX_MTP ... TFA98XX_MTPF:
+		return false;
+	default:
+		return reg <= TFA98XX_MAX_REGISTER;
+	}
+}
+
+static bool tfa98xx_raw_writeable(const u8 *data, unsigned int count)
+{
+	unsigned int reg;
+
+	if (count < 2)
+		return false;
+
+	reg = *data;
+	for (count--; count; reg++, count -= 2) {
+		if (!tfa98xx_writeable_reg(NULL, reg))
+			return false;
+		/* The CoolFlux data port streams bytes, not register words. */
+		if (reg == TFA98XX_CF_MEM)
+			return true;
+		if (count < 2)
+			return false;
+	}
+
+	return true;
+}
+
 int tfa98xx_bulk_write_raw(struct snd_soc_component *component, const u8 *data,
 				u8 count)
 {
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 	int ret;
+
+	if (!tfa98xx_raw_writeable(data, count))
+		return -EACCES;
 
 	ret = i2c_master_send(tfa98xx->i2c, data, count);
 	if (ret == count) {
@@ -134,6 +172,11 @@ static void tfa98xx_monitor(struct work_struct *work)
 		return;
 
 	mutex_lock(&tfa98xx->dsp_init_lock);
+	if (!READ_ONCE(tfa98xx->monitor_status) ||
+	    tfa98xx->dsp_init == TFA98XX_DSP_INIT_NO_CALIBRATION) {
+		mutex_unlock(&tfa98xx->dsp_init_lock);
+		return;
+	}
 	val = snd_soc_component_read(tfa98xx->component, TFA98XX_STATUSREG);
 
 	if (!defer_dsp_start && tfa98xx->desired_running) {
@@ -187,16 +230,18 @@ static void tfa98xx_dsp_init(struct work_struct *work)
 		return;
 	}
 
-	pr_debug("profile %d, vstep %d\n", tfa98xx->profile_ctl,
-		 tfa98xx->vstep_ctl);
-
 	mutex_lock(&tfa98xx->dsp_init_lock);
 
-	/* A queued request may outlive its playback stream or mute request. */
-	if (!tfa98xx->desired_running) {
+	/* A queued request may outlive its route or failed calibration check. */
+	if (!tfa98xx->desired_running ||
+	    !READ_ONCE(tfa98xx->monitor_status) ||
+	    tfa98xx->dsp_init == TFA98XX_DSP_INIT_NO_CALIBRATION) {
 		mutex_unlock(&tfa98xx->dsp_init_lock);
 		return;
 	}
+
+	pr_debug("profile %d, vstep %d\n", tfa98xx->profile_ctl,
+		 tfa98xx->vstep_ctl);
 
 	/* start the DSP using the latest profile / vstep */
 	{
@@ -207,6 +252,9 @@ static void tfa98xx_dsp_init(struct work_struct *work)
 				      tfa98xx->vstep_ctl);
 		if (!ret)
 			tfa98xx->dsp_init = TFA98XX_DSP_INIT_DONE;
+		else if (ret == -ENODATA)
+			/* Retrying cannot create stored calibration. */
+			tfa98xx->dsp_init = TFA98XX_DSP_INIT_NO_CALIBRATION;
 		else
 			tfa98xx->dsp_init = TFA98XX_DSP_INIT_FAIL;
 
@@ -470,15 +518,37 @@ static const struct snd_soc_dapm_widget tfa98xx_dapm_widgets[] = {
 /*
  * Helpers for profile selection controls
  */
+static int tfa98xx_apply_live_control(struct tfa98xx *tfa98xx, int profile,
+				     int vstep)
+{
+	int ret;
+
+	lockdep_assert_held(&tfa98xx->dsp_init_lock);
+	if (READ_ONCE(defer_dsp_start) || !tfa98xx->desired_running ||
+	    !READ_ONCE(tfa98xx->monitor_status) ||
+	    tfa98xx->dsp_init != TFA98XX_DSP_INIT_DONE)
+		return 0;
+
+	ret = tfa98xx_is_amp_running(tfa98xx);
+	if (ret <= 0)
+		return ret;
+
+	ret = tfa98xx_dsp_start(tfa98xx, profile, vstep);
+	if (ret == -ENODATA)
+		tfa98xx->dsp_init = TFA98XX_DSP_INIT_NO_CALIBRATION;
+	else if (ret)
+		tfa98xx->dsp_init = TFA98XX_DSP_INIT_FAIL;
+	return ret;
+}
+
 static int tfa98xx_get_profile_ctl(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 
-	ucontrol->value.integer.value[0] = tfa98xx->profile_ctl;
-
-	/* pr_debug("%s: profile %d\n", tfa98xx->fw.name, tfa98xx->profile); */
+	guard(mutex)(&tfa98xx->dsp_init_lock);
+	ucontrol->value.enumerated.item[0] = tfa98xx->profile_ctl;
 
 	return 0;
 }
@@ -492,22 +562,23 @@ static int tfa98xx_set_profile_ctl(struct snd_kcontrol *kcontrol,
 				(struct tfaprofile *)kcontrol->private_value;
 	struct tfaprofile *prof_old;
 	struct tfaprofile *prof_new;
-	long profile = ucontrol->value.integer.value[0];
-	int vstep;
-	int ret;
+	unsigned int profile = ucontrol->value.enumerated.item[0];
+	int selected, vstep, ret;
 
-	if (!profiles || !tfa98xx->profile_count ||
-	    tfa98xx->profile_current < 0 ||
-	    tfa98xx->profile_current >= tfa98xx->profile_count ||
-	    profile < 0 || profile >= tfa98xx->profile_count) {
+	guard(mutex)(&tfa98xx->dsp_init_lock);
+	selected = tfa98xx->profile_ctl;
+	if (!profiles || tfa98xx->profile_count <= 0 ||
+	    selected < 0 || selected >= tfa98xx->profile_count ||
+	    profile >= (unsigned int)tfa98xx->profile_count) {
 		pr_err("No profiles\n");
 		return -EINVAL;
 	}
 
-	if (tfa98xx->profile_ctl == profile)
+	if ((unsigned int)selected == profile)
 		return 0;
 
-	prof_old = &profiles[tfa98xx->profile_current];
+	/* Mixer changes may be staged while the hardware is powered down. */
+	prof_old = &profiles[selected];
 	prof_new = &profiles[profile];
 	if (!prof_old->vsteps || !prof_new->vsteps)
 		return -EINVAL;
@@ -519,18 +590,16 @@ static int tfa98xx_set_profile_ctl(struct snd_kcontrol *kcontrol,
 	pr_debug("active profile %d, new profile %d\n",
 		 tfa98xx->profile_current, (int)profile);
 
-	if (!defer_dsp_start && tfa98xx_is_amp_running(tfa98xx)) {
-		ret = tfa98xx_dsp_start(tfa98xx, profile, vstep);
-		if (ret)
-			return ret;
-	}
+	ret = tfa98xx_apply_live_control(tfa98xx, profile, vstep);
+	if (ret)
+		return ret;
 
 	prof_new->vstep = vstep;
 	prof_old->vstep = tfa98xx->vstep_ctl;
 	tfa98xx->profile_ctl = profile;
 	tfa98xx->vstep_ctl = vstep;
 
-	return 0;
+	return 1;
 }
 
 static int tfa98xx_info_profile_ctl(struct snd_kcontrol *kcontrol,
@@ -541,7 +610,7 @@ static int tfa98xx_info_profile_ctl(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
 
-	if (!profiles || !tfa98xx->profile_count) {
+	if (!profiles || tfa98xx->profile_count <= 0) {
 		pr_err("No profiles\n");
 		return  -EINVAL;
 	}
@@ -550,8 +619,8 @@ static int tfa98xx_info_profile_ctl(struct snd_kcontrol *kcontrol,
 	uinfo->count = 1;
 	uinfo->value.enumerated.items = tfa98xx->profile_count;
 
-	if (uinfo->value.enumerated.item > tfa98xx->profile_count - 1)
-		uinfo->value.enumerated.item = tfa98xx->profile_count - 1;
+	if (uinfo->value.enumerated.item >= uinfo->value.enumerated.items)
+		uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
 
 	strscpy(uinfo->value.enumerated.name,
 		profiles[uinfo->value.enumerated.item].name,
@@ -570,9 +639,11 @@ static int tfa98xx_get_vol_ctl(struct snd_kcontrol *kcontrol,
 				(struct tfaprofile *)kcontrol->private_value;
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
-	int index = tfa98xx->profile_ctl;
+	int index;
 	struct tfaprofile *prof;
 
+	guard(mutex)(&tfa98xx->dsp_init_lock);
+	index = tfa98xx->profile_ctl;
 	if (!profiles || index < 0 || index >= tfa98xx->profile_count)
 		return -EINVAL;
 	prof = &profiles[index];
@@ -593,12 +664,14 @@ static int tfa98xx_set_vol_ctl(struct snd_kcontrol *kcontrol,
 				(struct tfaprofile *)kcontrol->private_value;
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
-	int index = tfa98xx->profile_ctl;
+	int index;
 	struct tfaprofile *prof;
 	long requested = ucontrol->value.integer.value[0];
 	int vstep;
 	int ret;
 
+	guard(mutex)(&tfa98xx->dsp_init_lock);
+	index = tfa98xx->profile_ctl;
 	if (!profiles || index < 0 || index >= tfa98xx->profile_count)
 		return -EINVAL;
 	prof = &profiles[index];
@@ -609,11 +682,9 @@ static int tfa98xx_set_vol_ctl(struct snd_kcontrol *kcontrol,
 	if (prof->vstep == vstep)
 		return 0;
 
-	if (!defer_dsp_start && tfa98xx_is_amp_running(tfa98xx)) {
-		ret = tfa98xx_dsp_start(tfa98xx, index, vstep);
-		if (ret)
-			return ret;
-	}
+	ret = tfa98xx_apply_live_control(tfa98xx, index, vstep);
+	if (ret)
+		return ret;
 
 	prof->vstep = vstep;
 	tfa98xx->vstep_ctl = vstep;
@@ -628,9 +699,11 @@ static int tfa98xx_info_vol_ctl(struct snd_kcontrol *kcontrol,
 				(struct tfaprofile *)kcontrol->private_value;
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
 	struct tfa98xx *tfa98xx = snd_soc_component_get_drvdata(component);
-	int index = tfa98xx->profile_ctl;
+	int index;
 	struct tfaprofile *prof;
 
+	guard(mutex)(&tfa98xx->dsp_init_lock);
+	index = tfa98xx->profile_ctl;
 	if (!profiles || index < 0 || index >= tfa98xx->profile_count)
 		return -EINVAL;
 	prof = &profiles[index];
@@ -1034,6 +1107,7 @@ static const struct regmap_config tfa98xx_regmap = {
 	.reg_bits = 8,
 	.val_bits = 16,
 	.max_register = TFA98XX_MAX_REGISTER,
+	.writeable_reg = tfa98xx_writeable_reg,
 	.cache_type = REGCACHE_NONE,
 };
 
