@@ -57,6 +57,9 @@ struct regmap {
 	unsigned int next_classification;
 	int transfers;
 	int fail_on;
+	int presence_reads;
+	int presence_failures;
+	int presence_error;
 	int button_reads;
 	int button_acks;
 };
@@ -85,6 +88,9 @@ static int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
 {
 	int ret = fault(map);
 
+	if (reg == RT5659_INT_ST_1 &&
+	    ++map->presence_reads <= map->presence_failures)
+		return map->presence_error;
 	if (reg == RT5659_4BTN_IL_CMD_1)
 		map->button_reads++;
 	if (ret)
@@ -147,6 +153,12 @@ static int snd_soc_dapm_disable_pin(struct snd_soc_dapm_context *dapm, const cha
 
 static int snd_soc_dapm_sync(struct snd_soc_dapm_context *dapm) { return 0; }
 static void msleep(unsigned int delay) {}
+static int retry_delays;
+static void usleep_range(unsigned int minimum, unsigned int maximum)
+{
+	assert(minimum == 10000 && maximum == 12000);
+	retry_delays++;
+}
 
 static void rt5659_enable_push_button_irq(struct snd_soc_component *component, bool enable)
 {
@@ -178,13 +190,38 @@ int main(void)
 				    .hs_jack = &jack, .jack_type = (type) }; \
 } while (0)
 
+	const int transient_errors[] = {-EIO, -EREMOTEIO};
+
+	/* A recoverable read must complete the original plug event. */
+	for (size_t i = 0; i < ARRAY_SIZE(transient_errors); i++) {
+		for (int misses = 1; misses <= 2; misses++) {
+			RESET(0);
+			retry_delays = 0;
+			map.presence_failures = misses;
+			map.presence_error = transient_errors[i];
+			rt5659_jack_detect_work(work);
+			assert(jack.count == 1 && jack.status == SND_JACK_HEADPHONE);
+			assert(map.presence_reads == misses + 1 && retry_delays == misses);
+		}
+	}
+
 	RESET(SND_JACK_HEADSET);
-	map.fail_on = 1;
+	retry_delays = 0;
+	map.presence_failures = 4;
+	map.presence_error = -EIO;
 	rt5659_jack_detect_work(work);
 	assert(jack.count == 0 && priv.jack_type == SND_JACK_HEADSET);
+	assert(map.presence_reads == 3 && retry_delays == 2);
 
-	/* Presence, power snapshot, setup, sample, and analogue restore. */
-	for (int fail = 1; fail <= 9; fail++) {
+	RESET(SND_JACK_HEADSET);
+	retry_delays = 0;
+	map.presence_failures = 4;
+	map.presence_error = -EINVAL;
+	rt5659_jack_detect_work(work);
+	assert(jack.count == 0 && map.presence_reads == 1 && !retry_delays);
+
+	/* Power snapshot, setup, classification sample, and analogue restore. */
+	for (int fail = 2; fail <= 9; fail++) {
 		RESET(0);
 		map.fail_on = fail;
 		rt5659_jack_detect_work(work);
@@ -221,6 +258,8 @@ int main(void)
 	};
 
 	RESET(SND_JACK_HEADSET);
+	map.presence_failures = 1;
+	map.presence_error = -EREMOTEIO;
 	for (size_t button = 0; button < ARRAY_SIZE(keys); button++) {
 		for (size_t variant = 0; variant < ARRAY_SIZE(keys[button]); variant++) {
 			map.reg[RT5659_4BTN_IL_CMD_1] = keys[button][variant];
