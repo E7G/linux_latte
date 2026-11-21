@@ -14,6 +14,8 @@ on:
       - 'drivers/usb/dwc3/gadget.c'
       - 'drivers/usb/dwc3/core.c'
       - 'drivers/usb/gadget/function/u_serial.c'
+      - 'drivers/usb/gadget/udc/trace.h'
+      - 'drivers/usb/gadget/udc/trace.c'
       - 'drivers/media/i2c/ov5693.c'
       - 'drivers/media/i2c/t4ka3.c'
       - 'drivers/media/v4l2-core/v4l2-cci.c'
@@ -43,6 +45,7 @@ on:
       - 'fix_file/tests/mipad2-pci-save-host-test.py'
       - 'fix_file/tests/mipad2-dwc3-gadget-start-host-test.py'
       - 'fix_file/tests/mipad2-usb-console-lifetime-host-test.py'
+      - 'fix_file/tests/mipad2-udc-trace-format-test.py'
       - 'fix_file/tests/mipad2-pci-restore-host-test.py'
       - 'fix_file/tests/mipad2-stream-start-unwind-host-test.py'
       - 'fix_file/tests/mipad2-recovery-error-host-test.py'
@@ -145,7 +148,9 @@ jobs:
             drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o \
             drivers/staging/media/atomisp/pci/atomisp_v4l2.o drivers/staging/media/atomisp/pci/atomisp_cmd.o \
             drivers/staging/media/atomisp/pci/atomisp_ioctl.o drivers/usb/dwc3/gadget.o \
-            drivers/usb/gadget/function/u_serial.o
+            drivers/usb/gadget/function/u_serial.o drivers/usb/gadget/udc/trace.o \
+            drivers/usb/gadget/udc/trace.i
+          python3 -B fix_file/tests/mipad2-udc-trace-format-test.py out/drivers/usb/gadget/udc/trace.i
 
   camera-drivers:
     # The legacy audit below deliberately requires old GPIO and navigation-key code.
