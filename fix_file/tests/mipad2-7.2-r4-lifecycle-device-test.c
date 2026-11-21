@@ -30,7 +30,7 @@ struct result {
  uint64_t min_us, max_us, sum_us;
 };
 struct owner {
- int fd; bool streaming; unsigned count;
+ int fd; bool streaming, linear_420; unsigned count; uint32_t payload;
  struct mapping maps[MAX_MAPS]; struct v4l2_format format;
 };
 static struct sample records[FRAMES * PHASES];
@@ -54,6 +54,23 @@ static int shape_unchanged(struct owner *o)
  if (!same_shape(&fmt, &o->format)) { errno = EIO; return -1; }
  return 0;
 }
+static uint32_t linear_420_payload(const struct v4l2_pix_format *pix)
+{
+ uint64_t luma;
+
+ if ((pix->pixelformat != V4L2_PIX_FMT_NV12 &&
+      pix->pixelformat != V4L2_PIX_FMT_YUV420) ||
+     !pix->width || !pix->height || pix->bytesperline < pix->width ||
+     ((pix->width | pix->height | pix->bytesperline) & 1))
+  return 0;
+ luma = (uint64_t)pix->bytesperline * pix->height;
+ /* The 4:2:0 chroma planes occupy half the total luma bytes. Only
+  * sizeimage, not bytesused, includes the trailing allocation padding.
+  */
+ if (luma > pix->sizeimage || luma + luma / 2 > pix->sizeimage)
+  return 0;
+ return (uint32_t)(luma + luma / 2);
+}
 static int prepare(struct owner *o, const char *node, unsigned expected_input)
 {
  struct v4l2_capability cap = {0};
@@ -68,6 +85,8 @@ static int prepare(struct owner *o, const char *node, unsigned expected_input)
  if (call(o->fd, VIDIOC_G_FMT, &o->format) < 0) return -1;
  if (!o->format.fmt.pix.width || !o->format.fmt.pix.height ||
   !o->format.fmt.pix.sizeimage || o->format.fmt.pix.sizeimage > 24 * 1024 * 1024) { errno = EINVAL; return -1; }
+ o->payload = o->linear_420 ? linear_420_payload(&o->format.fmt.pix) : o->format.fmt.pix.sizeimage;
+ if (!o->payload) { errno = EINVAL; return -1; }
  if (call(o->fd, VIDIOC_REQBUFS, &req) < 0) return -1;
  if (req.count < 4 || req.count > MAX_MAPS) { errno = EINVAL; return -1; }
  o->count = req.count;
@@ -149,9 +168,13 @@ static int capture(struct owner *o, const char *node, unsigned phase, struct res
   struct v4l2_buffer b = {.type = V4L2_BUF_TYPE_VIDEO_CAPTURE, .memory = V4L2_MEMORY_MMAP};
   if (call(o->fd, VIDIOC_DQBUF, &b) < 0) goto out;
   if (b.index >= o->count || b.flags & V4L2_BUF_FLAG_ERROR ||
-   b.bytesused != o->format.fmt.pix.sizeimage || b.bytesused > o->maps[b.index].length ||
+   b.bytesused != o->payload || b.bytesused > o->maps[b.index].length ||
    b.timestamp.tv_sec < 0 || b.timestamp.tv_usec < 0 || b.timestamp.tv_usec >= 1000000 ||
-   b.request_fd || b.reserved2 || b.flags & V4L2_BUF_FLAG_REQUEST_FD) { errno = EIO; r->errors++; goto out; }
+   b.request_fd || b.reserved2 || b.flags & V4L2_BUF_FLAG_REQUEST_FD) {
+   fprintf(stderr, "invalid buffer: index=%u/%u bytesused=%u expected=%u length=%u flags=%#x\n",
+    b.index, o->count, b.bytesused, o->payload, b.length, b.flags);
+   errno = EIO; r->errors++; goto out;
+  }
   uint64_t stamp = (uint64_t)b.timestamp.tv_sec * 1000000 + (uint64_t)b.timestamp.tv_usec;
   if (n) {
    if (stamp <= previous || b.sequence <= sequence) { errno = EIO; goto out; }
@@ -175,13 +198,15 @@ out:
 int main(int argc, char **argv)
 {
  struct utsname uts; char *end; unsigned long input;
- if (argc != 4 || uname(&uts) || strcmp(uts.release, "7.2.0-mipad2-integrated-r4")) return 2;
+ if (argc != 4 || uname(&uts)) return 2;
+ bool linear_420 = !strcmp(uts.release, "7.2.15-mipad2-integrated-lpat17");
+ if (!linear_420 && strcmp(uts.release, "7.2.0-mipad2-integrated-r4")) return 2;
  errno = 0; input = strtoul(argv[2], &end, 10);
  if (errno || *end || !*argv[2] || input > 255) return 2;
  umask(077);
  int tracefd = open(argv[3], O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
  if (tracefd < 0) return 2;
- struct owner o = {.fd = -1}; struct result results[PHASES] = {{0}};
+ struct owner o = {.fd = -1, .linear_420 = linear_420}; struct result results[PHASES] = {{0}};
  struct v4l2_format first = {0}; bool have_first = false;
  int result = 1, saved_errno = 0;
  if (prepare(&o, argv[1], (unsigned)input) < 0) goto out;
