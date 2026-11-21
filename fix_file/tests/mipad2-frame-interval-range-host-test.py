@@ -4,6 +4,7 @@
 
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from pathlib import Path
@@ -260,7 +261,7 @@ parts = [
 with tempfile.TemporaryDirectory(prefix="mipad2-v4l2-intervals-") as temp:
     source, exe = Path(temp) / "test.c", Path(temp) / "test"
     source.write_text("\n".join(parts))
-    subprocess.run([os.environ.get("CC", "gcc"), "-std=gnu11", "-Wall", "-Wextra",
+    subprocess.run([*shlex.split(os.environ.get("CC", "gcc")), "-std=gnu11", "-Wall", "-Wextra",
                     "-Werror", "-Wno-unused-parameter", "-fsanitize=undefined",
                     "-fno-sanitize-recover=all", str(source), "-o", str(exe)],
                    check=True)

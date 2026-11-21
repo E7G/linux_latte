@@ -100,7 +100,29 @@ module and actual Arch systemd, pacman and GStreamer 1.28.7:
 * LPAT11, which lacks this parameter, still loaded the paired plugin
   and completed the package downgrade and reinstall.
 
-This verifies the guest boot and activation/rollback paths, not
-capture or power management on a real Mi Pad 2. The guarded tablet
-boot and the physical camera matrix with stock and paired native
-backends remain to be run before merging.
+## Guarded LPAT16 on the Mi Pad 2
+
+On 2026-11-21, signed 7.2.15 LPAT16 source
+32d51fb913b685343cceba712794450b8c92a14a booted through a GRUB one-shot
+with the saved fallback preserved. Both cameras were tested on the
+same physical boot with the stock and paired native plugins.
+
+* With the stock Arch backend, the switch stayed off, all 24 queries
+  returned the original ENOTTY, and all 144 frame-period round trips
+  passed. Six native GStreamer 30 fps and exact front-rate requests
+  reached EOS at 1920x1080 and 1920x1440.
+* With the paired package installed by pacman under the existing policy,
+  the packaged systemd service enabled the gate. All 24 enumerations
+  matched the hardware readbacks. Both cameras completed 120 concurrent
+  queries while delivering 150 ordered frames each. The same six native
+  GStreamer cases passed.
+* The physical ALPM downgrade disarmed the gate and restored the
+  signed stock package, including all 224 managed files and the
+  original plugin digest. Reinstalling and restarting the service on
+  that boot left the gate off. The final package and gate were stock.
+* An RTC trial accumulated 19,088,224 us of S0i3 residency on that same
+  boot. Both cameras then delivered 240 ordered 1920x1080 NV12 frames
+  at approximately 30 fps. Backlight and saved camera state recovered.
+
+The early activation sequence was exercised in the VM and the real
+packaged activation, capture and rollback were exercised on the tablet.

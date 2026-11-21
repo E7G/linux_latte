@@ -23,6 +23,7 @@ on:
       - 'drivers/staging/media/atomisp/pci/atomisp_internal.h'
       - 'drivers/staging/media/atomisp/include/linux/atomisp.h'
       - 'include/linux/pci.h'
+      - 'include/media/v4l2-subdev.h'
       - 'include/uapi/linux/pci_regs.h'
       - 'drivers/staging/media/atomisp/pci/atomisp-regs.h'
       - 'fix_file/tests/mipad2-ov5693-otp-test.sh'
@@ -34,6 +35,8 @@ on:
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
       - 'fix_file/tests/mipad2-csi-ready-host-test.py'
+      - 'fix_file/tests/mipad2-frame-interval-range-host-test.py'
+      - 'fix_file/tests/mipad2-frameinterval-rollout-host-test.sh'
       - 'fix_file/tests/mipad2-pci-save-host-test.py'
       - 'fix_file/tests/mipad2-dwc3-gadget-start-host-test.py'
       - 'fix_file/tests/mipad2-pci-restore-host-test.py'
@@ -110,6 +113,11 @@ jobs:
         run: |
           CC=gcc python3 -B fix_file/tests/mipad2-dwc3-gadget-start-host-test.py
           CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-dwc3-gadget-start-host-test.py
+      - name: Verify opt-in AtomISP frame intervals and the stock compatibility gate
+        run: |
+          CC=gcc python3 -B fix_file/tests/mipad2-frame-interval-range-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-frame-interval-range-host-test.py
+          sh fix_file/tests/mipad2-frameinterval-rollout-host-test.sh
       - name: Compile the 7.2 sensor, CCI, AtomISP and DWC3 objects
         run: |
           make O=out LLVM=1 ARCH=x86_64 xiaomipad2_defconfig
