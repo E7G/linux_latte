@@ -37,6 +37,7 @@ on:
       - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
       - 'fix_file/tests/mipad2-7.2-r4-lifecycle-device-test.c'
       - 'fix_file/tests/mipad2-linear-420-payload-host-test.c'
+      - 'fix_file/tests/mipad2-atomisp-format-metadata-host-test.py'
       - 'fix_file/tests/mipad2-atomisp-suspend-host-test.py'
       - 'fix_file/tests/mipad2-csi-lane-io-host-test.py'
       - 'fix_file/tests/mipad2-csi-ready-host-test.py'
@@ -97,6 +98,10 @@ jobs:
           python3 -B fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py
       - name: Verify front and rear V4L2 stream lifecycle ownership
         run: python3 -B fix_file/tests/mipad2-stream-stop-pm-host-test.py
+      - name: Verify the AtomISP reports negotiated capture metadata
+        run: |
+          CC="gcc -fsanitize=undefined -fno-sanitize-recover=undefined" \
+            python3 -B fix_file/tests/mipad2-atomisp-format-metadata-host-test.py
       - name: Verify exact linear 4:2:0 payload used by the device lifecycle test
         run: |
           out=$(mktemp)
