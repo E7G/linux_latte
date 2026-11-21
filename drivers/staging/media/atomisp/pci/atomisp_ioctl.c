@@ -149,7 +149,10 @@ static struct v4l2_query_ext_ctrl ci_v4l2_controls[] = {
 static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);
 
 /*
- * supported V4L2 fmts and resolutions
+ * Supported V4L2 capture formats.
+ *
+ * CSS YUV444 has three 8-bit component planes; do not advertise it under
+ * V4L2's Y444 fourcc, which denotes a packed 16-bit format.
  */
 const struct atomisp_format_bridge atomisp_output_fmts[] = {
 	{
@@ -173,12 +176,6 @@ const struct atomisp_format_bridge atomisp_output_fmts[] = {
 		.sh_fmt = IA_CSS_FRAME_FORMAT_YUV422,
 		.description = "YUV422, planar",
 		.planar = true
-	}, {
-		.pixelformat = V4L2_PIX_FMT_YUV444,
-		.depth = 24,
-		.mbus_code = V4L2_MBUS_FMT_CUSTOM_YUV444,
-		.sh_fmt = IA_CSS_FRAME_FORMAT_YUV444,
-		.description = "YUV444"
 	}, {
 		.pixelformat = V4L2_PIX_FMT_NV12,
 		.depth = 12,
