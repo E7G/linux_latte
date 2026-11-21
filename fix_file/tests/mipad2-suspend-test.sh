@@ -3,40 +3,154 @@
 # This deliberately suspends the tablet and uses RTC wakeup.
 set -eu
 
-seconds=${1:-8}
-case "$seconds" in
-    *[!0-9]*|'') echo "Usage: $0 [seconds]" >&2; exit 2 ;;
-esac
-[ "$seconds" -ge 3 ] || { echo "Refusing suspend shorter than 3 seconds" >&2; exit 2; }
+fail_run()
+{
+    printf 'MISS %s\n' "$*" >&2
+    exit 1
+}
 
+seconds=${1:-8}
+[ "$#" -le 1 ] || fail_run "Usage: $0 [seconds: 3-300]"
+case "$seconds" in
+    [1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;;
+    *) fail_run "Usage: $0 [seconds: 3-300]" ;;
+esac
+[ "$seconds" -ge 3 ] && [ "$seconds" -le 300 ] ||
+    fail_run "Suspend duration must be 3-300 seconds"
 if [ "$(id -u)" -ne 0 ]; then
-    exec sudo "$0" "$@"
+    exec sudo /bin/sh "$0" "$@"
 fi
 
+for tool in rtcwake systemctl busctl python3 journalctl flock; do
+    command -v "$tool" >/dev/null 2>&1 || fail_run "$tool is required"
+done
+[ "$(cat /sys/class/dmi/id/sys_vendor)" = 'Xiaomi Inc' ] &&
+[ "$(cat /sys/class/dmi/id/product_name)" = Mipad2 ] ||
+    fail_run "This test is for the Xiaomi Mi Pad 2 only"
+[ "$(cat /proc/1/comm)" = systemd ] || fail_run "No systemd/logind; not suspending"
+[ "$(cat /sys/power/mem_sleep)" = '[s2idle]' ] || fail_run "Expected firmware s2idle mode"
+
 pmc=/sys/kernel/debug/pmc_atom/sleep_state
-[ -r "$pmc" ] || { echo "MISS pmc_atom sleep_state (is debugfs mounted?)" >&2; exit 1; }
-command -v rtcwake >/dev/null 2>&1 || { echo "MISS rtcwake" >&2; exit 1; }
+rtc=/sys/class/rtc/rtc0
+irq=/sys/power/pm_wakeup_irq
+[ -r "$pmc" ] && [ -r "$rtc/wakealarm" ] && [ -r "$rtc/since_epoch" ] &&
+[ -r "$irq" ] || fail_run "PMC, RTC or wake-IRQ evidence is unavailable"
+
+umask 077
+exec 9>>/run/mipad2-suspend-test.lock
+flock -n 9 || fail_run "Another Mi Pad 2 suspend test is active"
+
+check_no_sleep_inhibitor()
+{
+    inhibitors=$(busctl --system --timeout=5s --json=short call org.freedesktop.login1 \
+        /org/freedesktop/login1 org.freedesktop.login1.Manager ListInhibitors) || return
+    INHIBITORS="$inhibitors" python3 -B - <<'PY'
+import json
+import os
+
+reply = json.loads(os.environ["INHIBITORS"])
+data = reply.get("data")
+if reply.get("type") != "a(ssssuu)" or not isinstance(data, list) or len(data) != 1 or not isinstance(data[0], list):
+    raise SystemExit("Invalid logind inhibitor response")
+for row in data[0]:
+    if (not isinstance(row, list) or len(row) != 6
+        or not all(isinstance(item, str) for item in row[:4])
+        or not all(type(item) is int and item >= 0 for item in row[4:])
+        or row[3] not in {"block", "block-weak", "delay"}):
+        raise SystemExit("Unknown logind inhibitor entry")
+    if "sleep" in row[0].split(":") and row[3] != "delay":
+        raise SystemExit("Sleep is inhibited; no suspend was requested")
+PY
+}
 
 s0i3_us()
 {
     awk '/S0I3 Residency:/ {
         value=$3
         sub(/us$/, "", value)
-        print value
+        if (value ~ /^[0-9]+$/)
+            print value
         exit
     }' "$pmc"
 }
 
+check_no_alarm()
+{
+    existing=$(cat "$rtc/wakealarm") || return
+    [ -z "$existing" ]
+}
+
+check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
+check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
 before=$(s0i3_us)
-[ -n "$before" ] || { echo "MISS S0I3 residency counter" >&2; exit 1; }
-start=$(date --iso-8601=seconds)
+[ -n "$before" ] || fail_run "S0I3 residency counter unavailable"
+tail=$(journalctl -b -k -n 1 -o cat --show-cursor --no-pager) ||
+    fail_run "Cannot establish a kernel journal cursor"
+cursor=$(printf '%s\n' "$tail" | sed -n 's/^-- cursor: //p')
+[ -n "$cursor" ] || fail_run "No current kernel journal cursor"
+
+alarm=''
+sleep_queued=0
+clear_own_alarm()
+{
+    # A queued request can still suspend after we exit. In that case
+    # retain the alarm even on interrupt or ambiguous journal evidence.
+    [ "$sleep_queued" -eq 0 ] || return 0
+    current=$(cat "$rtc/wakealarm") || return
+    if [ -n "$alarm" ] && [ "$current" = "$alarm" ]; then
+        rtcwake -d /dev/rtc0 -m disable >/dev/null
+    fi
+}
+trap clear_own_alarm EXIT
+trap 'exit 1' HUP INT TERM
 
 printf 'INFO S0I3 before: %sus\n' "$before"
 printf 'INFO suspending for %ss with RTC wake\n' "$seconds"
-rtcwake -m mem -s "$seconds"
+check_no_alarm || fail_run "RTC alarm state changed before arming"
+rtcwake -d /dev/rtc0 -m no -s "$seconds"
+alarm=$(cat "$rtc/wakealarm")
+case "$alarm" in ''|*[!0-9]*) fail_run "RTC alarm could not be verified";; esac
+check_no_sleep_inhibitor || fail_run "Suspend became inhibited before the request"
+sleep_queued=1
+systemctl --check-inhibitors=yes suspend || fail_run "Suspend request not confirmed; leaving RTC alarm intact"
 
+state=pending
+tries=0
+while [ "$tries" -lt 45 ]; do
+    resume_log=$(journalctl -b -k --after-cursor="$cursor" -o cat --no-pager) ||
+        fail_run "Cannot read the suspend journal; leaving RTC alarm intact"
+    state=$(printf '%s\n' "$resume_log" | awk '
+        /^PM: suspend entry \(s2idle\)$/ {
+            if (entry || exit_seen) bad = 1
+            entry = 1
+        }
+        /^PM: suspend exit$/ {
+            if (!entry || exit_seen) bad = 1
+            exit_seen = 1
+        }
+        END {
+            if (bad) print "invalid"
+            else if (entry && exit_seen) print "resumed"
+            else print "pending"
+        }')
+    case "$state" in
+        resumed) break ;;
+        invalid) fail_run "Ambiguous suspend journal; leaving RTC alarm intact" ;;
+    esac
+    tries=$((tries + 1))
+    sleep 1
+done
+[ "$state" = resumed ] || fail_run "No complete suspend cycle; leaving RTC alarm intact"
+sleep_queued=0
+# On this board ACPI IRQ 9 delivers the RTC wake. The power button is
+# a separate GPIO interrupt. Also require the RTC alarm time to elapse.
+rtc_now=$(cat "$rtc/since_epoch")
+[ "$(cat "$irq")" = 9 ] && [ "$rtc_now" -ge "$alarm" ] ||
+    fail_run "Suspend ended without the expected RTC wake"
+clear_own_alarm
+alarm=''
 after=$(s0i3_us)
-[ -n "$after" ] || { echo "MISS S0I3 residency counter after resume" >&2; exit 1; }
+[ -n "$after" ] || fail_run "S0I3 residency counter unavailable after resume"
 delta=$((after - before))
 printf 'INFO S0I3 after:  %sus\n' "$after"
 printf 'INFO S0I3 delta:  %sus\n' "$delta"
@@ -57,7 +171,8 @@ elif [ -x /usr/local/libexec/mipad2-hardware-smoke ]; then
     /usr/local/libexec/mipad2-hardware-smoke || fail=1
 fi
 
-resume_log=$(journalctl -k -b --since "$start" --no-pager 2>/dev/null || true)
+resume_log=$(journalctl -b -k --after-cursor="$cursor" -o cat --no-pager) ||
+    fail_run "Cannot verify kernel messages after resume"
 if printf '%s\n' "$resume_log" | grep -Eqi     'DSP subsystem start timed out|DSP power-up timed out|warm DSP resume failed.*forcing cold restart.*(failed|timeout)'; then
     printf 'MISS TFA DSP resume error detected\n'
     printf '%s\n' "$resume_log" | grep -Ei         'tfa98|DSP subsystem start timed out|DSP power-up timed out|warm DSP resume failed' | tail -n 80
