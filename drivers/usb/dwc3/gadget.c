@@ -2813,7 +2813,11 @@ static int dwc3_gadget_soft_connect(struct dwc3 *dwc)
 		return ret;
 
 	dwc3_event_buffers_setup(dwc);
-	__dwc3_gadget_start(dwc);
+
+	ret = __dwc3_gadget_start(dwc);
+	if (ret)
+		return ret;
+
 	return dwc3_gadget_run_stop(dwc, true);
 }
 
