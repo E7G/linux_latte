@@ -34,6 +34,9 @@ def evaluate(source):
     require(registration is not None,'Exposure registration shape changed; inspect test')
     minimum=registration[1].strip()
     require(re.fullmatch(r'0|T4KA3_COARSE_INTEGRATION_TIME_MIN',minimum) is not None,'Unsupported initial minimum')
+    limits=function(source,'t4ka3_get_vblank_limits')
+    limits_args=('height,binning' if '(int height, int binning,' in limits
+                 else '&sensor,&state')
     code=r'''
 #include <stdint.h>
 #include <stdio.h>
@@ -51,10 +54,11 @@ static int __v4l2_ctrl_modify_range(struct control *ctrl,int low,int high,int st
  (void)ctrl;lower=low;upper=high;default_exposure=def;
  return low>=0 && high>=low && step==1 && def>=low && def<=high ? 0 : -ERANGE;
 }
-static struct v4l2_mbus_framefmt *v4l2_subdev_state_get_format(struct v4l2_subdev_state *s,int pad) {
+static __attribute__((unused)) struct v4l2_mbus_framefmt *
+v4l2_subdev_state_get_format(struct v4l2_subdev_state *s,int pad) {
  (void)pad;return &s->fmt;
 }
-'''+ '\n'.join(definitions)+'\n'+function(source,'t4ka3_get_vblank_limits')+'\n'+function(source,'t4ka3_update_exposure_range')+r'''
+'''+ '\n'.join(definitions)+'\n'+limits+'\n'+function(source,'t4ka3_update_exposure_range')+r'''
 static unsigned cases,failed,min_frame_failures,exposure_min_failures,other_failures;
 static void check(int valid,unsigned *kind) { cases++;if(!valid){failed++;(*kind)++;} }
 int main(void) {
@@ -66,7 +70,7 @@ int main(void) {
   sensor.mode.binning=binning;
   for(unsigned height=2;height<=T4KA3_NATIVE_HEIGHT/(unsigned)binning;height+=2) {
    int min,max,def;state.fmt.height=height;
-   t4ka3_get_vblank_limits(&sensor,&state,&min,&max,&def);
+   t4ka3_get_vblank_limits(LIMITS_ARGS,&min,&max,&def);
    check(min>=0 && (int)height+min>=7 && (int)height+max<=65535 && min<=def && def<=max,&min_frame_failures);
    int samples[]={min,def,max};
    for(unsigned i=0;i<3;i++) {
@@ -80,7 +84,7 @@ int main(void) {
  return 0;
 }
 '''
-    code=code.replace('INITIAL_MINIMUM',minimum)
+    code=code.replace('INITIAL_MINIMUM',minimum).replace('LIMITS_ARGS',limits_args)
     with tempfile.TemporaryDirectory(prefix='mp2-t4-exposure-range-') as directory:
         root=Path(directory);(root/'test.c').write_text(code)
         subprocess.run(['gcc','-std=gnu11','-O2','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all',str(root/'test.c'),'-o',str(root/'test')],check=True,capture_output=True,text=True)

@@ -1,0 +1,57 @@
+# Local derivative of the stock Arch package. Not an official Arch build.
+pkgname=gst-plugins-good
+pkgver=1.28.7
+pkgrel=1.1
+pkgdesc='Multimedia graph framework - good plugins (Mi Pad 2 AtomISP compatibility)'
+arch=(x86_64)
+url='https://github.com/E7G/linux_latte'
+license=(LGPL-2.1-or-later GPL-2.0-only)
+depends=(
+  'gst-plugins-base-libs=1.28.7-1' 'gstreamer=1.28.7-1'
+  aalib bzip2 cairo flac gdk-pixbuf2 glib2 glibc lame libavc1394 libcaca
+  libdv libgcc libgudev libiec61883 libjpeg-turbo libpng libpulse libraw1394
+  libshout libsoup3 libstdc++ libvpx libx11 libxdamage libxext libxfixes
+  libxml2 libxtst mpg123 nettle opencore-amr orc speex taglib twolame
+  v4l-utils wavpack zlib
+  coreutils pacman systemd util-linux
+)
+optdepends=('jack: JACK backend')
+options=(emptydirs libtool staticlibs !strip !debug !zipman !purge)
+_stock='gst-plugins-good-1.28.7-1-x86_64.pkg.tar.zst'
+_stock_v4l2='ab342ffb0c018b0d0211d5f9921b3a3f16dde71ca787ea8d6e942e45fc7a3bb3'
+_v4l2_sha='5308f10fb81a0d3fbb74f91cd5dc374edec146340e6c18b3afcef3313a883627'
+source=(
+  "$_stock"
+  'libgstvideo4linux2.so'
+  'mipad2-atomisp-frameintervals'
+  'mipad2-atomisp-frameintervals.service'
+  '00-mipad2-atomisp-frameintervals.hook'
+)
+noextract=("$_stock")
+sha256sums=(
+  'bb030193e56f2717d9d735bad19685be1ea22b246f479639c02b52058749a6cf'
+  "$_v4l2_sha"
+  '21d47b4847b4db9efd2c290511572f3f09f25569823e73f5e8c7855497bc6b75'
+  'd53dbbcd683eab14d8c21cf993e4331c17242d220beb7d1c09f732a5ec52445c'
+  'cd48d23173f2d53423e720c3d57c0c3d51e49dbce4b4df49968655e3a2d69d6e'
+)
+
+package() {
+  local plugin=usr/lib/gstreamer-1.0/libgstvideo4linux2.so
+  local unit=mipad2-atomisp-frameintervals.service
+  local hook=00-mipad2-atomisp-frameintervals.hook
+  local manifest=usr/share/gst-plugins-good-mipad2/v4l2-plugin.sha256
+
+  bsdtar -xf "$srcdir/$_stock" -C "$pkgdir" \
+    --exclude .PKGINFO --exclude .BUILDINFO --exclude .MTREE
+  printf '%s  %s\n' "$_stock_v4l2" "$pkgdir/$plugin" | sha256sum --check --status
+  install -Dm755 "$srcdir/libgstvideo4linux2.so" "$pkgdir/$plugin"
+  install -Dm755 "$srcdir/mipad2-atomisp-frameintervals" \
+    "$pkgdir/usr/libexec/mipad2-atomisp-frameintervals"
+  install -Dm644 "$srcdir/$unit" "$pkgdir/usr/lib/systemd/system/$unit"
+  install -dm755 "$pkgdir/usr/lib/systemd/system/multi-user.target.wants"
+  ln -s "../$unit" "$pkgdir/usr/lib/systemd/system/multi-user.target.wants/$unit"
+  install -Dm644 "$srcdir/$hook" "$pkgdir/usr/share/libalpm/hooks/$hook"
+  install -dm755 "$(dirname "$pkgdir/$manifest")"
+  printf '%s\n' "$_v4l2_sha" > "$pkgdir/$manifest"
+}

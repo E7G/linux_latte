@@ -1,0 +1,59 @@
+diff --git a/sys/v4l2/gstv4l2object.c b/sys/v4l2/gstv4l2object.c
+--- a/sys/v4l2/gstv4l2object.c
++++ b/sys/v4l2/gstv4l2object.c
+@@ -2730,6 +2730,44 @@ gst_v4l2_object_add_colorspace (GstV4l2Object * v4l2object, GstStructure * s,
+   return;
+ }
+
++/*
++ * AtomISP exposes one frame-length line per step. Its S_PARM accepts a
++ * fraction within the interval bounds and rounds it to a sensor line.
++ * GStreamer has no stepped fraction range; enumerating these line timings
++ * overflows its fraction addition and can lose ordinary rates such as 30/1.
++ * Represent the accepted request range during caps probing. The driver's
++ * S_PARM readback remains the source of the programmed rate.
++ */
++static gboolean
++gst_v4l2_object_atomisp_stepwise_rates (const struct v4l2_frmival_stepwise *ival,
++    GValue * rates)
++{
++  gint cmp;
++
++  if (!ival->min.numerator || !ival->min.denominator ||
++      !ival->max.numerator || !ival->max.denominator ||
++      !ival->step.numerator || !ival->step.denominator ||
++      ival->min.numerator > G_MAXINT || ival->min.denominator > G_MAXINT ||
++      ival->max.numerator > G_MAXINT || ival->max.denominator > G_MAXINT)
++    return FALSE;
++
++  cmp = gst_util_fraction_compare (ival->min.numerator, ival->min.denominator,
++      ival->max.numerator, ival->max.denominator);
++  if (cmp > 0)
++    return FALSE;
++
++  if (cmp == 0) {
++    g_value_init (rates, GST_TYPE_FRACTION);
++    gst_value_set_fraction (rates, ival->min.denominator, ival->min.numerator);
++  } else {
++    g_value_init (rates, GST_TYPE_FRACTION_RANGE);
++    gst_value_set_fraction_range_full (rates, ival->max.denominator,
++        ival->max.numerator, ival->min.denominator, ival->min.numerator);
++  }
++
++  return TRUE;
++}
++
+ /* The frame interval enumeration code first appeared in Linux 2.6.19. */
+ static GstStructure *
+ gst_v4l2_object_probe_caps_for_format_and_size (GstV4l2Object * v4l2object,
+@@ -2782,6 +2820,10 @@ gst_v4l2_object_probe_caps_for_format_and_size (GstV4l2Object * v4l2object,
+
+       ival.index++;
+     } while (v4l2object->ioctl (fd, VIDIOC_ENUM_FRAMEINTERVALS, &ival) >= 0);
++  } else if (ival.type == V4L2_FRMIVAL_TYPE_STEPWISE &&
++      g_str_equal (v4l2object->vcap.driver, "atomisp")) {
++    if (!gst_v4l2_object_atomisp_stepwise_rates (&ival.stepwise, &rates))
++      goto enum_frameintervals_failed;
+   } else if (ival.type == V4L2_FRMIVAL_TYPE_STEPWISE) {
+     GValue min = { 0, };
+     GValue step = { 0, };

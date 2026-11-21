@@ -745,6 +745,12 @@ struct v4l2_subdev_state {
  * @enum_frame_interval: callback for VIDIOC_SUBDEV_ENUM_FRAME_INTERVAL() ioctl
  *			 handler code.
  *
+ * @get_frame_interval_range: report the exact stepwise interval range for the
+ *			      pad and stream in the supplied, locked TRY state.
+ *			      This optional kernel-only operation is for bridges
+ *			      implementing VIDIOC_ENUM_FRAMEINTERVALS; it must
+ *			      not change the state, hardware, or controls.
+ *
  * @get_fmt: callback for VIDIOC_SUBDEV_G_FMT() ioctl handler code.
  *
  * @set_fmt: callback for VIDIOC_SUBDEV_S_FMT() ioctl handler code.
@@ -834,6 +840,10 @@ struct v4l2_subdev_pad_ops {
 	int (*enum_frame_interval)(struct v4l2_subdev *sd,
 				   struct v4l2_subdev_state *state,
 				   struct v4l2_subdev_frame_interval_enum *fie);
+	int (*get_frame_interval_range)(struct v4l2_subdev *sd,
+					struct v4l2_subdev_state *state,
+					u32 pad, u32 stream,
+					struct v4l2_frmival_stepwise *range);
 	int (*get_fmt)(struct v4l2_subdev *sd,
 		       struct v4l2_subdev_state *state,
 		       struct v4l2_subdev_format *format);

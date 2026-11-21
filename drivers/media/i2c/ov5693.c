@@ -1206,7 +1206,8 @@ static int ov5693_detect(struct ov5693_device *ov5693)
 
 /* V4L2 Framework callbacks */
 
-static unsigned int ov5693_min_vblank(struct ov5693_device *ov5693)
+static unsigned int ov5693_min_vblank_for_mode(struct ov5693_device *ov5693,
+					     bool binned)
 {
 	if (!ov5693->mipad2)
 		return OV5693_TIMING_MIN_VTS;
@@ -1216,10 +1217,16 @@ static unsigned int ov5693_min_vblank(struct ov5693_device *ov5693)
 	 * tests expose no-frame boundaries below these values. Allow fast
 	 * intervals above this floor; do not impose a global FPS ceiling.
 	 */
-	if (ov5693->mode.binning_x && ov5693->mode.binning_y)
+	if (binned)
 		return OV5693_MIPAD2_VBLANK_BINNED;
 
 	return OV5693_MIPAD2_VBLANK_UNBINNED;
+}
+
+static unsigned int ov5693_min_vblank(struct ov5693_device *ov5693)
+{
+	return ov5693_min_vblank_for_mode(ov5693, ov5693->mode.binning_x &&
+						ov5693->mode.binning_y);
 }
 
 static unsigned int __ov5693_calc_vts(struct ov5693_device *ov5693, u32 height)
@@ -1557,6 +1564,45 @@ err_standby:
 	return ret;
 }
 
+static int ov5693_get_frame_interval_range(struct v4l2_subdev *sd,
+					   struct v4l2_subdev_state *state,
+					   u32 pad, u32 stream,
+					   struct v4l2_frmival_stepwise *range)
+{
+	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+	const struct v4l2_mbus_framefmt *fmt;
+	const struct v4l2_rect *crop;
+	unsigned int min_vts;
+	bool binned;
+
+	if (!state || pad || stream)
+		return -EINVAL;
+
+	fmt = v4l2_subdev_state_get_format(state, pad);
+	crop = v4l2_subdev_state_get_crop(state, pad);
+	if (!fmt->width || !fmt->height)
+		return -EINVAL;
+
+	/* TRY stores the result of the independent horizontal/vertical binning. */
+	binned = fmt->width < crop->width && fmt->height < crop->height;
+	min_vts = fmt->height + ov5693_min_vblank_for_mode(ov5693, binned);
+
+	range->min = (struct v4l2_fract) {
+		.numerator = OV5693_FIXED_PPL * min_vts,
+		.denominator = ov5693->pixel_rate,
+	};
+	range->max = (struct v4l2_fract) {
+		.numerator = OV5693_FIXED_PPL * OV5693_TIMING_MAX_VTS,
+		.denominator = ov5693->pixel_rate,
+	};
+	range->step = (struct v4l2_fract) {
+		.numerator = OV5693_FIXED_PPL,
+		.denominator = ov5693->pixel_rate,
+	};
+
+	return 0;
+}
+
 static int ov5693_get_frame_interval(struct v4l2_subdev *sd,
 				     struct v4l2_subdev_state *sd_state,
 				     struct v4l2_subdev_frame_interval *interval)
@@ -1666,6 +1712,7 @@ static const struct v4l2_subdev_pad_ops ov5693_pad_ops = {
 	.get_selection = ov5693_get_selection,
 	.set_selection = ov5693_set_selection,
 	.get_frame_interval = ov5693_get_frame_interval,
+	.get_frame_interval_range = ov5693_get_frame_interval_range,
 	.set_frame_interval = ov5693_set_frame_interval,
 };
 
