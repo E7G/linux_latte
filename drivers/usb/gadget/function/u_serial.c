@@ -26,6 +26,7 @@
 #include <linux/module.h>
 #include <linux/console.h>
 #include <linux/kstrtox.h>
+#include <linux/kref.h>
 #include <linux/kthread.h>
 #include <linux/workqueue.h>
 #include <linux/kfifo.h>
@@ -88,13 +89,26 @@
 static DEFINE_SPINLOCK(serial_port_lock);
 
 /* console info */
+struct gs_console_tx;
+
 struct gs_console {
 	struct console		console;
 	struct work_struct	work;
-	spinlock_t		lock;
-	struct usb_request	*req;
+	spinlock_t		lock;		/* buffer and tx state */
+	struct gs_port		*port;
+	struct gs_console_tx	*tx;
+	struct kref		ref;
+	bool			stopping;
 	struct kfifo		buf;
 	size_t			missed;
+};
+
+struct gs_console_tx {
+	struct gs_console	*cons;
+	struct usb_ep		*ep;
+	struct usb_request	*req;
+	struct kref		ref;
+	bool			busy;		/* protected by cons->lock */
 };
 
 /*
@@ -108,6 +122,7 @@ struct gs_port {
 	struct gserial		*port_usb;
 #ifdef CONFIG_U_SERIAL_CONSOLE
 	struct gs_console	*console;
+	spinlock_t		console_submit_lock;
 #endif
 
 	u8			port_num;
@@ -927,48 +942,61 @@ static struct tty_driver *gs_tty_driver;
 
 #ifdef CONFIG_U_SERIAL_CONSOLE
 
+static void gs_console_release(struct kref *ref)
+{
+	struct gs_console *cons = container_of(ref, struct gs_console, ref);
+
+	kfifo_free(&cons->buf);
+	kfree(cons);
+}
+
+static void gs_console_tx_release(struct kref *ref)
+{
+	struct gs_console_tx *tx = container_of(ref, struct gs_console_tx, ref);
+
+	gs_free_req(tx->ep, tx->req);
+	kref_put(&tx->cons->ref, gs_console_release);
+	kfree(tx);
+}
+
 static void gs_console_complete_out(struct usb_ep *ep, struct usb_request *req)
 {
-	struct gs_console *cons = req->context;
+	struct gs_console_tx *tx = req->context;
+	struct gs_console *cons = tx->cons;
+	int status = req->status;
+	bool shutdown = status == -ECONNRESET || status == -ESHUTDOWN;
+	unsigned long flags;
 
-	switch (req->status) {
-	default:
-		pr_warn("%s: unexpected %s status %d\n",
-			__func__, ep->name, req->status);
-		fallthrough;
-	case 0:
-		/* normal completion */
-		spin_lock(&cons->lock);
-		req->length = 0;
+	if (status && !shutdown)
+		pr_warn("%s: unexpected %s status %d\n", __func__, ep->name, status);
+
+	spin_lock_irqsave(&cons->lock, flags);
+	tx->busy = false;
+	if (cons->tx == tx && !cons->stopping && !shutdown)
 		schedule_work(&cons->work);
-		spin_unlock(&cons->lock);
-		break;
-	case -ECONNRESET:
-	case -ESHUTDOWN:
-		/* disconnect */
-		pr_vdebug("%s: %s shutdown\n", __func__, ep->name);
-		break;
-	}
+	spin_unlock_irqrestore(&cons->lock, flags);
+
+	kref_put(&tx->ref, gs_console_tx_release);
 }
 
 static void __gs_console_push(struct gs_console *cons)
 {
-	struct usb_request *req = cons->req;
-	struct usb_ep *ep;
+	struct gs_console_tx *tx;
+	struct usb_request *req;
 	size_t size;
 
-	if (!req)
-		return;	/* disconnected */
+	lockdep_assert_held(&cons->port->console_submit_lock);
+	spin_lock(&cons->lock);
+	tx = cons->tx;
+	if (!tx || tx->busy || cons->stopping)
+		goto unlock;
 
-	if (req->length)
-		return;	/* busy */
-
-	ep = cons->console.data;
-	size = kfifo_out(&cons->buf, req->buf, ep->maxpacket);
+	req = tx->req;
+	size = kfifo_out(&cons->buf, req->buf, tx->ep->maxpacket);
 	if (!size)
-		return;
+		goto unlock;
 
-	if (cons->missed && ep->maxpacket >= 64) {
+	if (cons->missed && tx->ep->maxpacket >= 64) {
 		char buf[64];
 		size_t len;
 
@@ -978,22 +1006,35 @@ static void __gs_console_push(struct gs_console *cons)
 	}
 
 	req->length = size;
+	tx->busy = true;
+	kref_get(&tx->ref);	/* queue call may outlive attachment */
+	kref_get(&tx->ref);	/* completion owns this on queue success */
+	spin_unlock(&cons->lock);
 
-	spin_unlock_irq(&cons->lock);
-	if (usb_ep_queue(ep, req, GFP_ATOMIC))
-		req->length = 0;
-	spin_lock_irq(&cons->lock);
+	if (usb_ep_queue(tx->ep, req, GFP_ATOMIC)) {
+		spin_lock(&cons->lock);
+		tx->busy = false;
+		spin_unlock(&cons->lock);
+		kref_put(&tx->ref, gs_console_tx_release);
+	}
+	kref_put(&tx->ref, gs_console_tx_release);
+	return;
+unlock:
+	spin_unlock(&cons->lock);
 }
 
 static void gs_console_work(struct work_struct *work)
 {
 	struct gs_console *cons = container_of(work, struct gs_console, work);
 
-	spin_lock_irq(&cons->lock);
-
+	/*
+	 * Keep the endpoint alive through queue, but don't hold port_lock
+	 * (the UDC may give back another TTY request) or the buffer lock
+	 * (a UDC operation can enter printk).
+	 */
+	spin_lock_irq(&cons->port->console_submit_lock);
 	__gs_console_push(cons);
-
-	spin_unlock_irq(&cons->lock);
+	spin_unlock_irq(&cons->port->console_submit_lock);
 }
 
 static void gs_console_write(struct console *co,
@@ -1009,7 +1050,7 @@ static void gs_console_write(struct console *co,
 	if (n < count)
 		cons->missed += count - n;
 
-	if (cons->req && !cons->req->length)
+	if (cons->tx && !cons->tx->busy && !cons->stopping)
 		schedule_work(&cons->work);
 
 	spin_unlock_irqrestore(&cons->lock, flags);
@@ -1024,23 +1065,29 @@ static struct tty_driver *gs_console_device(struct console *co, int *index)
 static int gs_console_connect(struct gs_port *port)
 {
 	struct gs_console *cons = port->console;
-	struct usb_request *req;
-	struct usb_ep *ep;
+	struct gs_console_tx *tx;
 
-	if (!cons)
+	lockdep_assert_held(&port->port_lock);
+	if (!cons || cons->stopping)
 		return 0;
 
-	ep = port->port_usb->in;
-	req = gs_alloc_req(ep, ep->maxpacket, GFP_ATOMIC);
-	if (!req)
+	tx = kzalloc_obj(*tx, GFP_ATOMIC);
+	if (!tx)
 		return -ENOMEM;
-	req->complete = gs_console_complete_out;
-	req->context = cons;
-	req->length = 0;
+	tx->cons = cons;
+	tx->ep = port->port_usb->in;
+	tx->req = gs_alloc_req(tx->ep, tx->ep->maxpacket, GFP_ATOMIC);
+	if (!tx->req) {
+		kfree(tx);
+		return -ENOMEM;
+	}
+	tx->req->complete = gs_console_complete_out;
+	tx->req->context = tx;
+	kref_init(&tx->ref);
+	kref_get(&cons->ref);
 
 	spin_lock(&cons->lock);
-	cons->req = req;
-	cons->console.data = ep;
+	cons->tx = tx;
 	spin_unlock(&cons->lock);
 
 	pr_debug("ttyGS%d: console connected!\n", port->port_num);
@@ -1050,28 +1097,41 @@ static int gs_console_connect(struct gs_port *port)
 	return 0;
 }
 
-static void gs_console_disconnect(struct gs_port *port)
+static struct gs_console_tx *gs_console_detach(struct gs_console *cons)
 {
-	struct gs_console *cons = port->console;
-	struct usb_request *req;
-	struct usb_ep *ep;
+	struct gs_console_tx *tx;
 
 	if (!cons)
-		return;
+		return NULL;
 
 	spin_lock(&cons->lock);
-
-	req = cons->req;
-	ep = cons->console.data;
-	cons->req = NULL;
-
+	tx = cons->tx;
+	cons->tx = NULL;
 	spin_unlock(&cons->lock);
+	return tx;
+}
 
-	if (!req)
-		return;
+static void gs_console_disconnect(struct gs_port *port)
+{
+	struct gs_console_tx *tx;
 
-	usb_ep_dequeue(ep, req);
-	gs_free_req(ep, req);
+	lockdep_assert_held(&port->port_lock);
+	tx = gs_console_detach(port->console);
+	if (tx)
+		kref_put(&tx->ref, gs_console_tx_release);
+}
+
+static void gs_console_sync_queue(struct gs_port *port)
+{
+	unsigned long flags;
+
+	/*
+	 * Detach prevented new submissions. Finish any queue call before
+	 * disabling the endpoint, which gives back accepted requests.
+	 */
+	lockdep_assert_not_held(&port->port_lock);
+	spin_lock_irqsave(&port->console_submit_lock, flags);
+	spin_unlock_irqrestore(&port->console_submit_lock, flags);
 }
 
 static int gs_console_init(struct gs_port *port)
@@ -1094,6 +1154,8 @@ static int gs_console_init(struct gs_port *port)
 
 	INIT_WORK(&cons->work, gs_console_work);
 	spin_lock_init(&cons->lock);
+	cons->port = port;
+	kref_init(&cons->ref);
 
 	err = kfifo_alloc(&cons->buf, GS_CONSOLE_BUF_SIZE, GFP_KERNEL);
 	if (err) {
@@ -1102,10 +1164,10 @@ static int gs_console_init(struct gs_port *port)
 		return err;
 	}
 
-	port->console = cons;
 	register_console(&cons->console);
 
 	spin_lock_irq(&port->port_lock);
+	port->console = cons;
 	if (port->port_usb)
 		gs_console_connect(port);
 	spin_unlock_irq(&port->port_lock);
@@ -1116,6 +1178,7 @@ static int gs_console_init(struct gs_port *port)
 static void gs_console_exit(struct gs_port *port)
 {
 	struct gs_console *cons = port->console;
+	struct gs_console_tx *tx;
 
 	if (!cons)
 		return;
@@ -1123,14 +1186,33 @@ static void gs_console_exit(struct gs_port *port)
 	unregister_console(&cons->console);
 
 	spin_lock_irq(&port->port_lock);
-	if (cons->req)
-		gs_console_disconnect(port);
+	spin_lock(&cons->lock);
+	cons->stopping = true;
+	spin_unlock(&cons->lock);
 	spin_unlock_irq(&port->port_lock);
 
 	cancel_work_sync(&cons->work);
-	kfifo_free(&cons->buf);
-	kfree(cons);
+
+	spin_lock_irq(&port->port_lock);
+	tx = gs_console_detach(cons);
 	port->console = NULL;
+	if (tx) {
+		bool busy;
+
+		spin_lock(&cons->lock);
+		busy = tx->busy;
+		spin_unlock(&cons->lock);
+		/*
+		 * Unlike link disconnect, removing only the console leaves
+		 * an enabled endpoint. Completion owns its reference even
+		 * if cancellation is asynchronous or races completion.
+		 */
+		if (busy && port->port_usb && port->port_usb->in == tx->ep)
+			usb_ep_dequeue(tx->ep, tx->req);
+		kref_put(&tx->ref, gs_console_tx_release);
+	}
+	spin_unlock_irq(&port->port_lock);
+	kref_put(&cons->ref, gs_console_release);
 }
 
 ssize_t gserial_set_console(unsigned char port_num, const char *page, size_t count)
@@ -1192,6 +1274,10 @@ static void gs_console_disconnect(struct gs_port *port)
 {
 }
 
+static void gs_console_sync_queue(struct gs_port *port)
+{
+}
+
 static int gs_console_init(struct gs_port *port)
 {
 	return -ENOSYS;
@@ -1223,6 +1309,9 @@ gs_port_alloc(unsigned port_num, struct usb_cdc_line_coding *coding)
 
 	tty_port_init(&port->port);
 	spin_lock_init(&port->port_lock);
+#ifdef CONFIG_U_SERIAL_CONSOLE
+	spin_lock_init(&port->console_submit_lock);
+#endif
 	init_waitqueue_head(&port->drain_wait);
 	init_waitqueue_head(&port->close_wait);
 
@@ -1465,6 +1554,7 @@ void gserial_disconnect(struct gserial *gser)
 	spin_unlock_irqrestore(&serial_port_lock, flags);
 
 	/* disable endpoints, aborting down any active I/O */
+	gs_console_sync_queue(port);
 	usb_ep_disable(gser->out);
 	usb_ep_disable(gser->in);
 
