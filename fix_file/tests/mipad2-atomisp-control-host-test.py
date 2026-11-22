@@ -20,6 +20,8 @@ query = driver.split("static int atomisp_query_control(", 1)[1]
 query = query.split("static int atomisp_query_ext_ctrl(", 1)[0]
 limits = driver.split("static int atomisp_g_ext_limits(", 1)[1]
 limits = limits.split("/* This ioctl allows the application to get multiple controls", 1)[0]
+menu = driver.split("static int atomisp_querymenu(", 1)[1]
+menu = menu.split("/*\n * Use the V4L2 control framework", 1)[0]
 batch = driver.split("static bool atomisp_is_sensor_batch(", 1)[1]
 batch = batch.split("static int atomisp_camera_g_ext_ctrls(", 1)[0]
 try_batch = driver.split("static int atomisp_try_ext_ctrls(", 1)[1]
@@ -61,6 +63,8 @@ struct v4l2_ctrl_handler {
 	int query_error;
 	bool manual;
 	int exposure, analogue_gain;
+	bool has_location;
+	int facing, rotation;
 	int get_error, set_error;
 };
 struct v4l2_subdev { struct v4l2_ctrl_handler *ctrl_handler; };
@@ -95,6 +99,12 @@ static int v4l2_g_ctrl(struct v4l2_ctrl_handler *hdl, struct v4l2_control *c)
 	case V4L2_CID_ANALOGUE_GAIN:
 		c->value = hdl->analogue_gain;
 		return 0;
+	case V4L2_CID_CAMERA_ORIENTATION:
+	case V4L2_CID_CAMERA_SENSOR_ROTATION:
+		if (!hdl->has_location)
+			return -EINVAL;
+		c->value = c->id == V4L2_CID_CAMERA_ORIENTATION ? hdl->facing : hdl->rotation;
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -112,9 +122,24 @@ static int v4l2_s_ctrl(void *fh, struct v4l2_ctrl_handler *hdl,
 	case V4L2_CID_ANALOGUE_GAIN:
 		hdl->analogue_gain = c->value;
 		return 0;
+	case V4L2_CID_CAMERA_ORIENTATION:
+	case V4L2_CID_CAMERA_SENSOR_ROTATION:
+		return hdl->has_location ? -EACCES : -EINVAL;
 	default:
 		return -EINVAL;
 	}
+}
+
+static int v4l2_querymenu(struct v4l2_ctrl_handler *hdl, struct v4l2_querymenu *qm)
+{
+	const char *names[] = {"Front", "Back", "External"};
+
+	if (!hdl->has_location || qm->id != V4L2_CID_CAMERA_ORIENTATION ||
+	    qm->index >= ARRAY_SIZE(names))
+		return -EINVAL;
+	strcpy((char *)qm->name, names[qm->index]);
+	qm->reserved = 0;
+	return 0;
 }
 
 static unsigned int nr_batch_g, nr_batch_s, nr_batch_try;
@@ -156,6 +181,21 @@ static int v4l2_query_ext_ctrl(const struct v4l2_ctrl_handler *sensor,
 {
 	int red = q->id == V4L2_CID_RED_BALANCE;
 
+	if (sensor->has_location &&
+	    (q->id == V4L2_CID_CAMERA_ORIENTATION || q->id == V4L2_CID_CAMERA_SENSOR_ROTATION)) {
+		bool rotation = q->id == V4L2_CID_CAMERA_SENSOR_ROTATION;
+
+		*q = (struct v4l2_query_ext_ctrl) {
+			.id = q->id, .name = "Camera location",
+			.type = rotation ? V4L2_CTRL_TYPE_INTEGER : V4L2_CTRL_TYPE_MENU,
+			.minimum = rotation ? sensor->rotation : 0,
+			.maximum = rotation ? sensor->rotation : 2,
+			.default_value = rotation ? sensor->rotation : sensor->facing,
+			.flags = V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX,
+			.step = 1, .elem_size = 4, .elems = 1,
+		};
+		return 0;
+	}
 	if (sensor->manual && (q->id == V4L2_CID_EXPOSURE ||
 			      q->id == V4L2_CID_ANALOGUE_GAIN)) {
 		bool exposure = q->id == V4L2_CID_EXPOSURE;
@@ -189,6 +229,7 @@ program += "static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);\n"
 program += "static bool atomisp_is_sensor_ctrl(" + routing
 program += "static int atomisp_query_control(" + query
 program += "static int atomisp_g_ext_limits(" + limits
+program += "static int atomisp_querymenu(" + menu
 program += "static bool atomisp_is_sensor_batch(" + batch
 program += "static int atomisp_try_ext_ctrls(" + try_batch
 program += r"""
@@ -376,7 +417,46 @@ int main(void)
 		assert(!atomisp_is_sensor_batch(&c));
 		assert(!atomisp_try_ext_ctrls(&file, NULL, &c));
 	}
-	puts("PASS: AtomISP NEXT, sensor read/write routing, limits, and batch validation");
+	{
+		struct video_device vdev = {.asd = &asd};
+		struct file file = {.vdev = &vdev};
+		u32 orient = V4L2_CID_CAMERA_ORIENTATION, rot = V4L2_CID_CAMERA_SENSOR_ROTATION;
+
+		isp.inputs[0].sensor = &s0;
+		front.get_error = rear.get_error = 0;
+		front.set_error = rear.set_error = 0;
+		front.has_location = rear.has_location = true;
+		rear.facing = V4L2_CAMERA_ORIENTATION_BACK;
+		rear.rotation = 270;
+		for (i = 0; i < 2; i++) {
+			struct v4l2_control c = {.id = orient};
+			struct v4l2_querymenu item = {.id = orient, .index = i};
+
+			asd.input_curr = i;
+			next(&asd, color | scalar, orient);
+			next(&asd, orient | scalar, rot);
+			next(&asd, rot | scalar, V4L2_CID_ANALOGUE_GAIN);
+			q.id = orient;
+			assert(!atomisp_query_control(&asd, &q) && q.type == V4L2_CTRL_TYPE_MENU &&
+			       (q.flags & V4L2_CTRL_FLAG_READ_ONLY) && q.default_value == i);
+			assert(!atomisp_g_ctrl(&file, NULL, &c) && (u32)c.value == i);
+			assert(!atomisp_querymenu(&file, NULL, &item));
+			assert(!strcmp((const char *)item.name, i ? "Back" : "Front"));
+			assert(atomisp_s_ctrl(&file, NULL, &c) == -EACCES);
+			c.id = rot;
+			assert(!atomisp_g_ctrl(&file, NULL, &c) && c.value == (i ? 270 : 0));
+			assert(atomisp_s_ctrl(&file, NULL, &c) == -EACCES);
+			item.index = 3;
+			assert(atomisp_querymenu(&file, NULL, &item) == -EINVAL);
+			item.id = rot;
+			item.index = 0;
+			assert(atomisp_querymenu(&file, NULL, &item) == -EINVAL);
+		}
+		isp.inputs[1].sensor = NULL;
+		struct v4l2_querymenu missing = {.id = orient};
+		assert(atomisp_querymenu(&file, NULL, &missing) == -ENODEV);
+	}
+	puts("PASS: AtomISP controls, sensor batch validation, and read-only camera location");
 }
 """
 

@@ -23,7 +23,7 @@ def sha(path):
 
 def main():
     factory_dsp_flavors = ('tfaqual1', 'tfaqual2')
-    camera_flavors = (*(f'lpat{n}' for n in range(14, 30)), 'tfaqual2')
+    camera_flavors = (*(f'lpat{n}' for n in range(14, 31)), 'tfaqual2')
     thermal_flavors = ('lpat3', 'lpat4', 'lpat5', 'lpat6', 'lpat8', 'lpat9',
                        'lpat10', 'lpat11', 'lpat12', 'lpat13', 'tfaqual1', *camera_flavors)
     adc_flavors = ('adc1', 'adc2', 'pmic1', 'lpat1', 'lpat2', *thermal_flavors)
