@@ -10,6 +10,7 @@
 
 #include <linux/delay.h>
 #include <linux/i2c.h>
+#include <linux/minmax.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
@@ -278,13 +279,16 @@ static int dw9719_suspend(struct device *dev)
 	int ret;
 	int val;
 
-	for (val = dw9719->ctrls.focus->val; val >= 0;
-	     val -= DW9719_CTRL_STEPS) {
+	/* Include zero even when the cached position is not step-aligned. */
+	for (val = dw9719->ctrls.focus->val; ;
+	     val = max(val - DW9719_CTRL_STEPS, 0)) {
 		ret = dw9719_t_focus_abs(dw9719, val);
 		if (ret)
 			return ret;
 
 		usleep_range(DW9719_CTRL_DELAY_US, DW9719_CTRL_DELAY_US + 10);
+		if (!val)
+			break;
 	}
 
 	return dw9719_power_down(dw9719);
@@ -302,7 +306,8 @@ static int dw9719_resume(struct device *dev)
 	if (ret)
 		return ret;
 
-	for (val = current_focus % DW9719_CTRL_STEPS; val < current_focus;
+	/* Restore the cached focus position after the final ramp step. */
+	for (val = current_focus % DW9719_CTRL_STEPS; val <= current_focus;
 	     val += DW9719_CTRL_STEPS) {
 		ret = dw9719_t_focus_abs(dw9719, val);
 		if (ret)

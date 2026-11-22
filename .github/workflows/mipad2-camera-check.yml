@@ -16,6 +16,7 @@ on:
       - 'drivers/usb/gadget/function/u_serial.c'
       - 'drivers/usb/gadget/udc/trace.h'
       - 'drivers/usb/gadget/udc/trace.c'
+      - 'drivers/media/i2c/dw9719.c'
       - 'drivers/media/i2c/ov5693.c'
       - 'drivers/media/i2c/t4ka3.c'
       - 'drivers/media/v4l2-core/v4l2-cci.c'
@@ -33,6 +34,7 @@ on:
       - 'fix_file/tests/mipad2-ov5693-otp-parser-test.py'
       - 'fix_file/tests/mipad2-ov5693-otp-io-test.py'
       - 'fix_file/tests/mipad2-t4ka3-start-host-test.py'
+      - 'fix_file/tests/mipad2-dw9719-ramp-host-test.py'
       - 'fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py'
       - 'fix_file/tests/mipad2-stream-stop-pm-host-test.py'
       - 'fix_file/tests/mipad2-7.2-r4-lifecycle-device-test.c'
@@ -98,6 +100,10 @@ jobs:
           CC=gcc python3 -B fix_file/tests/mipad2-t4ka3-start-host-test.py
           CC="clang -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-t4ka3-start-host-test.py
           python3 -B fix_file/tests/mipad2-t4ka3-reset-pulse-host-test.py
+      - name: Verify exact focus and park positions on DW9719-family runtime PM
+        run: |
+          CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B fix_file/tests/mipad2-dw9719-ramp-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-dw9719-ramp-host-test.py
       - name: Verify front and rear V4L2 stream lifecycle ownership
         run: python3 -B fix_file/tests/mipad2-stream-stop-pm-host-test.py
       - name: Verify the AtomISP reports negotiated capture metadata
@@ -153,10 +159,12 @@ jobs:
           case "$(make -s O=out LLVM=1 ARCH=x86_64 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
           grep -qx 'CONFIG_VIDEO_OV5693=m' out/.config
           grep -qx 'CONFIG_VIDEO_T4KA3=m' out/.config
+          grep -qx 'CONFIG_VIDEO_DW9719=m' out/.config
           grep -qx 'CONFIG_VIDEO_ATOMISP=m' out/.config
           grep -qx 'CONFIG_U_SERIAL_CONSOLE=y' out/.config
           make O=out LLVM=1 ARCH=x86_64 W=1 -j"$(nproc)" \
-            drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o drivers/media/v4l2-core/v4l2-cci.o \
+            drivers/media/i2c/dw9719.o drivers/media/i2c/ov5693.o drivers/media/i2c/t4ka3.o \
+            drivers/media/v4l2-core/v4l2-cci.o \
             drivers/staging/media/atomisp/pci/atomisp_v4l2.o drivers/staging/media/atomisp/pci/atomisp_cmd.o \
             drivers/staging/media/atomisp/pci/atomisp_ioctl.o drivers/usb/dwc3/gadget.o \
             drivers/usb/gadget/function/u_serial.o drivers/usb/gadget/udc/trace.o \
