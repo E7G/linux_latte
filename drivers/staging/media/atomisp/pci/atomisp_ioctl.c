@@ -51,6 +51,8 @@ static const u32 atomisp_sensor_ctrl_ids[] = {
 	V4L2_CID_BLUE_BALANCE,
 	V4L2_CID_EXPOSURE,
 	V4L2_CID_GAMMA,
+	V4L2_CID_CAMERA_ORIENTATION,
+	V4L2_CID_CAMERA_SENSOR_ROTATION,
 	V4L2_CID_ANALOGUE_GAIN,
 };
 
@@ -1369,6 +1371,20 @@ static int atomisp_query_ext_ctrl(struct file *file, void *fh,
 	return atomisp_query_control(asd, qc);
 }
 
+static int atomisp_querymenu(struct file *file, void *fh,
+			     struct v4l2_querymenu *qm)
+{
+	struct video_device *vdev = video_devdata(file);
+	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct v4l2_ctrl_handler *hdl;
+
+	if (qm->id != V4L2_CID_CAMERA_ORIENTATION)
+		return -EINVAL;
+
+	hdl = atomisp_sensor_ctrl_handler(asd);
+	return hdl ? v4l2_querymenu(hdl, qm) : -ENODEV;
+}
+
 /*
  * Use the V4L2 control framework for a batch owned entirely by the
  * active sensor. In particular it validates all controls before any
@@ -1928,6 +1944,7 @@ const struct v4l2_ioctl_ops atomisp_ioctl_ops = {
 	.vidioc_g_input = atomisp_g_input,
 	.vidioc_s_input = atomisp_s_input,
 	.vidioc_query_ext_ctrl = atomisp_query_ext_ctrl,
+	.vidioc_querymenu = atomisp_querymenu,
 	.vidioc_s_ext_ctrls = atomisp_s_ext_ctrls,
 	.vidioc_g_ext_ctrls = atomisp_g_ext_ctrls,
 	.vidioc_try_ext_ctrls = atomisp_try_ext_ctrls,
