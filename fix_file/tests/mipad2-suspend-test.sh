@@ -65,15 +65,58 @@ for row in data[0]:
 PY
 }
 
-s0i3_us()
+# pmc_atom reads u32 registers and displays ticks shifted by 5.
+# Keep the kernel's reported units; all five counters have this period.
+pmc_period_us=137438953472
+
+boottime_us()
 {
-    awk '/S0I3 Residency:/ {
-        value=$3
-        sub(/us$/, "", value)
-        if (value ~ /^[0-9]+$/)
-            print value
-        exit
-    }' "$pmc"
+    # The first field of /proc/uptime includes time spent suspended.
+    LC_ALL=C awk '
+        NR == 1 && $1 ~ /^[0-9]+[.][0-9][0-9]$/ {
+            split($1, time, "[.]")
+            if (time[1] <= 999999999) {
+                printf "%.0f\n", time[1] * 1000000 + time[2] * 10000
+                valid = 1
+            }
+        }
+        END { if (!valid) exit 1 }
+    ' /proc/uptime
+}
+
+pmc_snapshot()
+{
+    # Bracket the debugfs read, so bounded read latency is not residency.
+    lo=$(boottime_us) || return 1
+    counters=$(LC_ALL=C awk -v period="$pmc_period_us" '
+        BEGIN {
+            n = split("S0IR S0I1 S0I2 S0I3 S0", keys, " ")
+            for (i = 1; i <= n; i++)
+                expected[keys[i]] = 1
+        }
+        $1 in expected {
+            if (++seen[$1] != 1 || NF != 3 || $2 != "Residency:" ||
+                $3 !~ /^[0-9]+us$/) {
+                invalid = 1
+                next
+            }
+            v = $3
+            sub(/us$/, "", v)
+            v += 0
+            if (v >= period || v % 32 != 0) invalid = 1
+            value[$1] = v
+        }
+        END {
+            if (invalid) exit 1
+            for (i = 1; i <= n; i++)
+                if (!seen[keys[i]]) exit 1
+            for (i = 1; i <= n; i++)
+                printf "%.0f%s", value[keys[i]], i == n ? "\n" : " "
+        }
+    ' "$pmc") || return 1
+    hi=$(boottime_us) || return 1
+    [ "$hi" -ge "$lo" ] || return 1
+    printf '%s %s %s\n' "$lo" "$hi" "$counters"
 }
 
 check_no_alarm()
@@ -136,8 +179,10 @@ pme_irq_snapshot()
 
 check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
 check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
-before=$(s0i3_us)
-[ -n "$before" ] || fail_run "S0I3 residency counter unavailable"
+before=$(pmc_snapshot) || fail_run "Invalid PMC residency snapshot before suspend"
+read -r before_lo before_hi before_ir before_i1 before_i2 before_i3 before_s0 <<EOF
+$before
+EOF
 tail=$(journalctl -b -k -n 1 -o cat --show-cursor --no-pager) ||
     fail_run "Cannot establish a kernel journal cursor"
 cursor=$(printf '%s\n' "$tail" | sed -n 's/^-- cursor: //p')
@@ -158,7 +203,7 @@ clear_own_alarm()
 trap clear_own_alarm EXIT
 trap 'exit 1' HUP INT TERM
 
-printf 'INFO S0I3 before: %sus\n' "$before"
+printf 'INFO S0I3 before: %sus\n' "$before_i3"
 printf 'INFO suspending for %ss with RTC wake\n' "$seconds"
 check_no_alarm || fail_run "RTC alarm state changed before arming"
 rtc_before=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter"
@@ -209,11 +254,44 @@ wake_irq=$(cat "$irq")
 expected_alarm=$alarm
 clear_own_alarm
 alarm=''
-after=$(s0i3_us)
-[ -n "$after" ] || fail_run "S0I3 residency counter unavailable after resume"
-delta=$((after - before))
-printf 'INFO S0I3 after:  %sus\n' "$after"
-printf 'INFO S0I3 delta:  %sus\n' "$delta"
+after=$(pmc_snapshot) || fail_run "Invalid PMC residency snapshot after resume"
+read -r after_lo after_hi after_ir after_i1 after_i2 after_i3 after_s0 <<EOF
+$after
+EOF
+[ "$after_lo" -ge "$before_hi" ] ||
+    fail_run "Boot-time clock moved backwards between PMC samples"
+elapsed=$((after_hi - before_lo))
+# PMC time is nominal and can run ahead of the boot-time clock. Permit
+# 10% rate difference and 100 ms for timestamp granularity and skew.
+# A window that permits a full counter period makes the delta ambiguous.
+limit=$((elapsed + elapsed / 10 + 100000))
+[ "$limit" -lt "$pmc_period_us" ] ||
+    fail_run "PMC sampling interval does not exclude a full counter period"
+printf 'INFO PMC sample window: %sus (per-counter limit %sus)\n' "$elapsed" "$limit"
+
+invalid=
+for state in S0IR S0I1 S0I2 S0I3 S0; do
+    case "$state" in
+        S0IR) a=$after_ir; b=$before_ir ;;
+        S0I1) a=$after_i1; b=$before_i1 ;;
+        S0I2) a=$after_i2; b=$before_i2 ;;
+        S0I3) a=$after_i3; b=$before_i3 ;;
+        S0)   a=$after_s0; b=$before_s0 ;;
+    esac
+    d=$(((a - b + pmc_period_us) % pmc_period_us))
+    if [ "$a" -lt "$b" ]; then
+        wrapped=' (modulo counter period)'
+    else
+        wrapped=''
+    fi
+    printf 'INFO %s delta:  %sus%s (before %sus, after %sus)\n' "$state" "$d" "$wrapped" "$b" "$a"
+    if [ "$d" -gt "$limit" ]; then
+        invalid="$invalid $state"
+    fi
+    if [ "$state" = S0I3 ]; then
+        delta=$d
+    fi
+done
 printf 'INFO wake IRQ: %s; RTC fixed-event count: %s -> %s\n' "$wake_irq" "$rtc_before" "$rtc_after"
 pme_after=$(pme_irq_snapshot) || fail_run "Cannot read virtual PME interrupt counters after resume"
 printf 'INFO virtual PME child IRQ snapshot: %s -> %s\n' "$pme_before" "$pme_after"
@@ -226,6 +304,9 @@ fi
 
 [ "$pme_before" = "$pme_after" ] ||
     fail_run "Virtual PME child interrupt evidence changed during the RTC test"
+
+[ -z "$invalid" ] ||
+    fail_run "PMC residency deltas exceed the measured boot-time window:$invalid"
 
 # Allow for entry/exit latency but require most of the requested interval in S0i3.
 minimum=$((seconds * 700000))
