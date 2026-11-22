@@ -20,6 +20,11 @@
 #include <linux/seq_file.h>
 #include <linux/suspend.h>
 
+#ifdef CONFIG_SUSPEND
+#define CREATE_TRACE_POINTS
+#include <trace/events/pmc_atom.h>
+#endif
+
 struct pmc_bit_map {
 	const char *name;
 	u32 bit_mask;
@@ -477,6 +482,7 @@ static void pmc_s2idle_check(void)
 	u32 func_dis, func_dis_2;
 	u32 d3_sts_0, d3_sts_1;
 	u32 false_pos_sts_0, false_pos_sts_1;
+	u32 forced_clks = 0;
 	int i;
 
 	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
@@ -510,8 +516,13 @@ static void pmc_s2idle_check(void)
 		if ((ctl & PMC_MASK_CLK_CTL) != PMC_CLK_CTL_FORCE_ON)
 			continue;
 
+		forced_clks |= BIT(i);
 		pr_err("clock %d is ON prior to freeze (ctl 0x%08x)\n", i, ctl);
 	}
+
+	if (trace_pmc_atom_s2idle_enabled())
+		trace_pmc_atom_s2idle(func_dis, func_dis_2, d3_sts_0, d3_sts_1,
+				     pmc_reg_read(pmc, PMC_PSS), forced_clks);
 }
 
 static struct acpi_s2idle_dev_ops pmc_s2idle_ops = {

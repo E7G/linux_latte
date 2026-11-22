@@ -296,3 +296,16 @@ cc -O2 -Wall -Wextra -Werror -static \
 See [r6 deployment and limitations](../MIPAD2_R6_DEPLOYMENT_7_2.md).
 `mipad2-atomisp-buffer-trace-join.py --selftest` covers exact metadata joins,
 including stream-start zero CSS IDs without fabricating ISYS correspondence.
+
+## 7.2: Atom PMC snapshot before s2idle
+
+For an authorized suspend test, enable `pmc_atom:pmc_atom_s2idle` and
+`power:suspend_resume` in a dedicated tracefs instance before running
+`mipad2-suspend-test.sh`. Save the trace with the script's PMC timer deltas.
+The events are disabled by default; enabling them does not trigger suspend.
+
+Each PMC record is one entry attempt, not proof of S0i3 residency. A single
+suspend can contain more than one attempt. Compare the raw FUNC_DIS, D3
+and power-island (PSS) masks across successful and missed S0i3 cycles.
+`forced_clks` bit N corresponds to PMC clock N set to force-on. Zero means
+none of the sampled PMC clocks were forced on, not that S0i3 was reached.
