@@ -12,6 +12,13 @@ def check(condition, reason):
 
 
 root = Path(__file__).resolve().parents[1] / "packages/mipad2-usb-serial"
+serial = (root / "mipad2-usb-serial.service").read_text()
+check("ConditionDirectoryNotEmpty=/sys/class/udc\n" in serial, "an empty UDC list must skip gadget setup")
+check(all("serial-getty@ttyGS0.service" not in line
+          for line in serial.splitlines() if line.startswith(("Wants=", "Requires="))),
+      "eager getty dependency makes boots without the gadget wait for ttyGS0")
+check("ExecStartPost=-/usr/bin/systemctl --no-block start serial-getty@ttyGS0.service\n" in serial,
+      "must queue getty only after successful gadget setup without a systemd job-ordering deadlock")
 helper = (root / "mipad2-usb-serial-quiesce").read_text()
 unit = (root / "mipad2-usb-serial-quiesce.service").read_text()
 check("After=mipad2-usb-serial.service serial-getty@ttyGS0.service\n" in unit, "must stop before getty and gadget")

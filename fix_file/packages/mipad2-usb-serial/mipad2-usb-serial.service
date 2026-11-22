@@ -4,13 +4,14 @@ Documentation=https://docs.kernel.org/usb/gadget_configfs.html
 DefaultDependencies=no
 After=sys-kernel-config.mount
 Before=local-fs.target serial-getty@ttyGS0.service
-Wants=sys-kernel-config.mount serial-getty@ttyGS0.service
-ConditionPathExists=/sys/class/udc
+Wants=sys-kernel-config.mount
+ConditionDirectoryNotEmpty=/sys/class/udc
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/libexec/mipad2-usb-serial
+ExecStartPost=-/usr/bin/systemctl --no-block start serial-getty@ttyGS0.service
 ExecStop=/usr/local/libexec/mipad2-usb-serial stop
 
 [Install]
