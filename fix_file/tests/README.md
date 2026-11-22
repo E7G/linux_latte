@@ -86,7 +86,7 @@ monitor=0，再解除 Stop 检查两颗功放恢复 DSP 输入/时钟及 monitor
 
 - `/boot` 是否已挂载；
 - Wi-Fi interface；
-- Bluetooth HCI device；
+- 板载 Bluetooth HCI：ACPI BCM2E9C + hci_uart_bcm，USB 蓝牙适配器不能替代；
 - ALSA 声卡；
 - LCD backlight；
 - 触摸输入（包括 `FTSC1000:00`）；
