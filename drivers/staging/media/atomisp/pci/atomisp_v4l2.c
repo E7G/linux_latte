@@ -937,6 +937,8 @@ static void atomisp_unregister_entities(struct atomisp_device *isp)
 	struct v4l2_subdev *sd, *next;
 
 	atomisp_subdev_unregister_entities(&isp->asd);
+	v4l2_async_nf_cleanup(&isp->notifier);
+
 	for (i = 0; i < ATOMISP_CAMERA_NR_PORTS; i++)
 		atomisp_mipi_csi2_unregister_entities(&isp->csi2_port[i]);
 
@@ -1003,6 +1005,7 @@ subdev_register_failed:
 	for (i = 0; i < ATOMISP_CAMERA_NR_PORTS; i++)
 		atomisp_mipi_csi2_unregister_entities(&isp->csi2_port[i]);
 csi_and_subdev_probe_failed:
+	v4l2_async_nf_cleanup(&isp->notifier);
 	v4l2_device_unregister(&isp->v4l2_dev);
 v4l2_device_failed:
 	media_device_unregister(&isp->media_dev);
@@ -1599,6 +1602,10 @@ error_release_firmware:
 static void atomisp_pci_remove(struct pci_dev *pdev)
 {
 	struct atomisp_device *isp = pci_get_drvdata(pdev);
+
+	/* Stop asynchronous sensor callbacks before releasing any ISP state. */
+	if (!isp->pm_only)
+		v4l2_async_nf_unregister(&isp->notifier);
 
 	atomisp_pm_uninit(isp);
 
