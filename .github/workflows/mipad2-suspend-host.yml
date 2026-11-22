@@ -7,6 +7,7 @@ on:
       - 'fix_file/tests/mipad2-suspend-test.sh'
       - 'fix_file/tests/mipad2-suspend-host-test.py'
       - 'fix_file/tests/mipad2-serial-debug-awake*.py'
+      - 'fix_file/tests/mipad2-pmc-s2idle-report*.py'
       - '.github/workflows/mipad2-suspend-host.yml'
   push:
     branches: ['codex/mipad2-7.2-integrated']
@@ -14,6 +15,7 @@ on:
       - 'fix_file/tests/mipad2-suspend-test.sh'
       - 'fix_file/tests/mipad2-suspend-host-test.py'
       - 'fix_file/tests/mipad2-serial-debug-awake*.py'
+      - 'fix_file/tests/mipad2-pmc-s2idle-report*.py'
       - '.github/workflows/mipad2-suspend-host.yml'
 
 permissions:
@@ -32,3 +34,4 @@ jobs:
           sh -n fix_file/tests/mipad2-suspend-test.sh
           python3 -B fix_file/tests/mipad2-suspend-host-test.py
           python3 -B fix_file/tests/mipad2-serial-debug-awake-host-test.py
+          python3 -B fix_file/tests/mipad2-pmc-s2idle-report-test.py
