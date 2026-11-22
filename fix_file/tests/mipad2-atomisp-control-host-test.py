@@ -20,6 +20,10 @@ query = driver.split("static int atomisp_query_control(", 1)[1]
 query = query.split("static int atomisp_query_ext_ctrl(", 1)[0]
 limits = driver.split("static int atomisp_g_ext_limits(", 1)[1]
 limits = limits.split("/* This ioctl allows the application to get multiple controls", 1)[0]
+batch = driver.split("static bool atomisp_is_sensor_batch(", 1)[1]
+batch = batch.split("static int atomisp_camera_g_ext_ctrls(", 1)[0]
+try_batch = driver.split("static int atomisp_try_ext_ctrls(", 1)[1]
+try_batch = try_batch.split("/* This ioctl allows the application to set multiple controls", 1)[0]
 program = r"""
 #include <assert.h>
 #include <errno.h>
@@ -62,7 +66,9 @@ struct v4l2_ctrl_handler {
 struct v4l2_subdev { struct v4l2_ctrl_handler *ctrl_handler; };
 struct atomisp_device { struct { struct v4l2_subdev *sensor; } inputs[2]; };
 struct atomisp_sub_device { struct atomisp_device *isp; unsigned input_curr; };
-struct video_device { struct atomisp_sub_device *asd; };
+struct media_device { int sentinel; };
+struct v4l2_device { struct media_device *mdev; };
+struct video_device { struct atomisp_sub_device *asd; struct v4l2_device *v4l2_dev; };
 struct file { struct video_device *vdev; };
 #define video_devdata(file) ((file)->vdev)
 #define atomisp_to_video_pipe(vdev) (vdev)
@@ -111,6 +117,40 @@ static int v4l2_s_ctrl(void *fh, struct v4l2_ctrl_handler *hdl,
 	}
 }
 
+static unsigned int nr_batch_g, nr_batch_s, nr_batch_try;
+
+static int v4l2_g_ext_ctrls(struct v4l2_ctrl_handler *hdl, struct video_device *vdev,
+			    struct media_device *mdev, struct v4l2_ext_controls *c)
+{
+	assert(mdev && mdev->sentinel == 99);
+	nr_batch_g++;
+	c->controls[0].value = hdl->exposure;
+	return 0;
+}
+
+static int v4l2_try_ext_ctrls(struct v4l2_ctrl_handler *hdl, struct video_device *vdev,
+			      struct media_device *mdev, struct v4l2_ext_controls *c)
+{
+	assert(mdev && mdev->sentinel == 99);
+	nr_batch_try++;
+	if (c->count > 1 && c->controls[1].id == V4L2_CID_AUTO_WHITE_BALANCE) {
+		c->error_idx = 1;
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static int v4l2_s_ext_ctrls(void *origin, struct v4l2_ctrl_handler *hdl,
+			    struct video_device *vdev, struct media_device *mdev,
+			    struct v4l2_ext_controls *c)
+{
+	nr_batch_s++;
+	if (v4l2_try_ext_ctrls(hdl, vdev, mdev, c))
+		return -EINVAL;
+	hdl->exposure = c->controls[0].value;
+	return 0;
+}
+
 static int v4l2_query_ext_ctrl(const struct v4l2_ctrl_handler *sensor,
 			       struct v4l2_query_ext_ctrl *q)
 {
@@ -149,6 +189,8 @@ program += "static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);\n"
 program += "static bool atomisp_is_sensor_ctrl(" + routing
 program += "static int atomisp_query_control(" + query
 program += "static int atomisp_g_ext_limits(" + limits
+program += "static bool atomisp_is_sensor_batch(" + batch
+program += "static int atomisp_try_ext_ctrls(" + try_batch
 program += r"""
 static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
 {
@@ -297,7 +339,44 @@ int main(void)
 		assert(!atomisp_g_ext_limits(&asd, &c) && c.error_idx == 0);
 		fail_alloc = false;
 	}
-	puts("PASS: AtomISP NEXT, active-sensor get/set, and atomic scalar limits queries");
+	{
+		struct v4l2_ext_control v[2] = {
+			{.id = V4L2_CID_EXPOSURE, .value = 444},
+			{.id = V4L2_CID_AUTO_WHITE_BALANCE, .value = 1},
+		};
+		struct v4l2_ext_controls c = {.controls = v, .count = 2};
+		struct media_device media = {.sentinel = 99};
+		struct v4l2_device v4l2_dev = {.mdev = &media};
+		struct video_device vdev = {.asd = &asd, .v4l2_dev = &v4l2_dev};
+		struct file file = {.vdev = &vdev};
+		int original = front.exposure;
+
+		asd.input_curr = 0;
+		assert(atomisp_is_sensor_batch(&c));
+		assert(atomisp_try_ext_ctrls(&file, NULL, &c) == -EINVAL &&
+		       c.error_idx == 1 && front.exposure == original &&
+		       nr_batch_try == 1);
+		assert(atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) == -EINVAL &&
+		       c.error_idx == 1 && front.exposure == original &&
+		       nr_batch_s == 1);
+		v[1].id = V4L2_CID_COLORFX;
+		assert(!atomisp_is_sensor_batch(&c));
+		assert(atomisp_try_ext_ctrls(&file, NULL, &c) == -EINVAL && c.error_idx == 2);
+		c.count = 1;
+		assert(!atomisp_try_ext_ctrls(&file, NULL, &c) && front.exposure == original);
+		assert(!atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) &&
+		       front.exposure == 444 && nr_batch_s == 2);
+		v[0].value = 0;
+		assert(!atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_G_EXT_CTRLS) &&
+		       v[0].value == 444 && nr_batch_g == 1);
+		isp.inputs[0].sensor = NULL;
+		assert(atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) == -ENODEV &&
+		       c.error_idx == 1 && nr_batch_s == 2);
+		c.count = 0;
+		assert(!atomisp_is_sensor_batch(&c));
+		assert(!atomisp_try_ext_ctrls(&file, NULL, &c));
+	}
+	puts("PASS: AtomISP NEXT, sensor read/write routing, limits, and batch validation");
 }
 """
 

@@ -1369,6 +1369,47 @@ static int atomisp_query_ext_ctrl(struct file *file, void *fh,
 	return atomisp_query_control(asd, qc);
 }
 
+/*
+ * Use the V4L2 control framework for a batch owned entirely by the
+ * active sensor. In particular it validates all controls before any
+ * set, and does not retry an already rejected sensor transaction.
+ */
+static bool atomisp_is_sensor_batch(const struct v4l2_ext_controls *c)
+{
+	unsigned int i;
+
+	for (i = 0; i < c->count; i++)
+		if (!atomisp_is_sensor_ctrl(c->controls[i].id))
+			return false;
+
+	return c->count != 0;
+}
+
+static int atomisp_sensor_ext_ctrls(struct video_device *vdev,
+				    struct v4l2_ext_controls *c,
+				    unsigned int cmd)
+{
+	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct v4l2_ctrl_handler *hdl = atomisp_sensor_ctrl_handler(asd);
+	struct media_device *mdev = vdev->v4l2_dev->mdev;
+
+	if (!hdl) {
+		c->error_idx = c->count;
+		return -ENODEV;
+	}
+
+	switch (cmd) {
+	case VIDIOC_G_EXT_CTRLS:
+		return v4l2_g_ext_ctrls(hdl, vdev, mdev, c);
+	case VIDIOC_TRY_EXT_CTRLS:
+		return v4l2_try_ext_ctrls(hdl, vdev, mdev, c);
+	case VIDIOC_S_EXT_CTRLS:
+		return v4l2_s_ext_ctrls(NULL, hdl, vdev, mdev, c);
+	default:
+		return -EINVAL;
+	}
+}
+
 static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
 				      struct v4l2_ext_controls *c)
 {
@@ -1470,6 +1511,10 @@ static int atomisp_g_ext_ctrls(struct file *file, void *fh,
 	struct v4l2_control ctrl;
 	int i, ret = 0;
 
+	if (atomisp_is_sensor_batch(c))
+		return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+						 VIDIOC_G_EXT_CTRLS);
+
 	if (c->which == V4L2_CTRL_WHICH_DEF_VAL ||
 	    c->which == V4L2_CTRL_WHICH_MIN_VAL ||
 	    c->which == V4L2_CTRL_WHICH_MAX_VAL) {
@@ -1535,12 +1580,30 @@ static int atomisp_camera_s_ext_ctrls(struct file *file, void *fh,
 	return ret;
 }
 
+static int atomisp_try_ext_ctrls(struct file *file, void *fh,
+				 struct v4l2_ext_controls *c)
+{
+	if (!c->count && c->which == V4L2_CTRL_WHICH_CUR_VAL)
+		return 0;
+	if (!atomisp_is_sensor_batch(c)) {
+		c->error_idx = c->count;
+		return -EINVAL;
+	}
+
+	return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+					 VIDIOC_TRY_EXT_CTRLS);
+}
+
 /* This ioctl allows the application to set multiple controls by class */
 static int atomisp_s_ext_ctrls(struct file *file, void *fh,
 			       struct v4l2_ext_controls *c)
 {
 	struct v4l2_control ctrl;
 	int i, ret = 0;
+
+	if (atomisp_is_sensor_batch(c))
+		return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+						 VIDIOC_S_EXT_CTRLS);
 
 	/*
 	 * input_lock is not need for the Camera related IOCTLs
@@ -1867,6 +1930,7 @@ const struct v4l2_ioctl_ops atomisp_ioctl_ops = {
 	.vidioc_query_ext_ctrl = atomisp_query_ext_ctrl,
 	.vidioc_s_ext_ctrls = atomisp_s_ext_ctrls,
 	.vidioc_g_ext_ctrls = atomisp_g_ext_ctrls,
+	.vidioc_try_ext_ctrls = atomisp_try_ext_ctrls,
 	.vidioc_enum_framesizes   = atomisp_enum_framesizes,
 	.vidioc_enum_frameintervals = atomisp_enum_frameintervals,
 	.vidioc_enum_fmt_vid_cap = atomisp_enum_fmt_cap,
