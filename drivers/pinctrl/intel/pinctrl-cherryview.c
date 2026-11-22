@@ -15,6 +15,7 @@
 #include <linux/cleanup.h>
 #include <linux/dmi.h>
 #include <linux/gpio/driver.h>
+#include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
@@ -543,6 +544,53 @@ static const struct intel_pinctrl_soc_data southeast_soc_data = {
 	.communities = southeast_communities,
 	.ncommunities = ARRAY_SIZE(southeast_communities),
 };
+
+/*
+ * The Android Cherryview driver exposes GPO4 as eight pads at offsets 0-7
+ * of family 0, using the same 16 interrupt wires as the other full banks.
+ * On Mi Pad 2 firmware, UID 5 is the GPO4 USB/SEC PME event controller.
+ * This bank has no vendor-specific ACPI MMIO operation region.
+ */
+static const struct pinctrl_pin_desc mipad2_virtual_pins[] = {
+	PINCTRL_PIN(0, "VIRTUAL0"),
+	PINCTRL_PIN(1, "VIRTUAL1"),
+	PINCTRL_PIN(2, "VIRTUAL2"),
+	PINCTRL_PIN(3, "VIRTUAL3"),
+	PINCTRL_PIN(4, "VIRTUAL4"),
+	PINCTRL_PIN(5, "VIRTUAL5"),
+	PINCTRL_PIN(6, "VIRTUAL6"),
+	PINCTRL_PIN(7, "VIRTUAL7"),
+};
+
+static const struct intel_padgroup mipad2_virtual_gpps[] = {
+	INTEL_GPP(0, 0, 7, 0),
+};
+
+static const struct intel_community mipad2_virtual_communities[] = {
+	CHV_COMMUNITY(mipad2_virtual_gpps, 16, 0),
+};
+
+static const struct intel_pinctrl_soc_data mipad2_virtual_soc_data = {
+	.uid = "5",
+	.pins = mipad2_virtual_pins,
+	.npins = ARRAY_SIZE(mipad2_virtual_pins),
+	.communities = mipad2_virtual_communities,
+	.ncommunities = ARRAY_SIZE(mipad2_virtual_communities),
+};
+
+static const struct dmi_system_id chv_mipad2[] = {
+	{
+		.matches = {
+			DMI_EXACT_MATCH(DMI_SYS_VENDOR, "Xiaomi Inc"),
+			DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "Mipad2"),
+		},
+	},
+	{}
+};
+
+static bool mipad2_vgpio;
+module_param(mipad2_vgpio, bool, 0444);
+MODULE_PARM_DESC(mipad2_vgpio, "Enable experimental virtual GPIO on Xiaomi Mi Pad 2");
 
 static const struct intel_pinctrl_soc_data *chv_soc_data[] = {
 	&southwest_soc_data,
@@ -1580,6 +1628,19 @@ static acpi_status chv_pinctrl_mmio_access_handler(u32 function,
 	return AE_OK;
 }
 
+static bool chv_mipad2_vgpio_matches(struct platform_device *pdev)
+{
+	struct acpi_device *adev = ACPI_COMPANION(&pdev->dev);
+	struct resource *mem;
+
+	if (!mipad2_vgpio || !dmi_check_system(chv_mipad2) || !adev ||
+	    !acpi_dev_uid_match(adev, mipad2_virtual_soc_data.uid))
+		return false;
+
+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	return mem && mem->start == 0xfeda0000 && resource_size(mem) == 0x8000;
+}
+
 static int chv_pinctrl_probe(struct platform_device *pdev)
 {
 	const struct intel_pinctrl_soc_data *soc_data;
@@ -1592,8 +1653,11 @@ static int chv_pinctrl_probe(struct platform_device *pdev)
 	int ret, irq;
 
 	soc_data = intel_pinctrl_get_soc_data(pdev);
-	if (IS_ERR(soc_data))
-		return PTR_ERR(soc_data);
+	if (IS_ERR(soc_data)) {
+		if (PTR_ERR(soc_data) != -ENODATA || !chv_mipad2_vgpio_matches(pdev))
+			return PTR_ERR(soc_data);
+		soc_data = &mipad2_virtual_soc_data;
+	}
 
 	pctrl = devm_kzalloc(dev, sizeof(*pctrl), GFP_KERNEL);
 	if (!pctrl)
@@ -1637,6 +1701,13 @@ static int chv_pinctrl_probe(struct platform_device *pdev)
 	if (irq < 0)
 		return irq;
 
+	/*
+	 * GPO4's GSI is marked shared in firmware. Do not claim an already
+	 * occupied parent with a chained interrupt handler.
+	 */
+	if (soc_data == &mipad2_virtual_soc_data && irq_has_action(irq))
+		return dev_err_probe(dev, -EBUSY, "GPO4 parent IRQ is in use\n");
+
 	pctrl->pctldesc = chv_pinctrl_desc;
 	pctrl->pctldesc.name = dev_name(dev);
 	pctrl->pctldesc.pins = pctrl->soc->pins;
@@ -1650,12 +1721,14 @@ static int chv_pinctrl_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	status = acpi_install_address_space_handler(ACPI_HANDLE(dev),
-					community->acpi_space_id,
-					chv_pinctrl_mmio_access_handler,
-					NULL, pctrl);
-	if (ACPI_FAILURE(status))
-		dev_err(dev, "failed to install ACPI addr space handler\n");
+	if (community->acpi_space_id) {
+		status = acpi_install_address_space_handler(ACPI_HANDLE(dev),
+						community->acpi_space_id,
+						chv_pinctrl_mmio_access_handler,
+						NULL, pctrl);
+		if (ACPI_FAILURE(status))
+			dev_err(dev, "failed to install ACPI addr space handler\n");
+	}
 
 	platform_set_drvdata(pdev, pctrl);
 
@@ -1667,9 +1740,10 @@ static void chv_pinctrl_remove(struct platform_device *pdev)
 	struct intel_pinctrl *pctrl = platform_get_drvdata(pdev);
 	const struct intel_community *community = &pctrl->communities[0];
 
-	acpi_remove_address_space_handler(ACPI_HANDLE(&pdev->dev),
-					  community->acpi_space_id,
-					  chv_pinctrl_mmio_access_handler);
+	if (community->acpi_space_id)
+		acpi_remove_address_space_handler(ACPI_HANDLE(&pdev->dev),
+						  community->acpi_space_id,
+						  chv_pinctrl_mmio_access_handler);
 }
 
 static int chv_pinctrl_suspend_noirq(struct device *dev)
