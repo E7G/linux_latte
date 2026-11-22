@@ -32,7 +32,16 @@ struct platform_device { struct device dev; struct resource *mem; };
 static const char *system_dmi[] = { "Xiaomi Inc", "Mipad2" };
 static bool mipad2_vgpio;
 static const struct { const char *uid; } mipad2_virtual_soc_data = { "5" };
-static int mem_reads;
+static int mem_reads, gped_lookups;
+typedef void *acpi_handle;
+enum { AE_OK, AE_NOT_FOUND, AE_ERROR };
+static int gped_status = AE_NOT_FOUND;
+static int acpi_get_handle(acpi_handle base, const char *path, acpi_handle *out)
+{
+    assert(base == 0 && out && !strcmp(path, "\\_SB.GPED"));
+    gped_lookups++;
+    return gped_status;
+}
 static bool acpi_dev_uid_match(struct acpi_device *adev, const char *uid)
 {
     return adev->uid && !strcmp(adev->uid, uid);
@@ -68,8 +77,15 @@ int main(void)
     struct acpi_device a = { "5" };
     struct platform_device p = { { &a }, &good };
     test_match(&p, false, 0);
+    assert(gped_lookups == 0);
     mipad2_vgpio = true;
     test_match(&p, true, 1);
+    assert(gped_lookups == 1);
+    gped_status = AE_OK;   /* raw _STA and bound driver do not matter */
+    test_match(&p, false, 0);
+    gped_status = AE_ERROR;
+    test_match(&p, false, 0);
+    gped_status = AE_NOT_FOUND;
     for (const char **uid = (const char *[]){"1", "2", "3", "4", "6", "05", "", 0};
          *uid; uid++) {
         a.uid = *uid;

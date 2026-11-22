@@ -1632,9 +1632,18 @@ static bool chv_mipad2_vgpio_matches(struct platform_device *pdev)
 {
 	struct acpi_device *adev = ACPI_COMPANION(&pdev->dev);
 	struct resource *mem;
+	acpi_handle gped;
 
 	if (!mipad2_vgpio || !dmi_check_system(chv_mipad2) || !adev ||
 	    !acpi_dev_uid_match(adev, mipad2_virtual_soc_data.uid))
+		return false;
+
+	/*
+	 * Firmware provides GPED and GPO4 as alternatives for PME handling.
+	 * Linux may force INT0002/GPED present even when its AML _STA is 0.
+	 * Check the namespace itself, regardless of driver probe order.
+	 */
+	if (acpi_get_handle(NULL, "\\_SB.GPED", &gped) != AE_NOT_FOUND)
 		return false;
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
