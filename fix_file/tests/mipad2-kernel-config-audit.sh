@@ -3,6 +3,11 @@
 set -eu
 
 config=${1:-.config}
+profile=${2:-common}
+case "$profile" in
+    common|integrated-7.2) ;;
+    *) printf 'Unknown Mi Pad 2 config audit profile: %s\n' "$profile" >&2; exit 2 ;;
+esac
 [ -r "$config" ] || { echo "Config not readable: $config" >&2; exit 2; }
 
 fail=0
@@ -107,5 +112,25 @@ need 'CONFIG_USB_CONFIGFS_ACM=y'
 need 'CONFIG_U_SERIAL_CONSOLE=y'
 need 'CONFIG_EXTCON_INTEL_INT3496=y'
 need 'CONFIG_EXTCON_INTEL_CHT_WC=y'
+
+# The 7.2 distribution config must match the board functions of the
+# qualified LPAT31 bundle. Keep these checks opt-in for older callers.
+if [ "$profile" = integrated-7.2 ]; then
+	need 'CONFIG_IIO_CHT_WC_ADC=m'
+	need 'CONFIG_INTEL_CHTWC_THERMAL=m'
+	need 'CONFIG_NF_NAT_MASQUERADE=y'
+	need 'CONFIG_NFT_NAT=m'
+	need 'CONFIG_NFT_MASQ=m'
+	need 'CONFIG_EROFS_FS=m'
+	need 'CONFIG_EROFS_FS_XATTR=y'
+	need 'CONFIG_EROFS_FS_POSIX_ACL=y'
+	need 'CONFIG_EROFS_FS_SECURITY=y'
+	need 'CONFIG_EROFS_FS_BACKED_BY_FILE=y'
+	need 'CONFIG_EROFS_FS_ZIP=y'
+	need 'CONFIG_EROFS_FS_ZIP_LZMA=y'
+	need 'CONFIG_EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS=2'
+	need 'CONFIG_EROFS_FS_ZIP_DEFLATE=y'
+	need 'CONFIG_EROFS_FS_ZIP_ZSTD=y'
+fi
 
 exit "$fail"

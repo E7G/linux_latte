@@ -1,0 +1,46 @@
+name: Mi Pad 2 7.2 release kernel configuration
+
+on:
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - arch/x86/configs/xiaomipad2_defconfig
+      - drivers/acpi/pmic/Kconfig
+      - drivers/iio/adc/Kconfig
+      - fs/erofs/Kconfig
+      - net/netfilter/Kconfig
+      - fix_file/tests/mipad2-kernel-config-audit.sh
+      - .github/workflows/mipad2-72-release-config.yml
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - arch/x86/configs/xiaomipad2_defconfig
+      - drivers/acpi/pmic/Kconfig
+      - drivers/iio/adc/Kconfig
+      - fs/erofs/Kconfig
+      - net/netfilter/Kconfig
+      - fix_file/tests/mipad2-kernel-config-audit.sh
+      - .github/workflows/mipad2-72-release-config.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-config:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Kconfig dependencies
+        run: sudo apt-get update && sudo apt-get install -y bison flex clang llvm lld
+      - name: Resolve the distribution defconfig with LLVM
+        run: |
+          make LLVM=1 ARCH=x86_64 O="$RUNNER_TEMP/mipad2-config" xiaomipad2_defconfig
+          config="$RUNNER_TEMP/mipad2-config/.config"
+          sh fix_file/tests/mipad2-kernel-config-audit.sh "$config" integrated-7.2
+          sed 's/^CONFIG_IIO_CHT_WC_ADC=m$/# CONFIG_IIO_CHT_WC_ADC is not set/' "$config" > "$config.no-adc"
+          if sh fix_file/tests/mipad2-kernel-config-audit.sh "$config.no-adc" integrated-7.2; then
+            echo 'Release config audit accepted a missing CHT-WC ADC' >&2
+            exit 1
+          fi
