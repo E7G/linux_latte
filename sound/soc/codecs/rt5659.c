@@ -1247,6 +1247,11 @@ static void rt5659_enable_push_button_irq(struct snd_soc_component *component,
 	}
 }
 
+static bool rt5659_jack_retryable_read(int err)
+{
+	return err == -EIO || err == -EREMOTEIO;
+}
+
 /**
  * rt5659_headset_detect - detect a headset or headphones
  * @component: codec component
@@ -1310,8 +1315,16 @@ static int rt5659_headset_detect(struct snd_soc_component *component,
 	for (i = 0; i < ARRAY_SIZE(settle_ms); i++) {
 		msleep(settle_ms[i]);
 		ret = regmap_read(rt5659->regmap, RT5659_EJD_CTRL_2, &status);
-		if (ret)
+		if (ret) {
+			/*
+			 * A transient read can consume a settling slot. Do
+			 * not report an accessory if the final sample fails.
+			 */
+			if (rt5659_jack_retryable_read(ret) &&
+			    i + 1 < ARRAY_SIZE(settle_ms))
+				continue;
 			goto restore_power;
+		}
 		status &= 0x3;
 		if (status)
 			break;
@@ -1415,7 +1428,7 @@ static void rt5659_jack_detect_work(struct work_struct *work)
 	 */
 	for (int retry = 0; ; retry++) {
 		ret = regmap_read(rt5659->regmap, RT5659_INT_ST_1, &status);
-		if (retry == 2 || (ret != -EIO && ret != -EREMOTEIO))
+		if (retry == 2 || !rt5659_jack_retryable_read(ret))
 			break;
 		usleep_range(10000, 12000);
 	}

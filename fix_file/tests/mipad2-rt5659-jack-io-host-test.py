@@ -21,7 +21,7 @@ def function(text, name):
 root = Path(__file__).resolve().parents[2]
 codec = (root / "sound/soc/codecs/rt5659.c").read_text()
 functions = [
-    "rt5659_headset_detect", "rt5659_button_detect",
+    "rt5659_jack_retryable_read", "rt5659_headset_detect", "rt5659_button_detect",
     "rt5659_jack_detect_work", "rt5659_jack_detect_intel_hd_header",
 ]
 
@@ -60,6 +60,9 @@ struct regmap {
 	int presence_reads;
 	int presence_failures;
 	int presence_error;
+	int classification_reads;
+	int classification_errors[5];
+	unsigned int last_classification;
 	int button_reads;
 	int button_acks;
 };
@@ -93,9 +96,21 @@ static int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
 		return map->presence_error;
 	if (reg == RT5659_4BTN_IL_CMD_1)
 		map->button_reads++;
+	if (reg == RT5659_EJD_CTRL_2) {
+		unsigned int sample = map->classification_reads++;
+
+		assert(sample < ARRAY_SIZE(map->classification_errors));
+		if (map->classification_errors[sample])
+			return map->classification_errors[sample];
+		if (ret)
+			return ret;
+		*val = sample == 4 && map->last_classification ?
+			map->last_classification : map->next_classification;
+		return 0;
+	}
 	if (ret)
 		return ret;
-	*val = reg == RT5659_EJD_CTRL_2 ? map->next_classification : map->reg[reg];
+	*val = map->reg[reg];
 	return 0;
 }
 
@@ -152,7 +167,8 @@ static int snd_soc_dapm_disable_pin(struct snd_soc_dapm_context *dapm, const cha
 }
 
 static int snd_soc_dapm_sync(struct snd_soc_dapm_context *dapm) { return 0; }
-static void msleep(unsigned int delay) {}
+static unsigned int settled_ms;
+static void msleep(unsigned int delay) { settled_ms += delay; }
 static int retry_delays;
 static void usleep_range(unsigned int minimum, unsigned int maximum)
 {
@@ -184,6 +200,7 @@ int main(void)
 #define RESET(type) do { \
 	map = (struct regmap) { .reg = {[RT5659_PWR_ANLG_1] = 0x10}, \
 				.next_classification = 2 }; \
+	settled_ms = 0; \
 	jack = (struct snd_soc_jack) { .status = (type) }; \
 	component = (struct snd_soc_component) { .priv = &priv }; \
 	priv = (struct rt5659_priv) { .component = &component, .regmap = &map, \
@@ -220,8 +237,58 @@ int main(void)
 	rt5659_jack_detect_work(work);
 	assert(jack.count == 0 && map.presence_reads == 1 && !retry_delays);
 
-	/* Power snapshot, setup, classification sample, and analogue restore. */
+	/*
+	 * All five slots are already part of the OEM settling window.
+	 * In this matrix the hardware returns a readable zero until the
+	 * last slot, then classifies as one of the two accessory types.
+	 */
+	for (size_t i = 0; i < ARRAY_SIZE(transient_errors); i++) {
+		for (unsigned int classified = 1; classified <= 2; classified++) {
+			for (unsigned int mask = 0; mask < 32; mask++) {
+				RESET(0);
+				retry_delays = 0;
+				map.next_classification = 0;
+				map.last_classification = classified;
+				for (unsigned int j = 0; j < 5; j++)
+					if (mask & (1U << j))
+						map.classification_errors[j] = transient_errors[i];
+
+				rt5659_jack_detect_work(work);
+				assert(map.classification_reads == 5);
+				assert(!retry_delays && settled_ms == 670);
+				if (mask & (1U << 4)) {
+					assert(jack.count == 0 && priv.jack_type == 0);
+					assert(!component.dapm.mic_det && !priv.button_irq_state);
+					assert(map.reg[RT5659_PWR_ANLG_1] == 0x10);
+				} else {
+					int expected = classified == 1 ?
+						SND_JACK_HEADSET : SND_JACK_HEADPHONE;
+
+					assert(jack.count == 1 && jack.status == expected);
+					assert(priv.button_irq_state == (classified == 1));
+				}
+			}
+		}
+	}
+
+	RESET(0);
+	map.next_classification = 0;
+	rt5659_jack_detect_work(work);
+	assert(map.classification_reads == 5 && jack.status == SND_JACK_HEADPHONE);
+	assert(!component.dapm.mic_det && map.reg[RT5659_PWR_ANLG_1] == 0x10);
+
+	RESET(0);
+	map.next_classification = 0;
+	map.classification_errors[1] = -EINVAL;
+	rt5659_jack_detect_work(work);
+	assert(map.classification_reads == 2 && jack.count == 0 && priv.jack_type == 0);
+	assert(settled_ms == 490);
+	assert(!component.dapm.mic_det && map.reg[RT5659_PWR_ANLG_1] == 0x10);
+
+	/* Power snapshot, setup, and analogue restore. */
 	for (int fail = 2; fail <= 9; fail++) {
+		if (fail == 8) /* First classification slot has its own matrix. */
+			continue;
 		RESET(0);
 		map.fail_on = fail;
 		rt5659_jack_detect_work(work);
