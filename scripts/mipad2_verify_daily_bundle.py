@@ -23,7 +23,7 @@ def sha(path):
 
 def main():
     factory_dsp_flavors = ('tfaqual1', 'tfaqual2')
-    camera_flavors = (*(f'lpat{n}' for n in range(14, 31)), 'tfaqual2')
+    camera_flavors = (*(f'lpat{n}' for n in range(14, 32)), 'tfaqual2')
     thermal_flavors = ('lpat3', 'lpat4', 'lpat5', 'lpat6', 'lpat8', 'lpat9',
                        'lpat10', 'lpat11', 'lpat12', 'lpat13', 'tfaqual1', *camera_flavors)
     adc_flavors = ('adc1', 'adc2', 'pmic1', 'lpat1', 'lpat2', *thermal_flavors)
@@ -60,6 +60,10 @@ def main():
             if f'CONFIG_{symbol}=m\n' not in config or not any(
                     p.name.split('.ko', 1)[0] == module for p in objects):
                 raise RuntimeError('Missing guarded camera module: ' + module)
+    if args.flavor == 'lpat31':
+        if 'CONFIG_VIDEO_DW9719=m\n' not in config or not any(
+                p.name.split('.ko', 1)[0] == 'dw9719' for p in objects):
+            raise RuntimeError('Missing guarded rear-camera lens module: dw9719')
     if len(objects)<32 or not any(p.name.startswith('erofs.ko') for p in objects):raise RuntimeError('Missing matching modules')
     for name in ['nft_chain_nat.ko', 'nft_masq.ko']:
         if not any(p.name == name or p.name.startswith(name+'.') for p in objects):raise RuntimeError('Missing Android networking module: '+name)
@@ -118,7 +122,7 @@ def main():
         path=destination/name
         if path.is_symlink():path.unlink()
         elif path.exists():raise RuntimeError('Unexpected source/build object')
-    files={str(p.relative_to(output)):sha(p) for p in output.rglob('*') if p.is_file()}
+    files={p.relative_to(output).as_posix():sha(p) for p in sorted(output.rglob('*')) if p.is_file()}
     if any(p.is_symlink() for p in output.rglob('*')):raise RuntimeError('Unexpected retained symlink')
     manifest=dict(kernelrelease=release,source_commit=args.commit,files_sha256=files,module_count=len(objects),all_module_signatures_cryptographically_verified=True,signature_negative_control_passed=negative_control,module_certificate_sha256=sha(cert),installed=False,booted=False,hang_fixed=False,mipad2_navigation_remapping_removed=True,validation='Full build and matching signed-module verification only; hardware/daily/Android validation pending')
     (base/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
