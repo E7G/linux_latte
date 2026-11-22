@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 """Run the suspend shell script against simulated logind and RTC."""
 
+import inspect
 import os
 from pathlib import Path
 import re
@@ -10,7 +11,14 @@ import sys
 import tempfile
 
 
-MOCK = r"""
+def pmc_report(ir=0, i1=0, i2=0, i3=1000000, s0=2000000):
+    return "".join(f"{name:<4} Residency:\t{value}us\n" for name, value in zip(
+        ("S0IR", "S0I1", "S0I2", "S0I3", "S0"), (ir, i1, i2, i3, s0)
+    ))
+
+
+PMC_PERIOD = 137438953472
+MOCK = f"PMC_PERIOD = {PMC_PERIOD}\n" + inspect.getsource(pmc_report) + r"""
 import json
 import os
 from pathlib import Path
@@ -22,6 +30,7 @@ pmc = root / "sys/kernel/debug/pmc_atom/sleep_state"
 irq = root / "sys/power/pm_wakeup_irq"
 rtc_events = root / "sys/firmware/acpi/interrupts/ff_rt_clk"
 interrupts = root / "proc/interrupts"
+uptime = root / "proc/uptime"
 cmd = Path(sys.argv[0]).name
 args = sys.argv[1:]
 mode = os.environ["CASE"]
@@ -107,8 +116,26 @@ elif cmd == "journalctl":
                 elif mode == "duplicate-pme-after":
                     lines.append(" 133: 3 0 0 0 INT0002 Virtual GPIO 2 ACPI:Event\n")
                 interrupts.write_text("".join(lines))
+                uptime.write_text({
+                    "clock-backwards": "99.99 1.00\n",
+                    "long-window": "140000.00 1.00\n",
+                }.get(mode, "108.00 1.00\n"))
+                if mode == "rollover":
+                    report = pmc_report(i3=5200000, s0=1500000)
+                elif mode == "s0-only":
+                    report = pmc_report(s0=10388608)
+                elif mode == "pmc-reset":
+                    report = pmc_report(i3=0)
+                elif mode == "pmc-jump":
+                    report = pmc_report(i3=20000000)
+                elif mode == "overflow-after":
+                    report = pmc_report(i1=18446744073709551616)
+                else:
+                    report = pmc_report(i2=160000, i3=7200000, s0=4000000)
+                if mode == "duplicate-pmc-after":
+                    report += "S0I3 Residency:\t7200000us\n"
                 if mode != "no-residency":
-                    pmc.write_text("S0I3 Residency:\t7200000us\n")
+                    pmc.write_text(report)
                 if mode == "foreign-alarm":
                     (rtc / "wakealarm").write_text("999\n")
             elif mode == "late-audio-failure":
@@ -125,6 +152,7 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
             "sys/class/dmi/id/sys_vendor": "Xiaomi Inc\n",
             "sys/class/dmi/id/product_name": "Other\n" if mode == "wrong-device" else "Mipad2\n",
             "proc/1/comm": "systemd\n",
+            "proc/uptime": "unavailable\n" if mode == "clock-malformed" else "100.00 0.50\n",
             "proc/interrupts": (
                 "      CPU0 CPU1 CPU2 CPU3\n"
                 "   9: 1 0 0 0 IO-APIC 9-fasteoi acpi, INT0002\n"
@@ -133,7 +161,14 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
             ),
             "sys/power/mem_sleep": "[s2idle]\n",
             "sys/power/pm_wakeup_irq": "",
-            "sys/kernel/debug/pmc_atom/sleep_state": "S0I3 Residency:\t1000000us\n",
+            "sys/kernel/debug/pmc_atom/sleep_state": {
+                "rollover": pmc_report(i3=PMC_PERIOD - 1000000, s0=PMC_PERIOD - 500000),
+                "missing-pmc-before": "S0I3 Residency:\t1000000us\n",
+                "duplicate-pmc-before": pmc_report() + "S0  Residency:\t0us\n",
+                "overflow-before": pmc_report(i3=PMC_PERIOD),
+                "misaligned-before": pmc_report(i3=1000001),
+                "invalid-unit-before": pmc_report().replace("1000000us", "1000000ms"),
+            }.get(mode, pmc_report()),
             "sys/class/rtc/rtc0/wakealarm": "555\n" if mode == "prearmed" else "",
             "sys/class/rtc/rtc0/since_epoch": "100\n",
             "sys/firmware/acpi/interrupts/ff_rt_clk":
@@ -181,12 +216,52 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
         if mode in wake_failures:
             if wake_failures[mode] not in result.stderr or "INFO S0I3 delta:" not in result.stdout:
                 raise AssertionError((mode, result.stdout, result.stderr))
+        evidence = {
+            "normal": ("S0IR delta:  0us", "S0I1 delta:  0us", "S0I2 delta:  160000us",
+                       "S0I3 delta:  6200000us", "S0 delta:  2000000us"),
+            "rollover": ("S0I3 delta:  6200000us (modulo counter period)",
+                         "S0 delta:  2000000us (modulo counter period)"),
+            "s0-only": ("S0 delta:  8388608us", "S0I3 residency increased only 0us"),
+        }
+        for line in evidence.get(mode, ()):
+            if line not in result.stdout:
+                raise AssertionError((mode, line, result.stdout, result.stderr))
+        diagnostics = {
+            "clock-malformed": "Invalid PMC residency snapshot before suspend",
+            "missing-pmc-before": "Invalid PMC residency snapshot before suspend",
+            "duplicate-pmc-before": "Invalid PMC residency snapshot before suspend",
+            "overflow-before": "Invalid PMC residency snapshot before suspend",
+            "misaligned-before": "Invalid PMC residency snapshot before suspend",
+            "invalid-unit-before": "Invalid PMC residency snapshot before suspend",
+            "duplicate-pmc-after": "Invalid PMC residency snapshot after resume",
+            "overflow-after": "Invalid PMC residency snapshot after resume",
+            "clock-backwards": "Boot-time clock moved backwards",
+            "long-window": "does not exclude a full counter period",
+            "pmc-reset": "PMC residency deltas exceed the measured boot-time window: S0I3",
+            "pmc-jump": "PMC residency deltas exceed the measured boot-time window: S0I3",
+        }
+        if mode in diagnostics and diagnostics[mode] not in result.stderr:
+            raise AssertionError((mode, result.stdout, result.stderr))
 
 
 if __name__ == "__main__":
     script = Path(__file__).with_name("mipad2-suspend-test.sh").read_text()
     cases = (
         ("normal", 0, ["arm", "request", "resume", "clear"], ""),
+        ("rollover", 0, ["arm", "request", "resume", "clear"], ""),
+        ("s0-only", 1, ["arm", "request", "resume", "clear"], ""),
+        ("pmc-reset", 1, ["arm", "request", "resume", "clear"], ""),
+        ("pmc-jump", 1, ["arm", "request", "resume", "clear"], ""),
+        ("overflow-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("duplicate-pmc-after", 1, ["arm", "request", "resume", "clear"], ""),
+        ("clock-backwards", 1, ["arm", "request", "resume", "clear"], ""),
+        ("long-window", 1, ["arm", "request", "resume", "clear"], ""),
+        ("clock-malformed", 1, [], ""),
+        ("missing-pmc-before", 1, [], ""),
+        ("duplicate-pmc-before", 1, [], ""),
+        ("overflow-before", 1, [], ""),
+        ("misaligned-before", 1, [], ""),
+        ("invalid-unit-before", 1, [], ""),
         ("blocked", 1, [], ""),
         ("bad-inhibitors", 1, [], ""),
         ("wrong-device", 1, [], ""),
@@ -224,4 +299,4 @@ if __name__ == "__main__":
     )
     for case in cases:
         check_case(script, *case)
-    print(f"PASS: {len(cases)} suspend, inhibitor, RTC ownership and wake-source cases")
+    print(f"PASS: {len(cases)} suspend, PMC residency, inhibitor, RTC ownership and wake-source cases")
