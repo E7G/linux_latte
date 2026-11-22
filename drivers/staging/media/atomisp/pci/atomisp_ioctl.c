@@ -10,6 +10,7 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/pci.h>
+#include <linux/slab.h>
 
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-event.h>
@@ -1397,12 +1398,86 @@ static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
 	return ret;
 }
 
+/*
+ * Non-current queries describe the scalar control, not its live value.
+ * Collect results before copying any of them so an invalid item does not
+ * publish a partial batch.
+ */
+static int atomisp_g_ext_limits(struct atomisp_sub_device *asd,
+				struct v4l2_ext_controls *c)
+{
+	bool extrema = c->which == V4L2_CTRL_WHICH_MIN_VAL ||
+		       c->which == V4L2_CTRL_WHICH_MAX_VAL;
+	s32 *values;
+	unsigned int i;
+	int ret = 0;
+
+	c->error_idx = c->count;
+	if (!c->count)
+		return 0;
+
+	values = kcalloc(c->count, sizeof(*values), GFP_KERNEL);
+	if (!values)
+		return -ENOMEM;
+
+	for (i = 0; i < c->count; i++) {
+		struct v4l2_query_ext_ctrl q = { .id = c->controls[i].id };
+
+		ret = atomisp_query_control(asd, &q);
+		if (ret)
+			goto out;
+
+		if ((q.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_HAS_PAYLOAD)) ||
+		    q.nr_of_dims || q.type == V4L2_CTRL_TYPE_INTEGER64 ||
+		    q.type >= V4L2_CTRL_COMPOUND_TYPES ||
+		    (extrema && !(q.flags & V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX))) {
+			ret = -EINVAL;
+			goto out;
+		}
+		if (q.flags & V4L2_CTRL_FLAG_WRITE_ONLY) {
+			ret = -EACCES;
+			goto out;
+		}
+
+		switch (c->which) {
+		case V4L2_CTRL_WHICH_DEF_VAL:
+			values[i] = q.default_value;
+			break;
+		case V4L2_CTRL_WHICH_MIN_VAL:
+			values[i] = q.minimum;
+			break;
+		case V4L2_CTRL_WHICH_MAX_VAL:
+			values[i] = q.maximum;
+			break;
+		default:
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+	for (i = 0; i < c->count; i++)
+		c->controls[i].value = values[i];
+out:
+	c->error_idx = i;
+	kfree(values);
+	return ret;
+}
+
 /* This ioctl allows the application to get multiple controls by class */
 static int atomisp_g_ext_ctrls(struct file *file, void *fh,
 			       struct v4l2_ext_controls *c)
 {
 	struct v4l2_control ctrl;
 	int i, ret = 0;
+
+	if (c->which == V4L2_CTRL_WHICH_DEF_VAL ||
+	    c->which == V4L2_CTRL_WHICH_MIN_VAL ||
+	    c->which == V4L2_CTRL_WHICH_MAX_VAL) {
+		struct video_device *vdev = video_devdata(file);
+		struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+
+		return atomisp_g_ext_limits(asd, c);
+	}
 
 	/*
 	 * input_lock is not need for the Camera related IOCTLs

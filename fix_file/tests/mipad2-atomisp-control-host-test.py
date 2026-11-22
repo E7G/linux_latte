@@ -18,16 +18,31 @@ routing = driver.split("static bool atomisp_is_sensor_ctrl(", 1)[1]
 routing = routing.split("static int atomisp_query_control(", 1)[0]
 query = driver.split("static int atomisp_query_control(", 1)[1]
 query = query.split("static int atomisp_query_ext_ctrl(", 1)[0]
+limits = driver.split("static int atomisp_g_ext_limits(", 1)[1]
+limits = limits.split("/* This ioctl allows the application to get multiple controls", 1)[0]
 program = r"""
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <linux/videodev2.h>
 
 typedef uint32_t u32;
+typedef int32_t s32;
+#ifndef V4L2_CTRL_WHICH_MIN_VAL
+#define V4L2_CTRL_WHICH_MIN_VAL 0x0f020000
+#define V4L2_CTRL_WHICH_MAX_VAL 0x0f030000
+#endif
+#ifndef V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX
+#define V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX 0x1000
+#endif
+#define GFP_KERNEL 0
+static bool fail_alloc;
+#define kcalloc(n, size, flags) (fail_alloc ? NULL : calloc((n), (size)))
+#define kfree(p) free(p)
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define V4L2_CID_ATOMISP_BAD_PIXEL_DETECTION (V4L2_CID_PRIVATE_BASE + 0)
 #define V4L2_CID_ATOMISP_POSTPROCESS_GDC_CAC (V4L2_CID_PRIVATE_BASE + 1)
@@ -133,6 +148,7 @@ program += "static const struct v4l2_query_ext_ctrl ci_v4l2_controls[]" + table
 program += "static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);\n"
 program += "static bool atomisp_is_sensor_ctrl(" + routing
 program += "static int atomisp_query_control(" + query
+program += "static int atomisp_g_ext_limits(" + limits
 program += r"""
 static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
 {
@@ -248,7 +264,40 @@ int main(void)
 		ctrl.id = V4L2_CID_DIGITAL_GAIN;
 		assert(atomisp_g_ctrl(&file, NULL, &ctrl) == -EINVAL);
 	}
-	puts("PASS: NEXT, active-sensor exposure/gain metadata and get/set routing");
+	{
+		struct v4l2_ext_control v[2] = {
+			{.id = red, .value = 17}, {.id = color, .value = 19},
+		};
+		struct v4l2_ext_controls c = {
+			.controls = v, .count = 2, .which = V4L2_CTRL_WHICH_MIN_VAL,
+		};
+
+		asd.input_curr = 0;
+		front.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EINVAL && c.error_idx == 1);
+		assert(v[0].value == 17 && v[1].value == 19);
+		c.which = V4L2_CTRL_WHICH_DEF_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && c.error_idx == 2);
+		assert(v[0].value == front.red_default && v[1].value == 0);
+		asd.input_curr = 1;
+		rear.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == rear.red_default);
+		c.count = 1;
+		c.which = V4L2_CTRL_WHICH_MIN_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == 256);
+		c.which = V4L2_CTRL_WHICH_MAX_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == 4095);
+		rear.red_flags |= V4L2_CTRL_FLAG_WRITE_ONLY;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EACCES && c.error_idx == 0);
+		rear.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX | V4L2_CTRL_FLAG_DISABLED;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EINVAL && c.error_idx == 0);
+		fail_alloc = true;
+		assert(atomisp_g_ext_limits(&asd, &c) == -ENOMEM && c.error_idx == 1);
+		c.count = 0;
+		assert(!atomisp_g_ext_limits(&asd, &c) && c.error_idx == 0);
+		fail_alloc = false;
+	}
+	puts("PASS: AtomISP NEXT, active-sensor get/set, and atomic scalar limits queries");
 }
 """
 
