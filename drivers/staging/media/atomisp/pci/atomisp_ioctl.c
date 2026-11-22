@@ -10,6 +10,7 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/pci.h>
+#include <linux/slab.h>
 
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-event.h>
@@ -41,46 +42,19 @@ MODULE_PARM_DESC(stepwise_frame_intervals,
 		 "Expose line-quantized sensor frame intervals (default: false)");
 
 /*
- * FIXME: ISP should not know beforehand all CIDs supported by sensor.
- * Instead, it needs to propagate to sensor unknown CIDs.
+ * Only forward scalar controls with established capture-node semantics.
+ * The selected sensor supplies the range, units, defaults and current value.
  */
+static const u32 atomisp_sensor_ctrl_ids[] = {
+	V4L2_CID_AUTO_WHITE_BALANCE,
+	V4L2_CID_RED_BALANCE,
+	V4L2_CID_BLUE_BALANCE,
+	V4L2_CID_EXPOSURE,
+	V4L2_CID_GAMMA,
+	V4L2_CID_ANALOGUE_GAIN,
+};
+
 static const struct v4l2_query_ext_ctrl ci_v4l2_controls[] = {
-	{
-		.id = V4L2_CID_AUTO_WHITE_BALANCE,
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.name = "Automatic White Balance",
-		.minimum = 0,
-		.maximum = 1,
-		.step = 1,
-		.default_value = 0,
-	},
-	{
-		.id = V4L2_CID_RED_BALANCE,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Red Balance",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
-	{
-		.id = V4L2_CID_BLUE_BALANCE,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Blue Balance",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
-	{
-		.id = V4L2_CID_GAMMA,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Gamma",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
 	{
 		.id = V4L2_CID_COLORFX,
 		.type = V4L2_CTRL_TYPE_INTEGER,
@@ -1178,6 +1152,25 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	cancel_work_sync(&isp->assert_recovery_work);
 }
 
+static bool atomisp_is_sensor_ctrl(u32 id)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(atomisp_sensor_ctrl_ids); i++)
+		if (atomisp_sensor_ctrl_ids[i] == id)
+			return true;
+
+	return false;
+}
+
+static struct v4l2_ctrl_handler *
+atomisp_sensor_ctrl_handler(struct atomisp_sub_device *asd)
+{
+	struct v4l2_subdev *sensor = asd->isp->inputs[asd->input_curr].sensor;
+
+	return sensor ? sensor->ctrl_handler : NULL;
+}
+
 /*
  * To get the current value of a control.
  * applications initialize the id field of a struct v4l2_control and
@@ -1188,36 +1181,15 @@ static int atomisp_g_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
-	struct atomisp_device *isp = asd->isp;
-	int i, ret = -EINVAL;
+	struct v4l2_ctrl_handler *hdl;
+	int ret;
 
-	for (i = 0; i < ctrls_num; i++) {
-		if (ci_v4l2_controls[i].id == control->id) {
-			ret = 0;
-			break;
-		}
+	if (atomisp_is_sensor_ctrl(control->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_g_ctrl(hdl, control) : -ENODEV;
 	}
 
-	if (ret)
-		return ret;
-
 	switch (control->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		/*
-		 * These controls historically appeared in ci_v4l2_controls but had
-		 * no implementation, so every VIDIOC_G_CTRL returned -EINVAL.
-		 * Forward them to the active sensor when the sensor implements them.
-		 * T4KA3/OV5693 expose RED/BLUE_BALANCE as real Q10 hardware gains.
-		 */
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		ret = v4l2_g_ctrl(isp->inputs[asd->input_curr].sensor->ctrl_handler,
-				  control);
-		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 0, &control->value);
 		break;
@@ -1257,31 +1229,15 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
-	struct atomisp_device *isp = asd->isp;
-	int i, ret = -EINVAL;
+	struct v4l2_ctrl_handler *hdl;
+	int ret;
 
-	for (i = 0; i < ctrls_num; i++) {
-		if (ci_v4l2_controls[i].id == control->id) {
-			ret = 0;
-			break;
-		}
+	if (atomisp_is_sensor_ctrl(control->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_s_ctrl(NULL, hdl, control) : -ENODEV;
 	}
 
-	if (ret)
-		return ret;
-
 	switch (control->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		ret = v4l2_s_ctrl(NULL,
-				  isp->inputs[asd->input_curr].sensor->ctrl_handler,
-				  control);
-		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 1, &control->value);
 		break;
@@ -1319,26 +1275,12 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 static int atomisp_query_control(struct atomisp_sub_device *asd,
 				 struct v4l2_query_ext_ctrl *qc)
 {
-	struct atomisp_device *isp = asd->isp;
+	struct v4l2_ctrl_handler *hdl;
 	unsigned int i;
 
-	/*
-	 * Sensor-owned controls must report the sensor's actual range.  The old
-	 * hard-coded AtomISP ranges (0..255) are wrong for T4KA3/OV5693, whose
-	 * color gains are Q10 values in the 256..4095 range.
-	 */
-	switch (qc->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		return v4l2_query_ext_ctrl(
-			isp->inputs[asd->input_curr].sensor->ctrl_handler, qc);
-	default:
-		break;
+	if (atomisp_is_sensor_ctrl(qc->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_query_ext_ctrl(hdl, qc) : -ENODEV;
 	}
 
 	for (i = 0; i < ctrls_num; i++) {
@@ -1358,6 +1300,31 @@ static int atomisp_query_control(struct atomisp_sub_device *asd,
 	return -EINVAL;
 }
 
+static int atomisp_consider_next_ctrl(struct atomisp_sub_device *asd, u32 id,
+				      u32 after, struct v4l2_query_ext_ctrl *best)
+{
+	struct v4l2_query_ext_ctrl candidate = { .id = id };
+	int ret;
+
+	/* Leave legacy private IDs available for direct queries only. */
+	if (id >= V4L2_CID_PRIVATE_BASE || id <= after ||
+	    (best->id && id >= best->id))
+		return 0;
+
+	ret = atomisp_query_control(asd, &candidate);
+	if (ret == -EINVAL || ret == -ENODEV)
+		return 0;
+	if (ret)
+		return ret;
+
+	if (!(candidate.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_HAS_PAYLOAD)) &&
+	    !candidate.nr_of_dims && candidate.type < V4L2_CTRL_COMPOUND_TYPES &&
+	    candidate.type != V4L2_CTRL_TYPE_INTEGER64)
+		*best = candidate;
+
+	return 0;
+}
+
 static int atomisp_query_next_control(struct atomisp_sub_device *asd,
 				      struct v4l2_query_ext_ctrl *qc)
 {
@@ -1370,30 +1337,18 @@ static int atomisp_query_next_control(struct atomisp_sub_device *asd,
 	if (!(qc->id & V4L2_CTRL_FLAG_NEXT_CTRL))
 		return -EINVAL;
 
-	for (i = 0; i < ctrls_num; i++) {
-		struct v4l2_query_ext_ctrl candidate = {
-			.id = ci_v4l2_controls[i].id,
-		};
-
-		/*
-		 * Leave legacy private IDs available for direct queries only.
-		 * VIDIOC_G_CTRL/S_CTRL cannot address them on this node.
-		 */
-		if (candidate.id >= V4L2_CID_PRIVATE_BASE ||
-		    candidate.id <= after || (best.id && candidate.id >= best.id))
-			continue;
-
-		ret = atomisp_query_control(asd, &candidate);
-		if (ret == -EINVAL || ret == -ENODEV)
-			continue;
+	for (i = 0; i < ARRAY_SIZE(atomisp_sensor_ctrl_ids); i++) {
+		ret = atomisp_consider_next_ctrl(asd, atomisp_sensor_ctrl_ids[i],
+						 after, &best);
 		if (ret)
 			return ret;
-		if ((candidate.flags & (V4L2_CTRL_FLAG_DISABLED |
-					V4L2_CTRL_FLAG_HAS_PAYLOAD)) ||
-		    candidate.nr_of_dims || candidate.type >= V4L2_CTRL_COMPOUND_TYPES ||
-		    candidate.type == V4L2_CTRL_TYPE_INTEGER64)
-			continue;
-		best = candidate;
+	}
+
+	for (i = 0; i < ctrls_num; i++) {
+		ret = atomisp_consider_next_ctrl(asd, ci_v4l2_controls[i].id,
+						 after, &best);
+		if (ret)
+			return ret;
 	}
 
 	if (!best.id)
@@ -1412,6 +1367,47 @@ static int atomisp_query_ext_ctrl(struct file *file, void *fh,
 		return atomisp_query_next_control(asd, qc);
 
 	return atomisp_query_control(asd, qc);
+}
+
+/*
+ * Use the V4L2 control framework for a batch owned entirely by the
+ * active sensor. In particular it validates all controls before any
+ * set, and does not retry an already rejected sensor transaction.
+ */
+static bool atomisp_is_sensor_batch(const struct v4l2_ext_controls *c)
+{
+	unsigned int i;
+
+	for (i = 0; i < c->count; i++)
+		if (!atomisp_is_sensor_ctrl(c->controls[i].id))
+			return false;
+
+	return c->count != 0;
+}
+
+static int atomisp_sensor_ext_ctrls(struct video_device *vdev,
+				    struct v4l2_ext_controls *c,
+				    unsigned int cmd)
+{
+	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+	struct v4l2_ctrl_handler *hdl = atomisp_sensor_ctrl_handler(asd);
+	struct media_device *mdev = vdev->v4l2_dev->mdev;
+
+	if (!hdl) {
+		c->error_idx = c->count;
+		return -ENODEV;
+	}
+
+	switch (cmd) {
+	case VIDIOC_G_EXT_CTRLS:
+		return v4l2_g_ext_ctrls(hdl, vdev, mdev, c);
+	case VIDIOC_TRY_EXT_CTRLS:
+		return v4l2_try_ext_ctrls(hdl, vdev, mdev, c);
+	case VIDIOC_S_EXT_CTRLS:
+		return v4l2_s_ext_ctrls(NULL, hdl, vdev, mdev, c);
+	default:
+		return -EINVAL;
+	}
 }
 
 static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
@@ -1443,12 +1439,90 @@ static int atomisp_camera_g_ext_ctrls(struct file *file, void *fh,
 	return ret;
 }
 
+/*
+ * Non-current queries describe the scalar control, not its live value.
+ * Collect results before copying any of them so an invalid item does not
+ * publish a partial batch.
+ */
+static int atomisp_g_ext_limits(struct atomisp_sub_device *asd,
+				struct v4l2_ext_controls *c)
+{
+	bool extrema = c->which == V4L2_CTRL_WHICH_MIN_VAL ||
+		       c->which == V4L2_CTRL_WHICH_MAX_VAL;
+	s32 *values;
+	unsigned int i;
+	int ret = 0;
+
+	c->error_idx = c->count;
+	if (!c->count)
+		return 0;
+
+	values = kcalloc(c->count, sizeof(*values), GFP_KERNEL);
+	if (!values)
+		return -ENOMEM;
+
+	for (i = 0; i < c->count; i++) {
+		struct v4l2_query_ext_ctrl q = { .id = c->controls[i].id };
+
+		ret = atomisp_query_control(asd, &q);
+		if (ret)
+			goto out;
+
+		if ((q.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_HAS_PAYLOAD)) ||
+		    q.nr_of_dims || q.type == V4L2_CTRL_TYPE_INTEGER64 ||
+		    q.type >= V4L2_CTRL_COMPOUND_TYPES ||
+		    (extrema && !(q.flags & V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX))) {
+			ret = -EINVAL;
+			goto out;
+		}
+		if (q.flags & V4L2_CTRL_FLAG_WRITE_ONLY) {
+			ret = -EACCES;
+			goto out;
+		}
+
+		switch (c->which) {
+		case V4L2_CTRL_WHICH_DEF_VAL:
+			values[i] = q.default_value;
+			break;
+		case V4L2_CTRL_WHICH_MIN_VAL:
+			values[i] = q.minimum;
+			break;
+		case V4L2_CTRL_WHICH_MAX_VAL:
+			values[i] = q.maximum;
+			break;
+		default:
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+	for (i = 0; i < c->count; i++)
+		c->controls[i].value = values[i];
+out:
+	c->error_idx = i;
+	kfree(values);
+	return ret;
+}
+
 /* This ioctl allows the application to get multiple controls by class */
 static int atomisp_g_ext_ctrls(struct file *file, void *fh,
 			       struct v4l2_ext_controls *c)
 {
 	struct v4l2_control ctrl;
 	int i, ret = 0;
+
+	if (atomisp_is_sensor_batch(c))
+		return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+						 VIDIOC_G_EXT_CTRLS);
+
+	if (c->which == V4L2_CTRL_WHICH_DEF_VAL ||
+	    c->which == V4L2_CTRL_WHICH_MIN_VAL ||
+	    c->which == V4L2_CTRL_WHICH_MAX_VAL) {
+		struct video_device *vdev = video_devdata(file);
+		struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
+
+		return atomisp_g_ext_limits(asd, c);
+	}
 
 	/*
 	 * input_lock is not need for the Camera related IOCTLs
@@ -1506,12 +1580,30 @@ static int atomisp_camera_s_ext_ctrls(struct file *file, void *fh,
 	return ret;
 }
 
+static int atomisp_try_ext_ctrls(struct file *file, void *fh,
+				 struct v4l2_ext_controls *c)
+{
+	if (!c->count && c->which == V4L2_CTRL_WHICH_CUR_VAL)
+		return 0;
+	if (!atomisp_is_sensor_batch(c)) {
+		c->error_idx = c->count;
+		return -EINVAL;
+	}
+
+	return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+					 VIDIOC_TRY_EXT_CTRLS);
+}
+
 /* This ioctl allows the application to set multiple controls by class */
 static int atomisp_s_ext_ctrls(struct file *file, void *fh,
 			       struct v4l2_ext_controls *c)
 {
 	struct v4l2_control ctrl;
 	int i, ret = 0;
+
+	if (atomisp_is_sensor_batch(c))
+		return atomisp_sensor_ext_ctrls(video_devdata(file), c,
+						 VIDIOC_S_EXT_CTRLS);
 
 	/*
 	 * input_lock is not need for the Camera related IOCTLs
@@ -1838,6 +1930,7 @@ const struct v4l2_ioctl_ops atomisp_ioctl_ops = {
 	.vidioc_query_ext_ctrl = atomisp_query_ext_ctrl,
 	.vidioc_s_ext_ctrls = atomisp_s_ext_ctrls,
 	.vidioc_g_ext_ctrls = atomisp_g_ext_ctrls,
+	.vidioc_try_ext_ctrls = atomisp_try_ext_ctrls,
 	.vidioc_enum_framesizes   = atomisp_enum_framesizes,
 	.vidioc_enum_frameintervals = atomisp_enum_frameintervals,
 	.vidioc_enum_fmt_vid_cap = atomisp_enum_fmt_cap,

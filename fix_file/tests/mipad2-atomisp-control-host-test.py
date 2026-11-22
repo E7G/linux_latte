@@ -12,17 +12,41 @@ root = Path(__file__).resolve().parents[2]
 driver = (root / "drivers/staging/media/atomisp/pci/atomisp_ioctl.c").read_text()
 table = driver.split("static const struct v4l2_query_ext_ctrl ci_v4l2_controls[]", 1)[1]
 table = table.split("static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);", 1)[0]
+sensor_ids = driver.split("static const u32 atomisp_sensor_ctrl_ids[]", 1)[1]
+sensor_ids = sensor_ids.split("static const struct v4l2_query_ext_ctrl", 1)[0]
+routing = driver.split("static bool atomisp_is_sensor_ctrl(", 1)[1]
+routing = routing.split("static int atomisp_query_control(", 1)[0]
 query = driver.split("static int atomisp_query_control(", 1)[1]
 query = query.split("static int atomisp_query_ext_ctrl(", 1)[0]
+limits = driver.split("static int atomisp_g_ext_limits(", 1)[1]
+limits = limits.split("/* This ioctl allows the application to get multiple controls", 1)[0]
+batch = driver.split("static bool atomisp_is_sensor_batch(", 1)[1]
+batch = batch.split("static int atomisp_camera_g_ext_ctrls(", 1)[0]
+try_batch = driver.split("static int atomisp_try_ext_ctrls(", 1)[1]
+try_batch = try_batch.split("/* This ioctl allows the application to set multiple controls", 1)[0]
 program = r"""
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <linux/videodev2.h>
 
 typedef uint32_t u32;
+typedef int32_t s32;
+#ifndef V4L2_CTRL_WHICH_MIN_VAL
+#define V4L2_CTRL_WHICH_MIN_VAL 0x0f020000
+#define V4L2_CTRL_WHICH_MAX_VAL 0x0f030000
+#endif
+#ifndef V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX
+#define V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX 0x1000
+#endif
+#define GFP_KERNEL 0
+static bool fail_alloc;
+#define kcalloc(n, size, flags) (fail_alloc ? NULL : calloc((n), (size)))
+#define kfree(p) free(p)
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define V4L2_CID_ATOMISP_BAD_PIXEL_DETECTION (V4L2_CID_PRIVATE_BASE + 0)
 #define V4L2_CID_ATOMISP_POSTPROCESS_GDC_CAC (V4L2_CID_PRIVATE_BASE + 1)
@@ -31,20 +55,120 @@ typedef uint32_t u32;
 #define V4L2_CID_ATOMISP_FALSE_COLOR_CORRECTION (V4L2_CID_PRIVATE_BASE + 4)
 #define V4L2_CID_ATOMISP_LOW_LIGHT (V4L2_CID_PRIVATE_BASE + 5)
 
-struct sensor_controls {
+struct v4l2_ctrl_handler {
 	int red_default, blue_default;
 	u32 red_flags, blue_flags, blue_type, blue_dims;
 	int query_error;
+	bool manual;
+	int exposure, analogue_gain;
+	int get_error, set_error;
 };
-struct sensor { const struct sensor_controls *ctrl_handler; };
-struct atomisp_device { struct { struct sensor *sensor; } inputs[2]; };
+struct v4l2_subdev { struct v4l2_ctrl_handler *ctrl_handler; };
+struct atomisp_device { struct { struct v4l2_subdev *sensor; } inputs[2]; };
 struct atomisp_sub_device { struct atomisp_device *isp; unsigned input_curr; };
+struct media_device { int sentinel; };
+struct v4l2_device { struct media_device *mdev; };
+struct video_device { struct atomisp_sub_device *asd; struct v4l2_device *v4l2_dev; };
+struct file { struct video_device *vdev; };
+#define video_devdata(file) ((file)->vdev)
+#define atomisp_to_video_pipe(vdev) (vdev)
 
-static int v4l2_query_ext_ctrl(const struct sensor_controls *sensor,
+#define FAKE_ISP_CTRL(name) \
+	static int atomisp_##name(struct atomisp_sub_device *asd, int set, __s32 *value) \
+	{ return -ENOSYS; }
+FAKE_ISP_CTRL(color_effect)
+FAKE_ISP_CTRL(bad_pixel)
+FAKE_ISP_CTRL(gdc_cac)
+FAKE_ISP_CTRL(video_stable)
+FAKE_ISP_CTRL(fixed_pattern)
+FAKE_ISP_CTRL(false_color)
+FAKE_ISP_CTRL(low_light)
+
+static int v4l2_g_ctrl(struct v4l2_ctrl_handler *hdl, struct v4l2_control *c)
+{
+	if (hdl->get_error)
+		return hdl->get_error;
+	switch (c->id) {
+	case V4L2_CID_EXPOSURE:
+		c->value = hdl->exposure;
+		return 0;
+	case V4L2_CID_ANALOGUE_GAIN:
+		c->value = hdl->analogue_gain;
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
+static int v4l2_s_ctrl(void *fh, struct v4l2_ctrl_handler *hdl,
+		       struct v4l2_control *c)
+{
+	if (hdl->set_error)
+		return hdl->set_error;
+	switch (c->id) {
+	case V4L2_CID_EXPOSURE:
+		hdl->exposure = c->value;
+		return 0;
+	case V4L2_CID_ANALOGUE_GAIN:
+		hdl->analogue_gain = c->value;
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
+static unsigned int nr_batch_g, nr_batch_s, nr_batch_try;
+
+static int v4l2_g_ext_ctrls(struct v4l2_ctrl_handler *hdl, struct video_device *vdev,
+			    struct media_device *mdev, struct v4l2_ext_controls *c)
+{
+	assert(mdev && mdev->sentinel == 99);
+	nr_batch_g++;
+	c->controls[0].value = hdl->exposure;
+	return 0;
+}
+
+static int v4l2_try_ext_ctrls(struct v4l2_ctrl_handler *hdl, struct video_device *vdev,
+			      struct media_device *mdev, struct v4l2_ext_controls *c)
+{
+	assert(mdev && mdev->sentinel == 99);
+	nr_batch_try++;
+	if (c->count > 1 && c->controls[1].id == V4L2_CID_AUTO_WHITE_BALANCE) {
+		c->error_idx = 1;
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static int v4l2_s_ext_ctrls(void *origin, struct v4l2_ctrl_handler *hdl,
+			    struct video_device *vdev, struct media_device *mdev,
+			    struct v4l2_ext_controls *c)
+{
+	nr_batch_s++;
+	if (v4l2_try_ext_ctrls(hdl, vdev, mdev, c))
+		return -EINVAL;
+	hdl->exposure = c->controls[0].value;
+	return 0;
+}
+
+static int v4l2_query_ext_ctrl(const struct v4l2_ctrl_handler *sensor,
 			       struct v4l2_query_ext_ctrl *q)
 {
 	int red = q->id == V4L2_CID_RED_BALANCE;
 
+	if (sensor->manual && (q->id == V4L2_CID_EXPOSURE ||
+			      q->id == V4L2_CID_ANALOGUE_GAIN)) {
+		bool exposure = q->id == V4L2_CID_EXPOSURE;
+
+		*q = (struct v4l2_query_ext_ctrl) {
+			.id = q->id, .name = "Manual sensor control",
+			.minimum = exposure ? 1 : sensor->analogue_gain,
+			.maximum = exposure ? sensor->exposure : 2047,
+			.step = 1, .default_value = exposure ? sensor->exposure : sensor->analogue_gain,
+			.type = V4L2_CTRL_TYPE_INTEGER, .elem_size = 4, .elems = 1,
+		};
+		return 0;
+	}
 	if (!red && q->id != V4L2_CID_BLUE_BALANCE)
 		return -EINVAL;
 	if (sensor->query_error)
@@ -59,9 +183,14 @@ static int v4l2_query_ext_ctrl(const struct sensor_controls *sensor,
 	return 0;
 }
 """
+program += "static const u32 atomisp_sensor_ctrl_ids[]" + sensor_ids
 program += "static const struct v4l2_query_ext_ctrl ci_v4l2_controls[]" + table
 program += "static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);\n"
+program += "static bool atomisp_is_sensor_ctrl(" + routing
 program += "static int atomisp_query_control(" + query
+program += "static int atomisp_g_ext_limits(" + limits
+program += "static bool atomisp_is_sensor_batch(" + batch
+program += "static int atomisp_try_ext_ctrls(" + try_batch
 program += r"""
 static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
 {
@@ -79,9 +208,12 @@ static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
 
 int main(void)
 {
-	struct sensor_controls front = { 1650, 1633, 0, 0, V4L2_CTRL_TYPE_INTEGER, 0, 0 };
-	struct sensor_controls rear = front;
-	struct sensor s0 = { &front }, s1 = { &rear };
+	struct v4l2_ctrl_handler front = {
+		.red_default = 1650, .blue_default = 1633,
+		.blue_type = V4L2_CTRL_TYPE_INTEGER,
+	};
+	struct v4l2_ctrl_handler rear = front;
+	struct v4l2_subdev s0 = { &front }, s1 = { &rear };
 	struct atomisp_device isp = { .inputs = {{&s0}, {&s1}} };
 	struct atomisp_sub_device asd = { .isp = &isp };
 	const u32 scalar = V4L2_CTRL_FLAG_NEXT_CTRL;
@@ -135,7 +267,116 @@ int main(void)
 	assert(!atomisp_query_control(&asd, &q) && q.elems == 1 && q.elem_size == 4);
 	q.id = 1;
 	assert(atomisp_query_control(&asd, &q) == -EINVAL && q.flags == V4L2_CTRL_FLAG_DISABLED);
-	puts("PASS: AtomISP control NEXT ordering, sensor metadata, filtering and legacy lookup");
+	/* Now both real device shapes expose manual exposure and gain. */
+	isp.inputs[1].sensor = &s1;
+	s1.ctrl_handler = &rear;
+	rear.query_error = 0;
+	front.manual = rear.manual = true;
+	front.exposure = 1976;
+	rear.exposure = 2486;
+	front.analogue_gain = 8;
+	rear.analogue_gain = 128;
+	for (i = 0; i < 2; i++) {
+		struct video_device vdev = { .asd = &asd };
+		struct file file = { .vdev = &vdev };
+		struct v4l2_ctrl_handler *current = i ? &rear : &front;
+		struct v4l2_ctrl_handler *other = i ? &front : &rear;
+		int prior = other->exposure;
+		struct v4l2_control ctrl = { .id = V4L2_CID_EXPOSURE };
+
+		asd.input_curr = i;
+		next(&asd, (V4L2_CID_EXPOSURE - 1) | both, V4L2_CID_EXPOSURE);
+		next(&asd, color | scalar, V4L2_CID_ANALOGUE_GAIN);
+		next(&asd, V4L2_CID_ANALOGUE_GAIN | both, 0);
+		q.id = ctrl.id;
+		assert(!atomisp_query_control(&asd, &q) && q.maximum == current->exposure);
+		assert(!atomisp_g_ctrl(&file, NULL, &ctrl) && ctrl.value == current->exposure);
+		ctrl.value--;
+		assert(!atomisp_s_ctrl(&file, NULL, &ctrl) && current->exposure == ctrl.value);
+		assert(other->exposure == prior);
+
+		ctrl.id = V4L2_CID_ANALOGUE_GAIN;
+		q.id = ctrl.id;
+		assert(!atomisp_query_control(&asd, &q) && q.default_value == current->analogue_gain);
+		assert(!atomisp_g_ctrl(&file, NULL, &ctrl) && ctrl.value == current->analogue_gain);
+		current->get_error = -ENODATA;
+		assert(atomisp_g_ctrl(&file, NULL, &ctrl) == -ENODATA);
+		current->set_error = -ERANGE;
+		assert(atomisp_s_ctrl(&file, NULL, &ctrl) == -ERANGE);
+		ctrl.id = V4L2_CID_DIGITAL_GAIN;
+		assert(atomisp_g_ctrl(&file, NULL, &ctrl) == -EINVAL);
+	}
+	{
+		struct v4l2_ext_control v[2] = {
+			{.id = red, .value = 17}, {.id = color, .value = 19},
+		};
+		struct v4l2_ext_controls c = {
+			.controls = v, .count = 2, .which = V4L2_CTRL_WHICH_MIN_VAL,
+		};
+
+		asd.input_curr = 0;
+		front.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EINVAL && c.error_idx == 1);
+		assert(v[0].value == 17 && v[1].value == 19);
+		c.which = V4L2_CTRL_WHICH_DEF_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && c.error_idx == 2);
+		assert(v[0].value == front.red_default && v[1].value == 0);
+		asd.input_curr = 1;
+		rear.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == rear.red_default);
+		c.count = 1;
+		c.which = V4L2_CTRL_WHICH_MIN_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == 256);
+		c.which = V4L2_CTRL_WHICH_MAX_VAL;
+		assert(!atomisp_g_ext_limits(&asd, &c) && v[0].value == 4095);
+		rear.red_flags |= V4L2_CTRL_FLAG_WRITE_ONLY;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EACCES && c.error_idx == 0);
+		rear.red_flags = V4L2_CTRL_FLAG_HAS_WHICH_MIN_MAX | V4L2_CTRL_FLAG_DISABLED;
+		assert(atomisp_g_ext_limits(&asd, &c) == -EINVAL && c.error_idx == 0);
+		fail_alloc = true;
+		assert(atomisp_g_ext_limits(&asd, &c) == -ENOMEM && c.error_idx == 1);
+		c.count = 0;
+		assert(!atomisp_g_ext_limits(&asd, &c) && c.error_idx == 0);
+		fail_alloc = false;
+	}
+	{
+		struct v4l2_ext_control v[2] = {
+			{.id = V4L2_CID_EXPOSURE, .value = 444},
+			{.id = V4L2_CID_AUTO_WHITE_BALANCE, .value = 1},
+		};
+		struct v4l2_ext_controls c = {.controls = v, .count = 2};
+		struct media_device media = {.sentinel = 99};
+		struct v4l2_device v4l2_dev = {.mdev = &media};
+		struct video_device vdev = {.asd = &asd, .v4l2_dev = &v4l2_dev};
+		struct file file = {.vdev = &vdev};
+		int original = front.exposure;
+
+		asd.input_curr = 0;
+		assert(atomisp_is_sensor_batch(&c));
+		assert(atomisp_try_ext_ctrls(&file, NULL, &c) == -EINVAL &&
+		       c.error_idx == 1 && front.exposure == original &&
+		       nr_batch_try == 1);
+		assert(atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) == -EINVAL &&
+		       c.error_idx == 1 && front.exposure == original &&
+		       nr_batch_s == 1);
+		v[1].id = V4L2_CID_COLORFX;
+		assert(!atomisp_is_sensor_batch(&c));
+		assert(atomisp_try_ext_ctrls(&file, NULL, &c) == -EINVAL && c.error_idx == 2);
+		c.count = 1;
+		assert(!atomisp_try_ext_ctrls(&file, NULL, &c) && front.exposure == original);
+		assert(!atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) &&
+		       front.exposure == 444 && nr_batch_s == 2);
+		v[0].value = 0;
+		assert(!atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_G_EXT_CTRLS) &&
+		       v[0].value == 444 && nr_batch_g == 1);
+		isp.inputs[0].sensor = NULL;
+		assert(atomisp_sensor_ext_ctrls(&vdev, &c, VIDIOC_S_EXT_CTRLS) == -ENODEV &&
+		       c.error_idx == 1 && nr_batch_s == 2);
+		c.count = 0;
+		assert(!atomisp_is_sensor_batch(&c));
+		assert(!atomisp_try_ext_ctrls(&file, NULL, &c));
+	}
+	puts("PASS: AtomISP NEXT, sensor read/write routing, limits, and batch validation");
 }
 """
 
@@ -144,7 +385,7 @@ with tempfile.TemporaryDirectory(prefix="mipad2-control-") as tmp:
     source.write_text(program, encoding="utf-8")
     subprocess.run(
         shlex.split(os.environ.get("CC", "cc"))
-        + ["-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror", str(source), "-o", str(binary)],
+        + ["-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter", str(source), "-o", str(binary)],
         check=True,
     )
     subprocess.run([str(binary)], check=True)
