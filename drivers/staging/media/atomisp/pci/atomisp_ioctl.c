@@ -41,46 +41,19 @@ MODULE_PARM_DESC(stepwise_frame_intervals,
 		 "Expose line-quantized sensor frame intervals (default: false)");
 
 /*
- * FIXME: ISP should not know beforehand all CIDs supported by sensor.
- * Instead, it needs to propagate to sensor unknown CIDs.
+ * Only forward scalar controls with established capture-node semantics.
+ * The selected sensor supplies the range, units, defaults and current value.
  */
+static const u32 atomisp_sensor_ctrl_ids[] = {
+	V4L2_CID_AUTO_WHITE_BALANCE,
+	V4L2_CID_RED_BALANCE,
+	V4L2_CID_BLUE_BALANCE,
+	V4L2_CID_EXPOSURE,
+	V4L2_CID_GAMMA,
+	V4L2_CID_ANALOGUE_GAIN,
+};
+
 static const struct v4l2_query_ext_ctrl ci_v4l2_controls[] = {
-	{
-		.id = V4L2_CID_AUTO_WHITE_BALANCE,
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.name = "Automatic White Balance",
-		.minimum = 0,
-		.maximum = 1,
-		.step = 1,
-		.default_value = 0,
-	},
-	{
-		.id = V4L2_CID_RED_BALANCE,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Red Balance",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
-	{
-		.id = V4L2_CID_BLUE_BALANCE,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Blue Balance",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
-	{
-		.id = V4L2_CID_GAMMA,
-		.type = V4L2_CTRL_TYPE_INTEGER,
-		.name = "Gamma",
-		.minimum = 0x00,
-		.maximum = 0xff,
-		.step = 1,
-		.default_value = 0x00,
-	},
 	{
 		.id = V4L2_CID_COLORFX,
 		.type = V4L2_CTRL_TYPE_INTEGER,
@@ -1178,6 +1151,25 @@ void atomisp_stop_streaming(struct vb2_queue *vq)
 	cancel_work_sync(&isp->assert_recovery_work);
 }
 
+static bool atomisp_is_sensor_ctrl(u32 id)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(atomisp_sensor_ctrl_ids); i++)
+		if (atomisp_sensor_ctrl_ids[i] == id)
+			return true;
+
+	return false;
+}
+
+static struct v4l2_ctrl_handler *
+atomisp_sensor_ctrl_handler(struct atomisp_sub_device *asd)
+{
+	struct v4l2_subdev *sensor = asd->isp->inputs[asd->input_curr].sensor;
+
+	return sensor ? sensor->ctrl_handler : NULL;
+}
+
 /*
  * To get the current value of a control.
  * applications initialize the id field of a struct v4l2_control and
@@ -1188,36 +1180,15 @@ static int atomisp_g_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
-	struct atomisp_device *isp = asd->isp;
-	int i, ret = -EINVAL;
+	struct v4l2_ctrl_handler *hdl;
+	int ret;
 
-	for (i = 0; i < ctrls_num; i++) {
-		if (ci_v4l2_controls[i].id == control->id) {
-			ret = 0;
-			break;
-		}
+	if (atomisp_is_sensor_ctrl(control->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_g_ctrl(hdl, control) : -ENODEV;
 	}
 
-	if (ret)
-		return ret;
-
 	switch (control->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		/*
-		 * These controls historically appeared in ci_v4l2_controls but had
-		 * no implementation, so every VIDIOC_G_CTRL returned -EINVAL.
-		 * Forward them to the active sensor when the sensor implements them.
-		 * T4KA3/OV5693 expose RED/BLUE_BALANCE as real Q10 hardware gains.
-		 */
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		ret = v4l2_g_ctrl(isp->inputs[asd->input_curr].sensor->ctrl_handler,
-				  control);
-		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 0, &control->value);
 		break;
@@ -1257,31 +1228,15 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct atomisp_sub_device *asd = atomisp_to_video_pipe(vdev)->asd;
-	struct atomisp_device *isp = asd->isp;
-	int i, ret = -EINVAL;
+	struct v4l2_ctrl_handler *hdl;
+	int ret;
 
-	for (i = 0; i < ctrls_num; i++) {
-		if (ci_v4l2_controls[i].id == control->id) {
-			ret = 0;
-			break;
-		}
+	if (atomisp_is_sensor_ctrl(control->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_s_ctrl(NULL, hdl, control) : -ENODEV;
 	}
 
-	if (ret)
-		return ret;
-
 	switch (control->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		ret = v4l2_s_ctrl(NULL,
-				  isp->inputs[asd->input_curr].sensor->ctrl_handler,
-				  control);
-		break;
 	case V4L2_CID_COLORFX:
 		ret = atomisp_color_effect(asd, 1, &control->value);
 		break;
@@ -1319,26 +1274,12 @@ static int atomisp_s_ctrl(struct file *file, void *fh,
 static int atomisp_query_control(struct atomisp_sub_device *asd,
 				 struct v4l2_query_ext_ctrl *qc)
 {
-	struct atomisp_device *isp = asd->isp;
+	struct v4l2_ctrl_handler *hdl;
 	unsigned int i;
 
-	/*
-	 * Sensor-owned controls must report the sensor's actual range.  The old
-	 * hard-coded AtomISP ranges (0..255) are wrong for T4KA3/OV5693, whose
-	 * color gains are Q10 values in the 256..4095 range.
-	 */
-	switch (qc->id) {
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-	case V4L2_CID_RED_BALANCE:
-	case V4L2_CID_BLUE_BALANCE:
-	case V4L2_CID_GAMMA:
-		if (!isp->inputs[asd->input_curr].sensor ||
-		    !isp->inputs[asd->input_curr].sensor->ctrl_handler)
-			return -ENODEV;
-		return v4l2_query_ext_ctrl(
-			isp->inputs[asd->input_curr].sensor->ctrl_handler, qc);
-	default:
-		break;
+	if (atomisp_is_sensor_ctrl(qc->id)) {
+		hdl = atomisp_sensor_ctrl_handler(asd);
+		return hdl ? v4l2_query_ext_ctrl(hdl, qc) : -ENODEV;
 	}
 
 	for (i = 0; i < ctrls_num; i++) {
@@ -1358,6 +1299,31 @@ static int atomisp_query_control(struct atomisp_sub_device *asd,
 	return -EINVAL;
 }
 
+static int atomisp_consider_next_ctrl(struct atomisp_sub_device *asd, u32 id,
+				      u32 after, struct v4l2_query_ext_ctrl *best)
+{
+	struct v4l2_query_ext_ctrl candidate = { .id = id };
+	int ret;
+
+	/* Leave legacy private IDs available for direct queries only. */
+	if (id >= V4L2_CID_PRIVATE_BASE || id <= after ||
+	    (best->id && id >= best->id))
+		return 0;
+
+	ret = atomisp_query_control(asd, &candidate);
+	if (ret == -EINVAL || ret == -ENODEV)
+		return 0;
+	if (ret)
+		return ret;
+
+	if (!(candidate.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_HAS_PAYLOAD)) &&
+	    !candidate.nr_of_dims && candidate.type < V4L2_CTRL_COMPOUND_TYPES &&
+	    candidate.type != V4L2_CTRL_TYPE_INTEGER64)
+		*best = candidate;
+
+	return 0;
+}
+
 static int atomisp_query_next_control(struct atomisp_sub_device *asd,
 				      struct v4l2_query_ext_ctrl *qc)
 {
@@ -1370,30 +1336,18 @@ static int atomisp_query_next_control(struct atomisp_sub_device *asd,
 	if (!(qc->id & V4L2_CTRL_FLAG_NEXT_CTRL))
 		return -EINVAL;
 
-	for (i = 0; i < ctrls_num; i++) {
-		struct v4l2_query_ext_ctrl candidate = {
-			.id = ci_v4l2_controls[i].id,
-		};
-
-		/*
-		 * Leave legacy private IDs available for direct queries only.
-		 * VIDIOC_G_CTRL/S_CTRL cannot address them on this node.
-		 */
-		if (candidate.id >= V4L2_CID_PRIVATE_BASE ||
-		    candidate.id <= after || (best.id && candidate.id >= best.id))
-			continue;
-
-		ret = atomisp_query_control(asd, &candidate);
-		if (ret == -EINVAL || ret == -ENODEV)
-			continue;
+	for (i = 0; i < ARRAY_SIZE(atomisp_sensor_ctrl_ids); i++) {
+		ret = atomisp_consider_next_ctrl(asd, atomisp_sensor_ctrl_ids[i],
+						 after, &best);
 		if (ret)
 			return ret;
-		if ((candidate.flags & (V4L2_CTRL_FLAG_DISABLED |
-					V4L2_CTRL_FLAG_HAS_PAYLOAD)) ||
-		    candidate.nr_of_dims || candidate.type >= V4L2_CTRL_COMPOUND_TYPES ||
-		    candidate.type == V4L2_CTRL_TYPE_INTEGER64)
-			continue;
-		best = candidate;
+	}
+
+	for (i = 0; i < ctrls_num; i++) {
+		ret = atomisp_consider_next_ctrl(asd, ci_v4l2_controls[i].id,
+						 after, &best);
+		if (ret)
+			return ret;
 	}
 
 	if (!best.id)

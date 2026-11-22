@@ -12,11 +12,16 @@ root = Path(__file__).resolve().parents[2]
 driver = (root / "drivers/staging/media/atomisp/pci/atomisp_ioctl.c").read_text()
 table = driver.split("static const struct v4l2_query_ext_ctrl ci_v4l2_controls[]", 1)[1]
 table = table.split("static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);", 1)[0]
+sensor_ids = driver.split("static const u32 atomisp_sensor_ctrl_ids[]", 1)[1]
+sensor_ids = sensor_ids.split("static const struct v4l2_query_ext_ctrl", 1)[0]
+routing = driver.split("static bool atomisp_is_sensor_ctrl(", 1)[1]
+routing = routing.split("static int atomisp_query_control(", 1)[0]
 query = driver.split("static int atomisp_query_control(", 1)[1]
 query = query.split("static int atomisp_query_ext_ctrl(", 1)[0]
 program = r"""
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,20 +36,84 @@ typedef uint32_t u32;
 #define V4L2_CID_ATOMISP_FALSE_COLOR_CORRECTION (V4L2_CID_PRIVATE_BASE + 4)
 #define V4L2_CID_ATOMISP_LOW_LIGHT (V4L2_CID_PRIVATE_BASE + 5)
 
-struct sensor_controls {
+struct v4l2_ctrl_handler {
 	int red_default, blue_default;
 	u32 red_flags, blue_flags, blue_type, blue_dims;
 	int query_error;
+	bool manual;
+	int exposure, analogue_gain;
+	int get_error, set_error;
 };
-struct sensor { const struct sensor_controls *ctrl_handler; };
-struct atomisp_device { struct { struct sensor *sensor; } inputs[2]; };
+struct v4l2_subdev { struct v4l2_ctrl_handler *ctrl_handler; };
+struct atomisp_device { struct { struct v4l2_subdev *sensor; } inputs[2]; };
 struct atomisp_sub_device { struct atomisp_device *isp; unsigned input_curr; };
+struct video_device { struct atomisp_sub_device *asd; };
+struct file { struct video_device *vdev; };
+#define video_devdata(file) ((file)->vdev)
+#define atomisp_to_video_pipe(vdev) (vdev)
 
-static int v4l2_query_ext_ctrl(const struct sensor_controls *sensor,
+#define FAKE_ISP_CTRL(name) \
+	static int atomisp_##name(struct atomisp_sub_device *asd, int set, __s32 *value) \
+	{ return -ENOSYS; }
+FAKE_ISP_CTRL(color_effect)
+FAKE_ISP_CTRL(bad_pixel)
+FAKE_ISP_CTRL(gdc_cac)
+FAKE_ISP_CTRL(video_stable)
+FAKE_ISP_CTRL(fixed_pattern)
+FAKE_ISP_CTRL(false_color)
+FAKE_ISP_CTRL(low_light)
+
+static int v4l2_g_ctrl(struct v4l2_ctrl_handler *hdl, struct v4l2_control *c)
+{
+	if (hdl->get_error)
+		return hdl->get_error;
+	switch (c->id) {
+	case V4L2_CID_EXPOSURE:
+		c->value = hdl->exposure;
+		return 0;
+	case V4L2_CID_ANALOGUE_GAIN:
+		c->value = hdl->analogue_gain;
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
+static int v4l2_s_ctrl(void *fh, struct v4l2_ctrl_handler *hdl,
+		       struct v4l2_control *c)
+{
+	if (hdl->set_error)
+		return hdl->set_error;
+	switch (c->id) {
+	case V4L2_CID_EXPOSURE:
+		hdl->exposure = c->value;
+		return 0;
+	case V4L2_CID_ANALOGUE_GAIN:
+		hdl->analogue_gain = c->value;
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
+static int v4l2_query_ext_ctrl(const struct v4l2_ctrl_handler *sensor,
 			       struct v4l2_query_ext_ctrl *q)
 {
 	int red = q->id == V4L2_CID_RED_BALANCE;
 
+	if (sensor->manual && (q->id == V4L2_CID_EXPOSURE ||
+			      q->id == V4L2_CID_ANALOGUE_GAIN)) {
+		bool exposure = q->id == V4L2_CID_EXPOSURE;
+
+		*q = (struct v4l2_query_ext_ctrl) {
+			.id = q->id, .name = "Manual sensor control",
+			.minimum = exposure ? 1 : sensor->analogue_gain,
+			.maximum = exposure ? sensor->exposure : 2047,
+			.step = 1, .default_value = exposure ? sensor->exposure : sensor->analogue_gain,
+			.type = V4L2_CTRL_TYPE_INTEGER, .elem_size = 4, .elems = 1,
+		};
+		return 0;
+	}
 	if (!red && q->id != V4L2_CID_BLUE_BALANCE)
 		return -EINVAL;
 	if (sensor->query_error)
@@ -59,8 +128,10 @@ static int v4l2_query_ext_ctrl(const struct sensor_controls *sensor,
 	return 0;
 }
 """
+program += "static const u32 atomisp_sensor_ctrl_ids[]" + sensor_ids
 program += "static const struct v4l2_query_ext_ctrl ci_v4l2_controls[]" + table
 program += "static const u32 ctrls_num = ARRAY_SIZE(ci_v4l2_controls);\n"
+program += "static bool atomisp_is_sensor_ctrl(" + routing
 program += "static int atomisp_query_control(" + query
 program += r"""
 static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
@@ -79,9 +150,12 @@ static void next(struct atomisp_sub_device *asd, u32 id, u32 expected)
 
 int main(void)
 {
-	struct sensor_controls front = { 1650, 1633, 0, 0, V4L2_CTRL_TYPE_INTEGER, 0, 0 };
-	struct sensor_controls rear = front;
-	struct sensor s0 = { &front }, s1 = { &rear };
+	struct v4l2_ctrl_handler front = {
+		.red_default = 1650, .blue_default = 1633,
+		.blue_type = V4L2_CTRL_TYPE_INTEGER,
+	};
+	struct v4l2_ctrl_handler rear = front;
+	struct v4l2_subdev s0 = { &front }, s1 = { &rear };
 	struct atomisp_device isp = { .inputs = {{&s0}, {&s1}} };
 	struct atomisp_sub_device asd = { .isp = &isp };
 	const u32 scalar = V4L2_CTRL_FLAG_NEXT_CTRL;
@@ -135,7 +209,46 @@ int main(void)
 	assert(!atomisp_query_control(&asd, &q) && q.elems == 1 && q.elem_size == 4);
 	q.id = 1;
 	assert(atomisp_query_control(&asd, &q) == -EINVAL && q.flags == V4L2_CTRL_FLAG_DISABLED);
-	puts("PASS: AtomISP control NEXT ordering, sensor metadata, filtering and legacy lookup");
+	/* Now both real device shapes expose manual exposure and gain. */
+	isp.inputs[1].sensor = &s1;
+	s1.ctrl_handler = &rear;
+	rear.query_error = 0;
+	front.manual = rear.manual = true;
+	front.exposure = 1976;
+	rear.exposure = 2486;
+	front.analogue_gain = 8;
+	rear.analogue_gain = 128;
+	for (i = 0; i < 2; i++) {
+		struct video_device vdev = { .asd = &asd };
+		struct file file = { .vdev = &vdev };
+		struct v4l2_ctrl_handler *current = i ? &rear : &front;
+		struct v4l2_ctrl_handler *other = i ? &front : &rear;
+		int prior = other->exposure;
+		struct v4l2_control ctrl = { .id = V4L2_CID_EXPOSURE };
+
+		asd.input_curr = i;
+		next(&asd, (V4L2_CID_EXPOSURE - 1) | both, V4L2_CID_EXPOSURE);
+		next(&asd, color | scalar, V4L2_CID_ANALOGUE_GAIN);
+		next(&asd, V4L2_CID_ANALOGUE_GAIN | both, 0);
+		q.id = ctrl.id;
+		assert(!atomisp_query_control(&asd, &q) && q.maximum == current->exposure);
+		assert(!atomisp_g_ctrl(&file, NULL, &ctrl) && ctrl.value == current->exposure);
+		ctrl.value--;
+		assert(!atomisp_s_ctrl(&file, NULL, &ctrl) && current->exposure == ctrl.value);
+		assert(other->exposure == prior);
+
+		ctrl.id = V4L2_CID_ANALOGUE_GAIN;
+		q.id = ctrl.id;
+		assert(!atomisp_query_control(&asd, &q) && q.default_value == current->analogue_gain);
+		assert(!atomisp_g_ctrl(&file, NULL, &ctrl) && ctrl.value == current->analogue_gain);
+		current->get_error = -ENODATA;
+		assert(atomisp_g_ctrl(&file, NULL, &ctrl) == -ENODATA);
+		current->set_error = -ERANGE;
+		assert(atomisp_s_ctrl(&file, NULL, &ctrl) == -ERANGE);
+		ctrl.id = V4L2_CID_DIGITAL_GAIN;
+		assert(atomisp_g_ctrl(&file, NULL, &ctrl) == -EINVAL);
+	}
+	puts("PASS: NEXT, active-sensor exposure/gain metadata and get/set routing");
 }
 """
 
@@ -144,7 +257,7 @@ with tempfile.TemporaryDirectory(prefix="mipad2-control-") as tmp:
     source.write_text(program, encoding="utf-8")
     subprocess.run(
         shlex.split(os.environ.get("CC", "cc"))
-        + ["-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror", str(source), "-o", str(binary)],
+        + ["-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter", str(source), "-o", str(binary)],
         check=True,
     )
     subprocess.run([str(binary)], check=True)
