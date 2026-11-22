@@ -8,6 +8,7 @@ on:
       - 'fix_file/tests/mipad2-suspend-host-test.py'
       - 'fix_file/tests/mipad2-serial-debug-awake*.py'
       - 'fix_file/tests/mipad2-vgpio-match-host-test.py'
+      - 'fix_file/tests/mipad2-pme-inventory*.py'
       - 'drivers/pinctrl/intel/pinctrl-cherryview.c'
       - '.github/workflows/mipad2-suspend-host.yml'
   push:
@@ -17,6 +18,7 @@ on:
       - 'fix_file/tests/mipad2-suspend-host-test.py'
       - 'fix_file/tests/mipad2-serial-debug-awake*.py'
       - 'fix_file/tests/mipad2-vgpio-match-host-test.py'
+      - 'fix_file/tests/mipad2-pme-inventory*.py'
       - 'drivers/pinctrl/intel/pinctrl-cherryview.c'
       - '.github/workflows/mipad2-suspend-host.yml'
 
@@ -37,3 +39,4 @@ jobs:
           python3 -B fix_file/tests/mipad2-suspend-host-test.py
           python3 -B fix_file/tests/mipad2-serial-debug-awake-host-test.py
           python3 -B fix_file/tests/mipad2-vgpio-match-host-test.py
+          python3 -B fix_file/tests/mipad2-pme-inventory-host-test.py
