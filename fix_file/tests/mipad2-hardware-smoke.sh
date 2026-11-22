@@ -185,22 +185,68 @@ else
     miss 'LCD backlight'
 fi
 
-touch_name=
-for path in /sys/class/input/event*/device/name; do
-    [ -r "$path" ] || continue
-    name=$(cat "$path" 2>/dev/null || true)
-    device_path=$(readlink -f "${path%/name}" 2>/dev/null || true)
-    case "$name $device_path" in
-        *[Tt]ouch*|*Goodix*|*Silead*|*MSSL*|*FTSC1000*|*"hid-over-i2c 2808:509C"*)
-            touch_name=$name
-            break
-            ;;
-    esac
-done
-if [ -n "$touch_name" ]; then
-    printf 'OK   touchscreen %s\n' "$touch_name"
+# BEGIN MIPAD2_TOUCHSCREEN_CHECK
+mipad2_input_bit() {
+    # Input sysfs uses a space-separated bitmap of unsigned long words,
+    # most significant word first. This tablet boots a 64-bit kernel.
+    LC_ALL=C awk -v bit="$2" '
+        NR != 1 { invalid = 1; next }
+        {
+            if (!NF) invalid = 1
+            for (i = 1; i <= NF; i++)
+                if ($i !~ /^[0-9a-fA-F]+$/ || length($i) > 16)
+                    invalid = 1
+            word = NF - int(bit / 64)
+            if (word <= 0) next
+            digit = length($word) - int((bit % 64) / 4)
+            if (digit <= 0) next
+            mask = index("0123456789abcdef", tolower(substr($word, digit, 1))) - 1
+            if (mask >= 0 && int(mask / (2 ^ (bit % 4))) % 2) yes = 1
+        }
+        END { exit !(!invalid && NR == 1 && yes) }
+    ' "$1" 2>/dev/null
+}
+
+mipad2_touchscreen_node() (
+    found=
+    for event in "$1"/class/input/event[0-9]*; do
+        input=$(readlink -f "$event/device" 2>/dev/null) || continue
+        case "$input" in
+            */i2c-FTSC1000/0018:2808:509C.*/input/input[0-9]*|\
+            */i2c-FTSC1000:00/0018:2808:509C.*/input/input[0-9]*) ;;
+            *) continue ;;
+        esac
+        case "$(cat "$input/phys" 2>/dev/null)" in
+            i2c-FTSC1000|i2c-FTSC1000:00) ;;
+            *) continue ;;
+        esac
+        [ -d "$input/../../driver" ] || continue
+        driver=$(readlink "$input/../../driver" 2>/dev/null) || continue
+        [ "${driver##*/}" = hid-multitouch ] || continue
+        [ "$(cat "$input/id/bustype" 2>/dev/null)" = 0018 ] &&
+        [ "$(cat "$input/id/vendor" 2>/dev/null)" = 2808 ] &&
+        [ "$(cat "$input/id/product" 2>/dev/null)" = 509c ] || continue
+
+        # Reject the keyboard and pen siblings even though they share the
+        # same HID identity. Require direct type-B touch with BTN_TOUCH.
+        mipad2_input_bit "$input/properties" 1 &&
+        mipad2_input_bit "$input/capabilities/key" 330 &&
+        mipad2_input_bit "$input/capabilities/abs" 47 &&
+        mipad2_input_bit "$input/capabilities/abs" 53 &&
+        mipad2_input_bit "$input/capabilities/abs" 54 || continue
+
+        [ -z "$found" ] || exit 1
+        found=${event##*/}
+    done
+    [ -n "$found" ] || exit 1
+    printf '%s\n' "$found"
+)
+# END MIPAD2_TOUCHSCREEN_CHECK
+
+if touchscreen=$(mipad2_touchscreen_node /sys) && [ -c "/dev/input/$touchscreen" ]; then
+    printf 'OK   onboard FTSC1000 direct multi-touch node /dev/input/%s (capabilities only)\n' "$touchscreen"
 else
-    miss 'FTSC1000 touchscreen input device'
+    miss 'unique onboard FTSC1000 direct multi-touch input node'
 fi
 
 button_name=
