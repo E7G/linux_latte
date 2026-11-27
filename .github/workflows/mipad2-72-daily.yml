@@ -121,7 +121,9 @@ jobs:
           cp "$config" "$build/.config"
           export KBUILD_BUILD_TIMESTAMP="$(git show -s --format=%cI HEAD)"
           export KBUILD_BUILD_USER=github-actions KBUILD_BUILD_HOST=mipad2-replay
-          flags=(O="$build" LLVM=-18 ARCH=x86_64 LOCALVERSION=-lpat31)
+          # The qualified host had no Rust toolchain; do not let a preinstalled
+          # runner rustc change even the detected Kconfig capability metadata.
+          flags=(O="$build" LLVM=-18 ARCH=x86_64 LOCALVERSION=-lpat31 RUSTC=/bin/false)
           make "${flags[@]}" olddefconfig
           diff -u <(grep -v '^CONFIG_CC_VERSION_TEXT=' "$config") \
             <(grep -v '^CONFIG_CC_VERSION_TEXT=' "$build/.config")
