@@ -2,6 +2,12 @@ name: Build Mi Pad 2 7.2 Android-ready candidate
 
 on:
   workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Build the Android-ready daily or replay the qualified LPAT31 profile'
+        type: choice
+        options: [daily3, lpat31]
+        default: daily3
   push:
     branches: [codex/mipad2-7.2-integrated]
     paths:
@@ -19,6 +25,7 @@ concurrency:
 
 jobs:
   build:
+    if: inputs.variant != 'lpat31'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -76,3 +83,68 @@ jobs:
             out/mipad2-72-daily3.tar.zst.sha256
           if-no-files-found: error
           retention-days: 30
+  replay-lpat31:
+    if: github.event_name == 'workflow_dispatch' && inputs.variant == 'lpat31'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      LPAT31_SOURCE: 3f4956789e34da213332510246d565920a23578c
+      LPAT31_CONFIG_SHA256: 78eca80de08a9d7f8f7f79b682d64e0f9d71b439c9318418996890848ec84e60
+      LPAT31_RELEASE: 7.2.15-mipad2-integrated-lpat31
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: replay
+          sparse-checkout: |
+            configs
+            scripts
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.LPAT31_SOURCE }}
+          path: source
+          persist-credentials: false
+      - name: Install LLVM 18 and build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang-18 llvm-18 lld-18 bc bison flex libssl-dev libelf-dev zstd kmod cpio rsync
+      - name: Rebuild the qualified LPAT31 source and config from scratch
+        working-directory: source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$LPAT31_SOURCE"
+          workflow="$GITHUB_WORKSPACE/replay"
+          config="$workflow/configs/mipad2-72-lpat31.config"
+          printf '%s  %s\n' "$LPAT31_CONFIG_SHA256" "$config" | sha256sum -c -
+          build="$RUNNER_TEMP/lpat31-build"
+          mkdir -p "$build"
+          cp "$config" "$build/.config"
+          export KBUILD_BUILD_TIMESTAMP="$(git show -s --format=%cI HEAD)"
+          export KBUILD_BUILD_USER=github-actions KBUILD_BUILD_HOST=mipad2-replay
+          flags=(O="$build" LLVM=-18 ARCH=x86_64 LOCALVERSION=-lpat31)
+          make "${flags[@]}" olddefconfig
+          diff -u <(grep -v '^CONFIG_CC_VERSION_TEXT=' "$config") \
+            <(grep -v '^CONFIG_CC_VERSION_TEXT=' "$build/.config")
+          test "$(make -s "${flags[@]}" kernelrelease)" = "$LPAT31_RELEASE"
+          make "${flags[@]}" W=1 -j"$(nproc)" bzImage modules
+          modules="$RUNNER_TEMP/lpat31-modules"
+          make "${flags[@]}" INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$modules" modules_install
+          bundle="$RUNNER_TEMP/lpat31-bundle"
+          python3 "$workflow/scripts/mipad2_verify_daily_bundle.py" --build "$build" --modules "$modules" \
+            --output "$bundle" --commit "$LPAT31_SOURCE" --flavor lpat31
+          cd "$bundle"
+          find "usr/lib/modules/$LPAT31_RELEASE" -type f -name '*.ko*' | LC_ALL=C sort | \
+            diff -u "$workflow/configs/mipad2-72-lpat31.modules" -
+          mkdir "$RUNNER_TEMP/lpat31-artifacts"
+          cd "$RUNNER_TEMP/lpat31-artifacts"
+          tar --zstd -C "$bundle" -cf mipad2-72-lpat31.tar.zst .
+          sha256sum mipad2-72-lpat31.tar.zst > mipad2-72-lpat31.tar.zst.sha256
+          cp "$bundle/var/lib/mipad2-kernel/$LPAT31_RELEASE/manifest.json" .
+          printf '%s\n' "$LPAT31_CONFIG_SHA256" > input-config.sha256
+          clang-18 --version > compiler.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipad2-72-lpat31-${{ env.LPAT31_SOURCE }}
+          path: ${{ runner.temp }}/lpat31-artifacts/
+          if-no-files-found: error
+          retention-days: 90
