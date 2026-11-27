@@ -1,7 +1,6 @@
 name: Build pinned MiPad2 screenshot desktop
 on:
-  push:
-    branches: [codex/ci-quicktile-screenshot-ff56879]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
