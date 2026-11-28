@@ -1,11 +1,14 @@
-name: Mi Pad 2 7.2 RT5659 board properties
+name: Mi Pad 2 7.2 RT5659 physical codec and links
 
 on:
   pull_request:
-    branches: [codex/mipad2-7.2-integrated]
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-rt5659-swnode]
     paths:
       - drivers/platform/x86/x86-android-tablets/other.c
+      - include/linux/platform_data/x86/cht-rt5659.h
+      - sound/soc/intel/boards/cht_bsw_rt5659.c
       - fix_file/tests/mipad2-rt5659-swnode-host-test.py
+      - fix_file/tests/mipad2-rt5659-links-host-test.py
       - .github/workflows/mipad2-72-rt5659-swnode.yml
   workflow_dispatch:
 
@@ -26,18 +29,24 @@ jobs:
           apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
           sudo apt-get "${apt_sources[@]}" update
           sudo apt-get "${apt_sources[@]}" install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev
-      - name: Exercise ACPI identity and owned software node lifetime
+      - name: Exercise live ACPI selection, node ownership and ASoC links
         run: |
-          CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B fix_file/tests/mipad2-rt5659-swnode-host-test.py
-          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-rt5659-swnode-host-test.py
-      - name: Compile the tablet board wiring and RT5659 codec with the 7.2 defconfig
+          for test in swnode links; do
+            path="fix_file/tests/mipad2-rt5659-$test-host-test.py"
+            CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B "$path"
+            CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O "$path"
+          done
+      - name: Compile the tablet board, RT5659 codec and ASoC machine with the 7.2 defconfig
         run: |
           out="$RUNNER_TEMP/mipad2-rt5659"
           make O="$out" ARCH=x86_64 LLVM=1 xiaomipad2_defconfig
           case "$(make -s O="$out" ARCH=x86_64 LLVM=1 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
           grep -qx 'CONFIG_X86_ANDROID_TABLETS=y' "$out/.config"
           grep -qx 'CONFIG_SND_SOC_RT5659=m' "$out/.config"
+          grep -qx 'CONFIG_SND_SOC_INTEL_CHT_BSW_RT5659_MACH=m' "$out/.config"
           make O="$out" ARCH=x86_64 LLVM=1 W=1 -j"$(nproc)" \
-            drivers/platform/x86/x86-android-tablets/other.o sound/soc/codecs/rt5659.o
+            drivers/platform/x86/x86-android-tablets/other.o sound/soc/codecs/rt5659.o \
+            sound/soc/intel/boards/cht_bsw_rt5659.o
           test -s "$out/drivers/platform/x86/x86-android-tablets/other.o"
           test -s "$out/sound/soc/codecs/rt5659.o"
+          test -s "$out/sound/soc/intel/boards/cht_bsw_rt5659.o"

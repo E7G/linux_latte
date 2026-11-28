@@ -8,10 +8,12 @@ import shlex
 import subprocess
 import tempfile
 
-source = (Path(__file__).resolve().parents[2] /
-          "drivers/platform/x86/x86-android-tablets/other.c").read_text()
+root = Path(__file__).resolve().parents[2]
+resolver = (root / "include/linux/platform_data/x86/cht-rt5659.h").read_text()
+resolver = "\n".join(line for line in resolver.splitlines() if not line.startswith("#include"))
+source = (root / "drivers/platform/x86/x86-android-tablets/other.c").read_text()
 functions = []
-for name in ("match_rt5659_client", "xiaomi_mipad2_remove_rt5659_node",
+for name in ("xiaomi_mipad2_remove_rt5659_node",
              "xiaomi_mipad2_init_rt5659"):
     matches = re.findall(rf"^static [^\n]+ {name}\([^{{}};]*?^\{{\n.*?^\}}",
                          source, re.M | re.S)
@@ -23,14 +25,22 @@ mocks = r"""
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #define __init
+#define EPROBE_DEFER 517
+#define ERR_PTR(err) ((struct device *)(intptr_t)(err))
+#define PTR_ERR(ptr) ((long)(intptr_t)(ptr))
+#define IS_ERR(ptr) ((uintptr_t)(ptr) >= (uintptr_t)-4095)
+#define ACPI_SUCCESS(status) ((status) == 0)
+
+typedef const void *acpi_handle;
 
 struct software_node { const char *name; };
 struct fwnode_handle { struct fwnode_handle *secondary; const struct software_node *node; };
-struct acpi_device { const char *hid; };
+struct acpi_device { const char *hid; acpi_handle handle; };
 struct device {
     bool i2c, registered, locked;
     unsigned int refs;
@@ -41,16 +51,19 @@ struct device {
 static const struct software_node rt5659_swnode = { "rt5659" };
 static struct fwnode_handle secondary = { .node = &rt5659_swnode };
 static struct fwnode_handle foreign, primary, absent;
-static struct acpi_device realtek = { "10EC5659" }, lookalike = { "10EC56590" };
-static struct device codec, board;
-static const int i2c_bus_type;
-static bool hide_codec;
+static const int preferred, other_handle, i2c_bus_type;
+static struct acpi_device realtek = { "10EC5659", &preferred };
+static struct acpi_device alternate = { "10EC5659", &other_handle };
+static struct acpi_device lookalike = { "10EC56590", &preferred };
+static struct device codec, other_codec, board;
+static bool hide_codec, show_alternate, have_path;
 static unsigned int added, removed, warnings;
 static int add_error, devm_error;
 static void (*action)(void *);
 static void *action_data;
 
 #define ACPI_COMPANION(dev) ((dev)->acpi)
+#define ACPI_HANDLE(dev) ((dev)->acpi ? (dev)->acpi->handle : NULL)
 #define IS_ERR_OR_NULL(node) (!(node) || (node) == &absent)
 #define dev_warn(dev, ...) (assert((dev) == &board), warnings++)
 
@@ -65,20 +78,37 @@ static bool acpi_dev_hid_uid_match(struct acpi_device *acpi, const char *hid, co
     return acpi && !strcmp(acpi->hid, hid);
 }
 
-static struct device *bus_find_device(const int *bus, const void *start,
-                                      const void *data,
-                                      int (*match)(struct device *, const void *))
+static int acpi_get_handle(void *parent, const char *path, acpi_handle *handle)
 {
-    assert(bus == &i2c_bus_type && !start && !data);
-    if (hide_codec || !match(&codec, data))
-        return NULL;
-    codec.refs++;
-    return &codec;
+    assert(!parent && !strcmp(path, "\\_SB_.PCI0.I2C2.RTK3"));
+    if (!have_path)
+        return -ENODEV;
+    *handle = &preferred;
+    return 0;
+}
+
+static int bus_for_each_dev(const int *bus, const void *start, void *data,
+                            int (*match)(struct device *, void *))
+{
+    int ret = 0;
+    assert(bus == &i2c_bus_type && !start);
+    if (show_alternate)
+        ret = match(&other_codec, data); /* Deliberately visited first. */
+    return ret || hide_codec ? ret : match(&codec, data);
+}
+
+static struct device *get_device(struct device *dev)
+{
+    assert(dev == &codec || dev == &other_codec);
+    dev->refs++;
+    return dev;
 }
 
 static void put_device(struct device *dev)
 {
-    assert(dev == &codec && dev->refs && !dev->locked);
+    if (!dev)
+        return;
+    assert((dev == &codec || dev == &other_codec) && dev->refs && !dev->locked);
     dev->refs--;
 }
 
@@ -145,13 +175,16 @@ static int devm_add_action_or_reset(struct device *dev, void (*fn)(void *), void
 cases = r"""
 static void setup(void)
 {
-    assert(!action && !codec.refs && !codec.locked && primary.secondary != &secondary);
+    assert(!action && !codec.refs && !other_codec.refs && !codec.locked &&
+           primary.secondary != &secondary);
     codec = (struct device) { .i2c = true, .registered = true,
                               .acpi = &realtek, .fwnode = &primary };
     primary.secondary = NULL;
+    other_codec = (struct device) { .i2c = true, .registered = true, .acpi = &alternate };
     add_error = devm_error = 0;
     added = removed = warnings = 0;
-    hide_codec = false;
+    hide_codec = show_alternate = false;
+    have_path = true;
 }
 
 static void detach(void)
@@ -163,17 +196,42 @@ static void detach(void)
     assert(!codec.refs && !codec.locked);
 }
 
-int main(void)
+static void check_resolver(void)
 {
+    struct device *dev;
+
     setup();
-    assert(match_rt5659_client(&codec, NULL));
+    show_alternate = true;
+    dev = cht_rt5659_find_codec(true);
+    assert(dev == &codec && !other_codec.refs && codec.refs == 1);
+    put_device(dev);
+    assert(PTR_ERR(cht_rt5659_find_codec(false)) == -ENOTUNIQ);
+    assert(!codec.refs && !other_codec.refs);
+
+    hide_codec = true;
+    assert(PTR_ERR(cht_rt5659_find_codec(true)) == -EPROBE_DEFER);
+    assert(!codec.refs && !other_codec.refs);
+    have_path = false;
+    dev = cht_rt5659_find_codec(true);
+    assert(dev == &other_codec && other_codec.refs == 1);
+    put_device(dev);
+    show_alternate = false;
+    assert(PTR_ERR(cht_rt5659_find_codec(false)) == -EPROBE_DEFER);
+
+    setup();
     codec.i2c = false;
-    assert(!match_rt5659_client(&codec, NULL));
+    assert(PTR_ERR(cht_rt5659_find_codec(true)) == -EPROBE_DEFER);
     codec.i2c = true;
     codec.acpi = &lookalike;
-    assert(!match_rt5659_client(&codec, NULL));
+    assert(PTR_ERR(cht_rt5659_find_codec(false)) == -EPROBE_DEFER);
     codec.acpi = NULL;
-    assert(!match_rt5659_client(&codec, NULL));
+    assert(PTR_ERR(cht_rt5659_find_codec(false)) == -EPROBE_DEFER);
+    assert(!codec.refs && !other_codec.refs);
+}
+
+int main(void)
+{
+    check_resolver();
 
     setup();
     xiaomi_mipad2_init_rt5659(&board);
@@ -230,7 +288,7 @@ int main(void)
 
 with tempfile.TemporaryDirectory(prefix="mipad2-rt5659-node-") as temp:
     test, binary = Path(temp) / "test.c", Path(temp) / "test"
-    test.write_text(mocks + "\n" + "\n".join(functions) + "\n" + cases)
+    test.write_text(mocks + "\n" + resolver + "\n" + "\n".join(functions) + "\n" + cases)
     cc = shlex.split(os.environ.get("CC", "cc"))
     subprocess.run([*cc, "-std=gnu11", "-Wall", "-Wextra", "-Werror",
                     "-Wno-unused-parameter", str(test), "-o", str(binary)], check=True)

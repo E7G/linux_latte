@@ -78,8 +78,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  source-track:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      major_minor: ${{ steps.version.outputs.major_minor }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: Makefile
+          sparse-checkout-cone-mode: false
+      - name: Read the checked-out kernel version
+        id: version
+        run: |
+          set -euo pipefail
+          major=$(awk '$1 == "VERSION" && $2 == "=" { print $3; exit }' Makefile)
+          minor=$(awk '$1 == "PATCHLEVEL" && $2 == "=" { print $3; exit }' Makefile)
+          [[ "$major" =~ ^[0-9]+$ && "$minor" =~ ^[0-9]+$ ]]
+          printf 'major_minor=%s.%s\n' "$major" "$minor" >> "$GITHUB_OUTPUT"
+
   camera-7-2:
-    if: github.base_ref == 'codex/mipad2-7.2-integrated' || github.ref_name == 'codex/mipad2-7.2-integrated'
+    needs: source-track
+    if: needs.source-track.outputs.major_minor == '7.2'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -173,7 +194,8 @@ jobs:
 
   camera-drivers:
     # The legacy audit below deliberately requires old GPIO and navigation-key code.
-    if: github.base_ref != 'codex/mipad2-7.2-integrated' && github.ref_name != 'codex/mipad2-7.2-integrated'
+    needs: source-track
+    if: needs.source-track.outputs.major_minor != '7.2'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

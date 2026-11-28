@@ -8,19 +8,19 @@
  *          Mengdong Lin <mengdong.lin@intel.com>
  */
 
+#include <linux/dmi.h>
 #include <linux/gpio/consumer.h>
 #include <linux/input.h>
 #include <linux/slab.h>
 #include <linux/module.h>
+#include <linux/platform_data/x86/cht-rt5659.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
 #include <linux/clk.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/jack.h>
 #include <sound/soc-acpi.h>
-#include <asm/platform_sst_audio.h>
 #include "../../codecs/rt5659.h"
 #include "../atom/sst-atom-controls.h"
 #include "../common/soc-intel-quirks.h"
@@ -38,6 +38,8 @@ struct cht_mc_private {
 	char codec_name[SND_ACPI_I2C_ID_LEN];
 	struct clk *mclk;
 	bool use_ssp0;
+	struct snd_soc_dai_link_component ssp_cpu, ssp_codec;
+	struct snd_soc_dai_link_component speaker_cpu, dsp_platform;
 };
 
 /* Headset jack detection DAPM pins */
@@ -558,17 +560,10 @@ SND_SOC_DAILINK_DEF(media,
 SND_SOC_DAILINK_DEF(deepbuffer,
 	DAILINK_COMP_ARRAY(COMP_CPU("deepbuffer-cpu-dai")));
 
-/*
- * 这颗 codec 的 i2c client 名。板子的 ACPI 只暴露 10EC5659:01，
- * 直接写死即可 —— 原来的运行时 fixup（acpi_dev_get_first_match_dev）
- * 只会改一个 dailink，在多处引用同一 codec 时反而把名字改错，
- * 导致找不到 codec DAI 而 EPROBE_DEFER。
- */
-#define RT5659_I2C_NAME	"i2c-10EC5659:01"
 SND_SOC_DAILINK_DEF(ssp2_port,
 	DAILINK_COMP_ARRAY(COMP_CPU("ssp2-port")));
 SND_SOC_DAILINK_DEF(ssp2_codec,
-	DAILINK_COMP_ARRAY(COMP_CODEC(RT5659_I2C_NAME,
+	DAILINK_COMP_ARRAY(COMP_CODEC(NULL,
 					  "rt5659-aif1")));
 
 SND_SOC_DAILINK_DEF(platform,
@@ -600,6 +595,11 @@ static const struct snd_soc_pcm_stream nxp_tfa989x_params[] = {
 	},
 };
 
+enum {
+	CHT_LINK_SSP = MERR_DPCM_DEEP_BUFFER + 1,
+	CHT_LINK_AIF2_SPK,
+};
+
 static struct snd_soc_dai_link cht_dailink[] = {
 	/* Front End DAI links */
 	[MERR_DPCM_AUDIO] = {
@@ -621,7 +621,7 @@ static struct snd_soc_dai_link cht_dailink[] = {
 	},
 
 	/* Back End DAI links */
-	{
+	[CHT_LINK_SSP] = {
 		/* SSP2 - Codec */
 		.name = "SSP2-Codec",
 		.id = 0,
@@ -634,7 +634,7 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.ignore_suspend = 1,
 		.ignore_pmdown_time = 1,
 	},
-	{
+	[CHT_LINK_AIF2_SPK] = {
 		.name = "RT5659 AIF2 Speakers",
 		.stream_name = "RT5659 AIF2 Speaker Playback",
 		.playback_only = 1,
@@ -732,9 +732,8 @@ static int cht_late_probe(struct snd_soc_card *card)
 }
 
 /* SoC card */
-static struct snd_soc_card snd_soc_card_cht = {
+static const struct snd_soc_card snd_soc_card_cht = {
 	.owner = THIS_MODULE,
-	.dai_link = cht_dailink,
 	.num_links = ARRAY_SIZE(cht_dailink),
 	.dapm_widgets = cht_dapm_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(cht_dapm_widgets),
@@ -750,112 +749,106 @@ static struct snd_soc_card snd_soc_card_cht = {
 };
 
 
-static int snd_cht_mc_probe(struct platform_device *pdev)
+static void cht_rt5659_configure_links(struct snd_soc_card *card,
+				       struct cht_mc_private *drv,
+				       const char *platform_name)
 {
-	int ret_val = 0;
-	struct cht_mc_private *drv;
-	struct snd_soc_acpi_mach *mach = pdev->dev.platform_data;
-	struct sst_platform_info *pdata;
-	const char *platform_name;
-	bool sof_parent;
-	int dai_index = 0;
+	struct snd_soc_dai_link *link;
 	int i;
 
-	pr_info("cht-bsw-rt5659 mach pdev name %s\n", pdev->name);
+	drv->dsp_platform = platform[0];
+	if (platform_name)
+		drv->dsp_platform.name = platform_name;
 
-	pr_info("cht-bsw-rt5659 mach id %s\n", mach->id);
-	pr_info("cht-bsw-rt5659 mach drv_name %s\n", mach->drv_name);
-	pr_info("cht-bsw-rt5659 mach fw_filename %s\n", mach->fw_filename);
+	for_each_card_prelinks(card, i, link) {
+		/* AIF2 drives the amplifiers directly, without a PCM platform. */
+		if (link->num_platforms)
+			link->platforms = &drv->dsp_platform;
+	}
 
-	dev_dbg(&pdev->dev, "cht-bsw-rt5659 mach test 0\n");
+	drv->ssp_cpu = ssp2_port[0];
+	if (drv->use_ssp0)
+		drv->ssp_cpu.dai_name = "ssp0-port";
+	drv->ssp_codec = ssp2_codec[0];
+	drv->ssp_codec.name = drv->codec_name;
+	drv->speaker_cpu = rt5659_aif2_cpu[0];
+	drv->speaker_cpu.name = drv->codec_name;
 
-	drv = devm_kzalloc(&pdev->dev, sizeof(*drv), GFP_KERNEL);
+	card->dai_link[CHT_LINK_SSP].cpus = &drv->ssp_cpu;
+	card->dai_link[CHT_LINK_SSP].codecs = &drv->ssp_codec;
+	card->dai_link[CHT_LINK_AIF2_SPK].cpus = &drv->speaker_cpu;
+}
+
+static int snd_cht_mc_probe(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct snd_soc_acpi_mach *mach = dev_get_platdata(dev);
+	struct snd_soc_card *card;
+	struct cht_mc_private *drv;
+	struct device *codec_dev;
+	const char *platform_name;
+	bool mipad2;
+	int ret;
+
+	if (!mach)
+		return -EINVAL;
+
+	drv = devm_kzalloc(dev, sizeof(*drv), GFP_KERNEL);
 	if (!drv)
 		return -ENOMEM;
 
-	strcpy(drv->codec_name, RT5659_I2C_NAME);
+	mipad2 = dmi_match(DMI_SYS_VENDOR, "Xiaomi Inc") &&
+		 dmi_match(DMI_PRODUCT_NAME, "Mipad2");
+	codec_dev = cht_rt5659_find_codec(mipad2);
+	if (IS_ERR(codec_dev))
+		return dev_err_probe(dev, PTR_ERR(codec_dev),
+				     "finding RT5659 I2C client\n");
 
-	/* find index of codec dai */
-	for (i = 0; i < ARRAY_SIZE(cht_dailink); i++) {
-		if (cht_dailink[i].codecs->name &&
-			!strcmp(cht_dailink[i].codecs->name, RT5659_I2C_NAME)) {
-			dai_index = i;
-			break;
-		}
-	}
-	if(i == ARRAY_SIZE(cht_dailink)){
-		pr_info("cht-bsw-rt5659 default codec name %s not found\n", drv->codec_name);
-	}
-	else{
-		pr_info("cht-bsw-rt5659 index %d dai codec name %s\n", dai_index, cht_dailink[dai_index].codecs->name);
+	ret = strscpy(drv->codec_name, dev_name(codec_dev), sizeof(drv->codec_name));
+	put_device(codec_dev);
+	if (ret < 0)
+		return dev_err_probe(dev, ret, "copying RT5659 device name\n");
 
-		/*
-		 * codec 名已在 RT5659_I2C_NAME 里写死，不再做运行时 ACPI 探测：
-		 * 那套逻辑只改第一个匹配的 dailink，而我们有两处引用同一 codec
-		 * （SSP2-Codec 与 Codec AIF2 Port），会被改成不存在的实例名。
-		 */
+	card = devm_kmemdup(dev, &snd_soc_card_cht, sizeof(*card), GFP_KERNEL);
+	if (!card)
+		return -ENOMEM;
+	card->dai_link = devm_kmemdup(dev, cht_dailink, sizeof(cht_dailink),
+				      GFP_KERNEL);
+	if (!card->dai_link)
+		return -ENOMEM;
 
-		/* Use SSP0 on Bay Trail CR devices */
-		if (soc_intel_is_byt() && mach->mach_params.acpi_ipc_irq_index == 0) {
-			cht_dailink[dai_index].cpus->dai_name = "ssp0-port";
-			drv->use_ssp0 = true;
-		}
-	}
-
-	/* override platform name, if required */
-	snd_soc_card_cht.dev = &pdev->dev;
 	platform_name = mach->mach_params.platform;
-	pdata = mach->pdata;
-	//platform_name = padata->platform;
-
-	pr_info("cht-bsw-rt5659 mach platform_name %s\n", pdata->platform);
-	pr_info("cht-bsw-rt5659 mach test 1\n");
-
-	ret_val = snd_soc_fixup_dai_links_platform_name(&snd_soc_card_cht,
-							platform_name);
-	if (ret_val)
-		return ret_val;
-
-	//snd_soc_card_cht.components = rt5659_components();
-
-	drv->mclk = devm_clk_get(&pdev->dev, "pmc_plt_clk_3");
-	if (IS_ERR(drv->mclk)) {
-		dev_err(&pdev->dev,
-			"Failed to get MCLK from pmc_plt_clk_3: %ld\n",
-			PTR_ERR(drv->mclk));
-		return PTR_ERR(drv->mclk);
+	if (platform_name) {
+		platform_name = devm_kstrdup(dev, platform_name, GFP_KERNEL);
+		if (!platform_name)
+			return -ENOMEM;
 	}
-	snd_soc_card_set_drvdata(&snd_soc_card_cht, drv);
 
-	sof_parent = snd_soc_acpi_sof_parent(&pdev->dev);
+	card->dev = dev;
+	drv->use_ssp0 = soc_intel_is_byt() && mach->mach_params.acpi_ipc_irq_index == 0;
+	cht_rt5659_configure_links(card, drv, platform_name);
 
-	pr_info("cht-bsw-rt5659 mach test 2\n");
+	drv->mclk = devm_clk_get(dev, "pmc_plt_clk_3");
+	if (IS_ERR(drv->mclk))
+		return dev_err_probe(dev, PTR_ERR(drv->mclk),
+				     "getting pmc_plt_clk_3\n");
+	snd_soc_card_set_drvdata(card, drv);
 
-	/* set card and driver name */
-	if (sof_parent) {
-		snd_soc_card_cht.name = SOF_CARD_NAME;
-		snd_soc_card_cht.driver_name = SOF_DRIVER_NAME;
+	if (snd_soc_acpi_sof_parent(dev)) {
+		card->name = SOF_CARD_NAME;
+		card->driver_name = SOF_DRIVER_NAME;
+		dev->driver->pm = &snd_soc_pm_ops;
 	} else {
-		snd_soc_card_cht.name = CARD_NAME;
-		snd_soc_card_cht.driver_name = DRIVER_NAME;
+		card->name = CARD_NAME;
+		card->driver_name = DRIVER_NAME;
 	}
 
-	/* set pm ops */
-	if (sof_parent)
-		pdev->dev.driver->pm = &snd_soc_pm_ops;
+	ret = devm_snd_soc_register_card(dev, card);
+	if (ret)
+		return dev_err_probe(dev, ret, "registering RT5659 machine card\n");
 
-	/* register the soc card */
-	ret_val = devm_snd_soc_register_card(&pdev->dev, &snd_soc_card_cht);
-	if (ret_val) {
-		dev_err(&pdev->dev,
-			"snd_soc_register_card failed %d\n", ret_val);
-		return ret_val;
-	}
-	platform_set_drvdata(pdev, &snd_soc_card_cht);
-
-	pr_info("cht-bsw-rt5659 mach test 3\n");
-
-	return ret_val;
+	platform_set_drvdata(pdev, card);
+	return 0;
 }
 
 static struct platform_driver snd_cht_mc_driver = {
