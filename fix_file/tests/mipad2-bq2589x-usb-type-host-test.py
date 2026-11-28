@@ -328,7 +328,8 @@ static void verify_fault_events_and_failed_transactions(void)
 
     /* Failure after either register transaction must not change the destination. */
     output = previous = bq.state;
-    hw.reg0b = 0x75;
+    hw.reg0b = 0x79; /* Change the status fields too, not only the fault byte. */
+    hw.fields[F_EN_HIZ] = 1;
     hw.reg0c_error[0] = -ENXIO;
     assert(bq25890_get_chip_state(&bq, &output, NULL) == -ENXIO);
     assert(!memcmp(&output, &previous, sizeof(previous)) && hw.warnings == 1);
