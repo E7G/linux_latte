@@ -1,0 +1,29 @@
+name: Mi Pad 2 7.2 touchscreen smoke
+on:
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - fix_file/tests/mipad2-hardware-smoke.sh
+      - fix_file/tests/mipad2-touchscreen-smoke-host-test.py
+      - .github/workflows/mipad2-touchscreen-smoke.yml
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - fix_file/tests/mipad2-hardware-smoke.sh
+      - fix_file/tests/mipad2-touchscreen-smoke-host-test.py
+      - .github/workflows/mipad2-touchscreen-smoke.yml
+permissions:
+  contents: read
+jobs:
+  touchscreen-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check onboard input identification without real devices
+        run: |
+          sh -n fix_file/tests/mipad2-hardware-smoke.sh
+          python3 -B fix_file/tests/mipad2-touchscreen-smoke-host-test.py
+          python3 -OB fix_file/tests/mipad2-touchscreen-smoke-host-test.py

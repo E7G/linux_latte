@@ -16,8 +16,8 @@ This page separates **code/configuration presence** from **runtime validation**.
 | EFI x86_64 boot | Integrated | Boot itself | Device target is x86_64 Cherry Trail; `xiaomipad2_defconfig` is the project configuration. |
 | Intel i915 display/GPU | Integrated | Runtime-checked | Smoke test expects both a DRM card and `/sys/class/drm/renderD128`. |
 | LCD backlight | Integrated | Runtime-checked | Smoke test discovers a usable `/sys/class/backlight/*` device. |
-| FTSC1000 touchscreen | Integrated | Runtime-checked | Smoke test recognizes `FTSC1000:00`; device numbering is discovered dynamically. |
-| Bottom capacitive keys | Integrated | Indirect | Mi Pad 2-specific HID handling exists in `drivers/hid/hid-multitouch.c`; the old udev hwdb mapping is only a fallback for old builds/userspace. |
+| FTSC1000 touchscreen | Integrated | Runtime-checked | The 7.2 smoke test checks the on-board FTSC1000 direct multi-touch input node, not its pen/keyboard siblings or an external touchscreen. This is not a physical touch or wake test. |
+| Bottom capacitive keys | Raw HID in 7.2 | Userspace required for bezel navigation | The 7.2 kernel does not synthesize desktop key chords. [The 7.2 image rule](https://github.com/E7G/xiaomi-latte-flash_tools/pull/43) reuses systemd’s existing board keymap for the software-enumerated FTSC1000 keyboard collection. |
 | BCM4356 Wi-Fi | Integrated as modules | Runtime-checked + userspace required | `cfg80211` / `brcmfmac` are modular. Device NVRAM is kept in `fix_file/`. |
 | BCM4356 Bluetooth | Integrated as modules | Runtime-checked + userspace required | Broadcom HCI UART support is modular. `BCM4356A2.hcd` is kept in `fix_file/`. |
 | RT5659 audio | Integrated | Runtime-checked + userspace required | ALSA card presence is checked; intended routing is supplied by `mipad2-alsa-ucm`. |
@@ -80,7 +80,7 @@ of the INT340x candidate and thermal trip notification remain open.
 - Mi Pad 2 T4KA3 bridge/platform definitions;
 - the 1280×720 AtomISP fallback-format change;
 - recent AtomISP frame-interval/allocation code paths;
-- Mi Pad 2 capacitive-key HID hooks;
+- capacitive-key HID hooks for older branches; 7.2 keeps raw HID input and applies its desktop map via udev;
 - DWC3 dual-role and USB gadget serial config;
 - modular BCM4356 Wi-Fi/Bluetooth config;
 - syntax/basic integration of recovery, USB serial and hardware smoke scripts.
