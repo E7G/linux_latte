@@ -50,9 +50,9 @@ jobs:
               script=/source/fix_file/packages/gst-plugins-good-mipad2/build-source-plugin.sh
               setpriv --reuid="$CI_UID" --regid="$CI_GID" --clear-groups bash "$script" /result/candidate
               setpriv --reuid="$CI_UID" --regid="$CI_GID" --clear-groups bash "$script" /result/rebuild
-              cmp /result/candidate/libgstvideo4linux2.so /result/rebuild/libgstvideo4linux2.so
-              echo "PASS: two clean source builds produced an identical plugin"
             '
+          cmp "$result/candidate/libgstvideo4linux2.so" "$result/rebuild/libgstvideo4linux2.so"
+          echo "PASS: two clean source builds produced an identical plugin"
           (cd -- "$result/candidate" && sha256sum --check SHA256SUMS)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
