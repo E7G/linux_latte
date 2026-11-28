@@ -296,3 +296,34 @@ cc -O2 -Wall -Wextra -Werror -static \
 See [r6 deployment and limitations](../MIPAD2_R6_DEPLOYMENT_7_2.md).
 `mipad2-atomisp-buffer-trace-join.py --selftest` covers exact metadata joins,
 including stream-start zero CSS IDs without fabricating ISYS correspondence.
+
+## 7.2: Atom PMC snapshot before s2idle
+
+For an authorized suspend test, enable `pmc_atom:pmc_atom_s2idle` and
+`power:suspend_resume` in a dedicated tracefs instance before running
+`mipad2-suspend-test.sh`. Save the trace with the script's PMC timer deltas.
+The events are disabled by default; enabling them does not trigger suspend.
+
+Each PMC record is one entry attempt, not proof of S0i3 residency. A single
+suspend can contain more than one attempt. Compare the raw FUNC_DIS, D3
+and power-island (PSS) masks across successful and missed S0i3 cycles.
+`forced_clks` bit N corresponds to PMC clock N set to force-on. Zero means
+none of the sampled PMC clocks were forced on, not that S0i3 was reached.
+
+For an offline comparison, use a fresh dedicated instance per run with the
+`global` trace clock. Use a fresh 32-digit lowercase hex capture ID (for
+example, remove the hyphens from `/proc/sys/kernel/random/uuid`). Write
+`mipad2-pmc:<id>:begin` and `mipad2-pmc:<id>:end` to that instance's
+`trace_marker` around the single RTC test, then save its `trace` file.
+Save combined RTC stdout and stderr prefixed by `INFO PMC trace capture: <id>`.
+This reporting step does not suspend the machine or read it remotely.
+
+```sh
+python3 fix_file/tests/mipad2-pmc-s2idle-report.py \
+  --run met.trace met.rtc.log --run missed.trace missed.rtc.log
+```
+
+The report rejects mismatched capture IDs, overwritten buffers, incomplete
+entry/exit transitions and invalid RTC/residency records. Contrasted bits
+are set in every observed attempt of one class and none of the other; they
+are leads, not evidence that a device caused or entered S0i3.
