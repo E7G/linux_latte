@@ -53,6 +53,8 @@ jobs:
         run: |
           make LLVM=1 ARCH=x86_64 O="$RUNNER_TEMP/mipad2-config" xiaomipad2_defconfig
           config="$RUNNER_TEMP/mipad2-config/.config"
+          grep -Fqx CONFIG_X86_INTEL_LPSS=y "$config"
+          grep -Fqx CONFIG_EVENT_TRACING=y "$config"
           sh fix_file/tests/mipad2-kernel-config-audit.sh "$config" integrated-7.2
           sed 's/^CONFIG_IIO_CHT_WC_ADC=m$/# CONFIG_IIO_CHT_WC_ADC is not set/' "$config" > "$config.no-adc"
           if sh fix_file/tests/mipad2-kernel-config-audit.sh "$config.no-adc" integrated-7.2; then
@@ -94,10 +96,10 @@ jobs:
         run: |
           set -euo pipefail
           build="$RUNNER_TEMP/kernel"
+          # pmc_atom.o follows the boolean X86_INTEL_LPSS Kconfig symbol.
+          grep -Fqx CONFIG_X86_INTEL_LPSS=y "$build/.config"
+          grep -Fqx CONFIG_EVENT_TRACING=y "$build/.config"
           image="$build/vmlinux"
-          if grep -Fqx CONFIG_PMC_ATOM=m "$build/.config"; then
-            image="$build/drivers/platform/x86/pmc_atom.ko"
-          fi
           test -s "$image"
           llvm-readelf --symbols --wide "$image" | awk '
             $4 == "OBJECT" && $7 != "UND" && $8 == "__tracepoint_pmc_atom_s2idle" {print; tp++}
