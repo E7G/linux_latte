@@ -228,10 +228,6 @@ static __init int x86_instantiate_i2c_client(const struct x86_dev_info *dev_info
 	struct x86_i2c_addr_match match;
 	int ret;
 
-	board_info.irq = x86_acpi_irq_helper_get(&client_info->irq_data);
-	if (board_info.irq < 0)
-		return board_info.irq;
-
 	if (dev_info->use_pci)
 		adap = get_i2c_adap_by_pci_parent(client_info);
 	else
@@ -243,8 +239,8 @@ static __init int x86_instantiate_i2c_client(const struct x86_dev_info *dev_info
 	}
 
 	/*
-	 * Do not abort the entire tablet setup when ACPI already enumerated
-	 * one of the devices listed in this DMI fallback table.
+	 * ACPI may have enumerated this client with its own GPIO or GSI.
+	 * Skip the fallback before requesting or reconfiguring its IRQ.
 	 */
 	match.adapter = adap;
 	match.addr = board_info.addr;
@@ -255,21 +251,27 @@ static __init int x86_instantiate_i2c_client(const struct x86_dev_info *dev_info
 			 "I2C address 0x%02x already used by %s; skipping duplicate %s\n",
 			 board_info.addr, dev_name(existing), board_info.type);
 		put_device(existing);
-		put_device(&adap->dev);
-		return 0;
+		ret = 0;
+		goto put_adap;
 	}
 
+	ret = x86_acpi_irq_helper_get(&client_info->irq_data);
+	if (ret < 0)
+		goto put_adap;
+
+	board_info.irq = ret;
 	i2c_clients[idx] = i2c_new_client_device(adap, &board_info);
 	if (IS_ERR(i2c_clients[idx])) {
 		ret = dev_err_probe(&adap->dev, PTR_ERR(i2c_clients[idx]),
 				    "creating I2C-client %d\n", idx);
 		i2c_clients[idx] = NULL;
-		put_device(&adap->dev);
-		return ret;
+		goto put_adap;
 	}
-	put_device(&adap->dev);
 
-	return 0;
+	ret = 0;
+put_adap:
+	put_device(&adap->dev);
+	return ret;
 }
 
 static __init int x86_instantiate_spi_dev(const struct x86_dev_info *dev_info, int idx)
