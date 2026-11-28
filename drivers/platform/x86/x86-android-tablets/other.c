@@ -15,6 +15,7 @@
 #include <linux/input-event-codes.h>
 #include <linux/leds.h>
 #include <linux/pci.h>
+#include <linux/platform_data/x86/cht-rt5659.h>
 #include <linux/platform_device.h>
 #include <linux/pwm.h>
 #include <linux/string.h>
@@ -879,14 +880,6 @@ static int match_mipad2_bq27520_client(struct device *dev, const void *data)
 	return acpi_dev_hid_uid_match(adev, "TXN27520", NULL);
 }
 
-static int match_rt5659_client(struct device *dev, const void *data)
-{
-	if (!i2c_verify_client(dev))
-		return 0;
-
-	return acpi_dev_hid_uid_match(ACPI_COMPANION(dev), "10EC5659", NULL);
-}
-
 static void xiaomi_mipad2_remove_rt5659_node(void *data)
 {
 	struct device *client_dev = data;
@@ -906,9 +899,10 @@ static void __init xiaomi_mipad2_init_rt5659(struct device *dev)
 	struct device *client_dev;
 	int ret;
 
-	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL, match_rt5659_client);
-	if (!client_dev) {
-		dev_warn(dev, "RT5659 I2C client not found\n");
+	client_dev = cht_rt5659_find_codec(true);
+	if (IS_ERR(client_dev)) {
+		dev_warn(dev, "finding RT5659 I2C client failed: %ld\n",
+			 PTR_ERR(client_dev));
 		return;
 	}
 
