@@ -1,0 +1,43 @@
+name: Mi Pad 2 7.2 RT5659 board properties
+
+on:
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - drivers/platform/x86/x86-android-tablets/other.c
+      - fix_file/tests/mipad2-rt5659-swnode-host-test.py
+      - .github/workflows/mipad2-72-rt5659-swnode.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rt5659-board:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install kernel build dependencies
+        run: |
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev
+      - name: Exercise ACPI identity and owned software node lifetime
+        run: |
+          CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B fix_file/tests/mipad2-rt5659-swnode-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-rt5659-swnode-host-test.py
+      - name: Compile the tablet board wiring and RT5659 codec with the 7.2 defconfig
+        run: |
+          out="$RUNNER_TEMP/mipad2-rt5659"
+          make O="$out" ARCH=x86_64 LLVM=1 xiaomipad2_defconfig
+          case "$(make -s O="$out" ARCH=x86_64 LLVM=1 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
+          grep -qx 'CONFIG_X86_ANDROID_TABLETS=y' "$out/.config"
+          grep -qx 'CONFIG_SND_SOC_RT5659=m' "$out/.config"
+          make O="$out" ARCH=x86_64 LLVM=1 W=1 -j"$(nproc)" \
+            drivers/platform/x86/x86-android-tablets/other.o sound/soc/codecs/rt5659.o
+          test -s "$out/drivers/platform/x86/x86-android-tablets/other.o"
+          test -s "$out/sound/soc/codecs/rt5659.o"

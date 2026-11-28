@@ -881,25 +881,58 @@ static int match_mipad2_bq27520_client(struct device *dev, const void *data)
 
 static int match_rt5659_client(struct device *dev, const void *data)
 {
-	struct acpi_device *adev;
-	struct i2c_client *client;
-
-	client = i2c_verify_client(dev);
-	if (!client)
+	if (!i2c_verify_client(dev))
 		return 0;
 
-	/* 1. 检查设备名是否为 RT5659 */
-	if (!strstr(dev_name(dev), "10EC5659"))
-		return 0;
+	return acpi_dev_hid_uid_match(ACPI_COMPANION(dev), "10EC5659", NULL);
+}
 
-	/* 2. 获取 ACPI parent device */
-	/* 直接假设 parent 是 ACPI device（ACPI 创建的 I2C client 必然如此） */
-	adev = ACPI_COMPANION(dev);
-	if (!adev)
-		return 0;
+static void xiaomi_mipad2_remove_rt5659_node(void *data)
+{
+	struct device *client_dev = data;
+	struct fwnode_handle *fwnode;
 
-	dev_dbg(dev, "[match_rt5659_client]: is acpi device\n");
-	return 1;
+	device_lock(client_dev);
+	fwnode = dev_fwnode(client_dev);
+	if (fwnode && to_software_node(fwnode->secondary) == &rt5659_swnode)
+		device_remove_software_node(client_dev);
+	device_unlock(client_dev);
+	put_device(client_dev);
+}
+
+static void __init xiaomi_mipad2_init_rt5659(struct device *dev)
+{
+	struct fwnode_handle *fwnode;
+	struct device *client_dev;
+	int ret;
+
+	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL, match_rt5659_client);
+	if (!client_dev) {
+		dev_warn(dev, "RT5659 I2C client not found\n");
+		return;
+	}
+
+	/* Keep the ACPI primary and any existing secondary node intact. */
+	device_lock(client_dev);
+	fwnode = dev_fwnode(client_dev);
+	if (!device_is_registered(client_dev) || !fwnode)
+		ret = -ENODEV;
+	else if (!IS_ERR_OR_NULL(fwnode->secondary))
+		ret = -EBUSY;
+	else
+		ret = device_add_software_node(client_dev, &rt5659_swnode);
+	device_unlock(client_dev);
+	if (ret) {
+		dev_warn(dev, "adding RT5659 board properties failed: %d\n", ret);
+		put_device(client_dev);
+		return;
+	}
+
+	/* Keep the bus reference until detach, including probe failure. */
+	ret = devm_add_action_or_reset(dev, xiaomi_mipad2_remove_rt5659_node,
+				       client_dev);
+	if (ret)
+		dev_warn(dev, "registering RT5659 property cleanup failed: %d\n", ret);
 }
 
 static int __init xiaomi_mipad2_init(struct device *dev)
@@ -928,11 +961,6 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 	if (ret)
 		return dev_err_probe(dev, ret, "registering LED\n");
 
-	/* ktd2026 的 swnode group 由 x86-android-tablets core 统一注册 */
-	ret = software_node_register(&rt5659_swnode);
-	if (ret)
-		return ret;
-
 	/*
 	 * Xiaomi's firmware exposes the BQ27520 as TXN27520:00. The generic
 	 * bq27xxx driver does not know this board-specific alias, while creating
@@ -959,26 +987,9 @@ static int __init xiaomi_mipad2_init(struct device *dev)
 		dev_warn(dev, "TXN27520 ACPI I2C client not found\n");
 	}
 
-	/* 在 I2C bus 上查找 RT5659 client */
-	client_dev = bus_find_device(&i2c_bus_type, NULL, NULL, match_rt5659_client);
-	if (!client_dev) {
-		pr_err("RT5659 I2C client not found\n");
-		return 0;
-	}
-
-	client = to_i2c_client(client_dev);
-	set_secondary_fwnode(&client->dev, software_node_fwnode(&rt5659_swnode));
-
-	put_device(client_dev);
-	pr_info("Bound software node to RT5659\n");
+	xiaomi_mipad2_init_rt5659(dev);
 
 	return 0;
-}
-
-static void xiaomi_mipad2_exit(void)
-{
-	/* ktd2026 的 swnode group 由 x86-android-tablets core 统一注销 */
-	software_node_unregister(&rt5659_swnode);
 }
 
 /*
@@ -1040,5 +1051,4 @@ const struct x86_dev_info xiaomi_mipad2_info __initconst = {
 	.swnode_group = ktd2026_node_group,
 	.gpiochip_type = X86_GPIOCHIP_CHERRYVIEW,
 	.init = xiaomi_mipad2_init,
-	.exit = xiaomi_mipad2_exit,
 };
