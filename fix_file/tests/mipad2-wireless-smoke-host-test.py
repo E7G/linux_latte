@@ -55,6 +55,18 @@ class Wireless(unittest.TestCase):
     def wifi(self):
         return self.invoke("mipad2_wifi_pci_check", self.sys)
 
+    def bt(self):
+        return self.invoke("mipad2_bt_uart_check", self.sys)
+
+    def hci(self, name, modalias="acpi:BCM2E9C:", driver="hci_uart_bcm"):
+        path = self.sys / "devices" / name
+        self.file(path, "uevent", ("MODALIAS=" + modalias + "\n").encode())
+        if driver:
+            (path / "driver").symlink_to(f"../../drivers/{driver}")
+        node = self.sys / "class/bluetooth" / name
+        node.mkdir(parents=True)
+        (node / "device").symlink_to(path)
+
     def firmware(self, *suffixes, override=""):
         return self.invoke("mipad2_fw_file_check", self.lib, release, override, *suffixes)
 
@@ -101,6 +113,40 @@ class Wireless(unittest.TestCase):
         self.check(self.wifi(), 0, [
             "OK   onboard BCM4356 driver brcmfmac",
             "OK   onboard Wi-Fi interface wlan1 (down)",
+        ])
+
+    def test_onboard_bluetooth_is_not_a_usb_adapter_or_connection(self):
+        self.hci("hci0", "usb:v0A12p0001", "btusb")
+        self.hci("hci2", "acpi:BCM2E7B:")
+        self.hci("hci5:1")
+        self.hci("hci5", "acpi:BCM2E9C:COMP0001:")
+        self.check(self.bt(), 0, ["OK   onboard BCM4356A2 Bluetooth hci5 (hci_uart_bcm)"])
+
+    def test_usb_bluetooth_alone_does_not_pass(self):
+        self.hci("hci0", "usb:v0A12p0001", "btusb")
+        self.check(self.bt(), 1, [
+            "MISS expected one onboard BCM4356A2 HCI device (ACPI BCM2E9C; found 0)",
+        ])
+
+    def test_different_broadcom_uart_does_not_pass(self):
+        self.hci("hci0", "acpi:BCM2E7B:")
+        self.check(self.bt(), 1, [
+            "MISS expected one onboard BCM4356A2 HCI device (ACPI BCM2E9C; found 0)",
+        ])
+
+    def test_missing_bluetooth_driver_is_distinct(self):
+        self.hci("hci1", driver=None)
+        self.check(self.bt(), 1, ["MISS onboard BCM4356A2 bound to hci_uart_bcm"])
+
+    def test_wrong_bluetooth_driver_is_distinct(self):
+        self.hci("hci0", driver="btusb")
+        self.check(self.bt(), 1, ["MISS onboard BCM4356A2 bound to hci_uart_bcm"])
+
+    def test_duplicate_onboard_bluetooth_devices_do_not_pass(self):
+        self.hci("hci0")
+        self.hci("hci1")
+        self.check(self.bt(), 1, [
+            "MISS expected one onboard BCM4356A2 HCI device (ACPI BCM2E9C; found 2)",
         ])
 
     def test_board_nvram_without_wifi_binary_is_not_qualified(self):

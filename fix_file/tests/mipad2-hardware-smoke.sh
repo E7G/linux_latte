@@ -119,6 +119,32 @@ mipad2_fw_file_check() {
         miss 'local BCM4356A2 Bluetooth firmware file (BCM4356A2.hcd)'
     fi
 }
+mipad2_bt_uart_check() {
+    mp2_bt_matches=0
+    mp2_bt_node=
+    for mp2_bt_path in "$1"/class/bluetooth/hci*; do
+        [ -d "$mp2_bt_path" ] || continue
+        mp2_bt_name=${mp2_bt_path##*/}
+        case "${mp2_bt_name#hci}" in
+            ''|*[!0-9]*) continue ;;
+        esac
+        [ -r "$mp2_bt_path/device/uevent" ] || continue
+        grep -q '^MODALIAS=acpi:BCM2E9C:' "$mp2_bt_path/device/uevent" || continue
+        mp2_bt_node=$mp2_bt_path
+        mp2_bt_matches=$((mp2_bt_matches + 1))
+    done
+    if [ "$mp2_bt_matches" -ne 1 ]; then
+        miss "expected one onboard BCM4356A2 HCI device (ACPI BCM2E9C; found $mp2_bt_matches)"
+        return
+    fi
+
+    mp2_bt_driver=$(readlink "$mp2_bt_node/device/driver" 2>/dev/null || true)
+    if [ "${mp2_bt_driver##*/}" != hci_uart_bcm ]; then
+        miss 'onboard BCM4356A2 bound to hci_uart_bcm'
+        return
+    fi
+    printf 'OK   onboard BCM4356A2 Bluetooth %s (hci_uart_bcm)\n' "${mp2_bt_node##*/}"
+}
 # END MIPAD2_WIRELESS_CHECKS
 
 mipad2_wifi_pci_check /sys
@@ -136,17 +162,7 @@ printf '%s\n' "$fw_config" | grep -qx 'CONFIG_FW_LOADER_COMPRESS_ZSTD=y' && fw_z
 printf '%s\n' "$fw_config" | grep -qx 'CONFIG_FW_LOADER_COMPRESS_XZ=y' && fw_xz=.xz
 mipad2_fw_file_check /lib/firmware "$release" "$firmware_override" "$fw_zstd" "$fw_xz"
 
-bt_node=
-for path in /sys/class/bluetooth/hci*; do
-    [ -d "$path" ] || continue
-    bt_node=$path
-    break
-done
-if [ -n "$bt_node" ]; then
-    printf 'OK   Bluetooth %s\n' "${bt_node##*/}"
-else
-    miss 'Bluetooth HCI device'
-fi
+mipad2_bt_uart_check /sys
 
 if [ -r /proc/asound/cards ] && grep -Eqi 'rt5659|cht.*5659' /proc/asound/cards; then
     printf 'OK   RT5659 ALSA sound card\n'
