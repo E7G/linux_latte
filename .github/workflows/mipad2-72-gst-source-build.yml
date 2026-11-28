@@ -1,0 +1,62 @@
+name: Mi Pad 2 7.2 AtomISP GStreamer source build
+
+on:
+  push:
+    branches:
+      - codex/mipad2-7.2-integrated
+      - codex/mipad2-72-gst-source-build
+    paths:
+      - '.github/workflows/mipad2-72-gst-source-build.yml'
+      - 'fix_file/gstreamer-v4l2*.patch'
+      - 'fix_file/packages/gst-plugins-good-mipad2/**'
+      - 'fix_file/tests/mipad2-gst-atomisp-stepwise-test.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ARCH_IMAGE: docker.io/library/archlinux:base-20260920.0.596911@sha256:f3691b4dde62ba4c4b6f0ae2c1fbf28e8c0c8c4b9a35c7e06dc1f70e21aa29f6
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /fix_file/gstreamer-v4l2-atomisp-stepwise.patch
+            /fix_file/gstreamer-v4l2src-early-latency.patch
+            /fix_file/packages/gst-plugins-good-mipad2/
+            /fix_file/tests/mipad2-gst-atomisp-stepwise-test.py
+      - name: Build twice with the signed Arch SDK
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/mipad2-gst"
+          mkdir -- "$result"
+          docker run --rm --platform linux/amd64 \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/source,readonly" \
+            --mount "type=bind,source=$result,target=/result" \
+            -e "CI_UID=$(id -u)" -e "CI_GID=$(id -g)" "$ARCH_IMAGE" \
+            bash -euo pipefail -c '
+              printf "%s\n" "Server = https://archive.archlinux.org/repos/2026/09/21/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
+              pacman-key --init
+              pacman-key --populate archlinux
+              pacman -Syu --needed --noconfirm gcc binutils meson ninja pkgconf python patch \
+                glib2 libgudev v4l-utils gstreamer gst-plugins-base-libs
+              export HOME=/tmp
+              script=/source/fix_file/packages/gst-plugins-good-mipad2/build-source-plugin.sh
+              setpriv --reuid="$CI_UID" --regid="$CI_GID" --clear-groups bash "$script" /result/candidate
+              setpriv --reuid="$CI_UID" --regid="$CI_GID" --clear-groups bash "$script" /result/rebuild
+              cmp /result/candidate/libgstvideo4linux2.so /result/rebuild/libgstvideo4linux2.so
+              echo "PASS: two clean source builds produced an identical plugin"
+            '
+          (cd -- "$result/candidate" && sha256sum --check SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mipad2-72-atomisp-gst-1.28.7-host-candidate
+          path: ${{ runner.temp }}/mipad2-gst/candidate/
+          if-no-files-found: error
+          retention-days: 30

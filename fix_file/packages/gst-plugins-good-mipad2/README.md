@@ -5,6 +5,27 @@ It replaces only the V4L2 plugin and adds the Mi Pad 2 rollout controls.
 It is not a flash image, an official Arch build, or a replacement for an
 unrelated GStreamer version.
 
+## Rebuilding from a clean checkout
+
+The 7.2 AtomISP GStreamer source workflow builds in an x86-64 Arch image
+pinned by OCI digest, using the 2026-09-21 Arch Linux Archive snapshot
+and the optional package database signature policy and required package
+signature policy from the official image. It checks the upstream 1.28.7
+tarball against a checked-in SHA-256 and requires the 1.28.7-1 core/base
+SDK. Both patches must apply without fuzz. The job builds twice, checks
+that the binaries match, runs the caps regression against the patched
+source and proves that an isolated GStreamer registry loads the rebuilt
+plugin (not the stock V4L2 plugin). The candidate artifact includes the
+plugin hash, build inputs and host test results.
+
+For a standalone build, run `bash build-source-plugin.sh NEW_OUTPUT_DIRECTORY`
+as an ordinary user in that SDK. The workflow records the image and
+package repository pins. The source-build output is **not** the historical
+deployment binary below: matching two builds within the same SDK is not
+Mi Pad 2 hardware qualification. A candidate must pass the front/rear
+stock-versus-patched device tests before a packaging update. The package
+recipe, runtime opt-in policy and rollback checks remain unchanged.
+
 ## Build inputs
 
 Place the original x86-64 `gst-plugins-good-1.28.7-1` package and the
