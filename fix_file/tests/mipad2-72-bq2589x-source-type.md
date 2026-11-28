@@ -48,3 +48,65 @@ reported type, input limit, UPower state and power-supply uevents on connect
 and disconnect. A physical change of type without PG dropping is not assumed
 to be reproducible by moving cables; that path is covered by the host test.
 Do not infer measured adapter capability from the charger type alone.
+
+## Independent REG0C fault follow-up
+
+TI [BQ25890/92](https://www.ti.com/lit/ds/symlink/bq25890.pdf),
+[BQ25895](https://www.ti.com/lit/ds/symlink/bq25895.pdf) and
+[BQ25896](https://www.ti.com/lit/ds/symlink/bq25896.pdf) specify two
+successive fault-register reads: the first acknowledges historical
+latches; the second returns current faults. NTC is always live, and
+REG0C does not support a burst. The
+[Mi Pad 2 Android driver](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/blob/78fbd35b6c73ee51129d690c4306f320e40a1401/drivers/power/bq2589x_charger.c#L1947-L1957)
+also performs two separate reads.
+
+The old per-field Linux reads acknowledged the same register multiple
+times and could mix historical boost, current battery and newer
+temperature states. The follow-up decodes all four fault fields from
+one live byte, retains the existing BQ25895 NTC normalization, and logs
+changed historical flags without showing them as present health faults.
+A consumed historical event is treated as a handled IRQ even if the
+live state stays unchanged or the second read fails. A failed refresh
+does not publish a partial state. REG0C is precious to prevent generic
+debugfs dumps from clearing historical flags on their own.
+
+The modeled tests check both consecutive reads, all 256 live fault
+values on each variant, NTC-only and historical-only transitions,
+first/second I2C failures, and no writes to charger thresholds. There
+is no intentional hardware fault injection or physical qualification
+of the follow-up.
+
+## Independent system sleep follow-up
+
+The TI data sheet's battery-monitor section notes that its automatic
+once-per-second conversion can increase quiescent current. The driver
+normally enables continuous conversion only with power-good and without
+HiZ, but previously a suspend-time IRQ could undo the pause and resume
+checked only power-good. Resume also wrote the shared state during a
+multi-read transaction, and could expose a partially refreshed snapshot
+if any later I2C operation failed.
+
+Serialize the ADC pause, HiZ request and status changes. A cable IRQ
+while suspended must not restart periodic conversion. On resume, apply the
+existing online/HiZ policy to a fresh snapshot; if the cable was replugged,
+reapply an outstanding user-requested HiZ before restarting the ADC.
+If the read or write fails, preserve the prior snapshot and finish the
+restore on the next successful status refresh, even if the status bytes
+are identical. Do not change charge limits or the ADC one-shot API.
+
+The host test also drives the real suspend/resume callbacks with modeled
+I2C failures and cable IRQs, checks the ADC and HiZ writes, and rejects
+duplicate or premature change notifications. This is not a hardware power
+or sleep result. Measure actual wake, charger state and PMC residency
+on a separately authorized RTC suspend cycle before promoting the follow-up.
+
+## Combined hardware candidate prerequisite
+
+The combined source keeps the historical REG0C interrupt acknowledgement
+independent of whether a new state can be read or published. A failed live
+fault read during resume leaves the restore pending; an unchanged snapshot
+on the next successful IRQ still retries the ADC and any requested HiZ.
+No intermediate state is published. The host fixture calls the production
+resume/IRQ paths with and without HiZ and checks both clear-on-read events,
+no premature ADC/notification, an unchanged final status, and an idle IRQ
+after recovery. This test does not exercise physical I2C or system sleep.

@@ -36,13 +36,11 @@ on:
         type: boolean
         default: false
       candidate_run:
-        description: Completed GitHub run that produced the combined release artifacts
+        description: Completed charger-PM preview run (required only for boot_test)
         type: string
-        default: '46109996857'
       candidate_sha:
-        description: Exact compiled commit from that run
+        description: Exact charger-PM commit from that run (required only for boot_test)
         type: string
-        default: '603f99209cba3fc41e697890f980f68873f94c52'
       fallback_run:
         description: Completed LPAT31 replay run
         type: string
@@ -101,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flags=(LLVM=1 LLVM_IAS=1 ARCH=x86_64 LOCALVERSION=-charger-ci "O=$RUNNER_TEMP/kernel")
+          flags=(LLVM=1 LLVM_IAS=1 ARCH=x86_64 LOCALVERSION=-charger-pm-ci "O=$RUNNER_TEMP/kernel")
           make "${flags[@]}" xiaomipad2_defconfig
           sh fix_file/tests/mipad2-kernel-config-audit.sh "$RUNNER_TEMP/kernel/.config" integrated-7.2
           make -j"$(nproc)" "${flags[@]}" bzImage modules
@@ -176,7 +174,7 @@ jobs:
           [[ "$CANDIDATE_RUN" =~ ^[1-9][0-9]{0,15}$ && "$FALLBACK_RUN" =~ ^[1-9][0-9]{0,15}$ ]]
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN" | jq -e --arg sha "$CANDIDATE_SHA" '
-            .head_sha == $sha and .head_branch == "codex/mipad2-72-charger-hardware" and
+            .head_sha == $sha and .head_branch == "codex/mipad2-72-charger-pm-preview" and
             .path == ".github/workflows/mipad2-72-release-config.yml" and
             .status == "completed" and .conclusion == "success"'
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$FALLBACK_RUN" | jq -e '

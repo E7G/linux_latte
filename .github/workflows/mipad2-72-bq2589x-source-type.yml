@@ -1,14 +1,14 @@
-name: Mi Pad 2 7.2 charger source detection
+name: Mi Pad 2 7.2 charger USB, fault and sleep state
 
 on:
   push:
-    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type]
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type, fix/mipad2-72-bq2589x-fault-snapshot, fix/mipad2-72-bq2589x-pm-state, fix/mipad2-72-bq2589x-combined]
     paths:
       - drivers/power/supply/bq25890_charger.c
       - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
       - .github/workflows/mipad2-72-bq2589x-source-type.yml
   pull_request:
-    branches: [codex/mipad2-7.2-integrated]
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type]
     paths:
       - drivers/power/supply/bq25890_charger.c
       - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
@@ -30,7 +30,7 @@ jobs:
           apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
           sudo apt-get "${apt_sources[@]}" update
           sudo apt-get "${apt_sources[@]}" install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev
-      - name: Test charger status and notification paths
+      - name: Test charger IRQ, fault and sleep state
         run: |
           CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
           CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
