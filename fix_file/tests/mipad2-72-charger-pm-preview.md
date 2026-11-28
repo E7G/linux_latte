@@ -22,3 +22,26 @@ verifies CI provenance before downloading either boot input.
 There is no physical fault, sleep or AC adapter qualification for this
 revision. No installation, default boot entry or system image changes
 are made by building the candidate.
+
+## Exact cloud artifact and UEFI rollback
+
+[Full build 46124167682](https://github.com/E7G/linux_latte/actions/runs/46124167682)
+compiled kernel source 1bea49a060f00c1414a5212249258f900f6d84a0.
+Its bzImage SHA-256 is
+64d52e7ee28c5febfea76eaa19f070de0982b5a5fc057773883c27ee57e0c021.
+All eight manifest inputs passed independent checksum verification.
+The downloaded module archive was also independently verified against the
+run's public certificate and matching kernel release: 37 valid signatures
+and one rejected modified payload. The generated verification JSON exactly
+matched the GitHub artifact.
+
+[UEFI run 46126749250](https://github.com/E7G/linux_latte/actions/runs/46126749250)
+booted that exact candidate in a VM, loaded 11 signed modules, and confirmed
+the PMC trace stayed off by default. A second boot selected the pinned
+LPAT31 fallback. The serial markers and GRUB environment show the
+candidate entry was consumed once; saved_entry stayed unchanged.
+
+This is VM boot and rollback evidence only; it does not verify charger
+hardware, actual suspend/resume, or a wall adapter. The physical tablet
+remains on its existing LPAT31 default. Rebuild from source if the
+published artifacts expire; signing identity is per build.
