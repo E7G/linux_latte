@@ -10,7 +10,7 @@ expected=${4:?full candidate source SHA}
 [[ "$expected" =~ ^[0-9a-f]{40}$ ]]
 test -z "$(find "$out" -mindepth 1 -maxdepth 1 -print -quit)"
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-expected_release=7.2.15-mipad2-integrated-release-ci
+expected_release=7.2.15-mipad2-integrated-charger-ci
 fallback_release=7.2.15-mipad2-integrated-lpat31
 work=$(mktemp -d "$out/work.XXXXXXXX")
 trap 'rc=$?; printf "%s\n" "$rc" > "$out/exit-status"; exit "$rc"' EXIT
@@ -146,7 +146,7 @@ trap 'rc=$?; echo "QUAL_FAILURE=$rc"; "$bb" poweroff -f' EXIT
 trace=/sys/kernel/tracing
 "$bb" mount -t tracefs tracefs "$trace"
 release=$("$bb" uname -r)
-test "$release" = 7.2.15-mipad2-integrated-release-ci
+test "$release" = 7.2.15-mipad2-integrated-charger-ci
 echo "QUAL_CANDIDATE=$release"
 event=events/pmc_atom/pmc_atom_s2idle
 test "$("$bb" cat "$trace/$event/enable")" = 0

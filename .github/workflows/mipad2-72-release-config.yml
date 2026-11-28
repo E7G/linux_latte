@@ -101,7 +101,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flags=(LLVM=1 LLVM_IAS=1 ARCH=x86_64 LOCALVERSION=-release-ci "O=$RUNNER_TEMP/kernel")
+          flags=(LLVM=1 LLVM_IAS=1 ARCH=x86_64 LOCALVERSION=-charger-ci "O=$RUNNER_TEMP/kernel")
           make "${flags[@]}" xiaomipad2_defconfig
           sh fix_file/tests/mipad2-kernel-config-audit.sh "$RUNNER_TEMP/kernel/.config" integrated-7.2
           make -j"$(nproc)" "${flags[@]}" bzImage modules
@@ -176,7 +176,7 @@ jobs:
           [[ "$CANDIDATE_RUN" =~ ^[1-9][0-9]{0,15}$ && "$FALLBACK_RUN" =~ ^[1-9][0-9]{0,15}$ ]]
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN" | jq -e --arg sha "$CANDIDATE_SHA" '
-            .head_sha == $sha and .head_branch == "codex/mipad2-72-hardware-qualification" and
+            .head_sha == $sha and .head_branch == "codex/mipad2-72-charger-hardware" and
             .path == ".github/workflows/mipad2-72-release-config.yml" and
             .status == "completed" and .conclusion == "success"'
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$FALLBACK_RUN" | jq -e '
