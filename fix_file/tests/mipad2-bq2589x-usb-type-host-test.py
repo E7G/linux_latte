@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-only
-"""Run the 7.2 BQ2589x status and IRQ path with a modeled I2C register bank."""
+"""Run BQ2589x status, IRQ and system-PM paths with a modeled I2C bank."""
 import os
 from pathlib import Path
 import re
@@ -39,7 +39,11 @@ production = "\n".join(function(name) for name in (
     "bq25890_decode_usb_type",
     "bq25890_get_usb_type",
     "bq25890_get_chip_state",
+    "bq25890_apply_chip_state",
     "__bq25890_handle_irq",
+    "bq25890_set_online",
+    "bq25890_suspend",
+    "bq25890_resume",
 ))
 
 code = r"""
@@ -87,6 +91,11 @@ struct stub {
     unsigned int hiz_writes;
     int adc;
     int fields[F_MAX_FIELDS];
+    bool require_lock;
+};
+
+struct mutex {
+    bool held;
 };
 
 struct bq25890_device {
@@ -96,7 +105,31 @@ struct bq25890_device {
     struct stub *dev;
     struct bq25890_state state;
     bool force_hiz;
+    bool adc_paused;
+    bool resume_pending;
+    struct mutex lock;
 };
+
+struct device {
+    struct bq25890_device *bq;
+};
+
+static struct bq25890_device *dev_get_drvdata(struct device *dev)
+{
+    return dev->bq;
+}
+
+static void mutex_lock(struct mutex *lock)
+{
+    assert(!lock->held);
+    lock->held = true;
+}
+
+static void mutex_unlock(struct mutex *lock)
+{
+    assert(lock->held);
+    lock->held = false;
+}
 
 static int regmap_read(struct stub *map, unsigned int reg, unsigned int *value)
 {
@@ -122,6 +155,7 @@ static int bq25890_field_write(struct bq25890_device *bq, enum bq25890_fields id
 {
     struct stub *map = bq->rmap;
 
+    assert(!map->require_lock || bq->lock.held);
     if (map->write_error)
         return map->write_error;
     switch (id) {
@@ -237,6 +271,93 @@ static void verify_errors_and_existing_transitions(void)
     assert(bq.state.hiz && bq.state.online && bq.state.usb_type == POWER_SUPPLY_USB_TYPE_SDP);
 }
 
+static irqreturn_t fire_irq(struct bq25890_device *bq)
+{
+    irqreturn_t ret;
+
+    mutex_lock(&bq->lock);
+    ret = __bq25890_handle_irq(bq);
+    mutex_unlock(&bq->lock);
+    return ret;
+}
+
+static void verify_sleep_and_hiz(void)
+{
+    struct stub hw = { .reg0b = 0x34, .adc = 1, .require_lock = true };
+    struct bq25890_device bq = {
+        .chip_version = BQ25890, .rmap = &hw, .charger = &hw, .dev = &hw,
+    };
+    struct device dev = { .bq = &bq };
+
+    assert(!bq25890_get_chip_state(&bq, &bq.state));
+    assert(!bq25890_suspend(&dev));
+    assert(bq.adc_paused && !hw.adc && hw.adc_writes == 1 && !bq.lock.held);
+    hw.reg0b = 0;
+    assert(fire_irq(&bq) == IRQ_HANDLED);
+    hw.reg0b = 0x74;
+    assert(fire_irq(&bq) == IRQ_HANDLED);
+    assert(hw.events == 2 && hw.adc_writes == 1 && !hw.adc);
+    assert(!bq25890_resume(&dev));
+    assert(hw.events == 3 && hw.adc_writes == 2 && hw.adc == 1);
+    assert(!bq.adc_paused && !bq.resume_pending && !bq.lock.held);
+
+    assert(!bq25890_set_online(&bq, false));
+    assert(hw.events == 4 && hw.hiz_writes == 1 && hw.adc_writes == 3 && !hw.adc);
+    assert(bq.force_hiz && bq.state.hiz && !bq.lock.held);
+    assert(!bq25890_suspend(&dev));
+    /* A replug while asleep resets HiZ; power-good has not changed. */
+    hw.fields[F_EN_HIZ] = 0;
+    assert(!bq25890_resume(&dev));
+    assert(bq.state.online && bq.state.hiz && bq.force_hiz && !hw.adc);
+    assert(hw.hiz_writes == 2 && hw.adc_writes == 5 && hw.events == 5);
+    assert(!bq25890_set_online(&bq, true));
+    assert(!bq.force_hiz && !bq.state.hiz && hw.adc == 1);
+
+    /* Detach without an IRQ during suspend. */
+    assert(!bq25890_suspend(&dev));
+    hw.reg0b = 0;
+    assert(!bq25890_resume(&dev));
+    assert(!bq.state.online && !hw.adc && hw.events == 7);
+}
+
+static void verify_sleep_failures(void)
+{
+    struct stub hw = { .reg0b = 0x34, .adc = 1, .require_lock = true };
+    struct bq25890_device bq = {
+        .chip_version = BQ25890, .rmap = &hw, .charger = &hw, .dev = &hw,
+    };
+    struct device dev = { .bq = &bq };
+    struct bq25890_state original;
+
+    assert(!bq25890_get_chip_state(&bq, &bq.state));
+    original = bq.state;
+    hw.write_error = -EIO;
+    assert(bq25890_suspend(&dev) == -EIO);
+    assert(!bq.adc_paused && hw.adc == 1 && !bq.lock.held);
+    assert(bq25890_set_online(&bq, false) == -EIO);
+    assert(!bq.force_hiz && !bq.state.hiz);
+
+    hw.write_error = 0;
+    assert(!bq25890_suspend(&dev));
+    hw.reg0b = 0x74;  /* A different USB type is available after resume. */
+    hw.field_error = -ENXIO; /* Failure after the raw status was copied. */
+    assert(bq25890_resume(&dev) == -ENXIO);
+    assert(!bq.adc_paused && bq.resume_pending && !bq.lock.held);
+    assert(!memcmp(&original, &bq.state, sizeof(original)) && !hw.events);
+    hw.field_error = 0;
+    hw.write_error = -EIO;
+    assert(fire_irq(&bq) == IRQ_HANDLED);
+    assert(bq.resume_pending && !hw.adc && !hw.events);
+    assert(!memcmp(&original, &bq.state, sizeof(original)));
+
+    /* A retry must run even if the next status is unchanged again. */
+    hw.reg0b = 0x34;
+    hw.write_error = 0;
+    assert(fire_irq(&bq) == IRQ_HANDLED);
+    assert(!bq.resume_pending && hw.adc == 1 && hw.events == 1);
+    assert(fire_irq(&bq) == IRQ_NONE && hw.events == 1);
+}
+
 int main(void)
 {
     for (enum bq25890_chip_version chip = BQ25890; chip <= BQ25896; chip++) {
@@ -244,7 +365,10 @@ int main(void)
         verify_reclassification(chip);
     }
     verify_errors_and_existing_transitions();
+    verify_sleep_and_hiz();
+    verify_sleep_failures();
     puts("PASS: BQ2589x USB types, 1024 register states and 256 type transitions");
+    puts("PASS: BQ2589x suspend/IRQ/resume, HiZ and I2C-failure recovery");
     return 0;
 }
 """
