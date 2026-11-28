@@ -1,0 +1,105 @@
+name: Mi Pad 2 7.2 release kernel configuration
+
+on:
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - arch/x86/configs/xiaomipad2_defconfig
+      - drivers/acpi/pmic/Kconfig
+      - drivers/iio/adc/Kconfig
+      - fs/erofs/Kconfig
+      - net/netfilter/Kconfig
+      - fix_file/tests/mipad2-kernel-config-audit.sh
+      - scripts/mipad2_verify_release_modules.py
+      - scripts/mipad2_verify_daily_bundle.py
+      - .github/workflows/mipad2-72-release-config.yml
+  push:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - arch/x86/configs/xiaomipad2_defconfig
+      - drivers/acpi/pmic/Kconfig
+      - drivers/iio/adc/Kconfig
+      - fs/erofs/Kconfig
+      - net/netfilter/Kconfig
+      - fix_file/tests/mipad2-kernel-config-audit.sh
+      - scripts/mipad2_verify_release_modules.py
+      - scripts/mipad2_verify_daily_bundle.py
+      - .github/workflows/mipad2-72-release-config.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-config:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Kconfig dependencies
+        run: sudo apt-get update && sudo apt-get install -y bison flex clang llvm lld
+      - name: Resolve the distribution defconfig with LLVM
+        run: |
+          make LLVM=1 ARCH=x86_64 O="$RUNNER_TEMP/mipad2-config" xiaomipad2_defconfig
+          config="$RUNNER_TEMP/mipad2-config/.config"
+          sh fix_file/tests/mipad2-kernel-config-audit.sh "$config" integrated-7.2
+          sed 's/^CONFIG_IIO_CHT_WC_ADC=m$/# CONFIG_IIO_CHT_WC_ADC is not set/' "$config" > "$config.no-adc"
+          if sh fix_file/tests/mipad2-kernel-config-audit.sh "$config.no-adc" integrated-7.2; then
+            echo 'Release config audit accepted a missing CHT-WC ADC' >&2
+            exit 1
+          fi
+
+  release-module-build:
+    # Run a genuine additional build when changing the release profile, not
+    # when simply requesting a fast resolved-config audit by hand.
+    if: github.event_name != 'workflow_dispatch'
+    needs: release-config
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install LLVM and signature verification dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison clang cpio flex kmod libelf-dev \
+            libssl-dev lld llvm openssl dwarves perl zstd
+      - name: Build the exact release defconfig
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=(LLVM=1 LLVM_IAS=1 ARCH=x86_64 LOCALVERSION=-release-ci "O=$RUNNER_TEMP/kernel")
+          make "${flags[@]}" xiaomipad2_defconfig
+          sh fix_file/tests/mipad2-kernel-config-audit.sh "$RUNNER_TEMP/kernel/.config" integrated-7.2
+          make -j"$(nproc)" "${flags[@]}" bzImage modules
+          make "${flags[@]}" INSTALL_MOD_STRIP=1 "INSTALL_MOD_PATH=$RUNNER_TEMP/module-root" modules_install
+          release=$(make -s "${flags[@]}" kernelrelease)
+          printf '%s\n' "$release" > "$RUNNER_TEMP/kernel-release.txt"
+      - name: Independently verify restored roles and signed module bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          build="$RUNNER_TEMP/kernel"
+          release=$(cat "$RUNNER_TEMP/kernel-release.txt")
+          modules="$RUNNER_TEMP/module-root/lib/modules/$release"
+          python3 scripts/mipad2_verify_release_modules.py \
+            "$modules" "$build/certs/signing_key.x509" "$release" | tee "$RUNNER_TEMP/module-verification.json"
+          rm -f -- "$modules/build" "$modules/source"
+          mkdir -p artifacts
+          install -m0644 "$build/arch/x86/boot/bzImage" artifacts/bzImage
+          install -m0644 "$build/.config" artifacts/config
+          install -m0644 "$build/certs/signing_key.x509" artifacts/module-signing-public.x509
+          install -m0644 "$RUNNER_TEMP/kernel-release.txt" artifacts/kernelrelease.txt
+          install -m0644 "$RUNNER_TEMP/module-verification.json" artifacts/module-verification.json
+          tar --zstd -cf artifacts/modules.tar.zst -C "$RUNNER_TEMP/module-root" "lib/modules/$release"
+          git rev-parse HEAD > artifacts/source-commit.txt
+          (cd artifacts; sha256sum bzImage config module-signing-public.x509 \
+            kernelrelease.txt module-verification.json modules.tar.zst source-commit.txt > SHA256SUMS)
+      - name: Upload build and signature evidence (no signing key)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipad2-72-release-qualification
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
