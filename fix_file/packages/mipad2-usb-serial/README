@@ -1,7 +1,9 @@
 # Mi Pad 2 USB serial debug
 
 This package exposes the tablet's USB device controller as one CDC ACM serial
-console (`/dev/ttyGS0`). The service enables `serial-getty@ttyGS0.service`.
+console (`/dev/ttyGS0`). The service starts `serial-getty@ttyGS0.service`
+after successful gadget setup. An empty UDC list does not queue a getty
+or hold up a boot for a serial device that will never exist.
 With `CONFIG_U_SERIAL_CONSOLE=y`, the gadget can also be a kernel log console.
 Select it with `console=ttyGS0,115200n8 console=tty0`; keep tty0 last so
 userspace /dev/console remains the screen and does not depend on a USB host.
