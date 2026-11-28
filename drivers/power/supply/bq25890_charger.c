@@ -18,6 +18,7 @@
 #include <linux/usb/phy.h>
 
 #include <linux/acpi.h>
+#include <linux/bitfield.h>
 #include <linux/of.h>
 
 #define BQ25890_MANUFACTURER		"Texas Instruments"
@@ -26,6 +27,12 @@
 #define BQ25890_ID			3
 #define BQ25895_ID			7
 #define BQ25896_ID			0
+
+#define BQ25890_STATUS_REG		0x0b
+#define BQ25890_STATUS_VBUS		GENMASK(7, 5)
+#define BQ25890_STATUS_CHG		GENMASK(4, 3)
+#define BQ25890_STATUS_PG		BIT(2)
+#define BQ25890_STATUS_VSYS		BIT(0)
 
 #define PUMP_EXPRESS_START_DELAY	(5 * HZ)
 #define PUMP_EXPRESS_MAX_TRIES		6
@@ -61,8 +68,6 @@ enum bq25890_fields {
 	F_FORCE_ICO, F_TMR2X_EN, F_BATFET_DIS, F_JEITA_VSET,
 	F_BATFET_DLY, F_BATFET_RST_EN, F_PUMPX_UP, F_PUMPX_DN,	     /* Reg09 */
 	F_BOOSTV, F_PFM_OTG_DIS, F_BOOSTI,			     /* Reg0A */
-	F_VBUS_STAT, F_CHG_STAT, F_PG_STAT, F_SDP_STAT, F_0B_RSVD,
-	F_VSYS_STAT,						     /* Reg0B */
 	F_WD_FAULT, F_BOOST_FAULT, F_CHG_FAULT, F_BAT_FAULT,
 	F_NTC_FAULT,						     /* Reg0C */
 	F_FORCE_VINDPM, F_VINDPM,				     /* Reg0D */
@@ -96,6 +101,7 @@ struct bq25890_init_data {
 struct bq25890_state {
 	u8 online;
 	u8 hiz;
+	u8 usb_type;
 	u8 chrg_status;
 	u8 chrg_fault;
 	u8 vsys_status;
@@ -229,12 +235,6 @@ static const struct reg_field bq25890_reg_fields[] = {
 	[F_BOOSTV]		= REG_FIELD(0x0A, 4, 7),
 	[F_BOOSTI]		= REG_FIELD(0x0A, 0, 2), // reserved on BQ25895
 	[F_PFM_OTG_DIS]		= REG_FIELD(0x0A, 3, 3), // BQ25896 only
-	/* REG0B */
-	[F_VBUS_STAT]		= REG_FIELD(0x0B, 5, 7),
-	[F_CHG_STAT]		= REG_FIELD(0x0B, 3, 4),
-	[F_PG_STAT]		= REG_FIELD(0x0B, 2, 2),
-	[F_SDP_STAT]		= REG_FIELD(0x0B, 1, 1), // reserved on BQ25896
-	[F_VSYS_STAT]		= REG_FIELD(0x0B, 0, 0),
 	/* REG0C */
 	[F_WD_FAULT]		= REG_FIELD(0x0C, 7, 7),
 	[F_BOOST_FAULT]		= REG_FIELD(0x0C, 6, 6),
@@ -469,51 +469,47 @@ static int bq25890_get_vbus_voltage(struct bq25890_device *bq)
 	return bq25890_find_val(ret, TBL_VBUSV);
 }
 
-/*
- * BQ25890/BQ25895 have an integrated BC1.2 charger detector.  The VBUS_STAT
- * field already tells us whether the attached source is SDP, CDP or DCP.
- * Export that through the power-supply class instead of making userspace
- * treat every source as a generic USB supply.
- *
- * Values 4-6 are high-voltage / non-standard adapters.  They are still
- * dedicated charging ports from the USB power-supply point of view; we do
- * not change charge voltage or current here.
- */
-static int bq25890_get_usb_type(struct bq25890_device *bq)
+static bool bq25890_has_usb_detection(enum bq25890_chip_version chip)
 {
-	int ret;
-
-	/* BQ25892 gets charger type from an external USB supply. */
-	if (bq->chip_version == BQ25892)
-		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
-
 	/*
-	 * F_VBUS_STAT is defined for BQ25890/BQ25895.  Keep the BQ25896
-	 * conservative because the field is not usable in the same way there.
+	 * BQ25892 uses its supplier, and the BQ25896 status codes have
+	 * different meanings.
 	 */
-	if (bq->chip_version == BQ25896)
-		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+	return chip == BQ25890 || chip == BQ25895;
+}
 
-	ret = bq25890_field_read(bq, F_VBUS_STAT);
-	if (ret < 0)
-		return ret;
-
-	switch (ret) {
+static enum power_supply_usb_type bq25890_decode_usb_type(unsigned int status)
+{
+	switch (FIELD_GET(BQ25890_STATUS_VBUS, status)) {
 	case 1:
 		return POWER_SUPPLY_USB_TYPE_SDP;
 	case 2:
 		return POWER_SUPPLY_USB_TYPE_CDP;
 	case 3:
-		return POWER_SUPPLY_USB_TYPE_DCP;
 	case 4: /* HVDCP */
-	case 5: /* unknown adapter */
-	case 6: /* non-standard adapter */
 		return POWER_SUPPLY_USB_TYPE_DCP;
-	case 0: /* no input / unknown */
+	case 0: /* no input */
+	case 5: /* unknown adapter, 500 mA initial limit */
+	case 6: /* non-standard divider, no confirmed BC1.2 DCP */
 	case 7: /* OTG */
 	default:
 		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
 	}
+}
+
+static int bq25890_get_usb_type(struct bq25890_device *bq)
+{
+	unsigned int status;
+	int ret;
+
+	if (!bq25890_has_usb_detection(bq->chip_version))
+		return POWER_SUPPLY_USB_TYPE_UNKNOWN;
+
+	ret = regmap_read(bq->rmap, BQ25890_STATUS_REG, &status);
+	if (ret)
+		return ret;
+
+	return bq25890_decode_usb_type(status);
 }
 
 static void bq25890_update_state(struct bq25890_device *bq,
@@ -852,21 +848,31 @@ static void bq25890_charger_external_power_changed(struct power_supply *psy)
 static int bq25890_get_chip_state(struct bq25890_device *bq,
 				  struct bq25890_state *state)
 {
-	int i, ret;
+	unsigned int status, i;
+	int ret;
 
 	struct {
 		enum bq25890_fields id;
 		u8 *data;
 	} state_fields[] = {
-		{F_CHG_STAT,	&state->chrg_status},
-		{F_PG_STAT,	&state->online},
 		{F_EN_HIZ,	&state->hiz},
-		{F_VSYS_STAT,	&state->vsys_status},
 		{F_BOOST_FAULT, &state->boost_fault},
 		{F_BAT_FAULT,	&state->bat_fault},
 		{F_CHG_FAULT,	&state->chrg_fault},
 		{F_NTC_FAULT,	&state->ntc_fault}
 	};
+
+	/* All four fields describe the same instant, even during detection. */
+	ret = regmap_read(bq->rmap, BQ25890_STATUS_REG, &status);
+	if (ret)
+		return ret;
+
+	state->chrg_status = FIELD_GET(BQ25890_STATUS_CHG, status);
+	state->online = FIELD_GET(BQ25890_STATUS_PG, status);
+	state->vsys_status = FIELD_GET(BQ25890_STATUS_VSYS, status);
+	state->usb_type = bq25890_has_usb_detection(bq->chip_version) ?
+			  bq25890_decode_usb_type(status) :
+			  POWER_SUPPLY_USB_TYPE_UNKNOWN;
 
 	for (i = 0; i < ARRAY_SIZE(state_fields); i++) {
 		ret = bq25890_field_read(bq, state_fields[i].id);
@@ -903,6 +909,7 @@ static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 	if (ret < 0)
 		return IRQ_NONE;
 
+	/* A completed detection can change USB type without changing PG_STAT. */
 	if (!memcmp(&bq->state, &new_state, sizeof(new_state)))
 		return IRQ_NONE;
 

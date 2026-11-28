@@ -1,0 +1,44 @@
+name: Mi Pad 2 7.2 charger source detection
+
+on:
+  push:
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type]
+    paths:
+      - drivers/power/supply/bq25890_charger.c
+      - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
+      - .github/workflows/mipad2-72-bq2589x-source-type.yml
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - drivers/power/supply/bq25890_charger.c
+      - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
+      - .github/workflows/mipad2-72-bq2589x-source-type.yml
+
+permissions:
+  contents: read
+
+jobs:
+  charger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install kernel build dependencies
+        run: |
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y build-essential clang llvm lld bc bison flex libssl-dev libelf-dev
+      - name: Test charger status and notification paths
+        run: |
+          CC="gcc -fsanitize=undefined -fno-sanitize-recover=all" python3 -B fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
+          CC="clang -fsanitize=undefined -fsanitize-trap=undefined" python3 -B -O fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
+      - name: Compile the built-in charger with the Mi Pad 2 defconfig
+        run: |
+          out="$RUNNER_TEMP/mipad2-charger"
+          make O="$out" ARCH=x86_64 LLVM=1 xiaomipad2_defconfig
+          case "$(make -s O="$out" ARCH=x86_64 LLVM=1 kernelversion)" in 7.2.*) ;; *) exit 1;; esac
+          grep -qx 'CONFIG_CHARGER_BQ25890=y' "$out/.config"
+          make O="$out" ARCH=x86_64 LLVM=1 W=1 -j"$(nproc)" drivers/power/supply/bq25890_charger.o
+          test -s "$out/drivers/power/supply/bq25890_charger.o"
