@@ -48,3 +48,30 @@ reported type, input limit, UPower state and power-supply uevents on connect
 and disconnect. A physical change of type without PG dropping is not assumed
 to be reproducible by moving cables; that path is covered by the host test.
 Do not infer measured adapter capability from the charger type alone.
+
+## Independent REG0C fault follow-up
+
+TI [BQ25890/92](https://www.ti.com/lit/ds/symlink/bq25890.pdf),
+[BQ25895](https://www.ti.com/lit/ds/symlink/bq25895.pdf) and
+[BQ25896](https://www.ti.com/lit/ds/symlink/bq25896.pdf) specify two
+successive fault-register reads: the first acknowledges historical
+latches; the second returns current faults. NTC is always live, and
+REG0C does not support a burst. The
+[Mi Pad 2 Android driver](https://github.com/MiCode/Xiaomi_Kernel_OpenSource/blob/78fbd35b6c73ee51129d690c4306f320e40a1401/drivers/power/bq2589x_charger.c#L1947-L1957)
+also performs two separate reads.
+
+The old per-field Linux reads acknowledged the same register multiple
+times and could mix historical boost, current battery and newer
+temperature states. The follow-up decodes all four fault fields from
+one live byte, retains the existing BQ25895 NTC normalization, and logs
+changed historical flags without showing them as present health faults.
+A consumed historical event is treated as a handled IRQ even if the
+live state stays unchanged or the second read fails. A failed refresh
+does not publish a partial state. REG0C is precious to prevent generic
+debugfs dumps from clearing historical flags on their own.
+
+The modeled tests check both consecutive reads, all 256 live fault
+values on each variant, NTC-only and historical-only transitions,
+first/second I2C failures, and no writes to charger thresholds. There
+is no intentional hardware fault injection or physical qualification
+of the follow-up.
