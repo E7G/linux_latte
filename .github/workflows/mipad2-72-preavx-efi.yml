@@ -1,0 +1,69 @@
+name: Mi Pad 2 7.2 pre-AVX EFI boot
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [codex/mipad2-7.2-integrated]
+    paths:
+      - arch/x86/boot/compressed/Makefile
+      - drivers/firmware/efi/libstub/Makefile
+      - arch/x86/configs/xiaomipad2_defconfig
+      - fix_file/tests/mipad2-72-preavx-efi.sh
+      - fix_file/tests/mipad2-72-efi-isa-commands.py
+      - .github/workflows/mipad2-72-preavx-efi.yml
+
+permissions:
+  contents: read
+
+jobs:
+  preavx-efi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install the kernel and isolated firmware test dependencies
+        run: |
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y --no-install-recommends \
+            build-essential bc bison flex libssl-dev libelf-dev dwarves zstd \
+            clang llvm lld qemu-system-x86 ovmf busybox-static btrfs-progs cpio
+      - name: Build 7.2 with an x86-64-v3 compiler default
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/efi-proof"
+          mkdir "$evidence"
+          git rev-parse HEAD > "$evidence/commit.txt"
+          clang --version > "$evidence/toolchain.txt"
+          wrap="$RUNNER_TEMP/clang-default-v3"
+          cat > "$wrap" <<'WRAPPER'
+          #!/bin/sh
+          exec clang -march=x86-64-v3 "$@"
+          WRAPPER
+          chmod 0755 "$wrap"
+          cp "$wrap" "$evidence/compiler-wrapper.txt"
+          out="$RUNNER_TEMP/preavx"
+          flags=(LLVM=1 ARCH=x86_64 "CC=$wrap" "O=$out" LOCALVERSION=-preavx-ci)
+          make "${flags[@]}" xiaomipad2_defconfig
+          for option in BLK_DEV_LOOP BTRFS_FS DEVTMPFS EFI_STUB MSILVERMONT; do
+            grep -Fx "CONFIG_$option=y" "$out/.config"
+          done
+          release=$(make -s "${flags[@]}" kernelrelease)
+          [[ "$release" =~ ^7\.2\.[0-9]+-mipad2-integrated-preavx-ci$ ]]
+          make "${flags[@]}" -j"$(nproc)" bzImage
+          python3 -B fix_file/tests/mipad2-72-efi-isa-commands.py "$out" "$wrap" | tee "$evidence/kbuild-isa.txt"
+          printf 'TEST_RELEASE=%s\n' "$release" >> "$GITHUB_ENV"
+      - name: Boot the exact bzImage by EFI and verify a Btrfs mount without AVX or BMI
+        run: |
+          bash fix_file/tests/mipad2-72-preavx-efi.sh \
+            "$RUNNER_TEMP/preavx/arch/x86/boot/bzImage" "$TEST_RELEASE" "$RUNNER_TEMP/efi-proof"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mipad2-72-preavx-efi-receipt
+          path: ${{ runner.temp }}/efi-proof
+          if-no-files-found: warn
+          retention-days: 30
