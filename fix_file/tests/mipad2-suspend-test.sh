@@ -9,8 +9,13 @@ fail_run()
     exit 1
 }
 
+mode=normal
+case "${1:-}" in
+    --preflight) mode=preflight; shift; [ "$#" -eq 0 ] || fail_run "Usage: $0 --preflight" ;;
+    --capture) mode=capture; shift ;;
+esac
 seconds=${1:-8}
-[ "$#" -le 1 ] || fail_run "Usage: $0 [seconds: 3-300]"
+[ "$#" -le 1 ] || fail_run "Usage: $0 [--capture] [seconds: 3-300], or --preflight"
 case "$seconds" in
     [1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;;
     *) fail_run "Usage: $0 [seconds: 3-300]" ;;
@@ -18,7 +23,11 @@ esac
 [ "$seconds" -ge 3 ] && [ "$seconds" -le 300 ] ||
     fail_run "Suspend duration must be 3-300 seconds"
 if [ "$(id -u)" -ne 0 ]; then
-    exec sudo /bin/sh "$0" "$@"
+    case "$mode" in
+        preflight) exec sudo /bin/sh "$0" --preflight ;;
+        capture) exec sudo /bin/sh "$0" --capture "$seconds" ;;
+        *) exec sudo /bin/sh "$0" "$seconds" ;;
+    esac
 fi
 
 for tool in rtcwake systemctl busctl python3 journalctl flock; do
@@ -39,8 +48,10 @@ rtc_events=/sys/firmware/acpi/interrupts/ff_rt_clk
     fail_run "PMC, RTC fixed-event counter or wake-IRQ evidence is unavailable"
 
 umask 077
-exec 9>>/run/mipad2-suspend-test.lock
-flock -n 9 || fail_run "Another Mi Pad 2 suspend test is active"
+if [ "$mode" != preflight ]; then
+    exec 9>>/run/mipad2-suspend-test.lock
+    flock -n 9 || fail_run "Another Mi Pad 2 suspend test is active"
+fi
 
 check_no_sleep_inhibitor()
 {
@@ -177,6 +188,24 @@ pme_irq_snapshot()
     ' /proc/interrupts
 }
 
+if [ "$mode" = preflight ]; then
+    check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
+    pmc_snapshot >/dev/null || fail_run "Invalid PMC residency snapshot"
+    rtc_event_count >/dev/null || fail_run "Cannot read the RTC fixed-event counter"
+    pme=$(pme_irq_snapshot) || fail_run "Cannot read virtual PME interrupt counters"
+    [ "$pme" != unavailable ] || fail_run "Virtual PME child interrupt is unavailable"
+    printf 'OK   PMC residency, RTC fixed-event counter and separate PME child are readable\n'
+    trace=/sys/kernel/tracing
+    if [ -r "$trace/events/pmc_atom/pmc_atom_s2idle/format" ] &&
+       [ -r "$trace/events/power/suspend_resume/format" ]; then
+        printf 'INFO PMC trace events present in tracefs\n'
+    else
+        printf 'INFO PMC trace events unavailable in the current tracefs\n'
+    fi
+    check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
+    printf 'OK   read-only preflight passed; no suspend requested\n'
+    exit 0
+fi
 check_no_sleep_inhibitor || fail_run "Cannot confirm suspend is allowed"
 check_no_alarm || fail_run "An RTC alarm is armed or its state is unavailable"
 before=$(pmc_snapshot) || fail_run "Invalid PMC residency snapshot before suspend"
@@ -200,7 +229,61 @@ clear_own_alarm()
         rtcwake -d /dev/rtc0 -m disable >/dev/null
     fi
 }
-trap clear_own_alarm EXIT
+capture_dir=''
+instance=''
+trace_saved=0
+
+capture_finish()
+{
+    rc=$?
+    trap - EXIT HUP INT TERM
+    clear_own_alarm || rc=1
+    if [ -n "$instance" ]; then
+        printf '0\n' > "$instance/tracing_on" || rc=1
+        if [ "$trace_saved" -eq 0 ]; then
+            # Never invent the end marker when the cycle is still uncertain.
+            cat "$instance/trace" > "$capture_dir/pmc.trace" || rc=1
+        fi
+        for event in "$pmc_event" "$power_event"; do
+            if [ -e "$instance/$event/enable" ]; then
+                printf '0\n' > "$instance/$event/enable" || rc=1
+            fi
+        done
+        rmdir "$instance" || rc=1
+    fi
+    if [ -n "$capture_dir" ]; then
+        printf 'PMC_CAPTURE_DIR=%s\n' "$capture_dir" >&7
+    fi
+    exit "$rc"
+}
+
+capture_start()
+{
+    trace=/sys/kernel/tracing
+    pmc_event=events/pmc_atom/pmc_atom_s2idle
+    power_event=events/power/suspend_resume
+    [ -d "$trace/instances" ] && [ -r "$trace/$power_event/format" ] &&
+    [ -r "$trace/$pmc_event/format" ] && [ "$(cat "$trace/$pmc_event/enable")" = 0 ] ||
+        fail_run "Expected an available, globally disabled PMC trace event"
+    capture_id=$(tr -d '\n-' < /proc/sys/kernel/random/uuid)
+    [ "${#capture_id}" -eq 32 ] || fail_run "Invalid trace capture ID"
+    case "$capture_id" in *[!0-9a-f]*) fail_run "Invalid trace capture ID" ;; esac
+    exec 7>&1
+    capture_dir=$(mktemp -d /run/mipad2-pmc-capture.XXXXXXXX)
+    exec > "$capture_dir/rtc.log" 2>&1
+    path="$trace/instances/mipad2-pmc-$capture_id"
+    mkdir "$path" || fail_run "Cannot allocate a fresh tracefs instance"
+    instance=$path
+    printf '0\n' > "$instance/tracing_on"
+    printf 'global\n' > "$instance/trace_clock"
+    printf '1\n' > "$instance/$pmc_event/enable"
+    printf '1\n' > "$instance/$power_event/enable"
+    printf '1\n' > "$instance/tracing_on"
+    printf 'mipad2-pmc:%s:begin\n' "$capture_id" > "$instance/trace_marker"
+    printf 'INFO PMC trace capture: %s\n' "$capture_id"
+}
+
+trap capture_finish EXIT
 trap 'exit 1' HUP INT TERM
 
 printf 'INFO S0I3 before: %sus\n' "$before_i3"
@@ -209,6 +292,11 @@ check_no_alarm || fail_run "RTC alarm state changed before arming"
 rtc_before=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter"
 pme_before=$(pme_irq_snapshot) || fail_run "Cannot read virtual PME interrupt counters"
 [ "$pme_before" != unavailable ] || fail_run "Virtual PME child interrupt is unavailable"
+if [ "$mode" = capture ]; then
+    capture_start
+    check_no_sleep_inhibitor || fail_run "Suspend became inhibited during trace setup"
+    check_no_alarm || fail_run "RTC alarm state changed during trace setup"
+fi
 rtcwake -d /dev/rtc0 -m no -s "$seconds"
 alarm=$(cat "$rtc/wakealarm")
 case "$alarm" in ''|*[!0-9]*) fail_run "RTC alarm could not be verified";; esac
@@ -247,6 +335,12 @@ while [ "$tries" -lt 45 ]; do
 done
 [ "$state" = resumed ] || fail_run "No complete suspend cycle; leaving RTC alarm intact"
 sleep_queued=0
+if [ -n "$instance" ]; then
+    printf 'mipad2-pmc:%s:end\n' "$capture_id" > "$instance/trace_marker"
+    printf '0\n' > "$instance/tracing_on"
+    cat "$instance/trace" > "$capture_dir/pmc.trace"
+    trace_saved=1
+fi
 # RTC wakes on IRQ 9, shared by ACPI SCI and the INT0002 PME handler.
 rtc_now=$(cat "$rtc/since_epoch")
 rtc_after=$(rtc_event_count) || fail_run "Cannot read the RTC fixed-event counter after resume"
@@ -318,7 +412,9 @@ else
     fail=1
 fi
 
-if command -v mipad2-hardware-smoke >/dev/null 2>&1; then
+if [ "$mode" = capture ]; then
+    printf 'INFO physical media smoke not run in capture mode\n'
+elif command -v mipad2-hardware-smoke >/dev/null 2>&1; then
     mipad2-hardware-smoke || fail=1
 elif [ -x /usr/local/libexec/mipad2-hardware-smoke ]; then
     /usr/local/libexec/mipad2-hardware-smoke || fail=1

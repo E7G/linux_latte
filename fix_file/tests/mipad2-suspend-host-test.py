@@ -142,10 +142,60 @@ elif cmd == "journalctl":
                 print("warm DSP resume failed; forcing cold restart (timeout)")
 elif cmd == "sleep":
     assert "clear\n" not in (root / "events").read_text(), "RTC cleared before resume"
+elif cmd in ("mkdir", "rmdir", "cat"):
+    import shutil
+    trace_parent = root / "sys/kernel/tracing/instances"
+    path = Path(args[0])
+    uuid = "0123456789abcdef0123456789abcdef"
+    instance = trace_parent / ("mipad2-pmc-" + uuid)
+    if cmd == "mkdir":
+        if path != instance:
+            raise RuntimeError("unexpected instance root")
+        path.mkdir()
+        for part in ("events/pmc_atom/pmc_atom_s2idle", "events/power/suspend_resume"):
+            (path/part).mkdir(parents=True)
+            (path/part/"enable").write_text("0\n")
+        (path/"trace").touch()
+    elif cmd == "rmdir":
+        if path != instance:
+            raise RuntimeError("unexpected trace cleanup root")
+        for part in ("events/pmc_atom/pmc_atom_s2idle", "events/power/suspend_resume"):
+            if (path/part/"enable").read_text() != "0\n":
+                raise RuntimeError("trace cleanup left an event enabled")
+        shutil.rmtree(path)
+    elif path == instance/"trace":
+        marker = (instance/"trace_marker").read_text().strip()
+        if (instance/"tracing_on").read_text() != "0\n":
+            raise RuntimeError("trace must be frozen before export")
+        if (instance/"trace_clock").read_text() != "global\n":
+            raise RuntimeError("expected common clock in private instance")
+        for part in ("events/pmc_atom/pmc_atom_s2idle", "events/power/suspend_resume"):
+            if (instance/part/"enable").read_text() != "1\n":
+                raise RuntimeError("missing private event enable")
+        steps = [("tracing_mark_write", f"mipad2-pmc:{uuid}:begin")]
+        if marker == f"mipad2-pmc:{uuid}:end":
+            steps.extend([("suspend_resume", "suspend_enter[1] begin"),
+                          ("suspend_resume", "suspend_enter[1] end"),
+                          ("pmc_atom_s2idle", "func_dis=0x00000001 func_dis_2=0x00000002 "
+                           "d3_sts_0=0x00000003 d3_sts_1=0x00000004 pss=0x00000005 forced_clks=0x00000000"),
+                          ("suspend_resume", "machine_suspend[1] begin"),
+                          ("suspend_resume", "machine_suspend[1] end"),
+                          ("suspend_resume", "console_resume_all[1] begin"),
+                          ("suspend_resume", "console_resume_all[1] end"),
+                          ("tracing_mark_write", marker)])
+        elif marker != f"mipad2-pmc:{uuid}:begin":
+            raise RuntimeError("missing capture marker")
+        print(f"# entries-in-buffer/entries-written: {len(steps)}/{len(steps)}   #P:4")
+        for n, (event, value) in enumerate(steps):
+            print(f" task-101 [000] .... {n}.00: {event}: {value}")
+    else:
+        print(path.read_text(), end="")
+elif cmd == "mipad2-hardware-smoke":
+    raise RuntimeError("capture and preflight must never probe media")
 """
 
 
-def check_case(source, mode, expected_code, expected_events, expected_alarm):
+def check_case(source, mode, expected_code, expected_events, expected_alarm, options=(), capture=None):
     with tempfile.TemporaryDirectory(prefix="mipad2-suspend-host-") as temp:
         root = Path(temp)
         files = {
@@ -187,7 +237,23 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
         (root / "run").mkdir()
         bindir = root / "bin"
         bindir.mkdir()
-        for name in ("id", "busctl", "rtcwake", "systemctl", "journalctl", "sleep"):
+        commands = ["id", "busctl", "rtcwake", "systemctl", "journalctl", "sleep"]
+        if options:
+            trace = root/"sys/kernel/tracing"
+            (trace/"instances").mkdir(parents=True)
+            for part in ("events/pmc_atom/pmc_atom_s2idle", "events/power/suspend_resume"):
+                (trace/part).mkdir(parents=True)
+                (trace/part/"format").touch()
+                (trace/part/"enable").write_text("0\n")
+            if mode == "trace-globally-enabled":
+                (trace/"events/pmc_atom/pmc_atom_s2idle/enable").write_text("1\n")
+            if mode == "trace-unavailable":
+                (trace/"events/pmc_atom/pmc_atom_s2idle/format").unlink()
+            uuid=root/"proc/sys/kernel/random/uuid"
+            uuid.parent.mkdir(parents=True)
+            uuid.write_text("01234567-89ab-cdef-0123-456789abcdef\n")
+            commands += ["cat", "mkdir", "rmdir", "mipad2-hardware-smoke"]
+        for name in commands:
             prog = bindir / name
             prog.write_text(f"#!{sys.executable}\n" + MOCK)
             prog.chmod(0o700)
@@ -197,12 +263,47 @@ def check_case(source, mode, expected_code, expected_events, expected_alarm):
         script.write_text(re.sub(r"(?<!\w)/(sys/|proc/|run/)", lambda m: f"{root}/{m[1]}", source))
         env = dict(os.environ, PATH=f"{bindir}:/usr/bin:/bin", FIXTURE=str(root), CASE=mode)
         result = subprocess.run(
-            ["/bin/sh", str(script)], env=env, text=True, capture_output=True, timeout=12,
+            ["/bin/sh", str(script), *options], env=env, text=True, capture_output=True, timeout=24,
         )
         events = (root / "events").read_text().splitlines()
         alarm = (root / "sys/class/rtc/rtc0/wakealarm").read_text().strip()
         if (result.returncode, events, alarm) != (expected_code, expected_events, expected_alarm):
             raise AssertionError((mode, result.returncode, events, alarm, result.stdout, result.stderr))
+        if options:
+            expected_global = "1\n" if mode == "trace-globally-enabled" else "0\n"
+            if (trace/"events/pmc_atom/pmc_atom_s2idle/enable").read_text() != expected_global:
+                raise AssertionError("the global trace setting changed")
+            if list((trace/"instances").iterdir()):
+                raise AssertionError("a private trace instance was left behind")
+            if options == ("--preflight",):
+                if list((root/"run").iterdir()) or (not expected_code and "no suspend requested" not in result.stdout):
+                    raise AssertionError((mode, result.stdout, result.stderr, "preflight changed state"))
+            receipts = list((root/"run").glob("mipad2-pmc-capture.*"))
+            if capture is None:
+                if receipts or "PMC_CAPTURE_DIR=" in result.stdout:
+                    raise AssertionError((mode, "unexpected trace receipt"))
+            else:
+                if len(receipts) != 1 or f"PMC_CAPTURE_DIR={receipts[0]}\n" not in result.stdout:
+                    raise AssertionError((mode, result.stdout, result.stderr))
+                import runpy
+                report = runpy.run_path(str(Path(__file__).with_name("mipad2-pmc-s2idle-report.py")))
+                trace_text = (receipts[0]/"pmc.trace").read_text()
+                log_text = (receipts[0]/"rtc.log").read_text()
+                if capture == "incomplete":
+                    if "\nPM" in trace_text or ":end" in trace_text:
+                        raise AssertionError((mode, "unexpected completion marker"))
+                    try:
+                        report["capture_report"](trace_text, log_text)
+                    except ValueError:
+                        pass
+                    else:
+                        raise AssertionError((mode, "false complete capture"))
+                else:
+                    checked = report["capture_report"](trace_text, log_text)
+                    if (checked["s0i3_threshold_met"] != (capture == "met") or
+                            "physical media smoke not run" not in log_text):
+                        raise AssertionError((mode, checked, log_text))
+            return
         wake_failures = {
             "shared-sci-only": "without corroborating evidence of an RTC wake",
             "mixed-pme-and-rtc": "Kernel reported a different wake source",
@@ -300,3 +401,17 @@ if __name__ == "__main__":
     for case in cases:
         check_case(script, *case)
     print(f"PASS: {len(cases)} suspend, PMC residency, inhibitor, RTC ownership and wake-source cases")
+    extra = (
+        ("normal", 0, [], "", ("--preflight",), None),
+        ("blocked", 1, [], "", ("--preflight",), None),
+        ("prearmed", 1, [], "555", ("--preflight",), None),
+        ("trace-globally-enabled", 1, [], "", ("--capture", "8"), None),
+        ("trace-unavailable", 1, [], "", ("--capture", "8"), None),
+        ("normal", 0, ["arm", "request", "resume", "clear"], "", ("--capture", "8"), "met"),
+        ("s0-only", 1, ["arm", "request", "resume", "clear"], "", ("--capture", "8"), "missed"),
+        ("late-inhibitor", 1, ["arm", "clear"], "", ("--capture", "8"), "incomplete"),
+        ("no-resume", 1, ["arm", "request"], "108", ("--capture", "8"), "incomplete"),
+    )
+    for case in extra:
+        check_case(script, *case)
+    print(f"PASS: {len(extra)} read-only preflight and isolated capture cases")

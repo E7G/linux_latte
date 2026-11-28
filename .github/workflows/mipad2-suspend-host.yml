@@ -1,6 +1,7 @@
 name: Mi Pad 2 suspend safety checks
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: ['codex/mipad2-7.2-integrated']
     paths:
