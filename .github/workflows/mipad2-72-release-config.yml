@@ -26,6 +26,11 @@ on:
       - scripts/mipad2_verify_daily_bundle.py
       - .github/workflows/mipad2-72-release-config.yml
   workflow_dispatch:
+    inputs:
+      full_build:
+        description: Also compile the combined 7.2 image and verify signatures and the PMC link
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -36,8 +41,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install Kconfig dependencies
-        run: sudo apt-get update && sudo apt-get install -y bison flex clang llvm lld
+        shell: bash
+        run: |
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y bison flex clang llvm lld
       - name: Resolve the distribution defconfig with LLVM
         run: |
           make LLVM=1 ARCH=x86_64 O="$RUNNER_TEMP/mipad2-config" xiaomipad2_defconfig
@@ -52,7 +63,7 @@ jobs:
   release-module-build:
     # Run a genuine additional build when changing the release profile, not
     # when simply requesting a fast resolved-config audit by hand.
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch' || inputs.full_build
     needs: release-config
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -61,9 +72,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install LLVM and signature verification dependencies
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bc bison clang cpio flex kmod libelf-dev \
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y build-essential bc bison clang cpio flex kmod libelf-dev \
             libssl-dev lld llvm openssl dwarves perl zstd
       - name: Build the exact release defconfig
         shell: bash
@@ -76,6 +89,22 @@ jobs:
           make "${flags[@]}" INSTALL_MOD_STRIP=1 "INSTALL_MOD_PATH=$RUNNER_TEMP/module-root" modules_install
           release=$(make -s "${flags[@]}" kernelrelease)
           printf '%s\n' "$release" > "$RUNNER_TEMP/kernel-release.txt"
+      - name: Verify PMC trace is really linked in the 7.2 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          build="$RUNNER_TEMP/kernel"
+          image="$build/vmlinux"
+          if grep -Fqx CONFIG_PMC_ATOM=m "$build/.config"; then
+            image="$build/drivers/platform/x86/pmc_atom.ko"
+          fi
+          test -s "$image"
+          llvm-readelf --symbols --wide "$image" | awk '
+            $4 == "OBJECT" && $7 != "UND" && $8 == "__tracepoint_pmc_atom_s2idle" {print; tp++}
+            $4 == "OBJECT" && $7 != "UND" && $8 == "event_pmc_atom_s2idle" {print; event++}
+            END {if (tp != 1 || event != 1) exit 1}
+          ' > "$RUNNER_TEMP/pmc-trace-link.txt"
+          cat "$RUNNER_TEMP/pmc-trace-link.txt"
       - name: Independently verify restored roles and signed module bytes
         shell: bash
         run: |
@@ -87,6 +116,7 @@ jobs:
             "$modules" "$build/certs/signing_key.x509" "$release" | tee "$RUNNER_TEMP/module-verification.json"
           rm -f -- "$modules/build" "$modules/source"
           mkdir -p artifacts
+          install -m0644 "$RUNNER_TEMP/pmc-trace-link.txt" artifacts/pmc-trace-link.txt
           install -m0644 "$build/arch/x86/boot/bzImage" artifacts/bzImage
           install -m0644 "$build/.config" artifacts/config
           install -m0644 "$build/certs/signing_key.x509" artifacts/module-signing-public.x509
@@ -95,7 +125,7 @@ jobs:
           tar --zstd -cf artifacts/modules.tar.zst -C "$RUNNER_TEMP/module-root" "lib/modules/$release"
           git rev-parse HEAD > artifacts/source-commit.txt
           (cd artifacts; sha256sum bzImage config module-signing-public.x509 \
-            kernelrelease.txt module-verification.json modules.tar.zst source-commit.txt > SHA256SUMS)
+            kernelrelease.txt module-verification.json modules.tar.zst pmc-trace-link.txt source-commit.txt > SHA256SUMS)
       - name: Upload build and signature evidence (no signing key)
         uses: actions/upload-artifact@v4
         with:
