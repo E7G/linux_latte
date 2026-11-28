@@ -33,6 +33,12 @@
 #define BQ25890_STATUS_CHG		GENMASK(4, 3)
 #define BQ25890_STATUS_PG		BIT(2)
 #define BQ25890_STATUS_VSYS		BIT(0)
+#define BQ25890_FAULT_REG		0x0c
+#define BQ25890_FAULT_BOOST		BIT(6)
+#define BQ25890_FAULT_CHG		GENMASK(5, 4)
+#define BQ25890_FAULT_BAT		BIT(3)
+#define BQ25890_FAULT_NTC		GENMASK(2, 0)
+#define BQ25890_FAULT_LATCHED		GENMASK(7, 3)
 
 #define PUMP_EXPRESS_START_DELAY	(5 * HZ)
 #define PUMP_EXPRESS_MAX_TRIES		6
@@ -68,8 +74,6 @@ enum bq25890_fields {
 	F_FORCE_ICO, F_TMR2X_EN, F_BATFET_DIS, F_JEITA_VSET,
 	F_BATFET_DLY, F_BATFET_RST_EN, F_PUMPX_UP, F_PUMPX_DN,	     /* Reg09 */
 	F_BOOSTV, F_PFM_OTG_DIS, F_BOOSTI,			     /* Reg0A */
-	F_WD_FAULT, F_BOOST_FAULT, F_CHG_FAULT, F_BAT_FAULT,
-	F_NTC_FAULT,						     /* Reg0C */
 	F_FORCE_VINDPM, F_VINDPM,				     /* Reg0D */
 	F_THERM_STAT, F_BATV,					     /* Reg0E */
 	F_SYSV,							     /* Reg0F */
@@ -165,6 +169,16 @@ static const struct regmap_access_table bq25890_volatile_regs = {
 	.n_yes_ranges = ARRAY_SIZE(bq25890_volatile_reg_ranges),
 };
 
+static const struct regmap_range bq25890_precious_reg_ranges[] = {
+	/* A generic register dump must not acknowledge this latch. */
+	regmap_reg_range(BQ25890_FAULT_REG, BQ25890_FAULT_REG),
+};
+
+static const struct regmap_access_table bq25890_precious_regs = {
+	.yes_ranges = bq25890_precious_reg_ranges,
+	.n_yes_ranges = ARRAY_SIZE(bq25890_precious_reg_ranges),
+};
+
 static const struct regmap_config bq25890_regmap_config = {
 	.reg_bits = 8,
 	.val_bits = 8,
@@ -174,6 +188,7 @@ static const struct regmap_config bq25890_regmap_config = {
 
 	.wr_table = &bq25890_writeable_regs,
 	.volatile_table = &bq25890_volatile_regs,
+	.precious_table = &bq25890_precious_regs,
 };
 
 static const struct reg_field bq25890_reg_fields[] = {
@@ -235,12 +250,6 @@ static const struct reg_field bq25890_reg_fields[] = {
 	[F_BOOSTV]		= REG_FIELD(0x0A, 4, 7),
 	[F_BOOSTI]		= REG_FIELD(0x0A, 0, 2), // reserved on BQ25895
 	[F_PFM_OTG_DIS]		= REG_FIELD(0x0A, 3, 3), // BQ25896 only
-	/* REG0C */
-	[F_WD_FAULT]		= REG_FIELD(0x0C, 7, 7),
-	[F_BOOST_FAULT]		= REG_FIELD(0x0C, 6, 6),
-	[F_CHG_FAULT]		= REG_FIELD(0x0C, 4, 5),
-	[F_BAT_FAULT]		= REG_FIELD(0x0C, 3, 3),
-	[F_NTC_FAULT]		= REG_FIELD(0x0C, 0, 2),
 	/* REG0D */
 	[F_FORCE_VINDPM]	= REG_FIELD(0x0D, 7, 7),
 	[F_VINDPM]		= REG_FIELD(0x0D, 0, 6),
@@ -845,42 +854,77 @@ static void bq25890_charger_external_power_changed(struct power_supply *psy)
 	power_supply_changed(psy);
 }
 
-static int bq25890_get_chip_state(struct bq25890_device *bq,
-				  struct bq25890_state *state)
+static int bq25890_read_fault(struct bq25890_device *bq, unsigned int *fault,
+			       bool *latched_event)
 {
-	unsigned int status, i;
+	unsigned int latched, live;
 	int ret;
 
-	struct {
-		enum bq25890_fields id;
-		u8 *data;
-	} state_fields[] = {
-		{F_EN_HIZ,	&state->hiz},
-		{F_BOOST_FAULT, &state->boost_fault},
-		{F_BAT_FAULT,	&state->bat_fault},
-		{F_CHG_FAULT,	&state->chrg_fault},
-		{F_NTC_FAULT,	&state->ntc_fault}
-	};
+	/*
+	 * The first REG0C read clears the previous latched flags; the
+	 * second returns present faults. NTC bits are always live.
+	 * REG0C does not support multi-register transfers.
+	 */
+	ret = regmap_read(bq->rmap, BQ25890_FAULT_REG, &latched);
+	if (ret)
+		return ret;
 
+	ret = regmap_read(bq->rmap, BQ25890_FAULT_REG, fault);
+	latched &= BQ25890_FAULT_LATCHED;
+	if (ret) {
+		if (latched) {
+			if (latched_event)
+				*latched_event = true;
+			dev_warn_ratelimited(bq->dev,
+				"Latched charger fault 0x%02x, live read failed: %d\n",
+				latched, ret);
+		}
+		return ret;
+	}
+
+	live = *fault & BQ25890_FAULT_LATCHED;
+	if (latched && latched != live) {
+		if (latched_event)
+			*latched_event = true;
+		dev_warn_ratelimited(bq->dev, "Latched charger fault 0x%02x, live 0x%02x\n",
+				     latched, live);
+	}
+	return 0;
+}
+
+static int bq25890_get_chip_state(struct bq25890_device *bq,
+				  struct bq25890_state *state,
+				  bool *latched_event)
+{
+	unsigned int status, fault;
+	int hiz, ret;
+
+	if (latched_event)
+		*latched_event = false;
 	/* All four fields describe the same instant, even during detection. */
 	ret = regmap_read(bq->rmap, BQ25890_STATUS_REG, &status);
 	if (ret)
 		return ret;
 
+	hiz = bq25890_field_read(bq, F_EN_HIZ);
+	if (hiz < 0)
+		return hiz;
+
+	ret = bq25890_read_fault(bq, &fault, latched_event);
+	if (ret)
+		return ret;
+
 	state->chrg_status = FIELD_GET(BQ25890_STATUS_CHG, status);
 	state->online = FIELD_GET(BQ25890_STATUS_PG, status);
+	state->hiz = hiz;
 	state->vsys_status = FIELD_GET(BQ25890_STATUS_VSYS, status);
 	state->usb_type = bq25890_has_usb_detection(bq->chip_version) ?
 			  bq25890_decode_usb_type(status) :
 			  POWER_SUPPLY_USB_TYPE_UNKNOWN;
-
-	for (i = 0; i < ARRAY_SIZE(state_fields); i++) {
-		ret = bq25890_field_read(bq, state_fields[i].id);
-		if (ret < 0)
-			return ret;
-
-		*state_fields[i].data = ret;
-	}
+	state->boost_fault = FIELD_GET(BQ25890_FAULT_BOOST, fault);
+	state->chrg_fault = FIELD_GET(BQ25890_FAULT_CHG, fault);
+	state->bat_fault = FIELD_GET(BQ25890_FAULT_BAT, fault);
+	state->ntc_fault = FIELD_GET(BQ25890_FAULT_NTC, fault);
 
 	/* BQ25895 uses separate buck codes and the common boost codes. */
 	if (bq->chip_version == BQ25895) {
@@ -902,16 +946,17 @@ static int bq25890_get_chip_state(struct bq25890_device *bq,
 static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 {
 	bool adc_conv_rate, new_adc_conv_rate;
+	bool latched_event;
 	struct bq25890_state new_state;
 	int ret;
 
-	ret = bq25890_get_chip_state(bq, &new_state);
+	ret = bq25890_get_chip_state(bq, &new_state, &latched_event);
 	if (ret < 0)
-		return IRQ_NONE;
+		return latched_event ? IRQ_HANDLED : IRQ_NONE;
 
 	/* A completed detection can change USB type without changing PG_STAT. */
 	if (!memcmp(&bq->state, &new_state, sizeof(new_state)))
-		return IRQ_NONE;
+		return latched_event ? IRQ_HANDLED : IRQ_NONE;
 
 	/*
 	 * Restore HiZ bit in case it was set by user. The chip does not retain
@@ -1080,7 +1125,7 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		}
 	}
 
-	ret = bq25890_get_chip_state(bq, &bq->state);
+	ret = bq25890_get_chip_state(bq, &bq->state, NULL);
 	if (ret < 0) {
 		dev_dbg(bq->dev, "Get state failed %d\n", ret);
 		return ret;
@@ -1718,7 +1763,7 @@ static int bq25890_resume(struct device *dev)
 
 	mutex_lock(&bq->lock);
 
-	ret = bq25890_get_chip_state(bq, &bq->state);
+	ret = bq25890_get_chip_state(bq, &bq->state, NULL);
 	if (ret < 0)
 		goto unlock;
 

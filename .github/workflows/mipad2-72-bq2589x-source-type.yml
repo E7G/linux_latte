@@ -1,14 +1,14 @@
-name: Mi Pad 2 7.2 charger source detection
+name: Mi Pad 2 7.2 charger source detection and fault status
 
 on:
   push:
-    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type]
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type, fix/mipad2-72-bq2589x-fault-snapshot]
     paths:
       - drivers/power/supply/bq25890_charger.c
       - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
       - .github/workflows/mipad2-72-bq2589x-source-type.yml
   pull_request:
-    branches: [codex/mipad2-7.2-integrated]
+    branches: [codex/mipad2-7.2-integrated, fix/mipad2-72-bq2589x-source-type]
     paths:
       - drivers/power/supply/bq25890_charger.c
       - fix_file/tests/mipad2-bq2589x-usb-type-host-test.py
