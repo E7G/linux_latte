@@ -26,6 +26,20 @@ Mi Pad 2 hardware qualification. A candidate must pass the front/rear
 stock-versus-patched device tests before a packaging update. The package
 recipe, runtime opt-in policy and rollback checks remain unchanged.
 
+### Initial qualification result
+
+[Source build 46114870271](https://github.com/E7G/linux_latte/actions/runs/46114870271)
+produced SHA-256
+`4dbb642aa2c7d6255a812d97cd63fb2356ba714a912309a6e9d8579e88db2497`.
+The caps test accepted both nominal and exact native 30 fps and rejected
+rates outside the modeled bounds. The exact artifact also loaded as
+`v4l2src` in a private tmpfs registry on the physical Mi Pad 2 under
+`7.2.15-mipad2-integrated-lpat31`, using the installed Arch 1.28.7-1
+core/base. No stream was opened. Before and after inspection the AtomISP
+runtime was suspended, STEPWISE was off, and the installed stock plugin
+bytes were unchanged. This is a runtime loader check, not frame delivery,
+timing, desktop/portal negotiation or rollout qualification.
+
 ## Build inputs
 
 Place the original x86-64 `gst-plugins-good-1.28.7-1` package and the
