@@ -31,12 +31,29 @@ on:
         description: Also compile the combined 7.2 image and verify signatures and the PMC link
         type: boolean
         default: false
+      boot_test:
+        description: Test a completed combined build and pinned LPAT31 with UEFI
+        type: boolean
+        default: false
+      candidate_run:
+        description: Completed GitHub run that produced the combined release artifacts
+        type: string
+        default: '46109996857'
+      candidate_sha:
+        description: Exact compiled commit from that run
+        type: string
+        default: '603f99209cba3fc41e697890f980f68873f94c52'
+      fallback_run:
+        description: Completed LPAT31 replay run
+        type: string
+        default: '46004200827'
 
 permissions:
   contents: read
 
 jobs:
   release-config:
+    if: github.event_name != 'workflow_dispatch' || !inputs.boot_test
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -135,3 +152,78 @@ jobs:
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
+
+  uefi-one-shot:
+    if: github.event_name == 'workflow_dispatch' && inputs.boot_test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify both completed build records
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          FALLBACK_RUN: ${{ inputs.fallback_run }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_RUN" =~ ^[1-9][0-9]{0,15}$ && "$FALLBACK_RUN" =~ ^[1-9][0-9]{0,15}$ ]]
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN" | jq -e --arg sha "$CANDIDATE_SHA" '
+            .head_sha == $sha and .head_branch == "codex/mipad2-72-hardware-qualification" and
+            .path == ".github/workflows/mipad2-72-release-config.yml" and
+            .status == "completed" and .conclusion == "success"'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$FALLBACK_RUN" | jq -e '
+            .head_branch == "codex/mipad2-72-lpat31-replay" and
+            .path == ".github/workflows/mipad2-72-daily.yml" and
+            .status == "completed" and .conclusion == "success"'
+      - name: Download exact combined build
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.candidate_run }}
+          name: mipad2-72-release-qualification
+          path: ${{ runner.temp }}/combined-input
+      - name: Download exact LPAT31 fallback
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.fallback_run }}
+          name: mipad2-72-lpat31-3f4956789e34da213332510246d565920a23578c
+          path: ${{ runner.temp }}/lpat31-input
+      - name: Install UEFI and QEMU fixture dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y --no-install-recommends \
+            qemu-system-x86 ovmf grub-efi-amd64-bin grub-common mtools dosfstools gdisk cpio busybox-static kmod openssl zstd
+      - name: Boot exact candidate once, then boot LPAT31
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/uefi-proof"
+          bash fix_file/tests/mipad2-release-uefi-qemu.sh \
+            "$RUNNER_TEMP/combined-input" "$RUNNER_TEMP/lpat31-input" "$RUNNER_TEMP/uefi-proof" "$CANDIDATE_SHA"
+      - name: Publish serial logs and the boot receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mipad2-72-uefi-one-shot-receipt
+          path: |
+            ${{ runner.temp }}/uefi-proof/*.log
+            ${{ runner.temp }}/uefi-proof/*.env
+            ${{ runner.temp }}/uefi-proof/*.txt
+            ${{ runner.temp }}/uefi-proof/module-verification.json
+            ${{ runner.temp }}/uefi-proof/exit-status
+          if-no-files-found: warn
+          retention-days: 30
