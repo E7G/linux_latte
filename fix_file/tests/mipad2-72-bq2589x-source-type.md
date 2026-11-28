@@ -48,3 +48,27 @@ reported type, input limit, UPower state and power-supply uevents on connect
 and disconnect. A physical change of type without PG dropping is not assumed
 to be reproducible by moving cables; that path is covered by the host test.
 Do not infer measured adapter capability from the charger type alone.
+
+## Independent system sleep follow-up
+
+The TI data sheet's battery-monitor section notes that its automatic
+once-per-second conversion can increase quiescent current. The driver
+normally enables continuous conversion only with power-good and without
+HiZ, but previously a suspend-time IRQ could undo the pause and resume
+checked only power-good. Resume also wrote the shared state during a
+multi-read transaction, and could expose a partially refreshed snapshot
+if any later I2C operation failed.
+
+Serialize the ADC pause, HiZ request and status changes. A cable IRQ
+while suspended must not restart periodic conversion. On resume, apply the
+existing online/HiZ policy to a fresh snapshot; if the cable was replugged,
+reapply an outstanding user-requested HiZ before restarting the ADC.
+If the read or write fails, preserve the prior snapshot and finish the
+restore on the next successful status refresh, even if the status bytes
+are identical. Do not change charge limits or the ADC one-shot API.
+
+The host test also drives the real suspend/resume callbacks with modeled
+I2C failures and cable IRQs, checks the ADC and HiZ writes, and rejects
+duplicate or premature change notifications. This is not a hardware power
+or sleep result. Measure actual wake, charger state and PMC residency
+on a separately authorized RTC suspend cycle before promoting the follow-up.

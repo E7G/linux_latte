@@ -131,13 +131,15 @@ struct bq25890_device {
 	bool skip_reset;
 	bool read_back_init_data;
 	bool force_hiz;
+	bool adc_paused;
+	bool resume_pending;
 	u32 pump_express_vbus_max;
 	u32 iinlim_percentage;
 	enum bq25890_chip_version chip_version;
 	struct bq25890_init_data init_data;
 	struct bq25890_state state;
 
-	struct mutex lock; /* protect state data */
+	struct mutex lock; /* protect state, HiZ request and sleep flags */
 };
 
 static DEFINE_IDR(bq25890_id);
@@ -749,13 +751,26 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 	return 0;
 }
 
+static int bq25890_set_online(struct bq25890_device *bq, bool online)
+{
+	int ret;
+
+	mutex_lock(&bq->lock);
+	ret = bq25890_field_write(bq, F_EN_HIZ, !online);
+	if (!ret)
+		bq->force_hiz = !online;
+	__bq25890_handle_irq(bq);
+	mutex_unlock(&bq->lock);
+
+	return ret;
+}
+
 static int bq25890_power_supply_set_property(struct power_supply *psy,
 					     enum power_supply_property psp,
 					     const union power_supply_propval *val)
 {
 	struct bq25890_device *bq = power_supply_get_drvdata(psy);
-	struct bq25890_state state;
-	int maxval, ret;
+	int maxval;
 	u8 lval;
 
 	switch (psp) {
@@ -771,11 +786,7 @@ static int bq25890_power_supply_set_property(struct power_supply *psy,
 		lval = bq25890_find_idx(val->intval, TBL_IINLIM);
 		return bq25890_field_write(bq, F_IINLIM, lval);
 	case POWER_SUPPLY_PROP_ONLINE:
-		ret = bq25890_field_write(bq, F_EN_HIZ, !val->intval);
-		if (!ret)
-			bq->force_hiz = !val->intval;
-		bq25890_update_state(bq, psp, &state);
-		return ret;
+		return bq25890_set_online(bq, val->intval);
 	default:
 		return -EINVAL;
 	}
@@ -899,9 +910,44 @@ static int bq25890_get_chip_state(struct bq25890_device *bq,
 	return 0;
 }
 
-static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
+static int bq25890_apply_chip_state(struct bq25890_device *bq,
+				    struct bq25890_state *new_state)
 {
 	bool adc_conv_rate, new_adc_conv_rate;
+	int ret;
+
+	/*
+	 * The chip drops HiZ on replug. After sleep the cable could have
+	 * been replugged even if power-good was set before and after sleep.
+	 */
+	if (new_state->online && !new_state->hiz && bq->force_hiz &&
+	    (!bq->state.online || bq->resume_pending)) {
+		ret = bq25890_field_write(bq, F_EN_HIZ, 1);
+		if (ret < 0)
+			return ret;
+		new_state->hiz = 1;
+	}
+
+	adc_conv_rate = bq->state.online && !bq->state.hiz;
+	new_adc_conv_rate = new_state->online && !new_state->hiz;
+
+	/* A suspended IRQ must not undo suspend's ADC pause. */
+	if (!bq->adc_paused &&
+	    (bq->resume_pending || new_adc_conv_rate != adc_conv_rate)) {
+		ret = bq25890_field_write(bq, F_CONV_RATE, new_adc_conv_rate);
+		if (ret < 0)
+			return ret;
+	}
+
+	bq->state = *new_state;
+	bq->resume_pending = false;
+	power_supply_changed(bq->charger);
+
+	return 0;
+}
+
+static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
+{
 	struct bq25890_state new_state;
 	int ret;
 
@@ -910,37 +956,15 @@ static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 		return IRQ_NONE;
 
 	/* A completed detection can change USB type without changing PG_STAT. */
-	if (!memcmp(&bq->state, &new_state, sizeof(new_state)))
+	if (!bq->resume_pending &&
+	    !memcmp(&bq->state, &new_state, sizeof(new_state)))
 		return IRQ_NONE;
 
-	/*
-	 * Restore HiZ bit in case it was set by user. The chip does not retain
-	 * this bit on cable replug, hence the bit must be reset manually here.
-	 */
-	if (new_state.online && !bq->state.online && bq->force_hiz) {
-		ret = bq25890_field_write(bq, F_EN_HIZ, bq->force_hiz);
-		if (ret < 0)
-			goto error;
-		new_state.hiz = 1;
-	}
+	ret = bq25890_apply_chip_state(bq, &new_state);
+	if (ret < 0)
+		dev_err(bq->dev, "Error communicating with the chip: %pe\n",
+			ERR_PTR(ret));
 
-	/* Should period ADC sampling be enabled? */
-	adc_conv_rate = bq->state.online && !bq->state.hiz;
-	new_adc_conv_rate = new_state.online && !new_state.hiz;
-
-	if (new_adc_conv_rate != adc_conv_rate) {
-		ret = bq25890_field_write(bq, F_CONV_RATE, new_adc_conv_rate);
-		if (ret < 0)
-			goto error;
-	}
-
-	bq->state = new_state;
-	power_supply_changed(bq->charger);
-
-	return IRQ_HANDLED;
-error:
-	dev_err(bq->dev, "Error communicating with the chip: %pe\n",
-		ERR_PTR(ret));
 	return IRQ_HANDLED;
 }
 
@@ -1703,36 +1727,35 @@ static void bq25890_shutdown(struct i2c_client *client)
 static int bq25890_suspend(struct device *dev)
 {
 	struct bq25890_device *bq = dev_get_drvdata(dev);
+	int ret;
 
 	/*
-	 * If charger is removed, while in suspend, make sure ADC is diabled
-	 * since it consumes slightly more power.
+	 * Do not leave continuous ADC sampling on if the charger is removed
+	 * during suspend. Serialize this with IRQ-side state updates.
 	 */
-	return bq25890_field_write(bq, F_CONV_RATE, 0);
+	mutex_lock(&bq->lock);
+	ret = bq25890_field_write(bq, F_CONV_RATE, 0);
+	if (!ret)
+		bq->adc_paused = true;
+	mutex_unlock(&bq->lock);
+
+	return ret;
 }
 
 static int bq25890_resume(struct device *dev)
 {
-	int ret;
 	struct bq25890_device *bq = dev_get_drvdata(dev);
+	struct bq25890_state new_state;
+	int ret;
 
 	mutex_lock(&bq->lock);
+	bq->adc_paused = false;
+	/* Keep the restore pending on I2C failure, even for unchanged status. */
+	bq->resume_pending = true;
 
-	ret = bq25890_get_chip_state(bq, &bq->state);
-	if (ret < 0)
-		goto unlock;
-
-	/* Re-enable ADC only if charger is plugged in. */
-	if (bq->state.online) {
-		ret = bq25890_field_write(bq, F_CONV_RATE, 1);
-		if (ret < 0)
-			goto unlock;
-	}
-
-	/* signal userspace, maybe state changed while suspended */
-	power_supply_changed(bq->charger);
-
-unlock:
+	ret = bq25890_get_chip_state(bq, &new_state);
+	if (!ret)
+		ret = bq25890_apply_chip_state(bq, &new_state);
 	mutex_unlock(&bq->lock);
 
 	return ret;
